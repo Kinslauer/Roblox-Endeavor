@@ -15,7 +15,7 @@ local TYPES = {
 	Raider = { Health = 70, Speed = 13, Damage = 9, Range = 6, Cooldown = 1.1, Aggro = 90, Xp = 35, Loot = "Raider" },
 }
 
-local function buildRig(name, typeDef)
+function NPCs.BuildRig(name, typeDef)
 	local model = Instance.new("Model")
 	model.Name = name
 	local root = Instance.new("Part")
@@ -37,7 +37,7 @@ end
 
 function NPCs.Spawn(typeName, position)
 	local def = TYPES[typeName]
-	local model, hum, root = buildRig(typeName, def)
+	local model, hum, root = NPCs.BuildRig(typeName, def)
 	model:PivotTo(CFrame.new(position))
 	model.Parent = workspace
 

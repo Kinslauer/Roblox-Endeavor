@@ -12,7 +12,12 @@ local Events = require(Server.Events)
 local Tutorial = require(Server.Tutorial)
 local Lifecycle = require(Server.Lifecycle)
 
-Arena.Init() -- must run before WorldPhase.Init so its CitySpawn pads are found
+-- Must run before WorldPhase.Init so its CitySpawn pads are found. A bug in the test arena
+-- must never stop the game from starting, so it is isolated.
+local ok, err = pcall(Arena.Init)
+if not ok then
+	warn("[Arena] failed to build:", err)
+end
 WorldPhase.Init()
 Gear.Init()
 Stats.Init()

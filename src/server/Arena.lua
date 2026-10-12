@@ -268,12 +268,12 @@ function Arena.Init()
 	end
 	folder = Instance.new("Folder")
 	folder.Name = "Arena"
+	folder.Parent = workspace
 	atmosphere()
 	buildRing()
 	buildArmory()
 	-- a recharge pad on the center platform so flicker/charge testing is never blocked
 	console(Vector3.new(0, GROUND_TOP + 0.6 + 3, 0), "Recharge", "Full health/stamina/charge", CYAN, recharge)
-	folder.Parent = workspace
 end
 
 return Arena
