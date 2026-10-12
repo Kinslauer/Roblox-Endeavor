@@ -1,0 +1,5 @@
+local HitType = {}
+
+
+
+return HitType
