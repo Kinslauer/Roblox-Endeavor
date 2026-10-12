@@ -14,7 +14,7 @@ local Gear = require(script.Parent.Gear)
 local PlayerData = require(script.Parent.PlayerData)
 local WorldPhase = require(script.Parent.WorldPhase)
 
-local C = Config.Combat
+local C, F = Config.Combat, Config.Flicker
 local BUFFER = 0.08 -- input buffer: an attack may start this early before the last one ends
 
 local Combat = {}
@@ -30,7 +30,9 @@ local function st(char)
 			block = false, blockStart = 0, iframes = 0, stunned = 0, busyUntil = 0, token = 0,
 			lastSpend = 0, lastPostureHit = 0, lastDodge = 0, lastHeavy = 0,
 			combo = 0, comboWeapon = nil, comboExpires = 0,
-			hyperarmorUntil = 0, takenMult = 1, takenUntil = 0, arcBonus = 0, arcUntil = 0,
+			hyperarmorUntil = 0, swingArmorUntil = 0, takenMult = 1, takenUntil = 0, arcBonus = 0, arcUntil = 0,
+			windupUntil = 0, lastCost = 0,
+			flickPress = 0, lastFlickPress = 0, flickerLevel = 0, flickerUntil = 0, zoneUntil = 0,
 			skillCD = {},
 		}
 		state[char] = s
@@ -92,7 +94,8 @@ function Combat.SpendStamina(char, base)
 		return false
 	end
 	char:SetAttribute("Stamina", cur - cost)
-	st(char).lastSpend = os.clock()
+	local s = st(char)
+	s.lastSpend, s.lastCost = os.clock(), cost
 	return true
 end
 
@@ -116,6 +119,87 @@ function Combat.AddCharge(char, amount)
 	if max then
 		char:SetAttribute("Charge", math.clamp((char:GetAttribute("Charge") or 0) + amount, 0, max))
 	end
+end
+
+-- ===== Flickering cursed energy (Black Flash) =====
+local function setFlickerLevel(char, s, level)
+	s.flickerLevel = level
+	char:SetAttribute("Flicker", level) -- replicated: clients render the flicker from this
+end
+
+-- Breaks the chain (the Zone, once earned, stays until it times out).
+function Combat.CancelFlicker(char)
+	local s = st(char)
+	s.flickPress = 0
+	if s.flickerLevel > 0 then
+		setFlickerLevel(char, s, 0)
+	end
+end
+
+-- Primes the chain directly (used by the Overclock skill).
+function Combat.SetFlicker(char, level, holdSeconds)
+	local s = st(char)
+	s.flickerUntil = os.clock() + holdSeconds
+	setFlickerLevel(char, s, level)
+end
+
+-- The flicker key. Just records a timestamp (and spends charge); the swing that connects
+-- within the window judges it. Spamming is expensive and a mis-timed press does nothing.
+function Combat.Flicker(player)
+	local char = player.Character
+	if not (char and isAlive(char)) then
+		return
+	end
+	local s, t = st(char), os.clock()
+	if t < s.stunned or t - s.lastFlickPress < F.Cooldown then
+		return
+	end
+	local cost = F.Cost / Gear.Get(player).FlickerRate
+	if (char:GetAttribute("Charge") or 0) < cost then
+		return
+	end
+	Combat.AddCharge(char, -cost)
+	s.lastFlickPress, s.flickPress = t, t
+	fx("Flick", char)
+end
+
+-- Judged once per swing, at the first connection. Returns nil, or { level, flash }.
+local function judgeFlick(s, d)
+	local t = os.clock()
+	local zone = t < s.zoneUntil
+	if t - s.flickPress > F.Window * d.FlickerRate * (if zone then F.ZoneWindowMult else 1) then
+		return nil
+	end
+	s.flickPress = 0
+	local level = s.flickerLevel + 1
+	return { level = level, flash = level >= F.MaxLevel - (if zone then 1 else 0) }
+end
+
+local function blackFlash(char, s, victim)
+	setFlickerLevel(char, s, 0)
+	s.zoneUntil = os.clock() + F.ZoneTime
+	char:SetAttribute("Zone", true)
+	Combat.AddCharge(char, F.FlashRefund)
+	fx("BlackFlash", char, victim)
+end
+
+-- Deepwoken-style feint: cancel a swing during its windup and get most of the stamina back.
+-- Pure mind-game tool (your flick timing stays live), costs a short recovery.
+function Combat.Feint(player)
+	local char = player.Character
+	if not (char and isAlive(char)) then
+		return
+	end
+	local s, t = st(char), os.clock()
+	if t >= s.windupUntil or t < s.stunned then
+		return
+	end
+	s.token += 1
+	s.windupUntil, s.swingArmorUntil = 0, 0
+	s.busyUntil = t + C.FeintRecovery
+	Combat.AddStamina(char, s.lastCost * C.FeintRefund)
+	s.combo = math.max(0, s.combo - 1)
+	fx("Feint", char)
 end
 
 function Combat.InCombat(player)
@@ -153,6 +237,7 @@ function Combat.Stun(char, duration)
 	local s = st(char)
 	local endsAt = os.clock() + duration
 	s.token += 1
+	Combat.CancelFlicker(char)
 	s.busyUntil = 0
 	s.block = false
 	char:SetAttribute("Blocking", false)
@@ -194,7 +279,8 @@ local function knockback(char, direction, magnitude)
 	end
 end
 
--- opts: Posture, Type ("Physical"|"Arc"), Unblockable, Knockback (studs/s), Stun (seconds)
+-- opts: Posture, Type ("Physical"|"Arc"), Unblockable, GuardBreak (blocks fail; parry still works),
+--       Knockback (studs/s), Stun (seconds)
 -- Returns "hit" | "blocked" | "parried" | "dodged" | "guardbreak" | "none"
 local function applyDamage(attacker, victim, amount, opts)
 	local vhum = getHum(victim)
@@ -219,14 +305,14 @@ local function applyDamage(attacker, victim, amount, opts)
 	local result = "hit"
 	local facing = aroot and vroot and vroot.CFrame.LookVector:Dot(-direction) > C.BlockMinFacing
 	if vs.block and facing and not opts.Unblockable then
-		if t - vs.blockStart <= C.ParryWindow then
+		if t - vs.blockStart <= vd.ParryWindow then
 			Combat.Stun(attacker, C.ParryStun)
 			Combat.AddPosture(victim, -C.ParryPostureRelief)
 			fx("Parry", victim)
 			return "parried"
 		end
 		local posture = Combat.AddPosture(victim, opts.Posture or 0)
-		if posture >= (victim:GetAttribute("MaxPosture") or 1) then
+		if opts.GuardBreak or posture >= (victim:GetAttribute("MaxPosture") or 1) then
 			victim:SetAttribute("Posture", 0)
 			Combat.Stun(victim, C.GuardBreakStun)
 			fx("GuardBreak", victim)
@@ -246,7 +332,7 @@ local function applyDamage(attacker, victim, amount, opts)
 	vhum:TakeDamage(amount)
 	tag(attacker, victim)
 
-	if result ~= "blocked" and t >= vs.hyperarmorUntil then
+	if result ~= "blocked" and t >= math.max(vs.hyperarmorUntil, vs.swingArmorUntil) then
 		Combat.Stun(victim, opts.Stun or C.HitStunDefault)
 		if opts.Knockback and opts.Knockback > 0 then
 			knockback(victim, direction, opts.Knockback)
@@ -285,11 +371,43 @@ local function pulse(char, spec, mods, seen)
 	if overloaded then
 		damage += s.arcBonus
 	end
-	local opts = { Posture = posture, Type = spec.Type, Knockback = spec.Knockback, Stun = spec.Stun, Unblockable = mods.unblockable }
+	local opts = { Posture = posture, Type = spec.Type, Knockback = spec.Knockback, Stun = spec.Stun, Unblockable = mods.unblockable, GuardBreak = mods.guardBreak }
 
 	local function strike(model)
 		seen[model] = true
-		local result = Combat.Damage(char, model, damage, opts)
+		if seen.__flick == nil then
+			seen.__flick = judgeFlick(s, d) or false
+		end
+		local flick = seen.__flick
+		local hitDamage, hitOpts = damage, opts
+		if flick then
+			hitOpts = table.clone(opts)
+			if flick.flash then
+				hitDamage = damage * (F.BlackFlashMult + d.FlashBonus)
+				hitOpts.Posture = (opts.Posture or 0) * F.BlackFlashPosture
+				hitOpts.GuardBreak = true
+				hitOpts.Stun = math.max(opts.Stun or 0, F.BlackFlashStun)
+				hitOpts.Knockback = math.max(opts.Knockback or 0, F.BlackFlashKnockback)
+			else
+				hitDamage = damage * F.DamageMult[flick.level]
+			end
+		end
+		local result = Combat.Damage(char, model, hitDamage, hitOpts)
+		if flick and not flick.resolved then
+			if result == "hit" or result == "guardbreak" then
+				flick.resolved = true
+				if flick.flash then
+					blackFlash(char, s, model)
+				else
+					s.flickerUntil = os.clock() + F.ChainTime
+					setFlickerLevel(char, s, flick.level)
+					fx("Flick", model, flick.level)
+				end
+			elseif result == "dodged" or result == "parried" then
+				flick.resolved = true
+				Combat.CancelFlicker(char) -- whiffed flick: the chain is gone
+			end
+		end
 		if result == "hit" or result == "guardbreak" then
 			local gain = (C.ChargePerHit + (mods.chargeBonus or 0)) * d.ChargeGain * (if overloaded then 2 else 1)
 			Combat.AddCharge(char, gain)
@@ -344,9 +462,8 @@ function Combat.Swing(char, spec, mods)
 	local s, t0 = st(char), os.clock()
 	local token = s.token
 	s.busyUntil = t0 + spec.End
-	if spec.Hyperarmor then
-		s.hyperarmorUntil = math.max(s.hyperarmorUntil, t0 + spec.Windup + spec.Active)
-	end
+	s.windupUntil = t0 + spec.Windup
+	s.swingArmorUntil = if spec.Hyperarmor then t0 + spec.Windup + spec.Active else 0
 	fx("Swing", char, mods.label)
 
 	task.delay(spec.Windup, function()
@@ -381,7 +498,8 @@ function Combat.Attack(player)
 	s.block = false
 	char:SetAttribute("Blocking", false)
 	s.combo, s.comboWeapon = combo, weapon
-	Combat.Swing(char, spec, { chargeBonus = weapon.ChargeBonus, label = combo })
+	local mods = { chargeBonus = weapon.ChargeBonus, label = combo }
+	Combat.Swing(char, spec, mods)
 	if combo == #weapon.Attacks then -- end of the chain: recovery
 		s.busyUntil += weapon.ComboCooldown
 	end
@@ -399,7 +517,9 @@ function Combat.Heavy(player)
 	end
 	s.lastHeavy, s.block, s.combo = t, false, 0
 	char:SetAttribute("Blocking", false)
-	Combat.Swing(char, weapon.Heavy, { chargeBonus = weapon.ChargeBonus, label = "Heavy" })
+	-- Heavies are criticals: they crush blocks (extra posture damage).
+	local mods = { chargeBonus = weapon.ChargeBonus, label = "Heavy", postureMult = C.CriticalPostureMult }
+	Combat.Swing(char, weapon.Heavy, mods)
 end
 
 function Combat.SetBlock(player, down)
@@ -443,6 +563,8 @@ end
 function Combat.Init()
 	Remotes.Attack.OnServerEvent:Connect(Combat.Attack)
 	Remotes.Heavy.OnServerEvent:Connect(Combat.Heavy)
+	Remotes.Feint.OnServerEvent:Connect(Combat.Feint)
+	Remotes.Flicker.OnServerEvent:Connect(Combat.Flicker)
 	Remotes.Block.OnServerEvent:Connect(Combat.SetBlock)
 	Remotes.Dodge.OnServerEvent:Connect(Combat.Dodge)
 
@@ -458,6 +580,12 @@ function Combat.Init()
 		for char, s in state do
 			if char.Parent and isAlive(char) then
 				local d = Gear.OfChar(char)
+				if s.flickerLevel > 0 and t > s.flickerUntil then
+					setFlickerLevel(char, s, 0)
+				end
+				if char:GetAttribute("Zone") and t > s.zoneUntil then
+					char:SetAttribute("Zone", false)
+				end
 				local maxStamina = char:GetAttribute("MaxStamina")
 				if maxStamina and not s.block and t - s.lastSpend > C.StaminaRegenDelay then
 					Combat.AddStamina(char, C.StaminaRegenPerSecond * step)

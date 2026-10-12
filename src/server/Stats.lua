@@ -57,7 +57,7 @@ function Stats.AddXp(player, amount)
 		data.Xp -= Stats.XpNeeded(data.Level)
 		data.Level += 1
 		data.FreePoints += S.PointsPerLevel
-		Remotes.Announce:FireClient(player, "Level " .. data.Level .. " - allocate your points (K)", "Info")
+		Remotes.Announce:FireClient(player, "Level " .. data.Level .. " - allocate your points (J)", "Info")
 	end
 	Stats.Push(player)
 end

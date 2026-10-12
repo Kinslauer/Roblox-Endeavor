@@ -115,7 +115,7 @@ function WorldPhase.StartTimer()
 		return
 	end
 	timerStarted = true
-	task.delay(Config.PrologueSeconds, WorldPhase.Emerge)
+	task.delay(if Config.Dev.Enabled then Config.Dev.PrologueSeconds else Config.PrologueSeconds, WorldPhase.Emerge)
 end
 
 function WorldPhase.Init()

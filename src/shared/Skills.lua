@@ -4,7 +4,7 @@
 local Skills = {}
 
 Skills.SlotCount = 3
-Skills.Order = { "Surge", "ShatterStrike", "PhaseStep", "SecondWind", "IronBastion", "Overload" }
+Skills.Order = { "Surge", "ShatterStrike", "PhaseStep", "SecondWind", "IronBastion", "Overload", "Overclock" }
 
 -- Kind: Burst | Strike | Dash | Buff | Recover (handled by server/SkillRunner.lua)
 -- Req.Stats: minimum effective stats.  Req.Tags: minimum worn pieces carrying that tag.
@@ -44,6 +44,11 @@ Skills.Defs = {
 		Req = { Stats = { Intelligence = 12 }, Tags = { Conduit = 2 } }, ChargeCost = 30, Cooldown = 30,
 		Duration = 8, ArcBonus = 6,
 		Scaling = { Intelligence = 0.04 }, TagBonus = { Conduit = 0.1 },
+	},
+	Overclock = {
+		Name = "Overclock", Kind = "Flicker", Desc = "Prime your flicker chain to II: one well-timed flick away from a Black Flash. Needs two implants.",
+		Req = { Stats = { Intelligence = 8 }, Tags = { Cyber = 2 } }, ChargeCost = 20, Cooldown = 20, Level = 2, Hold = 8,
+		Scaling = {}, TagBonus = {},
 	},
 }
 

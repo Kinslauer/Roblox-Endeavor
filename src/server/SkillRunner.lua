@@ -79,7 +79,12 @@ local function recover(player, char, def, power)
 	Combat.FX("Buff", char, "Recover")
 end
 
-local KINDS = { Burst = burst, Strike = strike, Dash = dash, Buff = buff, Recover = recover }
+local function flicker(player, char, def)
+	Combat.SetBusy(char, 0.25)
+	Combat.SetFlicker(char, def.Level, def.Hold)
+end
+
+local KINDS = { Burst = burst, Strike = strike, Dash = dash, Buff = buff, Recover = recover, Flicker = flicker }
 
 function SkillRunner.Use(player, slot)
 	local char, data = player.Character, PlayerData.Get(player)

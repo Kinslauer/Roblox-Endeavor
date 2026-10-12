@@ -1,5 +1,7 @@
 -- Input + HUD. The client only sends intent; the server decides what happens.
 local Debris = game:GetService("Debris")
+local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -7,6 +9,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Armor = require(Shared:WaitForChild("Armor"))
+local Cybernetics = require(Shared:WaitForChild("Cybernetics"))
 local Config = require(Shared:WaitForChild("Config"))
 local Items = require(Shared:WaitForChild("Items"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
@@ -43,6 +46,7 @@ local staminaFill = bar(-80, Color3.fromRGB(90, 200, 120))
 local postureFill = bar(-60, Color3.fromRGB(240, 150, 60))
 local chargeFill = bar(-40, Color3.fromRGB(80, 170, 255))
 local levelLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0, 20, 1, -104), TextXAlignment = Enum.TextXAlignment.Left, Text = "" })
+local flickerLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0, 20, 1, -124), TextXAlignment = Enum.TextXAlignment.Left, Text = "", TextColor3 = Color3.fromRGB(255, 80, 80) })
 local banner = label({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 60), TextSize = 26, Text = "", TextTransparency = 1 })
 local questLabel = label({ Size = UDim2.fromOffset(360, 24), Position = UDim2.new(1, -380, 0, 20), TextXAlignment = Enum.TextXAlignment.Right, Text = "" })
 
@@ -118,7 +122,7 @@ Remotes.StatsChanged.OnClientEvent:Connect(function(data)
 end)
 
 -- ===== Inventory / crafting (I) =====
-local lastInventory, lastEquipped, lastArmor = {}, "Fists", {}
+local lastInventory, lastEquipped, lastArmor, lastCyber = {}, "Fists", {}, {}
 
 local function renderInventory()
 	clear(invPanel)
@@ -139,13 +143,13 @@ local function renderInventory()
 			table.insert(buttons, { text = if held then "Unequip" else "Equip", color = if held then Color3.fromRGB(120, 70, 70) else nil, fn = function()
 				if held then Remotes.Unequip:FireServer("Weapon") else Remotes.EquipItem:FireServer(id) end
 			end })
-		elseif def.Type == "Armor" then
-			local worn = lastArmor[def.Slot] == id
+		elseif def.Type == "Armor" or def.Type == "Cybernetic" then
+			local worn = lastArmor[def.Slot] == id or lastCyber[def.Slot] == id
 			table.insert(buttons, { text = if worn then "Remove" else "Wear", color = if worn then Color3.fromRGB(120, 70, 70) else nil, fn = function()
 				if worn then Remotes.Unequip:FireServer(def.Slot) else Remotes.EquipItem:FireServer(id) end
 			end })
 		end
-		local suffix = if def.Type == "Armor" then (" [%s]"):format(def.Slot) else ""
+		local suffix = if def.Slot then (" [%s]"):format(def.Slot) else ""
 		addRow(invPanel, ("%s x%d%s"):format(def.Name, lastInventory[id], suffix), buttons)
 	end
 	addRow(invPanel, "-- Crafting --", {})
@@ -157,8 +161,8 @@ local function renderInventory()
 		addRow(invPanel, Items.Defs[recipe.Output].Name .. ": " .. table.concat(parts, ", "), { { text = "Craft", fn = function() Remotes.Craft:FireServer(recipeId) end } })
 	end
 end
-Remotes.InventoryChanged.OnClientEvent:Connect(function(inv, equipped, armor)
-	lastInventory, lastEquipped, lastArmor = inv, equipped, armor
+Remotes.InventoryChanged.OnClientEvent:Connect(function(inv, equipped, armor, cyber)
+	lastInventory, lastEquipped, lastArmor, lastCyber = inv, equipped, armor, cyber
 	renderInventory()
 end)
 
@@ -166,9 +170,10 @@ end)
 local loadout
 local cooldowns = {} -- skillId -> os.clock() when ready
 local hotbar = {}
+local SLOT_KEYS = { "R", "Y", "V" }
 for i = 1, Skills.SlotCount do
 	local box = make("Frame", { Size = UDim2.fromOffset(110, 46), Position = UDim2.new(0.5, -170 + (i - 1) * 116, 1, -66), BackgroundColor3 = Color3.fromRGB(15, 15, 20) })
-	hotbar[i] = label({ Size = UDim2.fromScale(1, 1), TextSize = 13, TextWrapped = true, Text = tostring(i), Parent = box })
+	hotbar[i] = label({ Size = UDim2.fromScale(1, 1), TextSize = 13, TextWrapped = true, Text = SLOT_KEYS[i], Parent = box })
 end
 
 local function renderHotbar()
@@ -176,11 +181,11 @@ local function renderHotbar()
 		local id = loadout and loadout.Slots[tostring(i)]
 		local def = id and Skills.Defs[id]
 		if not def then
-			hotbar[i].Text = ("[%d] -"):format(i)
+			hotbar[i].Text = ("[%s] -"):format(SLOT_KEYS[i])
 		else
 			local ok = Skills.Unlocked(def, loadout.Stats, loadout.Tags)
 			local remaining = (cooldowns[id] or 0) - os.clock()
-			hotbar[i].Text = ("[%d] %s%s"):format(i, def.Name, if not ok then "\n(locked)" elseif remaining > 0 then ("\n%.0fs"):format(remaining) else "")
+			hotbar[i].Text = ("[%s] %s%s"):format(SLOT_KEYS[i], def.Name, if not ok then "\n(locked)" elseif remaining > 0 then ("\n%.0fs"):format(remaining) else "")
 			hotbar[i].TextColor3 = if ok and remaining <= 0 then Color3.new(1, 1, 1) else Color3.fromRGB(130, 130, 130)
 		end
 	end
@@ -201,10 +206,15 @@ local function renderLoadout()
 		local id = loadout.Armor[slot]
 		addRow(loadoutPanel, ("%s: %s"):format(slot, if id then Items.Defs[id].Name else "-"), {})
 	end
+	for _, slot in Cybernetics.Slots do
+		local id = loadout.Cyber[slot]
+		addRow(loadoutPanel, ("%s implant: %s"):format(slot, if id then Items.Defs[id].Name else "-"), {})
+	end
+	addRow(loadoutPanel, ("Flick window x%.2f  |  Black Flash x%.1f"):format(loadout.FlickerRate, 2.5 + loadout.FlashBonus), {})
 	addRow(loadoutPanel, ("Resist  Phys %d%%  Arc %d%%  |  Weight %d  |  Posture %d"):format(
 		loadout.Resist.Physical * 100, loadout.Resist.Arc * 100, loadout.WeightScore, loadout.MaxPosture), {})
 	addRow(loadoutPanel, "Tags: " .. (if #tagParts > 0 then table.concat(tagParts, ", ") else "none"), {})
-	addRow(loadoutPanel, "-- Skills (unlocked by stats + armor) --", {})
+	addRow(loadoutPanel, "-- Skills (unlocked by stats + gear) --", {})
 	for _, id in Skills.Order do
 		local def = Skills.Defs[id]
 		local ok, reason = Skills.Unlocked(def, loadout.Stats, loadout.Tags)
@@ -266,8 +276,61 @@ end
 local FLASH = {
 	Hit = Color3.fromRGB(255, 70, 70), Block = Color3.fromRGB(150, 150, 255), Parry = Color3.fromRGB(255, 255, 255),
 	GuardBreak = Color3.fromRGB(255, 160, 0), Burst = Color3.fromRGB(80, 170, 255), Dodge = Color3.fromRGB(120, 255, 200),
-	Buff = Color3.fromRGB(255, 220, 120),
+	Buff = Color3.fromRGB(255, 220, 120), Flick = Color3.fromRGB(255, 60, 60), Feint = Color3.fromRGB(200, 200, 200),
 }
+
+-- Flickering cursed energy: the chain level (character attribute "Flicker") and the Zone
+-- ("Zone") are drawn on every character as a flickering dark/red aura.
+local auras = setmetatable({}, { __mode = "k" })
+RunService.Heartbeat:Connect(function()
+	local myChar = player.Character
+	local myLevel = myChar and myChar:GetAttribute("Flicker") or 0
+	local myZone = myChar and myChar:GetAttribute("Zone")
+	flickerLabel.Text = if myZone then "ZONE" elseif myLevel > 0 then ("FLICKER x%d"):format(myLevel) else ""
+	for _, other in Players:GetPlayers() do
+		local char = other.Character
+		if char then
+			local level, zone = char:GetAttribute("Flicker") or 0, char:GetAttribute("Zone")
+			local aura = auras[char]
+			if level > 0 or zone then
+				if not aura or not aura.Parent then
+					aura = make("Highlight", { FillColor = Color3.new(0, 0, 0), OutlineColor = Color3.fromRGB(255, 30, 30), OutlineTransparency = 0 }, char)
+					auras[char] = aura
+				end
+				local rate = 6 + level * 8
+				local on = zone or math.floor(os.clock() * rate) % 2 == 0
+				aura.FillTransparency = if on then 0.35 else 1
+				aura.OutlineTransparency = if on then 0 else 0.7
+			elseif aura then
+				aura:Destroy()
+				auras[char] = nil
+			end
+		end
+	end
+end)
+
+local function blackFlashFx(attacker, victim)
+	local vroot = typeof(victim) == "Instance" and victim:FindFirstChild("HumanoidRootPart")
+	if vroot then
+		local spark = make("Part", { Shape = Enum.PartType.Ball, Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon,
+			Color = Color3.fromRGB(255, 20, 20), Size = Vector3.new(2, 2, 2), Position = vroot.Position }, workspace)
+		TweenService:Create(spark, TweenInfo.new(0.35), { Size = Vector3.new(12, 12, 12), Transparency = 1 }):Play()
+		Debris:AddItem(spark, 0.4)
+	end
+	if attacker == player.Character or victim == player.Character then
+		local cc = make("ColorCorrectionEffect", { Brightness = -0.35, Contrast = 0.6, Saturation = -1, TintColor = Color3.fromRGB(255, 120, 120) }, Lighting)
+		TweenService:Create(cc, TweenInfo.new(0.4), { Brightness = 0, Contrast = 0, Saturation = 0, TintColor = Color3.new(1, 1, 1) }):Play()
+		Debris:AddItem(cc, 0.5)
+		bannerToken += 1
+		local token = bannerToken
+		banner.Text, banner.TextColor3, banner.TextTransparency = "BLACK FLASH", Color3.fromRGB(255, 40, 40), 0
+		task.delay(1.2, function()
+			if token == bannerToken then
+				banner.TextTransparency = 1
+			end
+		end)
+	end
+end
 
 Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -275,6 +338,8 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 		if root then
 			root.AssemblyLinearVelocity = a -- we own our character's physics
 		end
+	elseif kind == "BlackFlash" then
+		blackFlashFx(a, b)
 	elseif kind == "SkillCD" then
 		cooldowns[a] = os.clock() + b
 	elseif kind == "Bolt" then
@@ -312,8 +377,8 @@ if player.Character then
 	onCharacter(player.Character)
 end
 
-local SKILL_KEYS = { [Enum.KeyCode.One] = 1, [Enum.KeyCode.Two] = 2, [Enum.KeyCode.Three] = 3 }
-local TOGGLES = { [Enum.KeyCode.K] = statsPanel, [Enum.KeyCode.I] = invPanel, [Enum.KeyCode.L] = loadoutPanel }
+local SKILL_KEYS = { [Enum.KeyCode.R] = 1, [Enum.KeyCode.Y] = 2, [Enum.KeyCode.V] = 3 }
+local TOGGLES = { [Enum.KeyCode.J] = statsPanel, [Enum.KeyCode.Tab] = invPanel, [Enum.KeyCode.L] = loadoutPanel }
 
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then
@@ -326,6 +391,10 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		Remotes.Heavy:FireServer()
 	elseif key == Enum.KeyCode.F then
 		Remotes.Block:FireServer(true)
+	elseif key == Enum.KeyCode.E then
+		Remotes.Flicker:FireServer() -- tap just before your swing connects
+	elseif key == Enum.KeyCode.Z then
+		Remotes.Feint:FireServer()
 	elseif key == Enum.KeyCode.Q then
 		local char = player.Character
 		local hum = char and char:FindFirstChildOfClass("Humanoid")

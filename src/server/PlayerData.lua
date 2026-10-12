@@ -20,6 +20,7 @@ local TEMPLATE = {
 	Awakened = false,
 	Equipped = "Fists",
 	Armor = {}, -- [slot] = itemId
+	Cyber = {}, -- [slot] = itemId
 	SkillSlots = {}, -- ["1"] = skillId (string keys so the table stays a dictionary)
 	Inventory = {},
 }

@@ -1,16 +1,30 @@
--- Derives a player's combat numbers from base stats + worn armor + equipped weapon, and owns
--- equipping and skill slots. Everything else (Combat, Stats, SkillRunner) reads Gear.Get().
+-- Derives a player's combat numbers from base stats + armor + cybernetics, and owns equipping
+-- and skill slots. Everything else (Combat, Stats, SkillRunner) reads Gear.Get().
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Armor = require(Shared.Armor)
 local Config = require(Shared.Config)
+local Cybernetics = require(Shared.Cybernetics)
 local Remotes = require(Shared.Remotes)
 local Skills = require(Shared.Skills)
 local Weapons = require(Shared.Weapons)
 local PlayerData = require(script.Parent.PlayerData)
 
-local S, C = Config.Stats, Config.Combat
+local S, C, F = Config.Stats, Config.Combat, Config.Flicker
+
+-- Wearable gear: each lives in its own profile table, keyed by slot.
+local SOURCES = {
+	Armor = { defs = Armor.Pieces, slots = Armor.Slots },
+	Cyber = { defs = Cybernetics.Pieces, slots = Cybernetics.Slots },
+}
+local FIELD_OF_SLOT = {}
+for field, source in SOURCES do
+	for _, slot in source.slots do
+		FIELD_OF_SLOT[slot] = field
+	end
+end
 
 local Gear = {}
 Gear.Changed = Instance.new("BindableEvent") -- (player)
@@ -21,7 +35,7 @@ local derived = {}
 local DEFAULT = {
 	Stats = {}, Tags = {}, Resist = { Physical = 0, Arc = 0 }, MaxPosture = C.BasePosture, PostureRegen = C.PostureRegenPerSecond,
 	StaminaCostMult = 1, BlockReduction = C.BlockReduction, DodgeIFrames = C.DodgeIFrames, DamageMult = 1,
-	PostureDamageMult = 1, ChargeGain = 1, WeightScore = 0,
+	PostureDamageMult = 1, ChargeGain = 1, WeightScore = 0, FlickerRate = 1, FlashBonus = 0, ParryWindow = C.ParryWindow,
 }
 for _, name in S.Names do
 	DEFAULT.Stats[name] = 0
@@ -30,24 +44,29 @@ end
 local function compute(data)
 	local stats = table.clone(data.Stats)
 	local resist = { Physical = 0, Arc = 0 }
-	local tags, posture, weight, speed, chargeGain = {}, 0, 0, 0, 0
+	local tags = {}
+	local sum = { Posture = 0, Speed = 0, ChargeGain = 0, FlickerRate = 0, FlashBonus = 0, ParryBonus = 0, HealthPenalty = 0, Weight = 0 }
 
-	for slot, id in data.Armor do
-		local piece = Armor.Pieces[id]
-		if piece and piece.Slot == slot and (data.Inventory[id] or 0) > 0 then
-			for stat, bonus in piece.Stats or {} do
-				stats[stat] = (stats[stat] or 0) + bonus
+	for field, source in SOURCES do
+		for slot, id in data[field] do
+			local piece = source.defs[id]
+			if piece and piece.Slot == slot and (data.Inventory[id] or 0) > 0 then
+				for stat, bonus in piece.Stats or {} do
+					stats[stat] = (stats[stat] or 0) + bonus
+				end
+				for kind, amount in piece.Resist or {} do
+					resist[kind] += amount
+				end
+				for _, tag in piece.Tags or {} do
+					tags[tag] = (tags[tag] or 0) + 1
+				end
+				for key in sum do
+					if key ~= "Weight" then
+						sum[key] += piece[key] or 0
+					end
+				end
+				sum.Weight += Armor.WeightScore[piece.Weight] or 0
 			end
-			for kind, amount in piece.Resist or {} do
-				resist[kind] += amount
-			end
-			for _, tag in piece.Tags or {} do
-				tags[tag] = (tags[tag] or 0) + 1
-			end
-			posture += piece.Posture or 0
-			speed += piece.Speed or 0
-			chargeGain += piece.ChargeGain or 0
-			weight += Armor.WeightScore[piece.Weight] or 0
 		end
 	end
 
@@ -56,23 +75,27 @@ local function compute(data)
 		resist[kind] = math.min(value, C.MaxResist)
 	end
 
-	local speedMult = 1 + speed - 0.01 * weight
+	local weight = sum.Weight
+	local speedMult = 1 + sum.Speed - 0.01 * weight
 	return {
 		Stats = stats,
 		Tags = tags,
 		Resist = resist,
 		WeightScore = weight,
-		MaxHealth = S.BaseHealth + stats.Fortitude * S.HealthPerFortitude,
+		MaxHealth = math.max(40, S.BaseHealth + stats.Fortitude * S.HealthPerFortitude - sum.HealthPenalty),
 		MaxStamina = S.BaseStamina + stats.Willpower * S.StaminaPerWillpower,
 		WalkSpeed = (S.BaseWalkSpeed + stats.Agility * S.WalkSpeedPerAgility) * speedMult,
-		MaxPosture = C.BasePosture + stats.Willpower * C.PosturePerWillpower + posture,
+		MaxPosture = C.BasePosture + stats.Willpower * C.PosturePerWillpower + sum.Posture,
 		PostureRegen = C.PostureRegenPerSecond * (1 + stats.Willpower * 0.01),
 		StaminaCostMult = 1 + 0.04 * weight,
 		BlockReduction = math.min(0.9, C.BlockReduction + 0.02 * weight),
 		DodgeIFrames = math.max(0.2, C.DodgeIFrames - 0.012 * weight + stats.Agility * 0.002),
 		DamageMult = 1 + stats.Strength * S.DamagePerStrength,
 		PostureDamageMult = 1 + stats.Strength * S.PostureDamagePerStrength,
-		ChargeGain = 1 + chargeGain + stats.Intelligence * S.ChargePerIntelligence,
+		ChargeGain = 1 + sum.ChargeGain + stats.Intelligence * S.ChargePerIntelligence,
+		FlickerRate = 1 + sum.FlickerRate + stats.Intelligence * F.RatePerIntelligence,
+		FlashBonus = sum.FlashBonus,
+		ParryWindow = C.ParryWindow + sum.ParryBonus,
 	}
 end
 
@@ -93,7 +116,7 @@ end
 
 -- Works for any character model: player characters use their profile, everything else the default.
 function Gear.OfChar(char)
-	local player = game:GetService("Players"):GetPlayerFromCharacter(char)
+	local player = Players:GetPlayerFromCharacter(char)
 	return if player then Gear.Get(player) else DEFAULT
 end
 
@@ -101,8 +124,9 @@ function Gear.Push(player)
 	local data, d = PlayerData.Get(player), derived[player]
 	if data and d then
 		Remotes.LoadoutChanged:FireClient(player, {
-			Stats = d.Stats, Tags = d.Tags, Resist = d.Resist, MaxPosture = d.MaxPosture,
-			WeightScore = d.WeightScore, Weapon = data.Equipped, Armor = data.Armor, Slots = data.SkillSlots,
+			Stats = d.Stats, Tags = d.Tags, Resist = d.Resist, MaxPosture = d.MaxPosture, WeightScore = d.WeightScore,
+			FlickerRate = d.FlickerRate, FlashBonus = d.FlashBonus,
+			Weapon = data.Equipped, Armor = data.Armor, Cyber = data.Cyber, Slots = data.SkillSlots,
 		})
 	end
 end
@@ -154,17 +178,24 @@ function Gear.EquipWeapon(player, itemId)
 	return false
 end
 
-function Gear.EquipArmor(player, itemId)
-	local data, piece = PlayerData.Get(player), Armor.Pieces[itemId]
-	if data and piece and (data.Inventory[itemId] or 0) > 0 then
-		data.Armor[piece.Slot] = itemId
-		Gear.Recompute(player)
-		return true
+-- Armor or cybernetic piece (the item's own slot decides where it goes).
+function Gear.EquipGear(player, itemId)
+	local data = PlayerData.Get(player)
+	if not data or type(itemId) ~= "string" or (data.Inventory[itemId] or 0) <= 0 then
+		return false
+	end
+	for field, source in SOURCES do
+		local piece = source.defs[itemId]
+		if piece then
+			data[field][piece.Slot] = itemId
+			Gear.Recompute(player)
+			return true
+		end
 	end
 	return false
 end
 
--- what: "Weapon" or an armor slot name
+-- what: "Weapon" or any armor/cybernetic slot name
 function Gear.Unequip(player, what)
 	local data = PlayerData.Get(player)
 	if not data or type(what) ~= "string" then
@@ -172,8 +203,8 @@ function Gear.Unequip(player, what)
 	end
 	if what == "Weapon" then
 		data.Equipped = "Fists"
-	elseif table.find(Armor.Slots, what) then
-		data.Armor[what] = nil
+	elseif FIELD_OF_SLOT[what] then
+		data[FIELD_OF_SLOT[what]][what] = nil
 	else
 		return
 	end
@@ -189,9 +220,11 @@ function Gear.Validate(player)
 	if data.Equipped ~= "Fists" and (data.Inventory[data.Equipped] or 0) <= 0 then
 		data.Equipped = "Fists"
 	end
-	for slot, id in data.Armor do
-		if (data.Inventory[id] or 0) <= 0 then
-			data.Armor[slot] = nil
+	for field in SOURCES do
+		for slot, id in data[field] do
+			if (data.Inventory[id] or 0) <= 0 then
+				data[field][slot] = nil
+			end
 		end
 	end
 	Gear.Recompute(player)

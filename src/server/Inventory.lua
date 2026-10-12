@@ -13,7 +13,7 @@ Inventory.Crafted = Instance.new("BindableEvent") -- (player, itemId, count)
 function Inventory.Push(player)
 	local profile = PlayerData.Get(player)
 	if profile then
-		Remotes.InventoryChanged:FireClient(player, profile.Inventory, profile.Equipped, profile.Armor)
+		Remotes.InventoryChanged:FireClient(player, profile.Inventory, profile.Equipped, profile.Armor, profile.Cyber)
 	end
 end
 
@@ -73,8 +73,8 @@ function Inventory.Equip(player, itemId)
 	local def = type(itemId) == "string" and Items.Defs[itemId]
 	if def and def.Type == "Weapon" then
 		Gear.EquipWeapon(player, itemId)
-	elseif def and def.Type == "Armor" then
-		Gear.EquipArmor(player, itemId)
+	elseif def and (def.Type == "Armor" or def.Type == "Cybernetic") then
+		Gear.EquipGear(player, itemId)
 	else
 		return
 	end

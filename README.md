@@ -15,10 +15,23 @@ See [docs/DESIGN.md](docs/DESIGN.md) for the design and roadmap.
 
 Enable *Game Settings > Security > Enable Studio Access to API Services* to test DataStores.
 
-## Controls
-`LMB` attack (your weapon's combo chain) · `RMB` heavy attack · `F` hold to block (tap right before a hit to parry) ·
-`Q` dodge · `1`/`2`/`3` skills · `K` attributes · `I` inventory/crafting/equip · `L` loadout (resists, tags, skills) ·
-hold `E` on remains/crates to loot them.
+## Controls (Cursed Gear layout)
+`LMB` attack (your weapon's combo) · `RMB` heavy/critical · `F` block (tap just before a hit to parry) · `Q` dodge ·
+**`E` flicker** · `Z` feint (cancel a swing's windup) · `R` / `Y` / `V` skill slots 1-3 · `X` interact (loot, armory) ·
+`Tab` inventory/crafting/equip · `L` loadout · `J` attributes.
+
+## Flickering cursed energy (Black Flash)
+Tap `E` just *before* your swing connects (within ~0.28s). A well-timed flick boosts that hit (x1.25) and starts a chain;
+the next flicked hit is x1.6; the **third consecutive flicked hit is a Black Flash**: x2.5 damage, guard-breaking, long
+stun, charge refund, and you enter **the Zone** for 8s (wider window, Flash needs one fewer link). Each flick costs
+Charge (built by landing hits). Mis-timed flicks just waste charge; taking a hit, being dodged or parried breaks the chain.
+Blocking is not enough against a Flash - parry or dodge it. Everything is tunable in `Config.Flicker`.
+
+## Test arena
+With `Config.Dev.Enabled = true` (default for now) the prologue is 15s and the world opens into a generated neon arena:
+ring with 4 gates, pillars, cover, a center platform and 8 spawn pads. The **Test Armory** outside the south gate has free
+weapons / armor / cybernetics / materials, an Instructor (+10 attribute points), Respec, Recharge (also on the center
+platform), and three regenerating dummies that show damage numbers. Set `Dev.Enabled = false` for a real release.
 
 ## Build model
 - **Weapon = moveset.** Each weapon defines its own combo chain, heavy attack, timings and reach (`src/shared/Weapons.lua`).

@@ -1,4 +1,5 @@
 local Armor = require(script.Parent.Armor)
+local Cybernetics = require(script.Parent.Cybernetics)
 local Weapons = require(script.Parent.Weapons)
 
 local Items = {}
@@ -17,6 +18,9 @@ for id, weapon in Weapons.Defs do
 end
 for id, piece in Armor.Pieces do
 	Items.Defs[id] = { Name = piece.Name, Type = "Armor", Slot = piece.Slot }
+end
+for id, piece in Cybernetics.Pieces do
+	Items.Defs[id] = { Name = piece.Name, Type = "Cybernetic", Slot = piece.Slot }
 end
 
 Items.Recipes = {
@@ -44,6 +48,7 @@ Items.LootTables = {
 		{ "Medkit", 0.5, 1, 2 }, { "Ration", 0.6, 1, 2 },
 		{ "RebarBlade", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 }, { "ScrapSpear", 0.12, 1, 1 }, { "Sledge", 0.06, 1, 1 }, { "ArcPistol", 0.05, 1, 1 },
 		{ "PlatedHelm", 0.1, 1, 1 }, { "RiotPlate", 0.06, 1, 1 }, { "ArcHood", 0.08, 1, 1 }, { "ConduitHarness", 0.04, 1, 1 }, { "ServoGreaves", 0.07, 1, 1 },
+		{ "ReflexOptic", 0.06, 1, 1 }, { "TargetingLens", 0.05, 1, 1 }, { "ServoArm", 0.05, 1, 1 }, { "ArcGauntlet", 0.04, 1, 1 }, { "NeuralCore", 0.04, 1, 1 }, { "OverclockCore", 0.02, 1, 1 },
 	},
 	Raider = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 },

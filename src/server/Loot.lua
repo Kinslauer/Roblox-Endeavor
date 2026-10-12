@@ -29,6 +29,7 @@ function Loot.Spawn(cframe, bundle, opts)
 	prompt.HoldDuration = opts.Hold or Config.LootHold
 	prompt.MaxActivationDistance = 8
 	prompt.RequiresLineOfSight = false
+	prompt.KeyboardKeyCode = Enum.KeyCode.X -- E is flicker
 	prompt.Parent = part
 
 	prompt.Triggered:Connect(function(looter)

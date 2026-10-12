@@ -3,6 +3,14 @@ local Config = {}
 
 Config.Phases = { Prologue = "Prologue", Open = "Open" }
 
+-- Friend-testing mode: short prologue, the test arena is built (with armory, trainer and
+-- dummies). Set Enabled = false for a real release.
+Config.Dev = {
+	Enabled = true,
+	PrologueSeconds = 15,
+	ArmoryPoints = 10, -- attribute points the arena instructor hands out per use
+}
+
 -- Prologue: every player is alone in a private plot far from everyone else.
 Config.PrologueSeconds = 420 -- how long the "singleplayer" illusion lasts per server
 Config.EmergenceCinematic = 6 -- seconds between the announcement and the teleport
@@ -37,7 +45,32 @@ Config.Stats = {
 	MaxCharge = 100,
 }
 
+-- Flickering cursed energy (Black Flash). Tap the flicker key (E) just BEFORE your swing connects.
+-- A well-timed flick boosts that hit and starts a chain; chain hits escalate until the third
+-- consecutive flick lands a Black Flash: x2.5 damage, guard-breaking, big stun, and you enter
+-- the Zone (wider flick window, Black Flash needs one fewer link, charge refund).
+-- Mis-timed flicks just waste charge. Getting hit, dodged or parried breaks the chain.
+Config.Flicker = {
+	MaxLevel = 3, -- consecutive flick hits needed for a Black Flash
+	Window = 0.28, -- press at most this long before impact (x FlickerRate)
+	Cooldown = 0.3, -- minimum time between presses
+	Cost = 6, -- charge per press (divided by FlickerRate)
+	ChainTime = 3.5, -- seconds a chain survives between hits
+	DamageMult = { 1.25, 1.6 }, -- chain links 1 and 2 (the 3rd is the Black Flash)
+	BlackFlashMult = 2.5,
+	BlackFlashPosture = 2,
+	BlackFlashStun = 1.0,
+	BlackFlashKnockback = 55,
+	ZoneTime = 8,
+	ZoneWindowMult = 1.5,
+	FlashRefund = 25, -- charge returned by a Black Flash
+	RatePerIntelligence = 0.01,
+}
+
 Config.Combat = {
+	FeintRecovery = 0.18, -- feint = cancel a swing during its windup
+	FeintRefund = 0.6, -- fraction of the swing's stamina you get back
+	CriticalPostureMult = 1.75, -- heavy attacks crush blocks
 	ParryWindow = 0.22, -- block pressed this recently before impact = parry
 	ParryStun = 1.1,
 	ParryPostureRelief = 25,

@@ -1,5 +1,6 @@
 local Server = script.Parent
 
+local Arena = require(Server.Arena)
 local Gear = require(Server.Gear)
 local WorldPhase = require(Server.WorldPhase)
 local Stats = require(Server.Stats)
@@ -10,6 +11,7 @@ local SkillRunner = require(Server.SkillRunner)
 local Events = require(Server.Events)
 local Lifecycle = require(Server.Lifecycle)
 
+Arena.Init() -- must run before WorldPhase.Init so its CitySpawn pads are found
 WorldPhase.Init()
 Gear.Init()
 Stats.Init()
