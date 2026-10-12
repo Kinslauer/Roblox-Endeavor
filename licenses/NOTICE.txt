@@ -1,0 +1,1 @@
+ProfileService by MadStudioRoblox (https://github.com/MadStudioRoblox/ProfileService @ d736800), Apache-2.0, vendored unmodified at src/server/ProfileService.lua.

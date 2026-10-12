@@ -16,13 +16,22 @@ See [docs/DESIGN.md](docs/DESIGN.md) for the design and roadmap.
 Enable *Game Settings > Security > Enable Studio Access to API Services* to test DataStores.
 
 ## Controls
-`LMB` attack (4-hit combo) · `F` hold to block (tap right before a hit to parry) · `Q` dodge ·
-`R` Surge (needs Charge, built by landing hits) · `K` attributes · `I` inventory/crafting ·
+`LMB` attack (your weapon's combo chain) · `RMB` heavy attack · `F` hold to block (tap right before a hit to parry) ·
+`Q` dodge · `1`/`2`/`3` skills · `K` attributes · `I` inventory/crafting/equip · `L` loadout (resists, tags, skills) ·
 hold `E` on remains/crates to loot them.
+
+## Build model
+- **Weapon = moveset.** Each weapon defines its own combo chain, heavy attack, timings and reach (`src/shared/Weapons.lua`).
+- **Stats + armor = everything else.** Skills (`src/shared/Skills.lua`) have no class or weapon lock. They unlock from
+  *effective* stats (base + armor bonuses) and armor *tags* (Scav / Plated / Conduit), and their power scales with the same
+  stats and tags, so swapping a chest piece can unlock or lock an ability. Armor (`src/shared/Armor.lua`) also sets
+  resistances, posture, weight (stamina cost / speed) and block strength.
+- Saving uses [ProfileService](https://github.com/MadStudioRoblox/ProfileService) (vendored, Apache-2.0; see `licenses/`).
 
 ## Layout
 | Path | Purpose |
 |---|---|
-| `src/shared` | Config (all tuning), Items/recipes/loot tables, Remotes |
-| `src/server` | Authoritative systems: PlayerData, Stats, Combat, WorldPhase, Inventory, Loot, Quests, NPCs, Events, Permadeath, Lifecycle |
+| `src/shared` | Config (all tuning), Weapons, Armor, Skills, Items/recipes/loot tables, Remotes |
+| `src/server` | Authoritative systems: PlayerData (ProfileService), Gear, Stats, Combat, SkillRunner, WorldPhase, Inventory, Loot, Quests, NPCs, Events, Permadeath, Lifecycle |
 | `src/client` | Input and HUD |
+| `vendor/combat-system` | Reference combat implementation this was ported from (not loaded by Rojo) |

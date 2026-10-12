@@ -31,18 +31,24 @@ Config.Stats = {
 	BaseWalkSpeed = 15,
 	WalkSpeedPerAgility = 0.1,
 	DamagePerStrength = 0.03,
-	SurgePerIntelligence = 0.04,
+	PostureDamagePerStrength = 0.02,
+	PhysicalResistPerFortitude = 0.004,
+	ChargePerIntelligence = 0.01,
 	MaxCharge = 100,
 }
 
 Config.Combat = {
-	ComboResetTime = 0.6,
-	ComboFinisherMultiplier = 1.4,
-	ParryWindow = 0.22,
+	ParryWindow = 0.22, -- block pressed this recently before impact = parry
 	ParryStun = 1.1,
-	GuardBreakStun = 1.3,
-	BlockReduction = 0.75,
-	BlockStaminaPerDamage = 1.2,
+	ParryPostureRelief = 25,
+	GuardBreakStun = 1.4,
+	BlockReduction = 0.7,
+	BlockMinFacing = 0.1, -- hits from behind (dot < this) bypass block
+	BasePosture = 80,
+	PosturePerWillpower = 2,
+	PostureRegenPerSecond = 10,
+	PostureRegenDelay = 1.5,
+	HitStunDefault = 0.35,
 	DodgeCost = 18,
 	DodgeCooldown = 0.9,
 	DodgeIFrames = 0.35,
@@ -50,10 +56,8 @@ Config.Combat = {
 	StaminaRegenPerSecond = 22,
 	StaminaRegenDelay = 0.9,
 	ChargePerHit = 8,
-	SurgeCost = 50,
-	SurgeRadius = 14,
-	SurgeDamage = 28,
-	SurgeKnockback = 70,
+	MaxResist = 0.75,
+	HeavyCooldown = 1.2,
 	KillCreditSeconds = 15,
 }
 

@@ -69,7 +69,7 @@ function Permadeath.CombatLog(player)
 		Remotes.Announce:FireAllClients(player.DisplayName .. " fled the fight and was lost.", "Kill")
 		recordLegacy(player.UserId, profile)
 	end
-	PlayerData.Delete(player)
+	PlayerData.Reset(player)
 end
 
 return Permadeath

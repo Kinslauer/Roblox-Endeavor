@@ -1,19 +1,21 @@
 local Server = script.Parent
 
-local PlayerData = require(Server.PlayerData)
+local Gear = require(Server.Gear)
 local WorldPhase = require(Server.WorldPhase)
 local Stats = require(Server.Stats)
 local Inventory = require(Server.Inventory)
 local Quests = require(Server.Quests)
 local Combat = require(Server.Combat)
+local SkillRunner = require(Server.SkillRunner)
 local Events = require(Server.Events)
 local Lifecycle = require(Server.Lifecycle)
 
 WorldPhase.Init()
-PlayerData.Init()
+Gear.Init()
 Stats.Init()
 Inventory.Init()
 Quests.Init()
 Combat.Init()
+SkillRunner.Init()
 Events.Init()
 Lifecycle.Init()

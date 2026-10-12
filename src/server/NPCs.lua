@@ -74,7 +74,7 @@ function NPCs.Spawn(typeName, position)
 				elseif os.clock() - lastAttack > def.Cooldown then
 					lastAttack = os.clock()
 					model:PivotTo(CFrame.lookAt(root.Position, Vector3.new(troot.Position.X, root.Position.Y, troot.Position.Z)))
-					Combat.Damage(model, target, def.Damage, { knockback = root.CFrame.LookVector * 15 })
+					Combat.Damage(model, target, def.Damage, { Posture = def.Damage, Knockback = 15 })
 				end
 			end
 			task.wait(0.2)

@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Combat = require(script.Parent.Combat)
+local Gear = require(script.Parent.Gear)
 local Inventory = require(script.Parent.Inventory)
 local Permadeath = require(script.Parent.Permadeath)
 local PlayerData = require(script.Parent.PlayerData)
@@ -35,6 +36,7 @@ function Lifecycle.Spawn(player)
 		return
 	end
 	char:PivotTo(WorldPhase.GetSpawnCFrame(player))
+	Gear.Recompute(player) -- fresh derived stats (important after a permadeath wipe)
 	Stats.Apply(player, true)
 	Stats.Push(player)
 	Inventory.Push(player)
@@ -52,18 +54,19 @@ function Lifecycle.Spawn(player)
 end
 
 local function onPlayerAdded(player)
-	PlayerData.Load(player)
+	if not PlayerData.Load(player) then
+		return
+	end
 	WorldPhase.StartTimer()
 	Lifecycle.Spawn(player)
 end
 
 local function onPlayerRemoving(player)
 	if WorldPhase.IsOpen() and Config.CombatLogPunish and Combat.InCombat(player) then
-		Permadeath.CombatLog(player)
-	else
-		PlayerData.Save(player)
+		Permadeath.CombatLog(player) -- wipes the data before ProfileService saves it on release
 	end
 	PlayerData.Release(player)
+	Gear.Release(player)
 	WorldPhase.ReleasePlot(player)
 end
 
@@ -74,11 +77,6 @@ function Lifecycle.Init()
 	for _, player in Players:GetPlayers() do
 		task.spawn(onPlayerAdded, player)
 	end
-	game:BindToClose(function()
-		for _, player in Players:GetPlayers() do
-			PlayerData.Save(player)
-		end
-	end)
 end
 
 return Lifecycle

@@ -2,39 +2,29 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Gear = require(script.Parent.Gear)
 local PlayerData = require(script.Parent.PlayerData)
 
 local S = Config.Stats
 local Stats = {}
 
-function Stats.MaxStamina(profile)
-	return S.BaseStamina + profile.Stats.Willpower * S.StaminaPerWillpower
-end
-
-function Stats.DamageMultiplier(profile)
-	return 1 + profile.Stats.Strength * S.DamagePerStrength
-end
-
-function Stats.SurgeMultiplier(profile)
-	return 1 + profile.Stats.Intelligence * S.SurgePerIntelligence
-end
-
+-- Applies derived numbers (health, speed, stamina, posture caps) to the live character.
 function Stats.Apply(player, fill)
-	local profile, char = PlayerData.Get(player), player.Character
+	local d, char = Gear.Get(player), player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if not (profile and hum) then
+	if not hum or not PlayerData.Get(player) then
 		return
 	end
-	local maxHealth = S.BaseHealth + profile.Stats.Fortitude * S.HealthPerFortitude
-	hum.MaxHealth = maxHealth
-	hum.Health = if fill then maxHealth else math.min(hum.Health, maxHealth)
-	hum.WalkSpeed = S.BaseWalkSpeed + profile.Stats.Agility * S.WalkSpeedPerAgility
+	hum.MaxHealth = d.MaxHealth
+	hum.Health = if fill then d.MaxHealth else math.min(hum.Health, d.MaxHealth)
+	hum.WalkSpeed = d.WalkSpeed
 
-	local maxStamina = Stats.MaxStamina(profile)
-	char:SetAttribute("MaxStamina", maxStamina)
+	char:SetAttribute("MaxStamina", d.MaxStamina)
+	char:SetAttribute("MaxPosture", d.MaxPosture)
 	char:SetAttribute("MaxCharge", S.MaxCharge)
 	if fill then
-		char:SetAttribute("Stamina", maxStamina)
+		char:SetAttribute("Stamina", d.MaxStamina)
+		char:SetAttribute("Posture", 0)
 		char:SetAttribute("Charge", 0)
 	end
 end
@@ -44,50 +34,53 @@ function Stats.XpNeeded(level)
 end
 
 function Stats.Push(player)
-	local profile = PlayerData.Get(player)
-	if profile then
+	local data = PlayerData.Get(player)
+	if data then
 		Remotes.StatsChanged:FireClient(player, {
-			Stats = profile.Stats,
-			FreePoints = profile.FreePoints,
-			Level = profile.Level,
-			Xp = profile.Xp,
-			XpNeeded = Stats.XpNeeded(profile.Level),
+			Stats = data.Stats,
+			FreePoints = data.FreePoints,
+			Level = data.Level,
+			Xp = data.Xp,
+			XpNeeded = Stats.XpNeeded(data.Level),
 			Max = S.MaxPerStat,
 		})
 	end
 end
 
 function Stats.AddXp(player, amount)
-	local profile = PlayerData.Get(player)
-	if not profile then
+	local data = PlayerData.Get(player)
+	if not data then
 		return
 	end
-	profile.Xp += amount
-	while profile.Xp >= Stats.XpNeeded(profile.Level) do
-		profile.Xp -= Stats.XpNeeded(profile.Level)
-		profile.Level += 1
-		profile.FreePoints += S.PointsPerLevel
-		Remotes.Announce:FireClient(player, "Level " .. profile.Level .. " - allocate your points (K)", "Info")
+	data.Xp += amount
+	while data.Xp >= Stats.XpNeeded(data.Level) do
+		data.Xp -= Stats.XpNeeded(data.Level)
+		data.Level += 1
+		data.FreePoints += S.PointsPerLevel
+		Remotes.Announce:FireClient(player, "Level " .. data.Level .. " - allocate your points (K)", "Info")
 	end
 	Stats.Push(player)
 end
 
 function Stats.Allocate(player, statName)
-	local profile = PlayerData.Get(player)
-	if not profile or type(statName) ~= "string" or profile.Stats[statName] == nil then
+	local data = PlayerData.Get(player)
+	if not data or type(statName) ~= "string" or data.Stats[statName] == nil then
 		return
 	end
-	if profile.FreePoints <= 0 or profile.Stats[statName] >= S.MaxPerStat then
+	if data.FreePoints <= 0 or data.Stats[statName] >= S.MaxPerStat then
 		return
 	end
-	profile.FreePoints -= 1
-	profile.Stats[statName] += 1
-	Stats.Apply(player, false)
-	Stats.Push(player)
+	data.FreePoints -= 1
+	data.Stats[statName] += 1
+	Gear.Recompute(player) -- fires Gear.Changed -> Apply + Push below
 end
 
 function Stats.Init()
 	Remotes.Allocate.OnServerEvent:Connect(Stats.Allocate)
+	Gear.Changed.Event:Connect(function(player)
+		Stats.Apply(player, false)
+		Stats.Push(player)
+	end)
 end
 
 return Stats

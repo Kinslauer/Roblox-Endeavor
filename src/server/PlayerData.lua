@@ -1,119 +1,109 @@
--- One character per player. Permadeath = this profile is deleted.
-local DataStoreService = game:GetService("DataStoreService")
+-- One character per player, persisted with ProfileService (session-locked, auto-saved).
+-- Permadeath = the profile's data is reset in place; the account keeps nothing but a new character.
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local ProfileService = require(script.Parent.ProfileService)
 
-local store = DataStoreService:GetDataStore("ConduitCharacter_v1")
+-- NOTE: ProfileService:Reconcile() re-adds any missing key from this template, so anything a
+-- player can legitimately remove (inventory items, armor slots, skill slots) must NOT have
+-- defaults here. Starting gear is granted once by newCharacter() instead.
+local TEMPLATE = {
+	Created = false,
+	Stats = {},
+	FreePoints = Config.Stats.StartingPoints,
+	Level = 1,
+	Xp = 0,
+	Kills = 0,
+	BornAt = 0,
+	Awakened = false,
+	Equipped = "Fists",
+	Armor = {}, -- [slot] = itemId
+	SkillSlots = {}, -- ["1"] = skillId (string keys so the table stays a dictionary)
+	Inventory = {},
+}
+for _, name in Config.Stats.Names do
+	TEMPLATE.Stats[name] = 0
+end
+
+local store = ProfileService.GetProfileStore("ConduitCharacter_v2", TEMPLATE)
 local profiles = {}
-local loadFailed = {} -- never overwrite a save we failed to read
 
 local PlayerData = {}
 
-local function newProfile()
-	local stats = {}
-	for _, name in Config.Stats.Names do
-		stats[name] = 0
+local function deepCopy(value)
+	if type(value) ~= "table" then
+		return value
 	end
-	return {
-		Stats = stats,
-		FreePoints = Config.Stats.StartingPoints,
-		Level = 1,
-		Xp = 0,
-		Kills = 0,
-		BornAt = os.time(),
-		Awakened = false,
-		Equipped = "Fists",
-		Inventory = { PipeClub = 1, Scrap = 3, Ration = 1 },
-		Quest = nil, -- { Id, Progress }
-	}
+	local copy = {}
+	for k, v in value do
+		copy[k] = deepCopy(v)
+	end
+	return copy
 end
 
-local function reconcile(data)
-	local template = newProfile()
-	for k, v in template do
-		if data[k] == nil then
-			data[k] = v
-		end
-	end
-	for _, name in Config.Stats.Names do
-		data.Stats[name] = data.Stats[name] or 0
-	end
-	return data
+local function newCharacter(data)
+	data.Created = true
+	data.BornAt = os.time()
+	data.Inventory = { PipeClub = 1, Scrap = 3, Ration = 1 }
+	data.Equipped = "PipeClub"
 end
 
-local function key(player)
-	return "Char_" .. player.UserId
+local function wipe(data)
+	for key in data do
+		data[key] = nil
+	end
+	for key, value in TEMPLATE do
+		data[key] = deepCopy(value)
+	end
+	newCharacter(data)
 end
 
+-- Yields. Returns the profile data table, or nil if the player was kicked / left.
 function PlayerData.Load(player)
-	local ok, data = pcall(function()
-		return store:GetAsync(key(player))
-	end)
-	if not ok then
-		warn("[PlayerData] load failed for", player.Name, data)
-		loadFailed[player] = true
-		data = nil
+	local profile = store:LoadProfileAsync("Char_" .. player.UserId, "ForceLoad")
+	if not profile then
+		player:Kick("Could not load your character. Please rejoin.")
+		return nil
 	end
-	profiles[player] = if data then reconcile(data) else newProfile()
-	return profiles[player]
+	profile:Reconcile()
+	profile:ListenToRelease(function()
+		profiles[player] = nil
+		player:Kick("Your character was loaded in another session.")
+	end)
+	if not player:IsDescendantOf(Players) then
+		profile:Release()
+		return nil
+	end
+	profiles[player] = profile
+	if not profile.Data.Created then
+		newCharacter(profile.Data)
+	end
+	return profile.Data
 end
 
 function PlayerData.Get(player)
-	return profiles[player]
-end
-
-function PlayerData.Save(player)
 	local profile = profiles[player]
-	if not profile or loadFailed[player] then
-		return
-	end
-	local ok, err = pcall(function()
-		store:SetAsync(key(player), profile)
-	end)
-	if not ok then
-		warn("[PlayerData] save failed for", player.Name, err)
-	end
+	return profile and profile.Data
 end
 
--- Permadeath: delete the saved character and hand back a fresh one.
+-- Permadeath: same table, fresh character.
 function PlayerData.Reset(player)
-	profiles[player] = newProfile()
-	if not loadFailed[player] then
-		task.spawn(function()
-			local ok, err = pcall(function()
-				store:RemoveAsync(key(player))
-			end)
-			if not ok then
-				warn("[PlayerData] wipe failed for", player.Name, err)
-			end
-		end)
+	local profile = profiles[player]
+	if profile then
+		wipe(profile.Data)
+		return profile.Data
 	end
-	return profiles[player]
-end
-
--- Wipe without re-creating (used when the player already left).
-function PlayerData.Delete(player)
-	profiles[player] = nil
-	pcall(function()
-		store:RemoveAsync(key(player))
-	end)
+	return nil
 end
 
 function PlayerData.Release(player)
+	local profile = profiles[player]
 	profiles[player] = nil
-	loadFailed[player] = nil
-end
-
-function PlayerData.Init()
-	task.spawn(function()
-		while true do
-			task.wait(60)
-			for player in profiles do
-				task.spawn(PlayerData.Save, player)
-			end
-		end
-	end)
+	if profile then
+		profile:Release()
+	end
 end
 
 return PlayerData

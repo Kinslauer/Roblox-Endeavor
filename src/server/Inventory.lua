@@ -4,7 +4,7 @@ local Shared = ReplicatedStorage.Shared
 local Items = require(Shared.Items)
 local Remotes = require(Shared.Remotes)
 local PlayerData = require(script.Parent.PlayerData)
-local Stats = require(script.Parent.Stats)
+local Gear = require(script.Parent.Gear)
 
 local Inventory = {}
 Inventory.Added = Instance.new("BindableEvent") -- (player, itemId, count)
@@ -13,7 +13,7 @@ Inventory.Crafted = Instance.new("BindableEvent") -- (player, itemId, count)
 function Inventory.Push(player)
 	local profile = PlayerData.Get(player)
 	if profile then
-		Remotes.InventoryChanged:FireClient(player, profile.Inventory, profile.Equipped)
+		Remotes.InventoryChanged:FireClient(player, profile.Inventory, profile.Equipped, profile.Armor)
 	end
 end
 
@@ -40,9 +40,7 @@ function Inventory.Remove(player, itemId, count)
 	end
 	local left = profile.Inventory[itemId] - count
 	profile.Inventory[itemId] = if left > 0 then left else nil
-	if left <= 0 and profile.Equipped == itemId then
-		profile.Equipped = "Fists"
-	end
+	Gear.Validate(player) -- unequips anything no longer owned
 	Inventory.Push(player)
 	return true
 end
@@ -72,12 +70,15 @@ function Inventory.Use(player, itemId)
 end
 
 function Inventory.Equip(player, itemId)
-	local profile = PlayerData.Get(player)
 	local def = type(itemId) == "string" and Items.Defs[itemId]
-	if profile and def and def.Type == "Weapon" and (itemId == "Fists" or Inventory.Count(player, itemId) > 0) then
-		profile.Equipped = itemId
-		Inventory.Push(player)
+	if def and def.Type == "Weapon" then
+		Gear.EquipWeapon(player, itemId)
+	elseif def and def.Type == "Armor" then
+		Gear.EquipArmor(player, itemId)
+	else
+		return
 	end
+	Inventory.Push(player)
 end
 
 function Inventory.Craft(player, recipeId)
