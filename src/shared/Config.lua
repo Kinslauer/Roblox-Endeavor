@@ -7,12 +7,23 @@ Config.Phases = { Prologue = "Prologue", Open = "Open" }
 -- dummies). Set Enabled = false for a real release.
 Config.Dev = {
 	Enabled = true,
-	PrologueSeconds = 15,
+	PrologueSeconds = 15, -- only used when Config.Tutorial.Enabled = false
 	ArmoryPoints = 10, -- attribute points the arena instructor hands out per use
 }
 
 -- Prologue: every player is alone in a private plot far from everyone else.
-Config.PrologueSeconds = 420 -- how long the "singleplayer" illusion lasts per server
+Config.PrologueSeconds = 600 -- hard cap on the prologue (tutorial) per server
+Config.PrologueMinSeconds = 30 -- earliest the world opens once every player finished the tutorial
+
+-- The tutorial runs in each player's private room. When Enabled, the world opens as soon as
+-- everyone has finished (or skipped) it, instead of on Dev.PrologueSeconds.
+Config.Tutorial = {
+	Enabled = true,
+	DummyInterval = 2.8, -- seconds between training-dummy strikes
+	DummyTelegraph = 0.8, -- red flash before a strike lands (the dodge/parry cue)
+	DummyDamage = 6,
+	DummyPosture = 12,
+}
 Config.EmergenceCinematic = 6 -- seconds between the announcement and the teleport
 Config.PlotOrigin = Vector3.new(0, 2000, 0)
 Config.PlotSpacing = 1500

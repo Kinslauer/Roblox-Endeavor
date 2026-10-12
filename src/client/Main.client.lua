@@ -251,8 +251,30 @@ Remotes.Died.OnClientEvent:Connect(function(summary)
 	end)
 end)
 
+-- ===== Tutorial panel =====
+local tutorialPanel = make("Frame", { Size = UDim2.fromOffset(560, 112), Position = UDim2.new(0.5, -280, 0, 110), BackgroundColor3 = Color3.fromRGB(10, 14, 20), BackgroundTransparency = 0.15, Visible = false })
+make("UIStroke", { Color = Color3.fromRGB(0, 220, 255), Thickness = 1.5 }, tutorialPanel)
+local tutorialTitle = label({ Size = UDim2.new(1, -110, 0, 26), Position = UDim2.fromOffset(12, 6), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(0, 220, 255), Font = Enum.Font.GothamBold, TextSize = 18, Text = "", Parent = tutorialPanel })
+local tutorialText = label({ Size = UDim2.new(1, -24, 1, -40), Position = UDim2.fromOffset(12, 32), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextSize = 16, Text = "", Parent = tutorialPanel })
+local tutorialStep = label({ Size = UDim2.fromOffset(60, 26), Position = UDim2.new(1, -140, 0, 6), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(150, 150, 160), TextSize = 14, Text = "", Parent = tutorialPanel })
+make("TextButton", { Size = UDim2.fromOffset(60, 22), Position = UDim2.new(1, -72, 0, 8), Text = "Skip", BackgroundColor3 = Color3.fromRGB(70, 70, 85), TextColor3 = Color3.new(1, 1, 1), TextSize = 13 }, tutorialPanel).Activated:Connect(function()
+	Remotes.TutorialSkip:FireServer()
+end)
+Remotes.Tutorial.OnClientEvent:Connect(function(index, total, title, text)
+	if not index then
+		tutorialPanel.Visible = false
+		return
+	end
+	tutorialPanel.Visible = true
+	tutorialStep.Text = ("%d/%d"):format(index, total)
+	tutorialTitle.Text, tutorialText.Text = title, text
+end)
+
 -- ===== Phase =====
 Remotes.PhaseChanged.OnClientEvent:Connect(function(phase)
+	if phase == "Open" then
+		tutorialPanel.Visible = false
+	end
 	if phase == "Emerging" then
 		local cc = make("ColorCorrectionEffect", {}, game:GetService("Lighting"))
 		game:GetService("TweenService"):Create(cc, TweenInfo.new(Config.EmergenceCinematic), { Brightness = -0.4, Saturation = -1 }):Play()

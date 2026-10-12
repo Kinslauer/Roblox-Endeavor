@@ -18,6 +18,7 @@ local TEMPLATE = {
 	Kills = 0,
 	BornAt = 0,
 	Awakened = false,
+	TutorialDone = false,
 	Equipped = "Fists",
 	Armor = {}, -- [slot] = itemId
 	Cyber = {}, -- [slot] = itemId

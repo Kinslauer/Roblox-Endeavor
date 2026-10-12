@@ -181,6 +181,10 @@ local function blackFlash(char, s, victim)
 	char:SetAttribute("Zone", true)
 	Combat.AddCharge(char, F.FlashRefund)
 	fx("BlackFlash", char, victim)
+	local player = Players:GetPlayerFromCharacter(char)
+	if player then
+		Combat.Used:Fire("BlackFlash", player)
+	end
 end
 
 -- Deepwoken-style feint: cancel a swing during its windup and get most of the stamina back.
@@ -200,6 +204,7 @@ function Combat.Feint(player)
 	Combat.AddStamina(char, s.lastCost * C.FeintRefund)
 	s.combo = math.max(0, s.combo - 1)
 	fx("Feint", char)
+	Combat.Used:Fire("Feint", player)
 end
 
 function Combat.InCombat(player)
@@ -516,6 +521,7 @@ function Combat.Heavy(player)
 		return
 	end
 	s.lastHeavy, s.block, s.combo = t, false, 0
+	Combat.Used:Fire("Heavy", player)
 	char:SetAttribute("Blocking", false)
 	-- Heavies are criticals: they crush blocks (extra posture damage).
 	local mods = { chargeBonus = weapon.ChargeBonus, label = "Heavy", postureMult = C.CriticalPostureMult }

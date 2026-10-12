@@ -18,6 +18,7 @@ Scavenge -> craft/upgrade -> take quests -> fight (NPCs, players, events) -> get
 | Combat | Server-authoritative. Hit stun cancels swings, posture meter + guard break, parry, i-frame dodge (shortened by heavy armor), wall-aware knockback, hyperarmor. |
 | Flickering cursed energy | Timing-based Black Flash: tap flick just before impact, chain 3 flicked hits -> x2.5 guard-breaking Black Flash + the Zone. Counters: parry, dodge, or stun them out of it. |
 | Feint | Cancel a swing during its windup for most of the stamina back (Deepwoken). Heavies are criticals that crush blocks. |
+| Tutorial | 15 data-driven steps in the private prologue room teach the real systems against a dummy that strikes with a telegraph; completion (or skip) marks the player ready and can open the world early. |
 | Armor | Head/Chest/Legs. Resistances (Physical/Arc), posture, stat bonuses, weight, and tags (Scav/Plated/Conduit). |
 | Cybernetics | Optic/Arm/Core implants: stats + tags (Cyber/Conduit) plus flick window and Black Flash bonuses; strong ones cost max health. |
 | Skills | No class lock. Unlock from effective stats + worn armor tags; power scales with both. 3 slots; Surge, Shatter Strike, Phase Step, Second Wind, Iron Bastion (needs Plated), Overload (needs 2 Conduit pieces), Overclock (needs 2 implants; primes the flick chain). |
@@ -30,12 +31,11 @@ Scavenge -> craft/upgrade -> take quests -> fight (NPCs, players, events) -> get
 ## Roadmap
 **Immediately after friend testing**
 - Tune Flicker/Black Flash timing (`Config.Flicker`), plus weapon numbers; add a flick-timing cue (windup glow).
-- Build the tutorial (flick timing, parry, feint) with the training dummies.
+- Tutorial v2: scripted animations/voiceover, a lore beat before Emergence, and a flick-timing cue (windup glow).
 
 **Next (vertical slice)**
 - Build the city: districts (slums, corp plaza, transit hub, blackout zone), tag `CitySpawn`s, lighting/atmosphere.
 - Animations + hit effects + sounds (hook `CombatEvent` "Swing"/"Hit").
-- Character creation + tutorial inside the prologue plot (re-use the reference repo's training NPCs: attack/block/parry/heavy dummies).
 - Safe-ish zones / spawn protection so new characters are not spawn-killed.
 
 **Then**

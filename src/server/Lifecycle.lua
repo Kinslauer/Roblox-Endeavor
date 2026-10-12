@@ -10,6 +10,7 @@ local Permadeath = require(script.Parent.Permadeath)
 local PlayerData = require(script.Parent.PlayerData)
 local Quests = require(script.Parent.Quests)
 local Stats = require(script.Parent.Stats)
+local Tutorial = require(script.Parent.Tutorial)
 local WorldPhase = require(script.Parent.WorldPhase)
 
 local Lifecycle = {}
@@ -46,6 +47,8 @@ function Lifecycle.Spawn(player)
 			profile.Awakened = true
 		end
 		Quests.Assign(player)
+	elseif Config.Tutorial.Enabled then
+		Tutorial.Start(player)
 	end
 	Quests.Push(player)
 	hum.Died:Once(function()
@@ -65,9 +68,11 @@ local function onPlayerRemoving(player)
 	if WorldPhase.IsOpen() and Config.CombatLogPunish and Combat.InCombat(player) then
 		Permadeath.CombatLog(player) -- wipes the data before ProfileService saves it on release
 	end
+	Tutorial.Release(player)
 	PlayerData.Release(player)
 	Gear.Release(player)
 	WorldPhase.ReleasePlot(player)
+	WorldPhase.CheckReady() -- the leaver may have been the last one holding the world closed
 end
 
 function Lifecycle.Init()

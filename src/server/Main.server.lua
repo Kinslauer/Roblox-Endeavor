@@ -9,6 +9,7 @@ local Quests = require(Server.Quests)
 local Combat = require(Server.Combat)
 local SkillRunner = require(Server.SkillRunner)
 local Events = require(Server.Events)
+local Tutorial = require(Server.Tutorial)
 local Lifecycle = require(Server.Lifecycle)
 
 Arena.Init() -- must run before WorldPhase.Init so its CitySpawn pads are found
@@ -20,4 +21,5 @@ Quests.Init()
 Combat.Init()
 SkillRunner.Init()
 Events.Init()
+Tutorial.Init()
 Lifecycle.Init()

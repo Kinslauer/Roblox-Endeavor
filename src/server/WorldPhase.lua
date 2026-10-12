@@ -15,6 +15,8 @@ WorldPhase.Changed = Instance.new("BindableEvent")
 local phase = Config.Phases.Prologue
 local slots, plots = {}, {}
 local timerStarted = false
+local startedAt, emerging = nil, false
+local ready = {}
 local rng = Random.new()
 
 local function plotCFrame(slot)
@@ -67,6 +69,39 @@ function WorldPhase.ReleasePlot(player)
 		plots[player]:Destroy()
 	end
 	plots[player], slots[player] = nil, nil
+	ready[player] = nil
+end
+
+function WorldPhase.GetPlot(player)
+	return plots[player]
+end
+
+function WorldPhase.GetOrigin(player)
+	return slots[player] and plotCFrame(slots[player]).Position
+end
+
+-- Once every player is ready (tutorial done/skipped) and the minimum prologue time has
+-- passed, the world opens early instead of waiting for the cap.
+function WorldPhase.CheckReady()
+	if phase == Config.Phases.Open or emerging or not startedAt then
+		return
+	end
+	for _, player in Players:GetPlayers() do
+		if not ready[player] then
+			return
+		end
+	end
+	local remaining = startedAt + Config.PrologueMinSeconds - os.clock()
+	if remaining > 0 then
+		task.delay(remaining, WorldPhase.CheckReady)
+		return
+	end
+	task.spawn(WorldPhase.Emerge)
+end
+
+function WorldPhase.MarkReady(player)
+	ready[player] = true
+	WorldPhase.CheckReady()
 end
 
 function WorldPhase.IsOpen()
@@ -87,9 +122,10 @@ function WorldPhase.GetSpawnCFrame(player)
 end
 
 function WorldPhase.Emerge()
-	if phase == Config.Phases.Open then
+	if phase == Config.Phases.Open or emerging then
 		return
 	end
+	emerging = true
 	Remotes.PhaseChanged:FireAllClients("Emerging")
 	Remotes.Announce:FireAllClients("The walls fall away. You were never alone.", "Emergence")
 	task.wait(Config.EmergenceCinematic)
@@ -115,7 +151,11 @@ function WorldPhase.StartTimer()
 		return
 	end
 	timerStarted = true
-	task.delay(if Config.Dev.Enabled then Config.Dev.PrologueSeconds else Config.PrologueSeconds, WorldPhase.Emerge)
+	startedAt = os.clock()
+	local cap = if Config.Tutorial.Enabled then Config.PrologueSeconds
+		elseif Config.Dev.Enabled then Config.Dev.PrologueSeconds
+		else Config.PrologueSeconds
+	task.delay(cap, WorldPhase.Emerge)
 end
 
 function WorldPhase.Init()

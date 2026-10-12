@@ -27,6 +27,13 @@ stun, charge refund, and you enter **the Zone** for 8s (wider window, Flash need
 Charge (built by landing hits). Mis-timed flicks just waste charge; taking a hit, being dodged or parried breaks the chain.
 Blocking is not enough against a Flash - parry or dodge it. Everything is tunable in `Config.Flicker`.
 
+## Tutorial
+The prologue room is now a guided tutorial (`src/server/Tutorial.lua`, skippable with the Skip button): move, spend
+attributes, loot a locker (hold `X`), craft a Medkit, wear armor, attack, heavy, **flick into a Black Flash**, then dodge,
+parry and block a training dummy that telegraphs its strikes, feint, and use a skill. Each step has a live counter. Once
+every player has finished or skipped (and 30s have passed) the world opens early; otherwise it opens at the 10-minute cap.
+`Config.Tutorial.Enabled = false` restores the short timed prologue.
+
 ## Test arena
 With `Config.Dev.Enabled = true` (default for now) the prologue is 15s and the world opens into a generated neon arena:
 ring with 4 gates, pillars, cover, a center platform and 8 spawn pads. The **Test Armory** outside the south gate has free
