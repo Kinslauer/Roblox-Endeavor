@@ -39,4 +39,4 @@ Rest pitch before the swing: −9° (walk/idle pose, left untouched).
 - Character rigs in this Studio build load with **AnimationConstraint** joints, not Motor6D, and `C0` is read-only from the client. Procedural posing must write `Transform` in `RunService.Stepped`; `SwingAnimator` does exactly that and handles both joint types.
 - The Studio MCP `execute_luau` VM caches `require`d modules across calls; test handlers by index with care (use the last registered handler).
 
-**Sign-off**: pending project owner (`/story-done`).
+**Sign-off**: project owner, 2026-10-25 — playtested in Studio, "the attack works".

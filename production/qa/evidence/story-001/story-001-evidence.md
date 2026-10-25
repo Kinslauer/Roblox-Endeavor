@@ -13,4 +13,4 @@
 | 6. `Weapon` attribute replicated | PASS | Client read `Character:GetAttribute("Weapon") == "PipeClub"` 4 s after spawn |
 | 7. Smoke scenario | NOT ASSESSED | `luau` CLI not installed in the cloud workspace this session; assertion added to `tools/smoke/scenario.lua` |
 
-**Sign-off**: pending project owner (`/story-done`).
+**Sign-off**: project owner, 2026-10-25 — playtested in Studio, "the attack works".

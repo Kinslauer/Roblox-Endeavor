@@ -42,8 +42,8 @@ without being told the numbers?*
 
 | # | Story | Type | Est | Status |
 |---|---|---|---|---|
-| 001 | [Presentation slots + client module split](story-001-presentation-slots-and-module-split.md) | Integration | M | Implemented (sign-off pending) |
-| 002 | [Readable swing: windup telegraph, flick cue, swing, recovery](story-002-swing-telegraph.md) | Visual/Feel | L | Implemented (sign-off pending) |
+| 001 | [Presentation slots + client module split](story-001-presentation-slots-and-module-split.md) | Integration | M | Done |
+| 002 | [Readable swing: windup telegraph, flick cue, swing, recovery](story-002-swing-telegraph.md) | Visual/Feel | L | Done |
 | 003 | [Impact feedback: sparks, hitstop, shake, parry/block/dodge cues](story-003-impact-feedback.md) | Visual/Feel | M | Ready |
 | 004 | [Procedural weapon in hand](story-004-weapon-view.md) | Visual/Feel | M | Ready |
 | 005 | [Audio slots](story-005-audio-slots.md) | Integration | S | Ready |
