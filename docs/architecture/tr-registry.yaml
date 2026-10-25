@@ -105,13 +105,11 @@ requirements:
     status: met
     source: ADR-0001
     enforced_by:
-      - review
-    gaps:
-      - "No throttling on any OnServerEvent; only gameplay cooldowns (HeavyCooldown, Flicker.Cooldown, DodgeCooldown) limit effect, not call volume"
-    remediation: >
-      Add a shared RateLimit helper in src/server/ and wrap every connection in the *.Init()
-      functions; budgets in Config.Net. Listed in docs/DESIGN.md roadmap and the brief's
-      "Fair arrival" build-order item.
+      - src/server/RateLimit.lua (RateLimit.Wrap around every OnServerEvent handler)
+      - Config.RateLimit (budgets)
+      - tools/smoke/scenario.lua ("rate limit caps a 40-call burst")
+    gaps: []
+    remediation: done 2026-10-25
 
   - id: TR-007
     title: Placeholder assets have ID slots
