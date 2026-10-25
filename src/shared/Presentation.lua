@@ -79,16 +79,19 @@ Presentation.Impacts = {
 }
 
 -- ---------------------------------------------------------------------------------------------
--- Sounds: Id "" = silent. Consumed by story 005.
+-- Sounds: Id "" = silent. Consumed by Audio.lua (story 005).
 -- ---------------------------------------------------------------------------------------------
 local function sfx(volume, jitter)
 	return { Id = "", Volume = volume or 0.5, PitchJitter = jitter or 0.08 }
 end
+-- Each slot: Id = "rbxassetid://..." (empty = silent), Volume 0..1, PitchJitter = random +/- playback speed.
 Presentation.Sounds = {
 	SwingLight = sfx(0.4), SwingHeavy = sfx(0.6), Hit = sfx(0.7), Block = sfx(0.6), Parry = sfx(0.8, 0.02),
 	GuardBreak = sfx(0.9, 0.02), Dodge = sfx(0.4), Dodged = sfx(0.4), Flick = sfx(0.5), BlackFlash = sfx(1, 0),
-	Feint = sfx(0.3), Bolt = sfx(0.6), Buff = sfx(0.5), Burst = sfx(0.6),
-	PoolSize = 4,
+	Feint = sfx(0.3), Bolt = sfx(0.6), Buff = sfx(0.5), Burst = sfx(0.6), Stun = sfx(0.5),
+	MaxPerChar = 4, -- concurrent sounds per character; the oldest is cut when exceeded
+	MaxDistance = 120, -- studs before a 3D sound is inaudible
+	LocalMix = 0.6, -- volume multiplier for the extra 2D copy of the local player's own events
 }
 
 -- ---------------------------------------------------------------------------------------------
