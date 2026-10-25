@@ -1,7 +1,9 @@
 -- Aim (brief build-order 2): combat stance. While on, the character faces where the camera looks,
 -- the camera sits over the right shoulder and the mouse drives the view, so melee cones and the
 -- arc pistol (both fire along the character's facing on the server) go where you look.
--- Toggle with Presentation.Aim.ToggleKey; on by default. Pure client: the server never knows.
+-- Toggle with Presentation.Aim.ToggleKey; on by default. The stance pauses (cursor freed, body
+-- stops tracking) while a menu needs the mouse - the character creator, a HUD panel, or while
+-- Presentation.Aim.FreeCursorKey is held. Pure client: the server never knows.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -9,6 +11,7 @@ local UserInputService = game:GetService("UserInputService")
 local GameSettings = UserSettings():GetService("UserGameSettings")
 
 local Presentation = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Presentation"))
+local Hud = require(script.Parent.Hud)
 local A = Presentation.Aim
 
 local player = Players.LocalPlayer
@@ -38,7 +41,7 @@ end
 -- Runs on Heartbeat (after physics): turn the body to the camera's yaw while standing still.
 -- Heartbeat rather than RenderStepped so it also works when Studio is not rendering (minimised).
 local function faceCamera()
-	if not Aim.Enabled then
+	if not Aim.Active() then
 		return
 	end
 	local hum, root = humanoidOf()
@@ -61,8 +64,13 @@ end
 -- Runs after Roblox's camera scripts each rendered frame: they reset MouseBehavior, so we re-lock it.
 local function lockMouse()
 	if Aim.Enabled then
-		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+		UserInputService.MouseBehavior = if Aim.Active() then Enum.MouseBehavior.LockCenter else Enum.MouseBehavior.Default
 	end
+end
+
+-- The stance is actually steering the camera/body right now (on, and no menu wants the mouse).
+function Aim.Active()
+	return Aim.Enabled and not Hud.MenuOpen() and not UserInputService:IsKeyDown(A.FreeCursorKey)
 end
 
 function Aim.Set(on)

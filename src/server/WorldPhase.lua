@@ -41,9 +41,11 @@ local function buildPlot(slot)
 	wall(model, Vector3.new(60, 24, 2), o + Vector3.new(0, 12, -30))
 	wall(model, Vector3.new(2, 24, 60), o + Vector3.new(30, 12, 0))
 	wall(model, Vector3.new(2, 24, 60), o + Vector3.new(-30, 12, 0))
+	-- a warm ceiling lamp: the old cyan floor light sat 4 studs from the spawn and, with bloom,
+	-- blew the character out to a glowing silhouette during the creator preview
 	local light = Instance.new("PointLight")
-	light.Range, light.Brightness, light.Color = 40, 2, Color3.fromRGB(120, 200, 255)
-	light.Parent = model:FindFirstChildWhichIsA("Part")
+	light.Range, light.Brightness, light.Color = 48, 0.9, Color3.fromRGB(255, 232, 200)
+	light.Parent = model:GetChildren()[2] -- the ceiling
 	model.Parent = workspace
 	return model
 end

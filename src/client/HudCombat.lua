@@ -132,8 +132,8 @@ local function stepReticle()
 	if not HudCombat.Reticle then
 		return
 	end
-	HudCombat.Reticle.Visible = Aim.Enabled
-	if not Aim.Enabled then
+	HudCombat.Reticle.Visible = Aim.Active()
+	if not HudCombat.Reticle.Visible then
 		return
 	end
 	local R = H.Reticle

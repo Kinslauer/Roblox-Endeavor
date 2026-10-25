@@ -126,6 +126,7 @@ Presentation.Locomotion = {
 Presentation.Aim = {
 	DefaultOn = true,
 	ToggleKey = Enum.KeyCode.LeftControl,
+	FreeCursorKey = Enum.KeyCode.LeftAlt, -- hold to free the mouse (click HUD buttons) without leaving the stance
 	ShoulderOffset = Vector3.new(1.75, 0.5, 0),
 }
 

@@ -6,7 +6,7 @@ use Rojo instead, `git pull` in your clone first or Rojo will overwrite Studio w
 
 Keys: **LMB** attack · **RMB** heavy · **E** flick · **F** block/parry · **Q**+dir dodge · **G** feint ·
 **R/Y/V** skills · **J** stats · **Tab** inventory · **L** loadout · **LeftControl** toggle aim stance ·
-**X** use consoles/loot. Skip the tutorial with the prompt if you have seen it.
+**X** use consoles/loot · **hold LeftAlt** to free the mouse for buttons (the creator and HUD panels free it on their own). Skip the tutorial with its Skip button if you have seen it.
 
 ## 1. Combat feel (epic `combat-feel`, stories 003–005)
 - [ ] Swing: the arm winds back, the hand glows and the glow snaps to red right before impact — is the flick cue readable at the moment you should press E?

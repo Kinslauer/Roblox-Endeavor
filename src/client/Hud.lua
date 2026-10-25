@@ -84,6 +84,20 @@ end
 
 -- ===== Public API used by other client modules =====
 
+-- True while something on screen needs the mouse: the character creator, or any HUD panel.
+-- Aim frees the cursor and Input drops mouse-button combat while this is true.
+function Hud.MenuOpen()
+	if player:GetAttribute("CreatorOpen") then
+		return true
+	end
+	for _, frame in Hud.Panels do
+		if frame.Visible then
+			return true
+		end
+	end
+	return false
+end
+
 function Hud.Banner(text, color, seconds)
 	bannerToken += 1
 	local token = bannerToken

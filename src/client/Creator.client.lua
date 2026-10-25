@@ -80,11 +80,13 @@ make("TextButton", {
 }, frame).Activated:Connect(function()
 	push(true)
 	gui.Enabled = false
+	player:SetAttribute("CreatorOpen", false)
 end)
 
 Remotes.OpenCreator.OnClientEvent:Connect(function(current)
 	if type(current) ~= "table" then
 		gui.Enabled = false
+		player:SetAttribute("CreatorOpen", false)
 		return
 	end
 	look = Appearance.Sanitize(current)
@@ -92,4 +94,5 @@ Remotes.OpenCreator.OnClientEvent:Connect(function(current)
 		refresh(field)
 	end
 	gui.Enabled = true
+	player:SetAttribute("CreatorOpen", true) -- Aim frees the mouse so the buttons can be clicked
 end)

@@ -31,6 +31,10 @@ function Input.Init()
 			return
 		end
 		local key = input.KeyCode
+		local mouse = input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.MouseButton2
+		if mouse and Hud.MenuOpen() then
+			return -- the cursor is free for the creator / a panel; a missed button click is not a swing
+		end
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			Remotes.Attack:FireServer()
 		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
