@@ -244,6 +244,18 @@ function methods.GetService(self, name)
 		function s.GetPlayers() local out = {} for _, c in s._children do if c.ClassName == "Player" then table.insert(out, c) end end return out end
 		function s.GetPlayerFromCharacter(_, char) for _, p in s:GetPlayers() do if p.Character == char then return p end end return nil end
 		function s.GetPlayerByUserId(_, id) for _, p in s:GetPlayers() do if p.UserId == id then return p end end return nil end
+		-- server/Rig.lua builds characters from a HumanoidDescription; the stub rig has what the
+		-- game reads: root, head, right hand, Humanoid (+Animator).
+		function s.CreateHumanoidModelFromDescription(_, _desc, _rigType)
+			local char = newInstance("Model")
+			local root = newInstance("Part"); root.Name = "HumanoidRootPart"; root.Parent = char
+			local head = newInstance("Part"); head.Name = "Head"; head.Size = V3.new(1, 1, 1); head.Parent = char
+			local hand = newInstance("Part"); hand.Name = "RightHand"; hand.Parent = char
+			local hum = newInstance("Humanoid"); hum.Parent = char
+			function hum.ApplyDescription() end
+			char.PrimaryPart = root
+			return char
+		end
 	elseif name == "CollectionService" and not s._init then
 		s._init = true; local tags = {}
 		function s.AddTag(_, inst, tag) tags[tag] = tags[tag] or {}; table.insert(tags[tag], inst) end

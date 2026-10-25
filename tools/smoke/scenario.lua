@@ -29,6 +29,12 @@ local player = makePlayer("Tester", 123)
 Players.PlayerAdded:Fire(player)
 local function as(p) M.setPlayer(p) end
 as(player)
+-- The character creator blocks the first spawn until the look is confirmed.
+local function confirmLook(p)
+	as(p)
+	Remotes.SetAppearance:FireServer({ BodyType = 2, SkinTone = 3, Hair = 4 }, true)
+end
+M.task.delay(0.5, function() confirmLook(player) end)
 
 local function run(seconds, cond)
 	local frames = math.floor(seconds * 30)
@@ -148,7 +154,7 @@ check("tutorial panel cleared", last and last[3] == nil)
 
 -- open world: second player, PvP, permadeath
 local p2 = makePlayer("Rival", 456)
-Players.PlayerAdded:Fire(p2); as(p2); run(2)
+Players.PlayerAdded:Fire(p2); as(p2); run(1); confirmLook(p2); run(1)
 check("second player spawned in open world", p2.Character ~= nil and p2.Character.HumanoidRootPart.CFrame.Position.Y < 100)
 -- story-001: the held weapon is replicated as a character attribute so every client can draw it
 check("Weapon attribute replicated on spawn", p2.Character and p2.Character:GetAttribute("Weapon") == "PipeClub")
@@ -166,7 +172,7 @@ c2.Humanoid.Health = 0
 run(0.5)
 local lootable = workspace_:FindFirstChild("Lootable", true)
 check("rival's remains dropped as loot", lootable ~= nil)
-run(8)
+run(6); confirmLook(p2); run(2)
 check("rival respawned as a fresh character", p2.Character ~= nil and p2.Character ~= c2 and p2.Character.Humanoid.Health > 0)
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)

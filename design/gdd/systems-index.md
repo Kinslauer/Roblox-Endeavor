@@ -57,6 +57,10 @@ brief names). "Owning GDD" is a file under `design/gdd/`.
 | 28 | Fair Arrival (spawn protection, rate limits) | — | Core | MVP | Planned | none yet | Brief item 5. Nothing in code. |
 | 29 | District Blockout | — | Gameplay | Vertical Slice | Planned | none yet | Generated first district + safe zone replacing the dev arena (brief item 6). |
 | 30 | Smoke harness (tooling) | `tools/smoke/*` | Meta | — | Implemented (tooling) | none yet | Mock-Roblox Luau run of the full join → tutorial → Emergence → PvP → permadeath flow. |
+| 31 | Appearance | `src/shared/Appearance.lua` | Shared data | P2 | Implemented | `design/quick-specs/character-creator-2026-10-25.md` | Catalog of body/skin/face/hair choices; the profile stores indices into it |
+| 32 | Rig | `src/server/Rig.lua` | Server | P2 | Implemented | `design/quick-specs/character-creator-2026-10-25.md` | Builds the standardized R15 body from the catalog; replaces LoadCharacter |
+| 33 | Creator | `src/server/Creator.lua`, `src/client/Creator.client.lua` | Server + Client | P2 | Implemented | `design/quick-specs/character-creator-2026-10-25.md` | First-spawn look picker with live preview |
+| 34 | Animate (stopgap) | `src/client/Animate.client.lua` | Client | P3 | Placeholder | `design/quick-specs/character-creator-2026-10-25.md` | Stock R15 locomotion for server-built rigs |
 
 ---
 

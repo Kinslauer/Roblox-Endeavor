@@ -4,6 +4,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Combat = require(script.Parent.Combat)
+local Creator = require(script.Parent.Creator)
+local Rig = require(script.Parent.Rig)
 local Gear = require(script.Parent.Gear)
 local Inventory = require(script.Parent.Inventory)
 local Permadeath = require(script.Parent.Permadeath)
@@ -29,8 +31,7 @@ function Lifecycle.Spawn(player)
 	if not player.Parent then
 		return
 	end
-	player:LoadCharacter()
-	local char = player.Character
+	local char = Rig.Spawn(player) -- standardized body (server/Rig.lua), never the Roblox avatar
 	local root = char and char:WaitForChild("HumanoidRootPart", 10)
 	local hum = char and char:WaitForChild("Humanoid", 10)
 	if not (root and hum) then
@@ -41,6 +42,10 @@ function Lifecycle.Spawn(player)
 	Stats.Apply(player, true)
 	Stats.Push(player)
 	Inventory.Push(player)
+	hum.Died:Once(function()
+		onDied(player)
+	end)
+	Creator.Run(player) -- first spawn of a (new) character: pick a look before anything else
 	if WorldPhase.IsOpen() then
 		local profile = PlayerData.Get(player)
 		if profile then
@@ -51,9 +56,6 @@ function Lifecycle.Spawn(player)
 		Tutorial.Start(player)
 	end
 	Quests.Push(player)
-	hum.Died:Once(function()
-		onDied(player)
-	end)
 end
 
 local function onPlayerAdded(player)

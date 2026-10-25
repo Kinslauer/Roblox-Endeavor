@@ -10,6 +10,7 @@ local Combat = require(Server.Combat)
 local SkillRunner = require(Server.SkillRunner)
 local Events = require(Server.Events)
 local Tutorial = require(Server.Tutorial)
+local Creator = require(Server.Creator)
 local Lifecycle = require(Server.Lifecycle)
 
 -- Must run before WorldPhase.Init so its CitySpawn pads are found. A bug in the test arena
@@ -27,4 +28,5 @@ Combat.Init()
 SkillRunner.Init()
 Events.Init()
 Tutorial.Init()
+Creator.Init()
 Lifecycle.Init()

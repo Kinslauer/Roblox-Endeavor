@@ -311,7 +311,7 @@ function Tutorial.Start(player)
 	if not data then
 		return
 	end
-	if data.TutorialDone then
+	if data.TutorialDone and not Config.Tutorial.ReplayAlways then
 		WorldPhase.MarkReady(player) -- returning player: nothing to teach
 		return
 	end

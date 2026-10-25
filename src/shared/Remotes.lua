@@ -4,9 +4,9 @@ local RunService = game:GetService("RunService")
 
 local NAMES = {
 	-- client -> server
-	"Attack", "Heavy", "Feint", "Flicker", "Block", "Dodge", "UseSkill", "SetSkill", "Allocate", "UseItem", "EquipItem", "Unequip", "Craft", "TutorialSkip",
+	"Attack", "Heavy", "Feint", "Flicker", "Block", "Dodge", "UseSkill", "SetSkill", "Allocate", "UseItem", "EquipItem", "Unequip", "Craft", "TutorialSkip", "SetAppearance",
 	-- server -> client
-	"CombatEvent", "StatsChanged", "InventoryChanged", "LoadoutChanged", "QuestChanged", "Announce", "PhaseChanged", "Died", "Tutorial",
+	"CombatEvent", "StatsChanged", "InventoryChanged", "LoadoutChanged", "QuestChanged", "Announce", "PhaseChanged", "Died", "Tutorial", "OpenCreator",
 }
 
 local folder

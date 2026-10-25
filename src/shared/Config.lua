@@ -19,6 +19,7 @@ Config.PrologueMinSeconds = 30 -- earliest the world opens once every player fin
 -- everyone has finished (or skipped) it, instead of on Dev.PrologueSeconds.
 Config.Tutorial = {
 	Enabled = true,
+	ReplayAlways = false, -- true = run the tutorial even for profiles that finished it (testing)
 	DummyInterval = 2.8, -- seconds between training-dummy strikes
 	DummyTelegraph = 0.8, -- red flash before a strike lands (the dodge/parry cue)
 	DummyDamage = 6,

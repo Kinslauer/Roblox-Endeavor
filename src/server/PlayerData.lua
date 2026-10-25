@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Appearance = require(ReplicatedStorage.Shared.Appearance)
 local ProfileService = require(script.Parent.ProfileService)
 
 -- NOTE: ProfileService:Reconcile() re-adds any missing key from this template, so anything a
@@ -19,6 +20,8 @@ local TEMPLATE = {
 	BornAt = 0,
 	Awakened = false,
 	TutorialDone = false,
+	Appearance = Appearance.Default(), -- catalog indices, see shared/Appearance.lua
+	AppearanceSet = false, -- true once the character creator was confirmed
 	Equipped = "Fists",
 	Armor = {}, -- [slot] = itemId
 	Cyber = {}, -- [slot] = itemId
