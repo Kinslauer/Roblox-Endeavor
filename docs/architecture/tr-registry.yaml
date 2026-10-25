@@ -1,0 +1,128 @@
+# Technical Requirements Registry — CONDUIT (Endeavor, Universe 1)
+#
+# One entry per hard rule the architecture enforces. `status` is the state of the *codebase*
+# today: met | not-met | planned. `source` is the ADR that establishes the rule.
+# `enforced_by` names the file(s) that embody it, or "review" when only code review guards it.
+# Reverse-documented 2026-10-25 from src/; update when a rule's status changes.
+
+version: 1
+updated: 2026-10-25
+engine: Roblox (Luau), Rojo 7
+
+requirements:
+  - id: TR-001
+    title: Server authority over combat state
+    description: >
+      All damage, posture, stamina, charge, cooldown and flicker-chain mutations happen in
+      src/server/. Clients send intent only; the only client-side state write is its own
+      HumanoidRootPart velocity in response to DodgeMove / Knockback.
+    status: met
+    source: ADR-0001
+    enforced_by:
+      - src/server/Combat.lua
+      - src/server/SkillRunner.lua
+      - src/shared/Remotes.lua
+      - review
+    evidence: >
+      Every combat remote connects to a validating server function; client Main.client.lua
+      only calls FireServer and reads attributes.
+
+  - id: TR-002
+    title: No magic numbers in systems
+    description: >
+      Every designer-tunable value lives in src/shared/Config.lua or a shared data module
+      (Weapons, Armor, Cybernetics, Skills, Items). Server and client systems read, never define.
+    status: not-met
+    source: ADR-0002
+    enforced_by:
+      - src/shared/Config.lua
+      - review
+    gaps:
+      - "src/client/Main.client.lua formats the Black Flash multiplier as 2.5 + FlashBonus instead of Config.Flicker.BlackFlashMult"
+      - "src/server/Gear.lua compute() carries derivation coefficients (0.01, 0.04, 0.02, 0.012, 0.002) as literals"
+    remediation: >
+      Replace the client literal with Config.Flicker.BlackFlashMult; lift Gear coefficients into
+      Config.Gear. Then flip status to met.
+
+  - id: TR-003
+    title: Presentation never mutates game state
+    description: >
+      Client presentation modules subscribe to CombatEvent, LoadoutChanged and attribute
+      signals and create only cosmetic instances they also destroy. They never write Humanoid
+      properties, attributes, or anything on another character beyond transient effects, and
+      never fire remotes.
+    status: met
+    source: ADR-0004
+    enforced_by:
+      - src/client/Main.client.lua
+      - review
+    evidence: >
+      Current client writes only its own root AssemblyLinearVelocity (DodgeMove/Knockback) and
+      creates Highlight / Part / ColorCorrectionEffect instances cleaned by Debris or task.delay.
+    note: >
+      Holds today because the presentation surface is small; ADR-0004 makes it an explicit
+      rule for the new src/client/ modules.
+
+  - id: TR-004
+    title: Telegraph timing derived from server frame data
+    description: >
+      Any windup / active / recovery duration shown to the player is read from
+      src/shared/Weapons.lua (the same specs Combat.Swing uses) and Config; presentation
+      modules carry no duration literals.
+    status: planned
+    source: ADR-0004
+    enforced_by:
+      - src/shared/Weapons.lua
+      - src/client/SwingAnimator.lua  # to be created
+      - review
+    note: >
+      Server already broadcasts CombatEvent("Swing") before the windup; the client currently
+      ignores it (TODO in Main.client.lua), so nothing is telegraphed yet.
+
+  - id: TR-005
+    title: Remote arguments type-validated
+    description: >
+      Every OnServerEvent handler checks the type/shape of each argument before touching
+      state and returns silently on bad input.
+    status: met
+    source: ADR-0001
+    enforced_by:
+      - src/server/Combat.lua        # Block: boolean, Dodge: Vector3
+      - src/server/SkillRunner.lua   # UseSkill: integer slot
+      - src/server/Gear.lua          # SetSkill: integer range + string id; Unequip: string
+      - src/server/Stats.lua         # Allocate: string in Stats
+      - src/server/Inventory.lua     # UseItem / EquipItem / Craft: string + def lookup
+    note: >
+      Attack, Heavy, Feint, Flicker, TutorialSkip take no arguments; extra args are ignored.
+      No shared validator module exists — each handler validates inline.
+
+  - id: TR-006
+    title: Remotes rate-limited per player
+    description: >
+      Each client->server remote enforces a per-player call budget (token bucket or
+      min-interval) before its gameplay checks run, so input flooding cannot cost the server
+      a handler call per packet.
+    status: not-met
+    source: ADR-0001
+    enforced_by:
+      - review
+    gaps:
+      - "No throttling on any OnServerEvent; only gameplay cooldowns (HeavyCooldown, Flicker.Cooldown, DodgeCooldown) limit effect, not call volume"
+    remediation: >
+      Add a shared RateLimit helper in src/server/ and wrap every connection in the *.Init()
+      functions; budgets in Config.Net. Listed in docs/DESIGN.md roadmap and the brief's
+      "Fair arrival" build-order item.
+
+  - id: TR-007
+    title: Placeholder assets have ID slots
+    description: >
+      Every procedural placeholder (weapon model, swing animation, impact sound, spark) has a
+      named slot in src/shared/Presentation.lua (ModelName / AnimationId / SoundId) checked
+      before the procedural fallback, so a real asset replaces it with a data edit only.
+    status: planned
+    source: ADR-0004
+    enforced_by:
+      - src/shared/Presentation.lua  # to be created
+      - review
+    note: >
+      No asset IDs or slots exist in src/ today; all VFX are code-made in Main.client.lua.

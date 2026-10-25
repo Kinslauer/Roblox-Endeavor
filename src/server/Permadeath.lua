@@ -9,7 +9,20 @@ local PlayerData = require(script.Parent.PlayerData)
 local Quests = require(script.Parent.Quests)
 local Stats = require(script.Parent.Stats)
 
-local legacyStore = DataStoreService:GetDataStore("ConduitLegacy_v1")
+-- GetDataStore throws in an unpublished place (no API access). That must never stop the server
+-- from booting, so the store is resolved lazily and failures only cost the legacy record.
+local legacyStore = nil
+local function getLegacyStore()
+	if legacyStore == nil then
+		local ok, store = pcall(DataStoreService.GetDataStore, DataStoreService, "ConduitLegacy_v1")
+		legacyStore = if ok then store else false
+		if not ok then
+			warn("[Permadeath] legacy DataStore unavailable; deaths will not be recorded:", store)
+		end
+	end
+	return legacyStore or nil
+end
+
 local Permadeath = {}
 
 local function dropRemains(player, profile, cframe)
@@ -21,8 +34,12 @@ end
 local function recordLegacy(userId, profile)
 	local survived = os.time() - profile.BornAt
 	task.spawn(function()
+		local store = getLegacyStore()
+		if not store then
+			return
+		end
 		pcall(function()
-			legacyStore:UpdateAsync("Legacy_" .. userId, function(old)
+			store:UpdateAsync("Legacy_" .. userId, function(old)
 				old = old or { Deaths = 0, TotalKills = 0, BestSurvival = 0 }
 				old.Deaths += 1
 				old.TotalKills += profile.Kills
