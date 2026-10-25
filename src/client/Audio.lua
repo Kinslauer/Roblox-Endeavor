@@ -23,8 +23,9 @@ local function rootOf(char)
 	return typeof(char) == "Instance" and char:FindFirstChild("HumanoidRootPart")
 end
 
-local function makeSound(spec)
+local function makeSound(kind, spec)
 	local sound = Instance.new("Sound")
+	sound.Name = "SFX_" .. kind -- distinguishable from the character's default footstep/jump sounds
 	sound.SoundId = spec.Id
 	sound.Volume = spec.Volume or 0.5
 	local jitter = spec.PitchJitter or 0
@@ -66,10 +67,10 @@ function Audio.Play(kind, char)
 	end
 	local root = rootOf(char)
 	if root then
-		trackAndPlay(makeSound(spec), root, char)
+		trackAndPlay(makeSound(kind, spec), root, char)
 	end
 	if char == player.Character then
-		local local2d = makeSound(spec)
+		local local2d = makeSound(kind, spec)
 		local2d.Volume *= S.LocalMix
 		trackAndPlay(local2d, SoundService, SoundService)
 	end

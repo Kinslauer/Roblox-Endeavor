@@ -21,7 +21,7 @@ Presentation.Weapons = {
 	ShockBaton = { ModelName = "", Build = "Baton", Length = 2.8, Color = Color3.fromRGB(40, 40, 50), Accent = Color3.fromRGB(90, 200, 255), Grip = CFrame.identity },
 	ScrapSpear = { ModelName = "", Build = "Spear", Length = 6.5, Color = Color3.fromRGB(120, 95, 70), Accent = Color3.fromRGB(170, 170, 175), Grip = CFrame.new(0, 2.2, 0) }, -- held a third of the way down
 	Sledge = { ModelName = "", Build = "Hammer", Length = 3.8, Color = Color3.fromRGB(80, 80, 85), Accent = Color3.fromRGB(60, 60, 65), Grip = CFrame.identity },
-	ArcPistol = { ModelName = "", Build = "Pistol", Length = 1.3, Color = Color3.fromRGB(50, 55, 65), Accent = Color3.fromRGB(120, 200, 255), Grip = CFrame.identity }, -- grip upright, barrel along the hand's forward
+	ArcPistol = { ModelName = "", Build = "Pistol", Length = 1.3, Color = Color3.fromRGB(50, 55, 65), Accent = Color3.fromRGB(120, 200, 255), Grip = CFrame.Angles(math.rad(-90), 0, 0) }, -- barrel runs down the arm line, so it points where the arm points
 	HandOffset = Vector3.new(0, -0.3, 0), -- where the fist closes, relative to the hand part's centre
 }
 
@@ -81,14 +81,20 @@ Presentation.Impacts = {
 -- ---------------------------------------------------------------------------------------------
 -- Sounds: Id "" = silent. Consumed by Audio.lua (story 005).
 -- ---------------------------------------------------------------------------------------------
-local function sfx(volume, jitter)
-	return { Id = "", Volume = volume or 0.5, PitchJitter = jitter or 0.08 }
+local function sfx(id, volume, jitter)
+	return { Id = id or "", Volume = volume or 0.5, PitchJitter = jitter or 0.08 }
 end
--- Each slot: Id = "rbxassetid://..." (empty = silent), Volume 0..1, PitchJitter = random +/- playback speed.
+-- Each slot: Id (empty = silent), Volume 0..1, PitchJitter = random +/- playback speed.
+-- Placeholders are Roblox's built-in rbxasset:// sounds (no upload needed); replace with
+-- "rbxassetid://<id>" once real SFX exist.
+local B = "rbxasset://sounds/"
 Presentation.Sounds = {
-	SwingLight = sfx(0.4), SwingHeavy = sfx(0.6), Hit = sfx(0.7), Block = sfx(0.6), Parry = sfx(0.8, 0.02),
-	GuardBreak = sfx(0.9, 0.02), Dodge = sfx(0.4), Dodged = sfx(0.4), Flick = sfx(0.5), BlackFlash = sfx(1, 0),
-	Feint = sfx(0.3), Bolt = sfx(0.6), Buff = sfx(0.5), Burst = sfx(0.6), Stun = sfx(0.5),
+	SwingLight = sfx(B .. "swordslash.wav", 0.35, 0.12), SwingHeavy = sfx(B .. "swordlunge.wav", 0.6, 0.06),
+	Hit = sfx(B .. "hit.wav", 0.7, 0.1), Block = sfx(B .. "metal.ogg", 0.6, 0.06), Parry = sfx(B .. "unsheath.wav", 0.8, 0.02),
+	GuardBreak = sfx(B .. "glassbreak.wav", 0.9, 0.02), Dodge = sfx(B .. "action_jump_land.mp3", 0.4, 0.1), Dodged = sfx(B .. "snap.wav", 0.4),
+	Flick = sfx(B .. "clickfast.wav", 0.5, 0.05), BlackFlash = sfx(B .. "bass.wav", 1, 0),
+	Feint = sfx(B .. "button.wav", 0.3), Bolt = sfx(B .. "paintball.wav", 0.6, 0.08), Buff = sfx(B .. "electronicpingshort.wav", 0.5),
+	Burst = sfx(B .. "flashbulb.wav", 0.6), Stun = sfx(B .. "collide.wav", 0.5, 0.1),
 	MaxPerChar = 4, -- concurrent sounds per character; the oldest is cut when exceeded
 	MaxDistance = 120, -- studs before a 3D sound is inaudible
 	LocalMix = 0.6, -- volume multiplier for the extra 2D copy of the local player's own events

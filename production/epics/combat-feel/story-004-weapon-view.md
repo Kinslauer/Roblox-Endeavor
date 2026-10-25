@@ -1,7 +1,7 @@
 # Story 004: Procedural weapon in hand
 
 > **Epic**: Combat Feel
-> **Status**: Ready
+> **Status**: Implemented — awaiting owner playtest (evidence: production/qa/evidence/story-004/)
 > **Layer**: Presentation
 > **Type**: Visual/Feel
 > **Estimate**: M

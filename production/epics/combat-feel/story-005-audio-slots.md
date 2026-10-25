@@ -1,7 +1,7 @@
 # Story 005: Audio slots
 
 > **Epic**: Combat Feel
-> **Status**: Ready
+> **Status**: Implemented — awaiting owner playtest (evidence: production/qa/evidence/story-005/)
 > **Layer**: Presentation
 > **Type**: Integration
 > **Estimate**: S
