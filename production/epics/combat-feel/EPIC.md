@@ -24,7 +24,7 @@ without being told the numbers?*
 | ADR-0001 server-authoritative combat | Accepted | Presentation consumes `CombatEvent`; never changes outcome |
 | ADR-0002 Config as single source of tuning | Accepted | No durations/colours/multipliers in client code; `Presentation.lua` + `Config` + `Weapons` |
 | ADR-0003 Rojo module layout | Accepted | New client modules with `Init()`; `Main.client.lua` is the composition root |
-| ADR-0004 presentation layer and asset slots | **Proposed → must be Accepted before story 002** | Module split, slot schema, telegraph derived from server frame data |
+| ADR-0004 presentation layer and asset slots | Accepted | Module split, slot schema, telegraph derived from server frame data |
 
 ## GDD Requirements
 
@@ -43,7 +43,7 @@ without being told the numbers?*
 | # | Story | Type | Est | Status |
 |---|---|---|---|---|
 | 001 | [Presentation slots + client module split](story-001-presentation-slots-and-module-split.md) | Integration | M | Ready |
-| 002 | [Readable swing: windup telegraph, flick cue, swing, recovery](story-002-swing-telegraph.md) | Visual/Feel | L | Blocked (ADR-0004) |
+| 002 | [Readable swing: windup telegraph, flick cue, swing, recovery](story-002-swing-telegraph.md) | Visual/Feel | L | Ready (after 001) |
 | 003 | [Impact feedback: sparks, hitstop, shake, parry/block/dodge cues](story-003-impact-feedback.md) | Visual/Feel | M | Blocked (002) |
 | 004 | [Procedural weapon in hand](story-004-weapon-view.md) | Visual/Feel | M | Blocked (001) |
 | 005 | [Audio slots](story-005-audio-slots.md) | Integration | S | Blocked (001) |

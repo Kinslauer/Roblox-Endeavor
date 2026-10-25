@@ -2,11 +2,7 @@
 
 ## Status
 
-Proposed
-
-> Who may move this to `Accepted`: the user, or `technical-director` on the user's explicit
-> confirmation. Stories referencing a `Proposed` ADR are `Blocked`; the "Combat Feel" epic
-> requires this ADR to be `Accepted` before its stories start.
+Accepted (by project owner, 2026-10-25)
 
 ## Date
 
@@ -18,8 +14,8 @@ Proposed
 
 ## Decision Makers
 
-Proposed by technical-director / lead-programmer for the "Combat Feel" epic; awaiting project
-owner confirmation.
+Proposed by technical-director / lead-programmer for the "Combat Feel" epic; accepted by the
+project owner on 2026-10-25.
 
 ## Summary
 
