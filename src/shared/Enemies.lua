@@ -6,6 +6,9 @@
 --   Windup >= 0.5  so the player can read the cue and parry inside Config.Combat.ParryWindow (0.22)
 --   Active <= 0.25 so a well-timed dodge (DodgeIFrames 0.35 before armour) always clears the hit
 --   Cadence = spec.End + Recovery, which is the player's punish window
+--   Poise: light hits interrupt an enemy only every Poise.Hits-th hit (counter resets after
+--   Poise.Reset seconds without a hit); heavies, flicked hits, parries and guard breaks always do.
+--   Without it a player stun-locks any enemy with the light combo (owner playtest 2026-10-25).
 local Weapons = require(script.Parent.Weapons)
 
 local Enemies = {}
@@ -18,31 +21,34 @@ end
 Enemies.Defs = {
 	Grunt = {
 		Name = "Raider Grunt", QuestTag = "Raider", Weapon = "PipeClub",
-		Health = 70, Speed = 13, Aggro = 90, Leash = 120, DespawnAfter = 60,
+		Health = 70, Speed = 17, Aggro = 90, Leash = 120, DespawnAfter = 60, -- a shade faster than a base player (15)
 		Range = Weapons.Defs.PipeClub.Attacks[3].Range,
-		Attack = { Damage = 12, Posture = 8, Windup = 0.6, Active = 0.16, End = 0.9, Range = 7, Arc = 0.3, Knockback = 25, Stamina = 0 },
+		Attack = { Damage = 12, Posture = 8, Windup = 0.6, Active = 0.16, End = 0.8, Range = 7, Arc = 0.3, Knockback = 25, Stamina = 0 },
 		Label = 3, -- which player swing pose the client shows (combo index or "Heavy")
-		Recovery = { 0.6, 1.2 }, -- idle after a swing (random in range): the punish window
+		Recovery = { 0.35, 0.9 }, -- idle after a swing (random in range): the punish window
+		Poise = { Hits = 2, Reset = 2.5 },
 		Xp = 35, Loot = "Raider",
 		Look = look(2, 4, 2, 1, Color3.fromRGB(110, 40, 40)),
 	},
 	Brute = {
 		Name = "Raider Brute", QuestTag = "Raider", Weapon = "Sledge",
-		Health = 160, Speed = 11, Aggro = 90, Leash = 120, DespawnAfter = 60,
+		Health = 160, Speed = 13, Aggro = 90, Leash = 120, DespawnAfter = 60,
 		Range = 9, MaxPosture = 140,
-		Attack = { Damage = 30, Posture = 24, Windup = 0.9, Active = 0.2, End = 1.6, Range = 9, Arc = 0.3, Knockback = 45, Hyperarmor = true, Stamina = 0 },
+		Attack = { Damage = 30, Posture = 24, Windup = 0.9, Active = 0.2, End = 1.4, Range = 9, Arc = 0.3, Knockback = 45, Hyperarmor = true, Stamina = 0 },
 		Label = "Heavy",
-		Recovery = { 1.0, 1.8 },
+		Recovery = { 0.8, 1.5 },
+		Poise = { Hits = 3, Reset = 3 },
 		Xp = 90, Loot = "Brute",
 		Look = look(3, 5, 1, 1, Color3.fromRGB(55, 55, 65)),
 	},
 	Gunner = {
 		Name = "Raider Gunner", QuestTag = "Raider", Weapon = "ArcPistol",
-		Health = 55, Speed = 14, Aggro = 110, Leash = 140, DespawnAfter = 60,
+		Health = 55, Speed = 16, Aggro = 110, Leash = 140, DespawnAfter = 60,
 		Range = 60, KeepDistance = { 18, 30 }, -- backs off below, closes above
 		Attack = { Damage = 10, Posture = 3, Windup = 0.5, Active = 0.05, End = 1.4, Range = 60, Arc = 0.3, Ranged = true, Type = "Arc", Stamina = 0 },
 		Label = 1,
-		Recovery = { 0.8, 1.6 },
+		Recovery = { 0.7, 1.4 },
+		Poise = { Hits = 1, Reset = 2 }, -- flimsy: every hit interrupts
 		Xp = 50, Loot = "Gunner",
 		Look = look(1, 2, 3, 4, Color3.fromRGB(50, 70, 95)),
 	},

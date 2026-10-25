@@ -87,7 +87,11 @@ function Aim.Init()
 	RunService:BindToRenderStep("ConduitAim", Enum.RenderPriority.Camera.Value + 2, lockMouse)
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if not processed and input.KeyCode == A.ToggleKey then
-			Aim.Set(not Aim.Enabled)
+			if Hud.MenuOpen() then
+				Hud.CloseAll() -- "lock my camera" while a panel is up means: put the panels away
+			else
+				Aim.Set(not Aim.Enabled)
+			end
 		end
 	end)
 end

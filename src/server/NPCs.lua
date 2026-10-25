@@ -72,6 +72,10 @@ local function buildEnemyRig(typeName, def)
 	end
 	model:SetAttribute("Weapon", def.Weapon)
 	model:SetAttribute("EnemyType", typeName)
+	if def.Poise then
+		model:SetAttribute("PoiseHits", def.Poise.Hits)
+		model:SetAttribute("PoiseReset", def.Poise.Reset)
+	end
 	CollectionService:AddTag(model, NPCs.Tag)
 	return model, hum, model.HumanoidRootPart
 end

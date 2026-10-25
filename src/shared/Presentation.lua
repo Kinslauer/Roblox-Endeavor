@@ -91,7 +91,7 @@ end
 local B = "rbxasset://sounds/"
 Presentation.Sounds = {
 	SwingLight = sfx(B .. "swordslash.wav", 0.35, 0.12), SwingHeavy = sfx(B .. "swordlunge.wav", 0.6, 0.06),
-	Hit = sfx(B .. "hit.wav", 0.7, 0.1), Block = sfx(B .. "metal.ogg", 0.6, 0.06), Parry = sfx(B .. "unsheath.wav", 0.8, 0.02),
+	Hit = sfx(B .. "hit.wav", 0.4, 0.1), Block = sfx(B .. "metal.ogg", 0.6, 0.06), Parry = sfx(B .. "unsheath.wav", 0.8, 0.02), -- Hit was 0.7: too loud (owner playtest)
 	GuardBreak = sfx(B .. "glassbreak.wav", 0.9, 0.02), Dodge = sfx(B .. "action_jump_land.mp3", 0.4, 0.1), Dodged = sfx(B .. "snap.wav", 0.4),
 	Flick = sfx(B .. "clickfast.wav", 0.5, 0.05), BlackFlash = sfx(B .. "bass.wav", 1, 0),
 	Feint = sfx(B .. "button.wav", 0.3), Bolt = sfx(B .. "paintball.wav", 0.6, 0.08), Buff = sfx(B .. "electronicpingshort.wav", 0.5),

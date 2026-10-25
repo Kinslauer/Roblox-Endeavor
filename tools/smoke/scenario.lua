@@ -237,6 +237,22 @@ do
 	check("parried grunt is stunned", gs.stunned > M.setNow())
 	grunt.Humanoid.Health = 0; run(0.5)
 	check("grunt death drops spoils", workspace_:FindFirstChild("Lootable", true) ~= nil)
+	-- poise: a Grunt shrugs off the first light hit and staggers on the second; a heavy always staggers
+	do
+		local Combat2 = M.mockEnv.__require(SSS.Server.Combat)
+		local g2 = NPCs.Spawn("Grunt", M.V3.new(300, 5, 300))
+		me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(300, 5, 304), M.V3.new(300, 5, 300))
+		Combat2.Damage(me, g2, 5, {})
+		local s2 = Combat2.State(g2)
+		local firstStunned = s2.stunned > M.setNow()
+		Combat2.Damage(me, g2, 5, {})
+		local secondStunned = s2.stunned > M.setNow()
+		check("poise: first light hit does not stagger a Grunt, second does", not firstStunned and secondStunned)
+		run(1.5)
+		Combat2.Damage(me, g2, 5, { Staggers = true })
+		check("poise: a heavy (Staggers) always staggers", s2.stunned > M.setNow())
+		g2:Destroy()
+	end
 	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
 	c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, -4), M.V3.new(120, 5, 0))
 end

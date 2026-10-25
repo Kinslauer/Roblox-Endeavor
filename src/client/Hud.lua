@@ -98,6 +98,13 @@ function Hud.MenuOpen()
 	return false
 end
 
+-- Hide every panel (the creator closes itself). Used by Aim's toggle key as an escape hatch.
+function Hud.CloseAll()
+	for _, frame in Hud.Panels do
+		frame.Visible = false
+	end
+end
+
 function Hud.Banner(text, color, seconds)
 	bannerToken += 1
 	local token = bannerToken

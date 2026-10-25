@@ -257,6 +257,17 @@ function Arena.Init()
 	buildArmory()
 	-- a recharge pad on the center platform so flicker/charge testing is never blocked
 	console(Vector3.new(0, GROUND_TOP + 0.6 + 3, 0), "Recharge", "Full health/stamina/charge", CYAN, recharge)
+	-- shuttle between the district's plaza and the armory (the arena sits outside the wall)
+	local plazaStop = Vector3.new(0, GROUND_TOP + 0.5, -36) -- world: north edge of Relay Plaza
+	local armoryStop = OFFSET + Vector3.new(30, GROUND_TOP + 1, 100) -- world: in front of the armory
+	local function shuttle(player, to)
+		local char = player.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			char:PivotTo(CFrame.new(to + Vector3.new(0, 4, 0)))
+		end
+	end
+	console(plazaStop - OFFSET, "Test Armory", "Shuttle to the armory", MAGENTA, function(player) shuttle(player, armoryStop + Vector3.new(0, 0, -8)) end)
+	console(armoryStop - OFFSET + Vector3.new(12, 0, 0), "Relay Plaza", "Shuttle back to the district", CYAN, function(player) shuttle(player, plazaStop + Vector3.new(0, 0, 8)) end)
 end
 
 return Arena

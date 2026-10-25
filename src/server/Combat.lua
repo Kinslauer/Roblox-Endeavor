@@ -311,6 +311,27 @@ end
 -- opts: Posture, Type ("Physical"|"Arc"), Unblockable, GuardBreak (blocks fail; parry still works),
 --       Knockback (studs/s), Stun (seconds)
 -- Returns "hit" | "blocked" | "parried" | "dodged" | "guardbreak" | "none"
+-- Enemy poise (Enemies.Defs[x].Poise, replicated as PoiseHits / PoiseReset attributes): a light hit
+-- interrupts only every Nth hit; heavies, guard breaks and flicked hits (opts.Staggers) always do.
+-- Players have no poise attribute, so every hit staggers them as before.
+local function poiseBroken(victim, vs, t, opts)
+	local hits = victim:GetAttribute("PoiseHits")
+	if not hits or hits <= 1 or opts.Staggers or opts.GuardBreak then
+		return true
+	end
+	local reset = victim:GetAttribute("PoiseReset") or 2
+	if t - (vs.poiseLast or 0) > reset then
+		vs.poiseCount = 0
+	end
+	vs.poiseLast = t
+	vs.poiseCount = (vs.poiseCount or 0) + 1
+	if vs.poiseCount >= hits then
+		vs.poiseCount = 0
+		return true
+	end
+	return false
+end
+
 local function applyDamage(attacker, victim, amount, opts)
 	local vhum = getHum(victim)
 	if not vhum or vhum.Health <= 0 or attacker == victim then
@@ -371,7 +392,7 @@ local function applyDamage(attacker, victim, amount, opts)
 	vhum:TakeDamage(amount)
 	tag(attacker, victim)
 
-	if result ~= "blocked" and t >= math.max(vs.hyperarmorUntil, vs.swingArmorUntil) then
+	if result ~= "blocked" and t >= math.max(vs.hyperarmorUntil, vs.swingArmorUntil) and poiseBroken(victim, vs, t, opts) then
 		Combat.Stun(victim, opts.Stun or C.HitStunDefault)
 		if opts.Knockback and opts.Knockback > 0 then
 			knockback(victim, direction, opts.Knockback)
@@ -410,7 +431,8 @@ local function pulse(char, spec, mods, seen)
 	if overloaded then
 		damage += s.arcBonus
 	end
-	local opts = { Posture = posture, Type = spec.Type, Knockback = spec.Knockback, Stun = spec.Stun, Unblockable = mods.unblockable, GuardBreak = mods.guardBreak }
+	local opts = { Posture = posture, Type = spec.Type, Knockback = spec.Knockback, Stun = spec.Stun, Unblockable = mods.unblockable, GuardBreak = mods.guardBreak,
+		Staggers = mods.label == "Heavy" } -- heavies always break enemy poise
 
 	local function strike(model)
 		seen[model] = true
@@ -421,6 +443,7 @@ local function pulse(char, spec, mods, seen)
 		local hitDamage, hitOpts = damage, opts
 		if flick then
 			hitOpts = table.clone(opts)
+			hitOpts.Staggers = true -- a flicked hit always interrupts
 			if flick.flash then
 				hitDamage = damage * (F.BlackFlashMult + d.FlashBonus)
 				hitOpts.Posture = (opts.Posture or 0) * F.BlackFlashPosture
