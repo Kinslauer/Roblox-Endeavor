@@ -1,7 +1,7 @@
 # Story 005: Audio slots
 
 > **Epic**: Combat Feel
-> **Status**: Blocked — BLOCKED: depends on story-001
+> **Status**: Ready
 > **Layer**: Presentation
 > **Type**: Integration
 > **Estimate**: S
@@ -9,35 +9,26 @@
 
 ## Context
 
-**GDD**: `design/gdd/combat.md` (Current Presentation)
+**GDD**: `design/gdd/combat.md` (Current Presentation), brief "Art & audio direction"
 **Requirement**: TR-003, TR-007
-**ADR Governing Implementation**: ADR-0004 (Accepted). `Audio.lua` plays one `Sound` per `Presentation.Sounds[kind]` slot at the emitting character; empty slot = silent.
+**ADR**: ADR-0004 — `Audio.lua` plays `Presentation.Sounds[kind]`; `""` = silent.
 **Engine**: Roblox / Luau | **Risk**: LOW
 
 ## Acceptance Criteria
 
-- [ ] `Presentation.Sounds` has a slot for every `CombatEvent` kind (`Swing` split by `Light`/`Heavy`, plus `Hit`, `Block`, `Parry`, `GuardBreak`, `Dodge`, `Dodged`, `Flick`, `BlackFlash`, `Feint`, `Bolt`, `Buff`, `Burst`) with `{ Id = "", Volume = n, PitchJitter = n }`.
-- [ ] With all slots empty, no `Sound` instances are created and no warnings appear in Output.
-- [ ] Filling one slot with a valid `rbxassetid://` plays it 3D-positioned at the character's root, with the configured volume and random pitch within `PitchJitter`.
-- [ ] Sounds are pooled per kind (max `Presentation.Sounds.PoolSize` concurrent) and cleaned up on character removal.
-
-## Implementation Notes
-
-- Register with `CombatFX.Handlers` via a wrapper so audio runs alongside visuals without ordering dependencies.
-- Use `SoundService:PlayLocalSound` only for the local player's UI-ish cues (Black Flash banner); everything else is a `Sound` parented to the root part.
-
-## Out of Scope
-
-- Music, ambience, UI clicks (Audio epic later).
+- [ ] `Presentation.Sounds` has one entry per `CombatEvent` kind (`Swing`, `SwingHeavy`, `Hit`, `Block`, `Parry`, `GuardBreak`, `Dodge`, `Dodged`, `Flick`, `BlackFlash`, `Feint`, `Bolt`, `Buff`, `Burst`) with `{ Id = "", Volume = n, PitchJitter = n }`.
+- [ ] `Audio.Play(kind, char)` creates a `Sound` parented to the character's root (3D), applies volume and random pitch within jitter, destroys it on `Ended`; it is a no-op (no warning spam) when `Id == ""`.
+- [ ] The local player's own events additionally play 2D (parented to `SoundService`) at `Presentation.Sounds.LocalMix`.
+- [ ] Entering an ID for `Hit` in `Presentation.lua` makes hits audible with no code change (owner verifies with any free Roblox library SFX).
+- [ ] Max concurrent sounds per character is capped by `Presentation.Sounds.MaxPerChar` (oldest is stopped).
 
 ## Files
 
-- `src/client/Audio.lua` (new), `src/shared/Presentation.lua`, `src/client/Main.client.lua`
+- `src/client/Audio.lua` (new), `src/client/CombatFX.lua` (call `Audio.Play` from the dispatcher), `src/shared/Presentation.lua`
 
 ## QA Test Cases
 
-- **AC-2**: Setup: Play with empty slots. Verify: `#workspace:GetDescendants()` of class `Sound` is 0 after a fight; Output clean.
-- **AC-3**: Setup: set `Sounds.Hit.Id` to a free Roblox library sfx id. Verify: hits are audible and pitch varies.
+- **AC-2/4**: put a free SFX ID in `Hit`, hit the dummy. Pass: audible, pitch varies, `#root:GetChildren()` returns to baseline after 2 s.
 
 ## Test Evidence
 

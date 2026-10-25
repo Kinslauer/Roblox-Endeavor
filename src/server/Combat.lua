@@ -246,6 +246,7 @@ function Combat.Stun(char, duration)
 	s.busyUntil = 0
 	s.block = false
 	char:SetAttribute("Blocking", false)
+	fx("Stun", char, duration) -- presentation: cancels the swing telegraph, plays a stagger
 	if endsAt <= s.stunned then
 		return
 	end
@@ -469,7 +470,12 @@ function Combat.Swing(char, spec, mods)
 	s.busyUntil = t0 + spec.End
 	s.windupUntil = t0 + spec.Windup
 	s.swingArmorUntil = if spec.Hyperarmor then t0 + spec.Windup + spec.Active else 0
-	fx("Swing", char, mods.label)
+	-- The client telegraphs from these exact numbers (ADR-0004 / TR-004), so what players see
+	-- lines up with the parry and flick windows the server judges.
+	fx("Swing", char, {
+		label = mods.label, windup = spec.Windup, active = spec.Active, finish = spec.End,
+		weapon = char:GetAttribute("Weapon"), hyperarmor = spec.Hyperarmor == true,
+	})
 
 	task.delay(spec.Windup, function()
 		if s.token ~= token or not isAlive(char) then

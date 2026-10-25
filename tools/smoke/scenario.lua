@@ -150,6 +150,8 @@ check("tutorial panel cleared", last and last[3] == nil)
 local p2 = makePlayer("Rival", 456)
 Players.PlayerAdded:Fire(p2); as(p2); run(2)
 check("second player spawned in open world", p2.Character ~= nil and p2.Character.HumanoidRootPart.CFrame.Position.Y < 100)
+-- story-001: the held weapon is replicated as a character attribute so every client can draw it
+check("Weapon attribute replicated on spawn", p2.Character and p2.Character:GetAttribute("Weapon") == "PipeClub")
 -- teleport them next to each other and fight
 as(player)
 local c1, c2 = player.Character, p2.Character

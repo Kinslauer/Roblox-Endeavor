@@ -123,6 +123,10 @@ end
 function Gear.Push(player)
 	local data, d = PlayerData.Get(player), derived[player]
 	if data and d then
+		-- Replicated so every client can draw the weapon in this character's hand (ADR-0004).
+		if player.Character then
+			player.Character:SetAttribute("Weapon", data.Equipped)
+		end
 		Remotes.LoadoutChanged:FireClient(player, {
 			Stats = d.Stats, Tags = d.Tags, Resist = d.Resist, MaxPosture = d.MaxPosture, WeightScore = d.WeightScore,
 			FlickerRate = d.FlickerRate, FlashBonus = d.FlashBonus,

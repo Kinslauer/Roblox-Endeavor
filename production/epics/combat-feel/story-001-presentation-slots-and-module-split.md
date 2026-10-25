@@ -1,7 +1,7 @@
 # Story 001: Presentation slots + client module split
 
 > **Epic**: Combat Feel
-> **Status**: Ready
+> **Status**: Implemented — awaiting /story-done sign-off (evidence: production/qa/evidence/story-001/)
 > **Layer**: Presentation
 > **Type**: Integration
 > **Estimate**: M

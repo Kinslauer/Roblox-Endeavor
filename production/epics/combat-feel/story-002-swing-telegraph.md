@@ -1,7 +1,7 @@
 # Story 002: Readable swing — windup telegraph, flick cue, swing, recovery
 
 > **Epic**: Combat Feel
-> **Status**: Ready
+> **Status**: Implemented — awaiting /story-done sign-off (evidence: production/qa/evidence/story-002/)
 > **Layer**: Presentation (+ Core: `Swing` payload)
 > **Type**: Visual/Feel
 > **Estimate**: L

@@ -1,7 +1,7 @@
 # Story 004: Procedural weapon in hand
 
 > **Epic**: Combat Feel
-> **Status**: Blocked — BLOCKED: depends on story-001
+> **Status**: Ready
 > **Layer**: Presentation
 > **Type**: Visual/Feel
 > **Estimate**: M
@@ -9,37 +9,37 @@
 
 ## Context
 
-**GDD**: `design/gdd/weapons.md` (Overview: weapon = moveset; seven weapons, six families)
+**GDD**: `design/gdd/weapons.md` (Overview: weapon = moveset, 7 weapons / 7 families)
 **Requirement**: TR-003, TR-007
-**ADR Governing Implementation**: ADR-0004 (Accepted). `WeaponView` builds or clones the held weapon from `Presentation.Weapons[id]`; reads the replicated `Weapon` character attribute so every client sees every player's weapon.
+**ADR**: ADR-0004 — `WeaponView` builds per `Presentation.Weapons[id]`; clones `ReplicatedStorage.Assets.Weapons[Model]` when the slot names one.
 **Engine**: Roblox / Luau | **Risk**: LOW
 
 ## Acceptance Criteria
 
-- [ ] Each of the 7 weapons has a part-built placeholder model (`Presentation.Weapons[id].Build`), welded to `RightHand` (R15) via a `Motor6D`/`Weld` with a per-weapon grip CFrame; `Fists` shows nothing.
-- [ ] Changing `Weapon` attribute (equip at the Test Armory) swaps the model within one frame; unequip/death cleans it up (no orphaned parts in `workspace`).
-- [ ] Models are `CanCollide=false`, `CanQuery=false`, `Massless=true` and don't affect movement.
-- [ ] Setting `Presentation.Weapons[id].ModelName` to the name of a model under `ReplicatedStorage.Assets.Weapons` clones that instead of building the placeholder — no code change.
-- [ ] `SwingAnimator` moves the weapon with the arm (it's welded, so free), and the flick-cue glow attaches to the weapon's `Tip` attachment when present.
-- [ ] Other players' weapons are visible (verify with two Studio clients).
+- [ ] Every character with a `Weapon` attribute (own and others) shows a weapon welded to the right hand: Fists = nothing; PipeClub = grey pipe; RebarBlade = rusted blade; ShockBaton = baton with neon tip; ScrapSpear = long shaft + head; Sledge = heavy head on a haft; ArcPistol = boxy sidearm with neon emitter.
+- [ ] The weapon updates immediately when the attribute changes (armory swap) and is removed on death/respawn without leftovers.
+- [ ] Welds use `Motor6D`/`WeldConstraint` to `RightHand` (R15) or `Right Arm` (R6) with a per-weapon grip `CFrame` from `Presentation.Weapons[id].Grip`.
+- [ ] Setting `Presentation.Weapons[id].Model = "SomeName"` makes `WeaponView` clone `ReplicatedStorage.Assets.Weapons.SomeName` instead of building parts; missing asset falls back to procedural with one `warn`.
+- [ ] All weapon parts are `CanCollide=false`, `CanQuery=false`, `Massless=true`, and never affect the server hitbox (the server uses `GetPartBoundsInRadius` from the root with `FilterDescendantsInstances = {char}`; verify the parts are under `char`).
+- [ ] Playtest: owner identifies each of the 7 weapons on another player/dummy from 20 studs away.
 
 ## Implementation Notes
 
-- Build functions return a `Model` with a `PrimaryPart` named `Handle` and an `Attachment` named `Tip`. Keep each under ~8 parts.
-- Listen to `char:GetAttributeChangedSignal("Weapon")` for every character in `Players` (CharacterAdded + existing), not just the local player.
+- Build once per (character, weaponId); cache; destroy on change. Client-side only, so each client builds its own copies (cheap: ≤6 parts).
+- Watch `Players.PlayerAdded/CharacterAdded` + `GetAttributeChangedSignal("Weapon")`. NPC rigs may carry the attribute later (Enemy v2).
 
 ## Out of Scope
 
-- Animations (002), hit effects (003), armor visuals (later).
+- Swing animation (002), sheathing/holsters, real meshes.
 
 ## Files
 
-- `src/client/WeaponView.lua` (new), `src/shared/Presentation.lua`, `src/client/Main.client.lua`
+- `src/client/WeaponView.lua` (new), `src/shared/Presentation.lua`
 
 ## QA Test Cases
 
-- **AC-1/2**: Setup: arena armory, equip each weapon in turn. Verify: a distinct model appears in the right hand each time, the previous one is gone. Pass: 7/7, screenshot of each.
-- **AC-6**: Setup: Test > Clients and Servers, 2 players. Verify: each sees the other's weapon.
+- **AC-1/6**: arena armory: equip each weapon in turn, screenshot. Pass: 7 distinct silhouettes.
+- **AC-2**: die (dev reset) and respawn; `#char:GetChildren()` has no `WeaponView_*` model before re-equip.
 
 ## Test Evidence
 
@@ -49,4 +49,4 @@
 ## Dependencies
 
 - Depends on: story-001
-- Unlocks: None
+- Unlocks: None (002 uses the weapon part if present, but does not require it)
