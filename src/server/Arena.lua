@@ -71,7 +71,8 @@ end
 local function buildRing()
 	-- base slab doubles as the placeholder city ground
 	part({ Name = "ArenaGround", Size = Vector3.new(700, 4, 700), Position = Vector3.new(0, 0, 0), Color = DARK, Material = Enum.Material.Asphalt })
-	column(ARENA_RADIUS - 2, 0.6, 0, GROUND_TOP, 0, { Name = "ArenaFloor", Color = MID, Material = Enum.Material.Slate })
+	local floor = column(ARENA_RADIUS - 2, 0.6, 0, GROUND_TOP, 0, { Name = "ArenaFloor", Color = MID, Material = Enum.Material.Slate })
+	CollectionService:AddTag(floor, "PlayableArea") -- ambushes only spawn on tagged ground
 	local floorTop = GROUND_TOP + 0.6
 
 	-- neon boundary line on the floor

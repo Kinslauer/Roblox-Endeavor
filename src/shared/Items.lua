@@ -54,6 +54,14 @@ Items.LootTables = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 },
 		{ "PipeClub", 0.1, 1, 1 }, { "ScavHelm", 0.08, 1, 1 }, { "ScrapVest", 0.08, 1, 1 }, { "ScrapGreaves", 0.08, 1, 1 },
 	},
+	Brute = {
+		{ "Scrap", 1, 2, 5 }, { "Cloth", 0.5, 1, 2 }, { "Ration", 0.4, 1, 1 },
+		{ "Sledge", 0.05, 1, 1 }, { "PlatedHelm", 0.06, 1, 1 }, { "RiotPlate", 0.06, 1, 1 }, { "PlatedGreaves", 0.06, 1, 1 },
+	},
+	Gunner = {
+		{ "Scrap", 0.9, 1, 3 }, { "Wire", 0.8, 2, 4 }, { "Cloth", 0.4, 1, 2 },
+		{ "ArcPistol", 0.06, 1, 1 }, { "ArcHood", 0.06, 1, 1 },
+	},
 }
 
 local rng = Random.new()

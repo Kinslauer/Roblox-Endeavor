@@ -48,10 +48,9 @@ local function raiderAmbush()
 	if not pick then
 		return
 	end
-	Remotes.Announce:FireClient(pick.player, "Raiders have found you.", "Event")
-	for _ = 1, rng:NextInteger(2, 4) do
-		local angle = rng:NextNumber(0, math.pi * 2)
-		NPCs.Spawn("Raider", pick.root.Position + Vector3.new(math.cos(angle) * 55, 4, math.sin(angle) * 55))
+	local spawned = NPCs.SpawnAmbush(pick.root.Position)
+	if #spawned > 0 then
+		Remotes.Announce:FireClient(pick.player, "Raiders have found you.", "Event")
 	end
 end
 

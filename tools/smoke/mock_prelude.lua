@@ -155,6 +155,8 @@ end
 function methods.GetPivot(self) return self._pivot or mkcf(V3.zero) end
 function methods.TakeDamage(self, n) self.Health = math.max(0, self.Health - n) end
 function methods.MoveTo(self, p) end
+function methods.SetNetworkOwner() end
+function methods.GetNetworkOwner() return nil end
 function methods.FireClient(self, p, ...) table.insert(FireLog, {self.Name, "client", ...}) end
 function methods.FireAllClients(self, ...) table.insert(FireLog, {self.Name, "all", ...}) end
 function methods.FireServer(self, ...) sig(self, "OnServerEvent"):Fire(Instance.CurrentPlayer, ...) end
@@ -258,8 +260,18 @@ function methods.GetService(self, name)
 		end
 	elseif name == "CollectionService" and not s._init then
 		s._init = true; local tags = {}
-		function s.AddTag(_, inst, tag) tags[tag] = tags[tag] or {}; table.insert(tags[tag], inst) end
+		function s.AddTag(_, inst, tag) tags[tag] = tags[tag] or {}; table.insert(tags[tag], inst); sig(s, "tag:" .. tag):Fire(inst) end
 		function s.GetTagged(_, tag) return tags[tag] or {} end
+		function s.HasTag(_, inst, tag) return table.find(tags[tag] or {}, inst) ~= nil end
+		function s.GetInstanceAddedSignal(_, tag) return sig(s, "tag:" .. tag) end
+	elseif name == "PathfindingService" and not s._init then
+		s._init = true
+		function s.CreatePath() -- straight-line "path": one waypoint at the goal
+			local p = { Status = Enum.PathStatus.Success }
+			function p.ComputeAsync(self_, from, to) self_._wps = { { Position = from, Action = Enum.PathWaypointAction.Walk }, { Position = to, Action = Enum.PathWaypointAction.Walk } } end
+			function p.GetWaypoints(self_) return self_._wps or {} end
+			return p
+		end
 	elseif name == "Debris" and not s._init then
 		s._init = true; function s.AddItem(_, inst, t) task_.delay(t, function() if inst.Parent then inst:Destroy() end end) end
 	elseif name == "TweenService" and not s._init then

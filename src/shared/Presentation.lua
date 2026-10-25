@@ -107,6 +107,18 @@ Presentation.Sounds = {
 -- HitstopFov = degrees of FOV punch at Hitstop; the punch lasts the impact's Hitstop seconds.
 Presentation.Camera = { ShakeMagnitude = 0.6, ShakeDecay = 0.25, ShakeFrequency = 28, HitstopFov = -4 }
 
+-- ---------------------------------------------------------------------------------------------
+-- Locomotion: stock R15 clips played on server-built bodies (players via client/Animate, enemies
+-- via server/NPCs). Swap for custom animations by id; "" disables that clip.
+-- ---------------------------------------------------------------------------------------------
+Presentation.Locomotion = {
+	idle = "rbxassetid://507766666",
+	walk = "rbxassetid://507777826",
+	run = "rbxassetid://507767714",
+	jump = "rbxassetid://507765000",
+	fall = "rbxassetid://507767968",
+}
+
 -- Look up the swing entry for a weapon family and label; falls back to Default.
 function Presentation.SwingFor(family, label)
 	local key = if label == "Heavy" then "Heavy" else "Light"

@@ -4,6 +4,7 @@
 -- that slot is filled. Everything is client-side cosmetic: massless, non-colliding, under the
 -- character in a Model named "WeaponView", so it dies with the character and never touches the
 -- server hitbox (which filters the whole character out anyway).
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -196,10 +197,16 @@ local function watchPlayer(p)
 	end
 end
 
+local COMBATANT_TAG = "Combatant" -- server/NPCs tags enemy bodies; they carry a Weapon attribute too
+
 function WeaponView.Init()
 	Players.PlayerAdded:Connect(watchPlayer)
 	for _, p in Players:GetPlayers() do
 		watchPlayer(p)
+	end
+	CollectionService:GetInstanceAddedSignal(COMBATANT_TAG):Connect(watch)
+	for _, model in CollectionService:GetTagged(COMBATANT_TAG) do
+		watch(model)
 	end
 end
 

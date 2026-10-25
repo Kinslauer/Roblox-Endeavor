@@ -43,7 +43,7 @@ brief names). "Owning GDD" is a file under `design/gdd/`.
 | 14 | Loot (world pickups) | `src/server/Loot.lua` | Economy | MVP | Implemented | none yet | Hold-to-loot ProximityPrompt parts for remains, drops and crates; first looter wins. |
 | 15 | Quests | `src/server/Quests.lua` | Narrative | Vertical Slice | Implemented | none yet | One active quest from a pool of four (collect/kill/craft/bounty); XP + item rewards. |
 | 16 | Events (director) | `src/server/Events.lua` | Gameplay | Vertical Slice | Implemented | none yet | Weighted roll every 60-150 s once open: supply drop (3) or raider ambush (4). Spawns relative to a random player, not bounded to the map. |
-| 17 | NPCs (Raider) | `src/server/NPCs.lua` | Gameplay | MVP | Placeholder | enemies.md | Two-part rig, straight-line chase, untelegraphed melee tick. Header comment: "Placeholder rig + simple chase/attack AI." |
+| 17 | NPCs (Enemy v2) | `src/server/NPCs.lua`, `src/shared/Enemies.lua` | Gameplay | MVP | Implemented | enemies.md | Standardized rigs, `Combat.Swing` telegraphed attacks, pathfinding, leash/despawn, Grunt/Brute/Gunner, ground-checked ambush placement |
 | 18 | Enemy v2 (Grunt/Brute/Gunner) | — | Gameplay | MVP | Planned | enemies.md (Planned section) | R15 rig, PathfindingService, telegraphed attacks. Brief build-order item 3. |
 | 19 | PlayerData | `src/server/PlayerData.lua` | Persistence | MVP | Implemented | none yet | One ProfileService profile per player (`ConduitCharacter_v2`), session-locked; reset in place on death. |
 | 20 | ProfileService (vendored) | `src/server/ProfileService.lua` | Persistence | MVP | Implemented (third-party) | none yet | MadStudioRoblox ProfileService, Apache-2.0. Not a game system; listed for completeness. |

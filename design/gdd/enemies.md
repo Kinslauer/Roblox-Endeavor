@@ -157,7 +157,7 @@ death, a windup telegraph readable at combat range, hit and death sounds.
 
 ## Planned (Enemy v2)
 
-> **PROPOSED — NOT IMPLEMENTED.** Nothing in this section exists in `src/`. It is the design target for
+> **IMPLEMENTED 2026-10-25** in `src/shared/Enemies.lua` + `src/server/NPCs.lua` (see `production/epics/enemy-v2/`). Numbers below are the shipped starting values; the text was written as the proposal. It is the design target for
 > the brief's build-order item 3 ("R15 raider rig, PathfindingService, telegraphed attacks with
 > parry/dodge windows, Grunt / Brute / Gunner variants, fixes for stuck-on-wall spawning"). Numbers
 > are starting proposals tied to existing `Config.Combat` values so the player's defensive tools work

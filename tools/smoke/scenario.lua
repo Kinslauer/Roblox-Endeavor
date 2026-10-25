@@ -166,6 +166,43 @@ c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, -4), M.V3.new(0, 5, 0))
 local before = c2.Humanoid.Health
 Remotes.Attack:FireServer(); run(0.8)
 check("PvP hit lands in the open world", c2.Humanoid.Health < before)
+-- Enemy v2: a Grunt telegraphs (Swing) before it can hit, and a timed block parries it
+do
+	local NPCs = M.mockEnv.__require(SSS.Server.NPCs)
+	local Enemies = M.mockEnv.__require(RS.Shared.Enemies)
+	local me = player.Character
+	-- park the rival far away so the grunt picks us
+	c2.HumanoidRootPart.CFrame = M.CF.new(400, 5, 400)
+	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(50, 5, 50), M.V3.new(50, 5, 46))
+	local function eventsSince(n) local out = {} for i = n + 1, #M.FireLog do table.insert(out, M.FireLog[i]) end return out end
+	local mark = #M.FireLog
+	local hpBefore = me.Humanoid.Health
+	local spawnedAt = M.setNow()
+	local grunt = NPCs.Spawn("Grunt", M.V3.new(50, 5, 46)) -- in range: its AI swings on the first tick
+	check("grunt spawned with a Weapon attribute", grunt ~= nil and grunt:GetAttribute("Weapon") == "PipeClub")
+	local swung = false
+	run(1, function()
+		for _, e in eventsSince(mark) do if e[1] == "CombatEvent" and e[3] == "Swing" and e[4] == grunt then swung = true return true end end
+		return false
+	end)
+	check("grunt attacks through Combat.Swing (Swing event emitted)", swung)
+	local windup = Enemies.Defs.Grunt.Attack.Windup
+	local elapsed = M.setNow() - spawnedAt
+	run(math.max(0, windup * 0.8 - elapsed))
+	check("no damage before the windup ends", me.Humanoid.Health == hpBefore)
+	-- block now: inside the parry window (ParryWindow 0.22 >= the ~0.12 s left of the windup)
+	Remotes.Block:FireServer(true); run(0.5); Remotes.Block:FireServer(false)
+	local parried = false
+	for _, e in eventsSince(mark) do if e[1] == "CombatEvent" and e[3] == "Parry" and e[4] == me then parried = true end end
+	check("timed block parries the grunt", parried and me.Humanoid.Health == hpBefore)
+	local gs = M.mockEnv.__require(SSS.Server.Combat).State(grunt)
+	check("parried grunt is stunned", gs.stunned > M.setNow())
+	grunt.Humanoid.Health = 0; run(0.5)
+	check("grunt death drops spoils", workspace_:FindFirstChild("Lootable", true) ~= nil)
+	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, 0), M.V3.new(0, 5, -4))
+	c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, -4), M.V3.new(0, 5, 0))
+end
+
 -- kill rival -> permadeath
 local invBefore = 0
 c2.Humanoid.Health = 0

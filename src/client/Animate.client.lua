@@ -2,14 +2,9 @@
 -- so Roblox's default Animate script never runs for them. This plays the stock R15 animations
 -- until the real per-weapon set exists. Ids are Roblox's default R15 animations; swap freely.
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local IDS = {
-	idle = "rbxassetid://507766666",
-	walk = "rbxassetid://507777826",
-	run = "rbxassetid://507767714",
-	jump = "rbxassetid://507765000",
-	fall = "rbxassetid://507767968",
-}
+local IDS = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Presentation")).Locomotion
 
 local player = Players.LocalPlayer
 
