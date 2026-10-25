@@ -8,17 +8,21 @@ local Presentation = {}
 
 -- ---------------------------------------------------------------------------------------------
 -- Weapons: what sits in the right hand. ModelName = a Model under ReplicatedStorage.Assets.Weapons
--- (cloned when set). Otherwise WeaponView builds the placeholder named by Build.
--- Grip = CFrame offset from the RightHand (R15) / Right Arm (R6) to the Handle.
+-- (cloned when set; it must contain a Part named "Handle"). Otherwise WeaponView builds the
+-- procedural placeholder named by Build, using Color / Accent / Length.
+-- Procedural weapons extend along the handle's -Y (out of the fist, past the little finger), so
+-- they point down at rest and forward/up when the arm is raised. Grip = extra CFrame applied to
+-- the Handle relative to the hand (identity = gripped at the top of the shaft).
 -- ---------------------------------------------------------------------------------------------
 Presentation.Weapons = {
 	Fists = { ModelName = "", Build = nil }, -- nothing in hand
-	PipeClub = { ModelName = "", Build = "Club", Grip = CFrame.new(0, -1.2, 0) * CFrame.Angles(math.rad(90), 0, 0), Color = Color3.fromRGB(110, 110, 115) },
-	RebarBlade = { ModelName = "", Build = "Blade", Grip = CFrame.new(0, -1.6, 0) * CFrame.Angles(math.rad(90), 0, 0), Color = Color3.fromRGB(150, 120, 100) },
-	ShockBaton = { ModelName = "", Build = "Baton", Grip = CFrame.new(0, -1.1, 0) * CFrame.Angles(math.rad(90), 0, 0), Color = Color3.fromRGB(40, 40, 50), Accent = Color3.fromRGB(90, 200, 255) },
-	ScrapSpear = { ModelName = "", Build = "Spear", Grip = CFrame.new(0, -2.2, 0) * CFrame.Angles(math.rad(90), 0, 0), Color = Color3.fromRGB(120, 95, 70) },
-	Sledge = { ModelName = "", Build = "Hammer", Grip = CFrame.new(0, -1.5, 0) * CFrame.Angles(math.rad(90), 0, 0), Color = Color3.fromRGB(80, 80, 85) },
-	ArcPistol = { ModelName = "", Build = "Pistol", Grip = CFrame.new(0, -0.4, -0.3) * CFrame.Angles(0, 0, 0), Color = Color3.fromRGB(50, 55, 65), Accent = Color3.fromRGB(120, 200, 255) },
+	PipeClub = { ModelName = "", Build = "Club", Length = 3.4, Color = Color3.fromRGB(110, 110, 115), Grip = CFrame.identity },
+	RebarBlade = { ModelName = "", Build = "Blade", Length = 3.6, Color = Color3.fromRGB(150, 120, 100), Accent = Color3.fromRGB(190, 185, 170), Grip = CFrame.identity },
+	ShockBaton = { ModelName = "", Build = "Baton", Length = 2.8, Color = Color3.fromRGB(40, 40, 50), Accent = Color3.fromRGB(90, 200, 255), Grip = CFrame.identity },
+	ScrapSpear = { ModelName = "", Build = "Spear", Length = 6.5, Color = Color3.fromRGB(120, 95, 70), Accent = Color3.fromRGB(170, 170, 175), Grip = CFrame.new(0, 2.2, 0) }, -- held a third of the way down
+	Sledge = { ModelName = "", Build = "Hammer", Length = 3.8, Color = Color3.fromRGB(80, 80, 85), Accent = Color3.fromRGB(60, 60, 65), Grip = CFrame.identity },
+	ArcPistol = { ModelName = "", Build = "Pistol", Length = 1.3, Color = Color3.fromRGB(50, 55, 65), Accent = Color3.fromRGB(120, 200, 255), Grip = CFrame.identity }, -- grip upright, barrel along the hand's forward
+	HandOffset = Vector3.new(0, -0.3, 0), -- where the fist closes, relative to the hand part's centre
 }
 
 -- ---------------------------------------------------------------------------------------------
