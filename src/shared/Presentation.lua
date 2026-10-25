@@ -46,19 +46,31 @@ Presentation.Swings = {
 -- Impacts: one entry per CombatEvent kind. Duration/colour of the placeholder effect; Hitstop and
 -- Shake are consumed by story 003 (zero = off).
 -- ---------------------------------------------------------------------------------------------
+-- Flash    = Highlight pulse seconds        Hitstop = camera FOV punch seconds (local attacker/victim only)
+-- Shake    = camera shake amplitude 0..1    Sparks  = { Count, Color, Size, Speed, Life } particle burst
+-- Ring     = { Color, Size, Life } expanding flat ring   Ghost = after-image seconds   Shards = shatter burst
 Presentation.Impacts = {
-	Hit = { Color = Color3.fromRGB(255, 70, 70), Flash = 0.15, Hitstop = 0.05, Shake = 0.35 },
-	Block = { Color = Color3.fromRGB(150, 150, 255), Flash = 0.15, Hitstop = 0, Shake = 0.15 },
-	Parry = { Color = Color3.fromRGB(255, 255, 255), Flash = 0.2, Hitstop = 0.08, Shake = 0.5 },
-	GuardBreak = { Color = Color3.fromRGB(255, 160, 0), Flash = 0.25, Hitstop = 0.1, Shake = 0.7 },
+	Hit = { Color = Color3.fromRGB(255, 70, 70), Flash = 0.15, Hitstop = 0.05, Shake = 0.35,
+		Sparks = { Count = 14, Color = Color3.fromRGB(255, 120, 60), Size = 0.35, Speed = 18, Life = 0.3 },
+		HeavyAmount = 20 }, -- damage at/above this shakes with the Heavy multiplier
+	HeavyShakeMult = 1.8,
+	Block = { Color = Color3.fromRGB(150, 150, 255), Flash = 0.15, Hitstop = 0, Shake = 0.15,
+		Sparks = { Count = 8, Color = Color3.fromRGB(140, 170, 255), Size = 0.25, Speed = 12, Life = 0.25 } },
+	Parry = { Color = Color3.fromRGB(255, 255, 255), Flash = 0.2, Hitstop = 0.08, Shake = 0.5,
+		Sparks = { Count = 18, Color = Color3.fromRGB(255, 255, 255), Size = 0.3, Speed = 22, Life = 0.3 },
+		Ring = { Color = Color3.fromRGB(255, 255, 255), Size = 9, Life = 0.3 } },
+	GuardBreak = { Color = Color3.fromRGB(255, 160, 0), Flash = 0.25, Hitstop = 0.1, Shake = 0.7,
+		Shards = { Count = 16, Color = Color3.fromRGB(255, 170, 40), Size = 0.6, Speed = 26, Life = 0.6 } },
 	Burst = { Color = Color3.fromRGB(80, 170, 255), Flash = 0.15, Hitstop = 0, Shake = 0.2 },
 	Dodge = { Color = Color3.fromRGB(120, 255, 200), Flash = 0.15, Hitstop = 0, Shake = 0 },
-	Dodged = { Color = Color3.fromRGB(80, 255, 230), Flash = 0.25, Hitstop = 0, Shake = 0 },
+	Dodged = { Color = Color3.fromRGB(80, 255, 230), Flash = 0.25, Hitstop = 0, Shake = 0, Ghost = 0.35 },
 	Buff = { Color = Color3.fromRGB(255, 220, 120), Flash = 0.15, Hitstop = 0, Shake = 0 },
 	Flick = { Color = Color3.fromRGB(255, 60, 60), Flash = 0.15, Hitstop = 0, Shake = 0.1, LevelScale = 0.5 },
 	Feint = { Color = Color3.fromRGB(200, 200, 200), Flash = 0.15, Hitstop = 0, Shake = 0 },
 	BlackFlash = { Color = Color3.fromRGB(255, 20, 20), Flash = 0.35, Hitstop = 0.12, Shake = 1.0, BannerSeconds = 1.2 },
-	Bolt = { Color = Color3.fromRGB(120, 200, 255), Flash = 0.1 },
+	Bolt = { Color = Color3.fromRGB(120, 200, 255), Flash = 0.1,
+		Muzzle = { Size = 1.2, Life = 0.08 },
+		Sparks = { Count = 8, Color = Color3.fromRGB(160, 220, 255), Size = 0.25, Speed = 14, Life = 0.25 } },
 	MaxInstances = 60, -- live placeholder FX parts allowed in workspace.FX at once
 }
 
@@ -78,7 +90,9 @@ Presentation.Sounds = {
 -- ---------------------------------------------------------------------------------------------
 -- Camera: shake magnitudes are studs of offset at Shake = 1; consumed by story 003.
 -- ---------------------------------------------------------------------------------------------
-Presentation.Camera = { ShakeMagnitude = 0.6, ShakeDecay = 0.25, ShakeFrequency = 28 }
+-- ShakeMagnitude = studs of camera offset at Shake 1; ShakeDecay = seconds to settle; ShakeFrequency = Hz
+-- HitstopFov = degrees of FOV punch at Hitstop; the punch lasts the impact's Hitstop seconds.
+Presentation.Camera = { ShakeMagnitude = 0.6, ShakeDecay = 0.25, ShakeFrequency = 28, HitstopFov = -4 }
 
 -- Look up the swing entry for a weapon family and label; falls back to Default.
 function Presentation.SwingFor(family, label)

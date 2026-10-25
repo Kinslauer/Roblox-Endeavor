@@ -1,14 +1,11 @@
 -- CombatFX: the single subscriber to Remotes.CombatEvent. Dispatches by kind to handlers that other
--- presentation modules register (SwingAnimator, WeaponView, Audio ...). Presentation only: the
+-- presentation modules register (Impacts, SwingAnimator, WeaponView, Audio ...). Presentation only: the
 -- one piece of state it touches is the local character's own root velocity, which the client owns.
 local Debris = game:GetService("Debris")
-local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Config = require(Shared:WaitForChild("Config"))
 local Presentation = require(Shared:WaitForChild("Presentation"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local Hud = require(script.Parent.Hud)
@@ -65,42 +62,9 @@ function CombatFX.Flash(char, color, seconds)
 	Debris:AddItem(h, seconds)
 end
 
-local function blackFlash(attacker, victim)
-	local spec = Presentation.Impacts.BlackFlash
-	local vroot = rootOf(victim)
-	if vroot then
-		local spark = Instance.new("Part")
-		spark.Shape, spark.Anchored, spark.CanCollide, spark.CanQuery = Enum.PartType.Ball, true, false, false
-		spark.Material, spark.Color, spark.Size, spark.Position = Enum.Material.Neon, spec.Color, Vector3.new(2, 2, 2), vroot.Position
-		if CombatFX.Spawn(spark, spec.Flash + 0.05) then
-			TweenService:Create(spark, TweenInfo.new(spec.Flash), { Size = Vector3.new(12, 12, 12), Transparency = 1 }):Play()
-		end
-	end
-	if attacker == player.Character or victim == player.Character then
-		local cc = Instance.new("ColorCorrectionEffect")
-		cc.Brightness, cc.Contrast, cc.Saturation, cc.TintColor = -0.35, 0.6, -1, Color3.fromRGB(255, 120, 120)
-		cc.Parent = Lighting
-		TweenService:Create(cc, TweenInfo.new(0.4), { Brightness = 0, Contrast = 0, Saturation = 0, TintColor = Color3.new(1, 1, 1) }):Play()
-		Debris:AddItem(cc, 0.5)
-		Hud.Banner(("BLACK FLASH  x%.1f"):format(Config.Flicker.BlackFlashMult), spec.Color, spec.BannerSeconds)
-	end
-end
-
-local function bolt(char, hitPos)
-	local from = rootOf(char)
-	if not from or typeof(hitPos) ~= "Vector3" then
-		return
-	end
-	local length = (hitPos - from.Position).Magnitude
-	local beam = Instance.new("Part")
-	beam.Anchored, beam.CanCollide, beam.CanQuery, beam.Material = true, false, false, Enum.Material.Neon
-	beam.Color, beam.Size = Presentation.Impacts.Bolt.Color, Vector3.new(0.2, 0.2, length)
-	beam.CFrame = CFrame.lookAt(from.Position, hitPos) * CFrame.new(0, 0, -length / 2)
-	CombatFX.Spawn(beam, Presentation.Impacts.Bolt.Flash)
-end
-
 function CombatFX.Init()
-	-- Built-in handlers (the pre-split behaviour). Stories 002-005 add more via CombatFX.On.
+	-- Built-in handlers: own-character physics, skill cooldowns, and a Highlight pulse for every
+	-- impact kind. Impacts / SwingAnimator / Audio add the richer effects via CombatFX.On.
 	local function ownVelocity(v)
 		local root = rootOf(player.Character)
 		if root and typeof(v) == "Vector3" then
@@ -109,8 +73,6 @@ function CombatFX.Init()
 	end
 	CombatFX.On("DodgeMove", ownVelocity)
 	CombatFX.On("Knockback", ownVelocity)
-	CombatFX.On("BlackFlash", blackFlash)
-	CombatFX.On("Bolt", bolt)
 	CombatFX.On("SkillCD", function(skillId, seconds)
 		Hud.SetCooldown(skillId, seconds)
 	end)

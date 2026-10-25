@@ -1,7 +1,7 @@
 # Story 003: Impact feedback — sparks, hitstop, shake, parry/block/dodge cues
 
 > **Epic**: Combat Feel
-> **Status**: Ready
+> **Status**: Implemented — awaiting owner playtest (evidence: production/qa/evidence/story-003/)
 > **Layer**: Presentation
 > **Type**: Visual/Feel
 > **Estimate**: M
@@ -35,7 +35,7 @@
 
 ## Files
 
-- `src/client/CombatFX.lua`, `src/client/CameraShake.lua` (new), `src/shared/Presentation.lua`
+- `src/client/Impacts.lua` (new), `src/client/CameraShake.lua` (new), `src/client/CombatFX.lua` (BlackFlash/Bolt moved out), `src/client/Main.client.lua`, `src/shared/Presentation.lua`, `src/server/Combat.lua` (impact events carry the attacker; Hit carries the amount)
 
 ## QA Test Cases
 

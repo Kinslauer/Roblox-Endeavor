@@ -3,12 +3,16 @@
 -- then the CombatEvent dispatcher, then the modules that register handlers on it, then input.
 local Hud = require(script.Parent.Hud)
 local CombatFX = require(script.Parent.CombatFX)
+local CameraShake = require(script.Parent.CameraShake)
+local Impacts = require(script.Parent.Impacts)
 local FlickerAura = require(script.Parent.FlickerAura)
 local SwingAnimator = require(script.Parent.SwingAnimator)
 local Input = require(script.Parent.Input)
 
 Hud.Init()
 CombatFX.Init()
+CameraShake.Init()
+Impacts.Init()
 FlickerAura.Init()
 SwingAnimator.Init()
 Input.Init()

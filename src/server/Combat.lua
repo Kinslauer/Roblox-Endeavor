@@ -300,7 +300,7 @@ local function applyDamage(attacker, victim, amount, opts)
 
 	local vs, t, vd = st(victim), os.clock(), Gear.OfChar(victim)
 	if t < vs.iframes then
-		fx("Dodged", victim)
+		fx("Dodged", victim, attacker)
 		return "dodged"
 	end
 
@@ -314,18 +314,18 @@ local function applyDamage(attacker, victim, amount, opts)
 		if t - vs.blockStart <= vd.ParryWindow then
 			Combat.Stun(attacker, C.ParryStun)
 			Combat.AddPosture(victim, -C.ParryPostureRelief)
-			fx("Parry", victim)
+			fx("Parry", victim, attacker)
 			return "parried"
 		end
 		local posture = Combat.AddPosture(victim, opts.Posture or 0)
 		if opts.GuardBreak or posture >= (victim:GetAttribute("MaxPosture") or 1) then
 			victim:SetAttribute("Posture", 0)
 			Combat.Stun(victim, C.GuardBreakStun)
-			fx("GuardBreak", victim)
+			fx("GuardBreak", victim, attacker)
 			result = "guardbreak"
 		else
 			amount *= 1 - vd.BlockReduction
-			fx("Block", victim)
+			fx("Block", victim, attacker)
 			result = "blocked"
 		end
 	end
@@ -345,7 +345,7 @@ local function applyDamage(attacker, victim, amount, opts)
 		end
 	end
 	if result == "hit" then
-		fx("Hit", victim)
+		fx("Hit", victim, { attacker = attacker, amount = amount })
 	end
 	return result
 end
