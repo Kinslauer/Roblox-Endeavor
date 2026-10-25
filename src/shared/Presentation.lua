@@ -20,14 +20,17 @@ Presentation.Weapons = {
 	RebarBlade = { ModelName = "", Build = "Blade", Length = 3.6, Color = Color3.fromRGB(150, 120, 100), Accent = Color3.fromRGB(190, 185, 170), Grip = CFrame.identity },
 	ShockBaton = { ModelName = "", Build = "Baton", Length = 2.8, Color = Color3.fromRGB(40, 40, 50), Accent = Color3.fromRGB(90, 200, 255), Grip = CFrame.identity },
 	ScrapSpear = { ModelName = "", Build = "Spear", Length = 6.5, Color = Color3.fromRGB(120, 95, 70), Accent = Color3.fromRGB(170, 170, 175), Grip = CFrame.new(0, 2.2, 0), -- held a third of the way down
-		TwoHanded = true, Stance = { Right = { -30, -20, 10 }, Left = { -40, 40, -10 } } },
+		TwoHanded = true, Stance = { Right = { 30, 0, -40 }, Left = { 45, 0, 40 } } }, -- measured: hands at (0.44, -0.4, -1.0) / (-0.17, 0, -1.3) from the root
 	Sledge = { ModelName = "", Build = "Hammer", Length = 3.8, Color = Color3.fromRGB(80, 80, 85), Accent = Color3.fromRGB(60, 60, 65), Grip = CFrame.identity,
-		TwoHanded = true, Stance = { Right = { -25, -25, 15 }, Left = { -35, 45, -15 } } },
+		TwoHanded = true, Stance = { Right = { 25, 0, -45 }, Left = { 35, 0, 50 } } },
 	ArcPistol = { ModelName = "", Build = "Pistol", Length = 1.3, Color = Color3.fromRGB(50, 55, 65), Accent = Color3.fromRGB(120, 200, 255), Grip = CFrame.Angles(math.rad(-90), 0, 0) }, -- barrel runs down the arm line, so it points where the arm points
 	HandOffset = Vector3.new(0, -0.3, 0), -- where the fist closes, relative to the hand part's centre
 	-- TwoHanded: the left arm follows the swing (yaw/roll mirrored) and both arms hold the Stance at
 	-- rest. Stance = { Right = {pitch,yaw,roll}, Left = {...} } shoulder degrees applied while idle;
 	-- a weapon without one hangs at the side. StanceBlend = seconds to ease in/out.
+	-- Shoulder sign convention (measured on the R15 rig): +pitch raises the arm FORWARD (+90 = level,
+	-- pointing ahead), -pitch swings it backward; roll moves the hand across the body (right arm:
+	-- negative = inward, left arm: positive = inward). Yaw mostly twists the arm about its own axis.
 	StanceBlend = 0.25,
 }
 
@@ -46,9 +49,9 @@ Presentation.Swings = {
 		Blunt = {}, Blade = {}, Baton = {}, Spear = { Light = { AnimationId = "", Pose = { -60, 0, 10 }, Swing = { 40, 0, -10 } } }, Hammer = {},
 		-- Sidearm: the arm comes up to the firing line and stays there (HoldAfter seconds since the
 		-- last shot) before lowering; the heavy is a braced two-handed shot.
-		Sidearm = {
-			Light = { AnimationId = "", Pose = { -90, 0, 0 }, Swing = { -90, 0, 0 }, HoldAfter = 2 },
-			Heavy = { AnimationId = "", Pose = { -95, -10, 0 }, Swing = { -90, -5, 0 }, HoldAfter = 2 },
+		Sidearm = { -- +90 = arm level, pointing forward (see the sign note above Weapons)
+			Light = { AnimationId = "", Pose = { 90, 0, 0 }, Swing = { 90, 0, 0 }, HoldAfter = 2 },
+			Heavy = { AnimationId = "", Pose = { 95, 0, -10 }, Swing = { 90, 0, -5 }, HoldAfter = 2 },
 		},
 	},
 	HoldLower = 0.3, -- seconds to lower a held arm once HoldAfter runs out
