@@ -32,9 +32,8 @@ function CameraShake.Hitstop(seconds)
 	end
 	if fovTween then
 		fovTween:Cancel()
-	else
-		baseFov = camera.FieldOfView
 	end
+	baseFov = CameraShake.BaseFov or camera.FieldOfView -- Aim owns the base (ADS changes it)
 	camera.FieldOfView = baseFov + CAM.HitstopFov
 	fovTween = TweenService:Create(camera, TweenInfo.new(seconds, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { FieldOfView = baseFov })
 	fovTween.Completed:Once(function()

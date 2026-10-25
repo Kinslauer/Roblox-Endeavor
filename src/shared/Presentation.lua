@@ -19,10 +19,16 @@ Presentation.Weapons = {
 	PipeClub = { ModelName = "", Build = "Club", Length = 3.4, Color = Color3.fromRGB(110, 110, 115), Grip = CFrame.identity },
 	RebarBlade = { ModelName = "", Build = "Blade", Length = 3.6, Color = Color3.fromRGB(150, 120, 100), Accent = Color3.fromRGB(190, 185, 170), Grip = CFrame.identity },
 	ShockBaton = { ModelName = "", Build = "Baton", Length = 2.8, Color = Color3.fromRGB(40, 40, 50), Accent = Color3.fromRGB(90, 200, 255), Grip = CFrame.identity },
-	ScrapSpear = { ModelName = "", Build = "Spear", Length = 6.5, Color = Color3.fromRGB(120, 95, 70), Accent = Color3.fromRGB(170, 170, 175), Grip = CFrame.new(0, 2.2, 0) }, -- held a third of the way down
-	Sledge = { ModelName = "", Build = "Hammer", Length = 3.8, Color = Color3.fromRGB(80, 80, 85), Accent = Color3.fromRGB(60, 60, 65), Grip = CFrame.identity },
+	ScrapSpear = { ModelName = "", Build = "Spear", Length = 6.5, Color = Color3.fromRGB(120, 95, 70), Accent = Color3.fromRGB(170, 170, 175), Grip = CFrame.new(0, 2.2, 0), -- held a third of the way down
+		TwoHanded = true, Stance = { Right = { -30, -20, 10 }, Left = { -40, 40, -10 } } },
+	Sledge = { ModelName = "", Build = "Hammer", Length = 3.8, Color = Color3.fromRGB(80, 80, 85), Accent = Color3.fromRGB(60, 60, 65), Grip = CFrame.identity,
+		TwoHanded = true, Stance = { Right = { -25, -25, 15 }, Left = { -35, 45, -15 } } },
 	ArcPistol = { ModelName = "", Build = "Pistol", Length = 1.3, Color = Color3.fromRGB(50, 55, 65), Accent = Color3.fromRGB(120, 200, 255), Grip = CFrame.Angles(math.rad(-90), 0, 0) }, -- barrel runs down the arm line, so it points where the arm points
 	HandOffset = Vector3.new(0, -0.3, 0), -- where the fist closes, relative to the hand part's centre
+	-- TwoHanded: the left arm follows the swing (yaw/roll mirrored) and both arms hold the Stance at
+	-- rest. Stance = { Right = {pitch,yaw,roll}, Left = {...} } shoulder degrees applied while idle;
+	-- a weapon without one hangs at the side. StanceBlend = seconds to ease in/out.
+	StanceBlend = 0.25,
 }
 
 -- ---------------------------------------------------------------------------------------------
@@ -37,8 +43,15 @@ Presentation.Swings = {
 	},
 	Families = {
 		Fists = { Light = { AnimationId = "", Pose = { -80, 0, 20 }, Swing = { 10, -30, -10 } }, Heavy = { AnimationId = "", Pose = { -130, 0, 40 }, Swing = { 20, -40, -20 } } },
-		Blunt = {}, Blade = {}, Baton = {}, Spear = { Light = { AnimationId = "", Pose = { -60, 0, 10 }, Swing = { 40, 0, -10 } } }, Hammer = {}, Sidearm = { Light = { AnimationId = "", Pose = { -90, 0, 0 }, Swing = { -90, 0, 0 } } },
+		Blunt = {}, Blade = {}, Baton = {}, Spear = { Light = { AnimationId = "", Pose = { -60, 0, 10 }, Swing = { 40, 0, -10 } } }, Hammer = {},
+		-- Sidearm: the arm comes up to the firing line and stays there (HoldAfter seconds since the
+		-- last shot) before lowering; the heavy is a braced two-handed shot.
+		Sidearm = {
+			Light = { AnimationId = "", Pose = { -90, 0, 0 }, Swing = { -90, 0, 0 }, HoldAfter = 2 },
+			Heavy = { AnimationId = "", Pose = { -95, -10, 0 }, Swing = { -90, -5, 0 }, HoldAfter = 2 },
+		},
 	},
+	HoldLower = 0.3, -- seconds to lower a held arm once HoldAfter runs out
 	-- Flick cue: a glow that ramps during the windup and peaks Config.Flicker.Window before impact.
 	Cue = { Color = Color3.fromRGB(255, 60, 60), ZoneColor = Color3.fromRGB(255, 200, 80), MaxBrightness = 6, MaxRange = 10 },
 	HeavyColor = Color3.fromRGB(255, 170, 60),
@@ -128,6 +141,10 @@ Presentation.Aim = {
 	ToggleKey = Enum.KeyCode.LeftControl,
 	FreeCursorKey = Enum.KeyCode.LeftAlt, -- hold to free the mouse (click HUD buttons) without leaving the stance
 	ShoulderOffset = Vector3.new(1.75, 0.5, 0),
+	-- Ranged weapons: right mouse = aim down sights (first person, narrow FOV) while held; the
+	-- weapon's special (its Heavy) moves to SpecialKeys. Melee weapons keep right mouse = heavy.
+	ADS = { Fov = 42, NormalFov = 70, ZoomTime = 0.12, FirstPerson = true },
+	SpecialKeys = { Enum.UserInputType.MouseButton3, Enum.KeyCode.G },
 }
 
 -- ---------------------------------------------------------------------------------------------

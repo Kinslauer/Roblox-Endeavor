@@ -43,7 +43,7 @@ local states = setmetatable({}, { __mode = "k" })
 local function stateOf(char)
 	local s = states[char]
 	if not s then
-		s = { token = 0, tweens = {} }
+		s = { token = 0, tweens = {}, stance = { Right = {}, Left = {} } }
 		states[char] = s
 	end
 	return s
@@ -56,18 +56,28 @@ local function isAnimJoint(inst)
 	return inst ~= nil and (inst:IsA("Motor6D") or inst:IsA("AnimationConstraint"))
 end
 
-local function shoulderOf(char)
-	local upperArm = char:FindFirstChild("RightUpperArm")
-	local m = upperArm and upperArm:FindFirstChild("RightShoulder")
+local function shoulderOf(char, side)
+	side = side or "Right"
+	local upperArm = char:FindFirstChild(side .. "UpperArm")
+	local m = upperArm and upperArm:FindFirstChild(side .. "Shoulder")
 	if isAnimJoint(m) then
 		return m
 	end
 	local torso = char:FindFirstChild("Torso")
-	m = torso and torso:FindFirstChild("Right Shoulder")
+	m = torso and torso:FindFirstChild(side .. " Shoulder")
 	if isAnimJoint(m) then
 		return m
 	end
 	return nil
+end
+
+-- The left arm mirrors the right arm's pose: same pitch, opposite yaw and roll.
+local function mirror(pose)
+	return { pose[1], -pose[2], -pose[3] }
+end
+
+local function weaponSlot(char)
+	return Presentation.Weapons[char:GetAttribute("Weapon") or ""]
 end
 
 local function handOf(char)
@@ -131,24 +141,48 @@ local function makeCue(char, color)
 	return orb
 end
 
--- Current Transform the pose timeline wants, or nil when the pose has finished.
-local function poseTransform(pose, now)
+-- Current Transform the pose timeline wants (for one arm), or nil when the pose has finished.
+-- `rest` is where the arm returns to (the weapon's stance, or identity). A pose with `hold`
+-- stays at the swing position until holdUntil, then lowers over HoldLower.
+local function poseTransform(pose, arm, now, rest)
 	local t = now - pose.t0
 	if pose.from then -- cancel blend: from -> rest
 		if t >= CANCEL_TIME then
 			return nil
 		end
-		return pose.from:Lerp(IDENTITY, ease(t / CANCEL_TIME))
+		return arm.from:Lerp(rest, ease(t / CANCEL_TIME))
 	end
 	if t < pose.windup then
-		return IDENTITY:Lerp(pose.wind, ease(t / pose.windup, Enum.EasingStyle.Sine))
+		return arm.start:Lerp(arm.wind, ease(t / pose.windup, Enum.EasingStyle.Sine))
 	elseif t < pose.windup + pose.active then
-		return pose.wind:Lerp(pose.swing, ease((t - pose.windup) / pose.active, Enum.EasingStyle.Quart))
+		return arm.wind:Lerp(arm.swing, ease((t - pose.windup) / pose.active, Enum.EasingStyle.Quart))
+	elseif pose.holdUntil then
+		if now < pose.holdUntil then
+			return arm.swing
+		end
+		local lower = P.HoldLower or 0.3
+		if now < pose.holdUntil + lower then
+			return arm.swing:Lerp(rest, ease((now - pose.holdUntil) / lower, Enum.EasingStyle.Sine))
+		end
+		return nil
 	elseif t < pose.finish then
 		local recover = math.max(pose.finish - pose.windup - pose.active, MIN_SEGMENT)
-		return pose.swing:Lerp(IDENTITY, ease((t - pose.windup - pose.active) / recover, Enum.EasingStyle.Sine))
+		return arm.swing:Lerp(rest, ease((t - pose.windup - pose.active) / recover, Enum.EasingStyle.Sine))
 	end
 	return nil
+end
+
+-- Resting transform for a shoulder: the equipped weapon's stance, eased in and out over StanceBlend.
+local function restTransform(char, s, side, now)
+	local slot = weaponSlot(char)
+	local target = slot and slot.Stance and slot.Stance[side] and anglesOf(slot.Stance[side]) or IDENTITY
+	local st = s.stance[side]
+	if st.target ~= target then
+		st.from, st.target, st.t0 = st.current or IDENTITY, target, now
+	end
+	local blend = Presentation.Weapons.StanceBlend or 0.25
+	st.current = (st.from or IDENTITY):Lerp(target, ease((now - (st.t0 or now)) / blend, Enum.EasingStyle.Sine))
+	return st.current, target == IDENTITY and st.current == IDENTITY
 end
 
 local function cancel(char)
@@ -161,8 +195,12 @@ local function cancel(char)
 	killTweens(s)
 	removeCue(s)
 	if s.pose and s.pose.motor.Parent then
-		-- blend from wherever the arm is now back to rest
-		s.pose = { motor = s.pose.motor, t0 = os.clock(), from = s.pose.motor.Transform }
+		-- blend from wherever the arms are now back to rest
+		local arms = { Right = { from = s.pose.motor.Transform } }
+		if s.pose.left and s.pose.left.Parent then
+			arms.Left = { from = s.pose.left.Transform }
+		end
+		s.pose = { motor = s.pose.motor, left = s.pose.left, t0 = os.clock(), from = true, arms = arms }
 	else
 		s.pose = nil
 	end
@@ -247,9 +285,16 @@ local function onSwing(char, info)
 	else
 		local motor = shoulderOf(char)
 		if motor then
+			local slot = weaponSlot(char)
+			local left = if slot and slot.TwoHanded then shoulderOf(char, "Left") else nil
+			local arms = { Right = { start = motor.Transform, wind = anglesOf(entry.Pose), swing = anglesOf(entry.Swing) } }
+			if left then
+				arms.Left = { start = left.Transform, wind = anglesOf(mirror(entry.Pose)), swing = anglesOf(mirror(entry.Swing)) }
+			end
 			s.pose = {
-				motor = motor, t0 = os.clock(), windup = math.max(windup, MIN_SEGMENT), active = math.max(active, MIN_SEGMENT),
-				finish = math.max(finish, windup + active + MIN_SEGMENT), wind = anglesOf(entry.Pose), swing = anglesOf(entry.Swing),
+				motor = motor, left = left, t0 = os.clock(), windup = math.max(windup, MIN_SEGMENT), active = math.max(active, MIN_SEGMENT),
+				finish = math.max(finish, windup + active + MIN_SEGMENT), arms = arms,
+				holdUntil = if entry.HoldAfter then os.clock() + math.max(finish, windup + active) + entry.HoldAfter else nil,
 			}
 		else
 			-- No arm to swing (placeholder rigs): a body-wide pulse carries the telegraph instead.
@@ -264,23 +309,44 @@ local function onSwing(char, info)
 	end)
 end
 
--- Drives every live pose. Stepped runs after the Animator has written this frame's Transforms.
+-- Drives every live pose and the weapon stances. Stepped runs after the Animator has written this
+-- frame's Transforms, so what we write wins for the arms we touch.
 local function step()
 	local now = os.clock()
 	for char, s in states do
+		if not char.Parent then
+			states[char] = nil
+			continue
+		end
 		local pose = s.pose
-		if pose then
-			if not pose.motor.Parent or not char.Parent then
-				s.pose = nil
-			else
-				local transform = poseTransform(pose, now)
+		if pose and not pose.motor.Parent then
+			s.pose = nil
+			pose = nil
+		end
+		for side, joint in { Right = pose and pose.motor or shoulderOf(char), Left = pose and pose.left or shoulderOf(char, "Left") } do
+			if joint then
+				local rest, idle = restTransform(char, s, side, now)
+				local transform = nil
+				if pose and pose.arms[side] then
+					transform = poseTransform(pose, pose.arms[side], now, rest)
+					if not transform and side == "Right" then
+						s.pose = nil
+					end
+				end
 				if transform then
-					pose.motor.Transform = transform
-				else
-					s.pose = nil
+					joint.Transform = transform
+				elseif not idle then
+					joint.Transform = rest -- hold the weapon stance between swings
 				end
 			end
 		end
+	end
+end
+
+-- Characters we should keep posing even before their first swing (so two-handed stances show).
+local function track(char)
+	if typeof(char) == "Instance" and char:IsA("Model") then
+		stateOf(char)
 	end
 end
 
@@ -290,6 +356,21 @@ function SwingAnimator.Init()
 	CombatFX.On("Stun", cancel)
 	CombatFX.On("Dodge", cancel)
 	RunService.Stepped:Connect(step)
+	-- stances need a state entry before any swing happens
+	local CollectionService = game:GetService("CollectionService")
+	for _, p in Players:GetPlayers() do
+		if p.Character then
+			track(p.Character)
+		end
+		p.CharacterAdded:Connect(track)
+	end
+	Players.PlayerAdded:Connect(function(p)
+		p.CharacterAdded:Connect(track)
+	end)
+	for _, m in CollectionService:GetTagged("Combatant") do
+		track(m)
+	end
+	CollectionService:GetInstanceAddedSignal("Combatant"):Connect(track)
 	Remotes.LoadoutChanged.OnClientEvent:Connect(function(data)
 		if type(data) == "table" and tonumber(data.FlickerRate) then
 			localFlickerRate = data.FlickerRate

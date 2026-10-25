@@ -12,6 +12,8 @@ local GameSettings = UserSettings():GetService("UserGameSettings")
 
 local Presentation = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Presentation"))
 local Hud = require(script.Parent.Hud)
+local CameraShake = require(script.Parent.CameraShake)
+local TweenService = game:GetService("TweenService")
 local A = Presentation.Aim
 
 local player = Players.LocalPlayer
@@ -27,7 +29,7 @@ end
 local function apply()
 	local hum = humanoidOf()
 	if hum then
-		hum.CameraOffset = if Aim.Enabled then A.ShoulderOffset else Vector3.zero
+		hum.CameraOffset = if Aim.Enabled and not Aim.ADS then A.ShoulderOffset else Vector3.zero
 		hum.AutoRotate = not Aim.Enabled
 	end
 	-- CameraRelative makes the character face the camera's yaw while moving; the step below
@@ -73,8 +75,36 @@ function Aim.Active()
 	return Aim.Enabled and not Hud.MenuOpen() and not UserInputService:IsKeyDown(A.FreeCursorKey)
 end
 
+-- Aim down sights (ranged weapons, right mouse held): first person + narrow FOV while on.
+Aim.ADS = false
+local fovTween
+function Aim.SetADS(on)
+	on = on and Aim.Enabled and not Hud.MenuOpen()
+	if on == Aim.ADS then
+		return
+	end
+	Aim.ADS = on
+	local camera = workspace.CurrentCamera
+	local fov = if on then A.ADS.Fov else A.ADS.NormalFov
+	CameraShake.BaseFov = fov
+	if camera then
+		if fovTween then
+			fovTween:Cancel()
+		end
+		fovTween = TweenService:Create(camera, TweenInfo.new(A.ADS.ZoomTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { FieldOfView = fov })
+		fovTween:Play()
+	end
+	if A.ADS.FirstPerson then
+		player.CameraMode = if on then Enum.CameraMode.LockFirstPerson else Enum.CameraMode.Classic
+	end
+	apply()
+end
+
 function Aim.Set(on)
 	Aim.Enabled = on
+	if not on then
+		Aim.SetADS(false)
+	end
 	apply()
 end
 
