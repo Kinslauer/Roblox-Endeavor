@@ -3,7 +3,6 @@
 -- respec, a recharge pad, and regenerating training dummies that show damage numbers.
 -- Everything is generated from code so no Studio building is needed.
 local CollectionService = game:GetService("CollectionService")
-local Debris = game:GetService("Debris")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -181,20 +180,6 @@ local function respec(player)
 	Gear.Recompute(player)
 end
 
-local function addDamageNumber(root, amount)
-	local billboard = Instance.new("BillboardGui")
-	billboard.Size, billboard.StudsOffset, billboard.AlwaysOnTop = UDim2.fromOffset(120, 36), Vector3.new(math.random(-20, 20) / 10, 4, 0), true
-	local text = Instance.new("TextLabel")
-	text.Size, text.BackgroundTransparency, text.Text = UDim2.fromScale(1, 1), 1, ("-%d"):format(math.round(amount))
-	text.TextColor3, text.Font, text.TextScaled = Color3.fromRGB(255, 220, 80), Enum.Font.GothamBold, true
-	text.TextStrokeTransparency = 0.4
-	text.Parent = billboard
-	billboard.Parent = root
-	Debris:AddItem(billboard, 1.2)
-	game:GetService("TweenService"):Create(billboard, TweenInfo.new(1.1), { StudsOffset = billboard.StudsOffset + Vector3.new(0, 4, 0) }):Play()
-	game:GetService("TweenService"):Create(text, TweenInfo.new(1.1), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
-end
-
 local function dummy(position)
 	local model, hum, root = NPCs.BuildRig("Training Dummy", { Health = 1000, Speed = 0 })
 	root.Anchored = true
@@ -204,8 +189,7 @@ local function dummy(position)
 	local previous = hum.Health
 	hum.HealthChanged:Connect(function(health)
 		if health < previous - 0.4 then
-			lastHit = os.clock()
-			addDamageNumber(root, previous - health)
+			lastHit = os.clock() -- damage numbers are drawn by every client (HudCombat) from the Hit event
 		end
 		previous = health
 	end)

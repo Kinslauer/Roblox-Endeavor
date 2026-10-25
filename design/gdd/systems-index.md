@@ -53,7 +53,7 @@ brief names). "Owning GDD" is a file under `design/gdd/`.
 | 24 | Lifecycle | `src/server/Lifecycle.lua` | Core | MVP | Implemented | none yet | Join/load → spawn → death → respawn → leave; combat-log check on leave. |
 | 25 | Arena (dev) | `src/server/Arena.lua` | Meta | MVP (dev only) | Implemented (dev tool) | none yet | Generated neon coliseum, 8 `CitySpawn` pads, Test Armory consoles, regenerating dummies with damage numbers. Behind `Config.Dev.Enabled`. |
 | 26 | Client (input + HUD) | `src/client/Main.client.lua` | UI | MVP | Implemented (placeholder presentation) | combat.md (Current Presentation) | Key bindings, bars, panels, tutorial panel, death screen, Highlight-flash combat feedback, client-owned dodge/knockback velocity. |
-| 27 | HUD v2 | — | UI | MVP | Planned | none yet | Labels, custom health bar, damage numbers, hit markers, Tab conflict fix (brief item 4). |
+| 27 | HUD v2 | `src/client/Hud.lua`, `src/client/HudCombat.lua` | UI | MVP | Implemented (owner playtest pending) | combat.md (Current Presentation) | Labelled bars with values, custom health bar, client-drawn damage numbers / BLOCKED / PARRIED / GUARD BREAK / DODGED, aim reticle + hit marker, damage-taken edge flash, PlayerList hidden (Tab conflict), dodge feedback (brief item 4). |
 | 28 | Fair Arrival (spawn protection, rate limits) | — | Core | MVP | Planned | none yet | Brief item 5. Nothing in code. |
 | 29 | District Blockout | — | Gameplay | Vertical Slice | Planned | none yet | Generated first district + safe zone replacing the dev arena (brief item 6). |
 | 30 | Smoke harness (tooling) | `tools/smoke/*` | Meta | — | Implemented (tooling) | none yet | Mock-Roblox Luau run of the full join → tutorial → Emergence → PvP → permadeath flow. |

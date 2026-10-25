@@ -41,9 +41,15 @@ local function label(props)
 	return make("TextLabel", props, props.Parent)
 end
 
-local function bar(y, color)
-	local back = make("Frame", { Size = UDim2.fromOffset(240, 12), Position = UDim2.new(0, 20, 1, y), BackgroundColor3 = Color3.fromRGB(20, 20, 24) })
-	return make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = color }, back)
+-- A labelled resource bar: name on the left, numbers on the right, fill underneath.
+local function bar(y, color, name)
+	local back = make("Frame", { Size = UDim2.fromOffset(240, 14), Position = UDim2.new(0, 20, 1, y), BackgroundColor3 = Color3.fromRGB(20, 20, 24), BorderSizePixel = 0 })
+	local fill = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = color, BorderSizePixel = 0 }, back)
+	label({ Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.fromOffset(4, 0), Text = name, TextSize = 11, Font = Enum.Font.GothamBold,
+		TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(235, 235, 240), ZIndex = 2, Parent = back })
+	local value = label({ Size = UDim2.new(0.5, -4, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), Text = "", TextSize = 11, Font = Enum.Font.GothamMedium,
+		TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(235, 235, 240), ZIndex = 2, Parent = back })
+	return fill, value
 end
 
 local function panel(size, position)
@@ -286,13 +292,28 @@ local function buildTutorial()
 	end)
 end
 
-local function bindBar(fill, char, valueAttr, maxAttr)
+local function bindBar(fill, valueLabel, char, valueAttr, maxAttr)
 	local function update()
 		local v, m = char:GetAttribute(valueAttr) or 0, char:GetAttribute(maxAttr) or 1
 		fill.Size = UDim2.fromScale(math.clamp(v / m, 0, 1), 1)
+		valueLabel.Text = ("%d / %d"):format(math.floor(v + 0.5), math.floor(m + 0.5))
 	end
 	char:GetAttributeChangedSignal(valueAttr):Connect(update)
 	char:GetAttributeChangedSignal(maxAttr):Connect(update)
+	update()
+end
+
+local function bindHealth(fill, valueLabel, char)
+	local hum = char:WaitForChild("Humanoid", 10)
+	if not hum then
+		return
+	end
+	local function update()
+		fill.Size = UDim2.fromScale(math.clamp(hum.Health / math.max(hum.MaxHealth, 1), 0, 1), 1)
+		valueLabel.Text = ("%d / %d"):format(math.floor(hum.Health + 0.5), math.floor(hum.MaxHealth + 0.5))
+	end
+	hum.HealthChanged:Connect(update)
+	hum:GetPropertyChangedSignal("MaxHealth"):Connect(update)
 	update()
 end
 
@@ -304,12 +325,17 @@ function Hud.Init()
 	gui = Instance.new("ScreenGui")
 	gui.Name, gui.ResetOnSpawn = "ConduitHUD", false
 	gui.Parent = player:WaitForChild("PlayerGui")
+	Hud.Gui = gui
 
-	local staminaFill = bar(-80, Color3.fromRGB(90, 200, 120))
-	local postureFill = bar(-60, Color3.fromRGB(240, 150, 60))
-	local chargeFill = bar(-40, Color3.fromRGB(80, 170, 255))
-	levelLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0, 20, 1, -104), TextXAlignment = Enum.TextXAlignment.Left, Text = "" })
-	flickerLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0, 20, 1, -124), TextXAlignment = Enum.TextXAlignment.Left, Text = "", TextColor3 = Color3.fromRGB(255, 80, 80) })
+	local healthFill, healthValue = bar(-102, Color3.fromRGB(220, 70, 70), "HEALTH")
+	local staminaFill, staminaValue = bar(-84, Color3.fromRGB(90, 200, 120), "STAMINA")
+	local postureFill, postureValue = bar(-66, Color3.fromRGB(240, 150, 60), "POSTURE")
+	local chargeFill, chargeValue = bar(-48, Color3.fromRGB(80, 170, 255), "CHARGE")
+	levelLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0, 20, 1, -126), TextXAlignment = Enum.TextXAlignment.Left, Text = "" })
+	flickerLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0, 20, 1, -146), TextXAlignment = Enum.TextXAlignment.Left, Text = "", TextColor3 = Color3.fromRGB(255, 80, 80) })
+	pcall(function() -- our own health bar replaces Roblox's
+		game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+	end)
 	banner = label({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 60), TextSize = 26, Text = "", TextTransparency = 1 })
 	questLabel = label({ Size = UDim2.fromOffset(360, 24), Position = UDim2.new(1, -380, 0, 20), TextXAlignment = Enum.TextXAlignment.Right, Text = "" })
 
@@ -329,9 +355,10 @@ function Hud.Init()
 	end)
 
 	local function onCharacter(char)
-		bindBar(staminaFill, char, "Stamina", "MaxStamina")
-		bindBar(postureFill, char, "Posture", "MaxPosture")
-		bindBar(chargeFill, char, "Charge", "MaxCharge")
+		task.spawn(bindHealth, healthFill, healthValue, char)
+		bindBar(staminaFill, staminaValue, char, "Stamina", "MaxStamina")
+		bindBar(postureFill, postureValue, char, "Posture", "MaxPosture")
+		bindBar(chargeFill, chargeValue, char, "Charge", "MaxCharge")
 	end
 	player.CharacterAdded:Connect(onCharacter)
 	if player.Character then

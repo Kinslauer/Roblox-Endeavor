@@ -42,7 +42,7 @@ the headless smoke-test harness.
 |---|---|---|
 | `src/shared/` | `ReplicatedStorage.Shared` | Pure data + the remote registry. Readable by server and client. |
 | `src/server/` | `ServerScriptService.Server` | Authoritative systems (ModuleScripts) + `Main.server.lua` (Script). |
-| `src/client/` | `StarterPlayer.StarterPlayerScripts.Client` | `Main.client.lua` (LocalScript): input, HUD, placeholder VFX. |
+| `src/client/` | `StarterPlayer.StarterPlayerScripts.Client` | `Main.client.lua` (LocalScript) composition root + presentation / input modules (see §3). |
 
 `vendor/` is not referenced by the project file and is never loaded.
 
@@ -82,14 +82,24 @@ Every system is a ModuleScript exposing an `Init()` plus a small API. Dependenci
 | `Events` | Weighted event director (supply drop, raider ambush). | — |
 | `Arena` | Dev-only test arena (armory, dummies); gated by `Config.Dev.Enabled`. | — |
 
-### 3. Client presentation layer (`src/client/Main.client.lua`)
+### 3. Client presentation layer (`src/client/`)
 
-A single LocalScript that (a) maps input to remote intents, (b) builds the HUD procedurally,
-(c) binds bars to replicated character attributes (`Stamina/MaxStamina`, `Posture/MaxPosture`,
-`Charge/MaxCharge`), (d) draws the flicker aura from the `Flicker` / `Zone` attributes every
-Heartbeat, and (e) renders placeholder VFX for `CombatEvent`. The only state it mutates is its
-own character's `AssemblyLinearVelocity` for `DodgeMove` / `Knockback` (the client owns its
-character's physics). See ADR-0004 for where this layer is going.
+`Main.client.lua` is a composition root (ADR-0003 / ADR-0004); each module is presentation or input
+only and the server owns every outcome. Init order: `Hud, CombatFX, CameraShake, Impacts,
+FlickerAura, WeaponView, SwingAnimator, Audio, HudCombat, Aim, Input`.
+
+| Module | Role |
+|---|---|
+| `Hud` | ScreenGui `ConduitHUD`: labelled bars (HEALTH from `Humanoid.HealthChanged`; STAMINA / POSTURE / CHARGE from replicated attributes, each with `value / max` text), level + flicker labels, banner, quest label, Stats / Inventory / Loadout panels, tutorial panel, death screen. Hides the PlayerList (Tab is inventory) and the core health bar. |
+| `CombatFX` | Single `Remotes.CombatEvent` subscriber; `CombatFX.On(kind, fn)` registry (handlers are pcall-isolated); capped FX folder; Highlight flash per `Presentation.Impacts` kind; own-character `DodgeMove` / `Knockback` velocity. |
+| `Impacts`, `CameraShake` | Sparks, parry ring, guard-break shards, dodge ghost, Black Flash, Bolt; trauma shake + hitstop FOV punch for the local attacker / victim. |
+| `SwingAnimator` | Procedural windup → swing → recover on the right shoulder joint from the `Swing` event timing, with the flick-cue hand glow; `AnimationId` slot override. |
+| `WeaponView` | Procedural weapon in the right hand from the replicated `Weapon` attribute (`Presentation.Weapons`), for players and `Combatant`-tagged NPCs. |
+| `Audio` | 3D sound on the emitter's root + 2D copy for the local player, one slot per event kind. |
+| `HudCombat` | ScreenGui `ConduitCombat` (drawn under the HUD): floating numbers over the victim from `Hit` (amount; red `-N` for the local player, big for heavy, re-tinted on `BlackFlash`) and `Block` / `Parry` / `GuardBreak` / `Dodged` words; centre reticle while `Aim` is on, which blinks (`HitMarker`) when the local player's attack lands; red edge flash when the local player takes damage. Slots in `Presentation.Hud`. |
+| `Aim` | Combat stance: body faces the camera yaw (Heartbeat), shoulder camera offset, mouse lock; toggle key. |
+| `FlickerAura`, `Creator.client`, `Animate.client` | Flicker / Zone aura from attributes; character-creator UI; stock locomotion clips from `Presentation.Locomotion`. |
+| `Input` | Key → remote intent mapping and panel toggles. |
 
 ## Boot Order (`src/server/Main.server.lua`)
 

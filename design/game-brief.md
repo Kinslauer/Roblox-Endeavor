@@ -34,7 +34,7 @@ The server logic for all of these already exists in `src/`. The MVP is making th
 1. **Combat feel** — procedural weapon models + procedural swing/windup animation via Motor6D (with animation-ID slots), windup glow flick cue, hit sparks, hitstop, camera shake, sound slots. Risky and core-fun; prove it first.
 2. **Aiming** — mouse-facing while in combat.
 3. **Enemy v2** — R15 raider rig, PathfindingService, telegraphed attacks with parry/dodge windows, Grunt / Brute / Gunner variants, fixes for stuck-on-wall spawning.
-4. **HUD v2** — labels, custom health bar, damage numbers, hit markers, Tab conflict fix, dodge feedback bug.
+4. **HUD v2** — labels, custom health bar, damage numbers, hit markers, Tab conflict fix, dodge feedback bug. *(implemented 2026-10-25, owner playtest pending)*
 5. **Fair arrival** — spawn protection, in-bounds events, rate limits, stale-comment cleanup.
 6. **District blockout** — generated first district + safe zone; dev arena kept behind `Config.Dev`.
 
