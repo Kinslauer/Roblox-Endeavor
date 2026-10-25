@@ -119,6 +119,15 @@ Presentation.Locomotion = {
 	fall = "rbxassetid://507767968",
 }
 
+-- ---------------------------------------------------------------------------------------------
+-- Aim: the combat stance (client/Aim.lua). Shoulder offset is in studs relative to the character.
+-- ---------------------------------------------------------------------------------------------
+Presentation.Aim = {
+	DefaultOn = true,
+	ToggleKey = Enum.KeyCode.LeftControl,
+	ShoulderOffset = Vector3.new(1.75, 0.5, 0),
+}
+
 -- Look up the swing entry for a weapon family and label; falls back to Default.
 function Presentation.SwingFor(family, label)
 	local key = if label == "Heavy" then "Heavy" else "Light"

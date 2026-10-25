@@ -1,3 +1,5 @@
+-- Deterministic runs: the mock Random uses math.random, so one seed fixes every roll.
+math.randomseed(20261025)
 -- Minimal Roblox mock, just enough to execute the game's server code and catch runtime errors.
 local G = _G
 local now, frame = 0, 0

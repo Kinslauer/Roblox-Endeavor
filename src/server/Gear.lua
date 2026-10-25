@@ -11,6 +11,7 @@ local Remotes = require(Shared.Remotes)
 local Skills = require(Shared.Skills)
 local Weapons = require(Shared.Weapons)
 local PlayerData = require(script.Parent.PlayerData)
+local RateLimit = require(script.Parent.RateLimit)
 
 local S, C, F = Config.Stats, Config.Combat, Config.Flicker
 
@@ -256,8 +257,8 @@ function Gear.SetSkill(player, slot, skillId)
 end
 
 function Gear.Init()
-	Remotes.Unequip.OnServerEvent:Connect(Gear.Unequip)
-	Remotes.SetSkill.OnServerEvent:Connect(Gear.SetSkill)
+	Remotes.Unequip.OnServerEvent:Connect(RateLimit.Wrap("Unequip", Config.RateLimit.Unequip, Gear.Unequip))
+	Remotes.SetSkill.OnServerEvent:Connect(RateLimit.Wrap("SetSkill", Config.RateLimit.SetSkill, Gear.SetSkill))
 end
 
 return Gear

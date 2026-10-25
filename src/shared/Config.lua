@@ -36,7 +36,7 @@ Config.CityFallbackHeight = 10
 Config.RespawnDelay = 5
 Config.CombatLogSeconds = 15 -- leaving this soon after combat = permadeath
 Config.CombatLogPunish = true
-Config.LootHold = 1.5 -- seconds to hold E to loot / steal from a body
+Config.LootHold = 1.5 -- seconds to hold X (ProximityPrompt) to loot / steal from a body
 Config.CorpseLifetime = 300
 
 Config.Stats = {
@@ -78,6 +78,24 @@ Config.Flicker = {
 	FlashRefund = 25, -- charge returned by a Black Flash
 	RatePerIntelligence = 0.01,
 }
+
+-- Remote rate limits: calls per second per player; capacity = rate * Burst (short bursts are fine).
+Config.RateLimit = {
+	Burst = 2,
+	Attack = 6, Heavy = 4, Feint = 6, Flicker = 8, Block = 10, Dodge = 4, UseSkill = 6,
+	SetSkill = 4, Allocate = 10, UseItem = 4, EquipItem = 4, Unequip = 4, Craft = 4, TutorialSkip = 1, SetAppearance = 10,
+}
+
+-- World events (server/Events.lua)
+Config.Events = {
+	SupplyRadius = 120, -- max distance from the chosen player a supply crate may land
+	SupplyDropHeight = 150, -- how high above the ground it starts falling
+	PlacementTries = 6,
+}
+
+-- Fair arrival: a fresh character in the open world cannot be damaged for this long, or until it
+-- attacks. Shown as a ForceField.
+Config.SpawnProtectionSeconds = 8
 
 Config.Combat = {
 	FeintRecovery = 0.18, -- feint = cancel a swing during its windup

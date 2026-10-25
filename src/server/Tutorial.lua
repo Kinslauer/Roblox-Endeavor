@@ -16,6 +16,7 @@ local Inventory = require(script.Parent.Inventory)
 local Loot = require(script.Parent.Loot)
 local NPCs = require(script.Parent.NPCs)
 local PlayerData = require(script.Parent.PlayerData)
+local RateLimit = require(script.Parent.RateLimit)
 local WorldPhase = require(script.Parent.WorldPhase)
 
 local T = Config.Tutorial
@@ -331,12 +332,12 @@ function Tutorial.Release(player)
 end
 
 function Tutorial.Init()
-	Remotes.TutorialSkip.OnServerEvent:Connect(function(player)
+	Remotes.TutorialSkip.OnServerEvent:Connect(RateLimit.Wrap("TutorialSkip", Config.RateLimit.TutorialSkip, function(player)
 		local ctx = contexts[player]
 		if ctx then
 			ctx.index = #STEPS
 		end
-	end)
+	end))
 
 	Combat.Resolved.Event:Connect(function(attacker, victim, result)
 		for player, ctx in contexts do

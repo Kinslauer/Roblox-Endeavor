@@ -3,7 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Items = require(Shared.Items)
 local Remotes = require(Shared.Remotes)
+local Config = require(Shared.Config)
 local PlayerData = require(script.Parent.PlayerData)
+local RateLimit = require(script.Parent.RateLimit)
 local Gear = require(script.Parent.Gear)
 
 local Inventory = {}
@@ -99,9 +101,9 @@ function Inventory.Craft(player, recipeId)
 end
 
 function Inventory.Init()
-	Remotes.UseItem.OnServerEvent:Connect(Inventory.Use)
-	Remotes.EquipItem.OnServerEvent:Connect(Inventory.Equip)
-	Remotes.Craft.OnServerEvent:Connect(Inventory.Craft)
+	Remotes.UseItem.OnServerEvent:Connect(RateLimit.Wrap("UseItem", Config.RateLimit.UseItem, Inventory.Use))
+	Remotes.EquipItem.OnServerEvent:Connect(RateLimit.Wrap("EquipItem", Config.RateLimit.EquipItem, Inventory.Equip))
+	Remotes.Craft.OnServerEvent:Connect(RateLimit.Wrap("Craft", Config.RateLimit.Craft, Inventory.Craft))
 end
 
 return Inventory

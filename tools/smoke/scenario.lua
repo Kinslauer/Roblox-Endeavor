@@ -165,7 +165,20 @@ c1.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, 0), M.V3.new(0, 5, -4))
 c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, -4), M.V3.new(0, 5, 0))
 local before = c2.Humanoid.Health
 Remotes.Attack:FireServer(); run(0.8)
+check("spawn protection: a fresh character cannot be hit", c2.Humanoid.Health == before and c2:FindFirstChild("SpawnProtection") ~= nil)
+-- the rival swings (at nothing): offensive action forfeits protection
+as(p2); Remotes.Attack:FireServer(); run(0.1); as(player)
+check("attacking forfeits spawn protection", c2:FindFirstChild("SpawnProtection") == nil)
+run(1)
+Remotes.Attack:FireServer(); run(0.8)
 check("PvP hit lands in the open world", c2.Humanoid.Health < before)
+-- rate limit: a burst of 40 Attack remotes is cut to the configured budget
+do
+	local RateLimit = M.mockEnv.__require(SSS.Server.RateLimit)
+	local allowed = 0
+	for _ = 1, 40 do if RateLimit.Allow(player, "ProbeRemote", 6) then allowed += 1 end end
+	check("rate limit caps a 40-call burst at rate*burst", allowed == 12)
+end
 -- Enemy v2: a Grunt telegraphs (Swing) before it can hit, and a timed block parries it
 do
 	local NPCs = M.mockEnv.__require(SSS.Server.NPCs)

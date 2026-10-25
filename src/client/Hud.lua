@@ -297,6 +297,10 @@ local function bindBar(fill, char, valueAttr, maxAttr)
 end
 
 function Hud.Init()
+	-- Tab is our inventory key, and the prologue is meant to feel single-player: no player list.
+	pcall(function()
+		game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+	end)
 	gui = Instance.new("ScreenGui")
 	gui.Name, gui.ResetOnSpawn = "ConduitHUD", false
 	gui.Parent = player:WaitForChild("PlayerGui")

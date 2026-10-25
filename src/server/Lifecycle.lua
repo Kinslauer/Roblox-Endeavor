@@ -51,6 +51,7 @@ function Lifecycle.Spawn(player)
 		if profile then
 			profile.Awakened = true
 		end
+		Combat.Protect(char, Config.SpawnProtectionSeconds) -- fair arrival: nobody gets spawn-killed
 		Quests.Assign(player)
 	elseif Config.Tutorial.Enabled then
 		Tutorial.Start(player)
@@ -84,6 +85,16 @@ function Lifecycle.Init()
 	for _, player in Players:GetPlayers() do
 		task.spawn(onPlayerAdded, player)
 	end
+	-- Emergence drops everyone into the shared city at once: the same protection as a fresh spawn.
+	WorldPhase.Changed.Event:Connect(function(phase)
+		if phase == Config.Phases.Open then
+			for _, player in Players:GetPlayers() do
+				if player.Character then
+					Combat.Protect(player.Character, Config.SpawnProtectionSeconds)
+				end
+			end
+		end
+	end)
 end
 
 return Lifecycle

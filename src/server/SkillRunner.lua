@@ -3,12 +3,14 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
+local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local Skills = require(Shared.Skills)
 local Weapons = require(Shared.Weapons)
 local Combat = require(script.Parent.Combat)
 local Gear = require(script.Parent.Gear)
 local PlayerData = require(script.Parent.PlayerData)
+local RateLimit = require(script.Parent.RateLimit)
 
 local SkillRunner = {}
 
@@ -96,6 +98,7 @@ function SkillRunner.Use(player, slot)
 	if not def or not Combat.CanAct(char) then
 		return
 	end
+	Combat.ClearProtection(char) -- using a skill is an offensive act: spawn protection ends
 	local d = Gear.Get(player)
 	if not Skills.Unlocked(def, d.Stats, d.Tags) then
 		return
@@ -123,7 +126,7 @@ function SkillRunner.Use(player, slot)
 end
 
 function SkillRunner.Init()
-	Remotes.UseSkill.OnServerEvent:Connect(SkillRunner.Use)
+	Remotes.UseSkill.OnServerEvent:Connect(RateLimit.Wrap("UseSkill", Config.RateLimit.UseSkill, SkillRunner.Use))
 end
 
 return SkillRunner

@@ -102,7 +102,7 @@ requirements:
       Each client->server remote enforces a per-player call budget (token bucket or
       min-interval) before its gameplay checks run, so input flooding cannot cost the server
       a handler call per packet.
-    status: not-met
+    status: met
     source: ADR-0001
     enforced_by:
       - review

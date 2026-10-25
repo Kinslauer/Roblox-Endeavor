@@ -12,9 +12,10 @@ local Remotes = require(Shared.Remotes)
 local Weapons = require(Shared.Weapons)
 local Gear = require(script.Parent.Gear)
 local PlayerData = require(script.Parent.PlayerData)
+local RateLimit = require(script.Parent.RateLimit)
 local WorldPhase = require(script.Parent.WorldPhase)
 
-local C, F = Config.Combat, Config.Flicker
+local C, F, L = Config.Combat, Config.Flicker, Config.RateLimit
 local BUFFER = 0.08 -- input buffer: an attack may start this early before the last one ends
 
 local Combat = {}
@@ -58,6 +59,27 @@ local function fx(kind, char, extra)
 	Remotes.CombatEvent:FireAllClients(kind, char, extra)
 end
 Combat.FX = fx
+
+-- Fresh characters in the open world get a ForceField; any offensive action forfeits it.
+function Combat.Protect(char, seconds)
+	Combat.ClearProtection(char)
+	local ff = Instance.new("ForceField")
+	ff.Name = "SpawnProtection"
+	ff.Visible = true
+	ff.Parent = char
+	task.delay(seconds, function()
+		if ff.Parent then
+			ff:Destroy()
+		end
+	end)
+end
+
+function Combat.ClearProtection(char)
+	local ff = char and char:FindFirstChild("SpawnProtection")
+	if ff then
+		ff:Destroy()
+	end
+end
 
 function Combat.CanAct(char)
 	local s = st(char)
@@ -297,6 +319,9 @@ local function applyDamage(attacker, victim, amount, opts)
 	if ap and vp and not WorldPhase.IsOpen() then
 		return "none" -- no PvP during the prologue (they should never meet anyway)
 	end
+	if victim:FindFirstChildOfClass("ForceField") then
+		return "none" -- spawn protection (Config.SpawnProtectionSeconds); ends early when they attack
+	end
 
 	local vs, t, vd = st(victim), os.clock(), Gear.OfChar(victim)
 	if t < vs.iframes then
@@ -500,6 +525,7 @@ function Combat.Attack(player)
 	if not (char and weapon and Combat.CanAct(char)) then
 		return
 	end
+	Combat.ClearProtection(char)
 	local s, t = st(char), os.clock()
 	local combo = if s.comboWeapon == weapon and t <= s.comboExpires then s.combo % #weapon.Attacks + 1 else 1
 	local spec = weapon.Attacks[combo]
@@ -522,6 +548,7 @@ function Combat.Heavy(player)
 	if not (char and weapon and Combat.CanAct(char)) then
 		return
 	end
+	Combat.ClearProtection(char)
 	local s, t = st(char), os.clock()
 	if t - s.lastHeavy < C.HeavyCooldown or not Combat.SpendStamina(char, weapon.Heavy.Stamina) then
 		return
@@ -573,12 +600,12 @@ function Combat.Dodge(player, direction)
 end
 
 function Combat.Init()
-	Remotes.Attack.OnServerEvent:Connect(Combat.Attack)
-	Remotes.Heavy.OnServerEvent:Connect(Combat.Heavy)
-	Remotes.Feint.OnServerEvent:Connect(Combat.Feint)
-	Remotes.Flicker.OnServerEvent:Connect(Combat.Flicker)
-	Remotes.Block.OnServerEvent:Connect(Combat.SetBlock)
-	Remotes.Dodge.OnServerEvent:Connect(Combat.Dodge)
+	Remotes.Attack.OnServerEvent:Connect(RateLimit.Wrap("Attack", L.Attack, Combat.Attack))
+	Remotes.Heavy.OnServerEvent:Connect(RateLimit.Wrap("Heavy", L.Heavy, Combat.Heavy))
+	Remotes.Feint.OnServerEvent:Connect(RateLimit.Wrap("Feint", L.Feint, Combat.Feint))
+	Remotes.Flicker.OnServerEvent:Connect(RateLimit.Wrap("Flicker", L.Flicker, Combat.Flicker))
+	Remotes.Block.OnServerEvent:Connect(RateLimit.Wrap("Block", L.Block, Combat.SetBlock))
+	Remotes.Dodge.OnServerEvent:Connect(RateLimit.Wrap("Dodge", L.Dodge, Combat.Dodge))
 
 	local accumulator = 0
 	RunService.Heartbeat:Connect(function(dt)

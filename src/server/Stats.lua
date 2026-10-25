@@ -4,6 +4,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Gear = require(script.Parent.Gear)
 local PlayerData = require(script.Parent.PlayerData)
+local RateLimit = require(script.Parent.RateLimit)
 
 local S = Config.Stats
 local Stats = {}
@@ -76,7 +77,7 @@ function Stats.Allocate(player, statName)
 end
 
 function Stats.Init()
-	Remotes.Allocate.OnServerEvent:Connect(Stats.Allocate)
+	Remotes.Allocate.OnServerEvent:Connect(RateLimit.Wrap("Allocate", Config.RateLimit.Allocate, Stats.Allocate))
 	Gear.Changed.Event:Connect(function(player)
 		Stats.Apply(player, false)
 		Stats.Push(player)

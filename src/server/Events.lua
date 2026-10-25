@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
+local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Remotes = require(Shared.Remotes)
 local Loot = require(script.Parent.Loot)
@@ -29,9 +30,25 @@ local function supplyDrop()
 	if not pick then
 		return
 	end
-	local offset = Vector3.new(rng:NextNumber(-250, 250), 150, rng:NextNumber(-250, 250))
-	local pos = pick.root.Position + offset
-	Remotes.Announce:FireAllClients("A supply drop is falling near the old transit hub.", "Event")
+	-- Land it on real ground inside the playable area; try a few spots, shrinking toward the player.
+	local pos
+	local radius = Config.Events.SupplyRadius
+	for try = 1, Config.Events.PlacementTries do
+		local angle = rng:NextNumber(0, math.pi * 2)
+		local r = rng:NextNumber(radius * 0.3, radius)
+		local ground = NPCs.FindGround(pick.root.Position + Vector3.new(math.cos(angle) * r, 0, math.sin(angle) * r))
+		if ground then
+			pos = ground + Vector3.new(0, Config.Events.SupplyDropHeight, 0)
+			break
+		end
+		if try % 2 == 0 then
+			radius *= 0.7
+		end
+	end
+	if not pos then
+		return
+	end
+	Remotes.Announce:FireAllClients("A supply drop is falling nearby. Others heard it too.", "Event")
 	local crate = Loot.Spawn(CFrame.new(pos), Items.Roll("Supply"), {
 		Label = "Supply Crate", Action = "Open", Hold = 3, Lifetime = 240,
 		Color = Color3.fromRGB(230, 170, 40), Size = Vector3.new(4, 4, 4),

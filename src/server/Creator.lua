@@ -7,6 +7,8 @@ local Appearance = require(ReplicatedStorage.Shared.Appearance)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local PlayerData = require(script.Parent.PlayerData)
 local Rig = require(script.Parent.Rig)
+local RateLimit = require(script.Parent.RateLimit)
+local Config = require(ReplicatedStorage.Shared.Config)
 
 local Creator = {}
 
@@ -49,7 +51,7 @@ function Creator.Run(player)
 end
 
 function Creator.Init()
-	Remotes.SetAppearance.OnServerEvent:Connect(function(player, look, confirm)
+	Remotes.SetAppearance.OnServerEvent:Connect(RateLimit.Wrap("SetAppearance", Config.RateLimit.SetAppearance, function(player, look, confirm)
 		local data = PlayerData.Get(player)
 		if not data or not pending[player] then
 			return -- appearance is permanent once chosen (permadeath wipes it with the character)
@@ -61,7 +63,7 @@ function Creator.Init()
 			data.AppearanceSet = true
 			pending[player] = nil
 		end
-	end)
+	end))
 	Players.PlayerRemoving:Connect(function(player)
 		pending[player], applying[player], queued[player] = nil, nil, nil
 	end)
