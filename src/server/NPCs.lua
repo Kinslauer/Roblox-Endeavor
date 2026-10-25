@@ -11,6 +11,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
+local District = require(Shared.District)
 local Enemies = require(Shared.Enemies)
 local Items = require(Shared.Items)
 local Presentation = require(Shared.Presentation)
@@ -113,7 +114,7 @@ local function nearestTarget(root, aggro)
 		local char = player.Character
 		local troot = char and char:FindFirstChild("HumanoidRootPart")
 		local thum = char and char:FindFirstChildOfClass("Humanoid")
-		if troot and thum and thum.Health > 0 then
+		if troot and thum and thum.Health > 0 and not District.InSafeZone(troot.Position) then -- plaza is off-limits
 			local dist = (troot.Position - root.Position).Magnitude
 			if dist < best then
 				target, best = char, dist

@@ -72,6 +72,7 @@ Presentation.Impacts = {
 	Flick = { Color = Color3.fromRGB(255, 60, 60), Flash = 0.15, Hitstop = 0, Shake = 0.1, LevelScale = 0.5 },
 	Feint = { Color = Color3.fromRGB(200, 200, 200), Flash = 0.15, Hitstop = 0, Shake = 0 },
 	BlackFlash = { Color = Color3.fromRGB(255, 20, 20), Flash = 0.35, Hitstop = 0.12, Shake = 1.0, BannerSeconds = 1.2 },
+	Safe = { Color = Color3.fromRGB(120, 255, 200), Flash = 0.2, Hitstop = 0, Shake = 0 }, -- a hit refused by the safe zone
 	Bolt = { Color = Color3.fromRGB(120, 200, 255), Flash = 0.1,
 		Muzzle = { Size = 1.2, Life = 0.08 },
 		Sparks = { Count = 8, Color = Color3.fromRGB(160, 220, 255), Size = 0.25, Speed = 14, Life = 0.25 } },
@@ -94,7 +95,7 @@ Presentation.Sounds = {
 	GuardBreak = sfx(B .. "glassbreak.wav", 0.9, 0.02), Dodge = sfx(B .. "action_jump_land.mp3", 0.4, 0.1), Dodged = sfx(B .. "snap.wav", 0.4),
 	Flick = sfx(B .. "clickfast.wav", 0.5, 0.05), BlackFlash = sfx(B .. "bass.wav", 1, 0),
 	Feint = sfx(B .. "button.wav", 0.3), Bolt = sfx(B .. "paintball.wav", 0.6, 0.08), Buff = sfx(B .. "electronicpingshort.wav", 0.5),
-	Burst = sfx(B .. "flashbulb.wav", 0.6), Stun = sfx(B .. "collide.wav", 0.5, 0.1),
+	Burst = sfx(B .. "flashbulb.wav", 0.6), Stun = sfx(B .. "collide.wav", 0.5, 0.1), Safe = sfx(B .. "electronicpingshort.wav", 0.35, 0.02),
 	MaxPerChar = 4, -- concurrent sounds per character; the oldest is cut when exceeded
 	MaxDistance = 120, -- studs before a 3D sound is inaudible
 	LocalMix = 0.6, -- volume multiplier for the extra 2D copy of the local player's own events
@@ -139,7 +140,7 @@ Presentation.Hud = {
 		TextSize = 26, HeavyTextSize = 34, HeavyAmount = 20,
 		Colors = { Hit = Color3.fromRGB(255, 235, 200), Heavy = Color3.fromRGB(255, 150, 60), Taken = Color3.fromRGB(255, 80, 80),
 			Block = Color3.fromRGB(150, 170, 255), Parry = Color3.fromRGB(255, 255, 255), GuardBreak = Color3.fromRGB(255, 160, 0),
-			Dodged = Color3.fromRGB(80, 255, 230), BlackFlash = Color3.fromRGB(255, 20, 20) },
+			Dodged = Color3.fromRGB(80, 255, 230), BlackFlash = Color3.fromRGB(255, 20, 20), Safe = Color3.fromRGB(120, 255, 200) },
 		MaxLive = 24,
 	},
 	Reticle = { Size = 6, Gap = 5, Thickness = 2, Color = Color3.fromRGB(235, 235, 240), HitColor = Color3.fromRGB(255, 90, 60), HitSeconds = 0.12, HitScale = 1.8 },

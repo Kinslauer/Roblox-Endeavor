@@ -210,6 +210,7 @@ local function register()
 	word("Parry", "PARRIED")
 	word("GuardBreak", "GUARD BREAK")
 	word("Dodged", "DODGED")
+	word("Safe", "SAFE ZONE")
 	CombatFX.On("BlackFlash", function(attacker, victim)
 		-- The server sends Hit (with the multiplied amount) and then BlackFlash. The banner (Impacts)
 		-- says BLACK FLASH; here we recolour the number that Hit just put over the victim.

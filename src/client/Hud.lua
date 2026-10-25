@@ -20,7 +20,7 @@ local player = Players.LocalPlayer
 local Hud = {}
 Hud.Panels = {} -- name -> Frame (Input toggles these)
 
-local gui, banner, flickerLabel, levelLabel, questLabel
+local gui, banner, flickerLabel, levelLabel, questLabel, zoneLabel
 local bannerToken = 0
 local cooldowns = {} -- skillId -> os.clock() when ready
 
@@ -338,6 +338,30 @@ function Hud.Init()
 	end)
 	banner = label({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 60), TextSize = 26, Text = "", TextTransparency = 1 })
 	questLabel = label({ Size = UDim2.fromOffset(360, 24), Position = UDim2.new(1, -380, 0, 20), TextXAlignment = Enum.TextXAlignment.Right, Text = "" })
+	-- shown while standing inside a safe zone (District.InSafeZone reads the tagged zone parts)
+	zoneLabel = label({ Size = UDim2.new(1, 0, 0, 22), Position = UDim2.fromOffset(0, 28), TextSize = 14, Font = Enum.Font.GothamBold, Text = "", TextColor3 = Color3.fromRGB(120, 255, 200) })
+	task.spawn(function()
+		local District = require(ReplicatedStorage.Shared:WaitForChild("District"))
+		local inside = false
+		while true do
+			task.wait(0.25)
+			local char = player.Character
+			local root = char and char:FindFirstChild("HumanoidRootPart")
+			local now, zone = false, nil
+			if root then
+				now, zone = District.InSafeZone(root.Position)
+			end
+			if now ~= inside then
+				inside = now
+				zoneLabel.Text = if now then ("SAFE ZONE  ·  %s"):format(zone and zone:GetAttribute("ZoneName") or "") else ""
+				if now then
+					Hud.Banner("You are safe here. Nothing can hurt you - and you cannot hurt anyone.", Color3.fromRGB(120, 255, 200), 3)
+				else
+					Hud.Banner("Leaving the safe zone.", Color3.fromRGB(255, 190, 40), 2)
+				end
+			end
+		end
+	end)
 
 	Hud.Panels.Stats = panel(UDim2.fromOffset(260, 220), UDim2.fromOffset(20, 120))
 	Hud.Panels.Inventory = panel(UDim2.fromOffset(380, 400), UDim2.new(0.5, -190, 0.5, -200))

@@ -161,8 +161,8 @@ check("Weapon attribute replicated on spawn", p2.Character and p2.Character:GetA
 -- teleport them next to each other and fight
 as(player)
 local c1, c2 = player.Character, p2.Character
-c1.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, 0), M.V3.new(0, 5, -4))
-c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, -4), M.V3.new(0, 5, 0))
+c1.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
+c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, -4), M.V3.new(120, 5, 0))
 local before = c2.Humanoid.Health
 Remotes.Attack:FireServer(); run(0.8)
 check("spawn protection: a fresh character cannot be hit", c2.Humanoid.Health == before and c2:FindFirstChild("SpawnProtection") ~= nil)
@@ -172,6 +172,31 @@ check("attacking forfeits spawn protection", c2:FindFirstChild("SpawnProtection"
 run(1)
 Remotes.Attack:FireServer(); run(0.8)
 check("PvP hit lands in the open world", c2.Humanoid.Health < before)
+-- District 1: generated city, spawn pads, and the plaza safe zone that refuses damage in or out
+do
+	local District = M.mockEnv.__require(RS.Shared.District)
+	local DistrictServer = M.mockEnv.__require(SSS.Server.District)
+	local CS = game_:GetService("CollectionService")
+	check("district built with its spawn pads", workspace_:FindFirstChild("District") ~= nil and DistrictServer.Built and DistrictServer.Built.Spawns == District.Spawns.Count)
+	check("arena pads are not CitySpawns in default dev config", #CS:GetTagged("CitySpawn") == District.Spawns.Count)
+	check("safe zone marker tagged with its radius", #CS:GetTagged("SafeZone") == 1 and CS:GetTagged("SafeZone")[1]:GetAttribute("Radius") == District.SafeZone.Radius)
+	check("plaza centre is inside, a street pad is outside", District.InSafeZone(M.V3.new(0, 5, 0)) and not District.InSafeZone(M.V3.new(120, 5, 0)))
+	-- both inside the plaza: nothing lands
+	local hp = c2.Humanoid.Health
+	c1.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, 0), M.V3.new(0, 5, -4))
+	c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, -4), M.V3.new(0, 5, 0))
+	run(1.2); Remotes.Attack:FireServer(); run(0.8)
+	check("no damage inside the safe zone", c2.Humanoid.Health == hp)
+	-- attacker outside, victim just inside the ring: still refused
+	c1.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(District.SafeZone.Radius + 2, 5, 0), M.V3.new(District.SafeZone.Radius - 2, 5, 0))
+	c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(District.SafeZone.Radius - 2, 5, 0), M.V3.new(District.SafeZone.Radius + 2, 5, 0))
+	run(1.2); Remotes.Attack:FireServer(); run(0.8)
+	check("no damage into the safe zone from outside", c2.Humanoid.Health == hp)
+	-- back to the street for the rest of the scenario
+	c1.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
+	c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, -4), M.V3.new(120, 5, 0))
+	run(1.2)
+end
 -- rate limit: a burst of 40 Attack remotes is cut to the configured budget
 do
 	local RateLimit = M.mockEnv.__require(SSS.Server.RateLimit)
@@ -212,8 +237,8 @@ do
 	check("parried grunt is stunned", gs.stunned > M.setNow())
 	grunt.Humanoid.Health = 0; run(0.5)
 	check("grunt death drops spoils", workspace_:FindFirstChild("Lootable", true) ~= nil)
-	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, 0), M.V3.new(0, 5, -4))
-	c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, -4), M.V3.new(0, 5, 0))
+	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
+	c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, -4), M.V3.new(120, 5, 0))
 end
 
 -- kill rival -> permadeath

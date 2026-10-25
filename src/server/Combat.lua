@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
+local District = require(Shared.District)
 local Remotes = require(Shared.Remotes)
 local Weapons = require(Shared.Weapons)
 local Gear = require(script.Parent.Gear)
@@ -321,6 +322,13 @@ local function applyDamage(attacker, victim, amount, opts)
 	end
 	if victim:FindFirstChildOfClass("ForceField") then
 		return "none" -- spawn protection (Config.SpawnProtectionSeconds); ends early when they attack
+	end
+	do -- safe zone (District 1 plaza): no damage in or out, for players and enemies alike
+		local aroot, vroot = attacker:FindFirstChild("HumanoidRootPart"), victim:FindFirstChild("HumanoidRootPart")
+		if (vroot and District.InSafeZone(vroot.Position)) or (aroot and District.InSafeZone(aroot.Position)) then
+			fx("Safe", victim, attacker)
+			return "none"
+		end
 	end
 
 	local vs, t, vd = st(victim), os.clock(), Gear.OfChar(victim)

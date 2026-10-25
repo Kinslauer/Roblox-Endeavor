@@ -9,6 +9,8 @@ Config.Dev = {
 	Enabled = true,
 	PrologueSeconds = 15, -- only used when Config.Tutorial.Enabled = false
 	ArmoryPoints = 10, -- attribute points the arena instructor hands out per use
+	ArenaOffset = Vector3.new(0, 0, 820), -- the arena sits south of District 1, outside its wall
+	SpawnInArena = false, -- true = the arena's pads are also CitySpawns (spawn there for armory testing)
 }
 
 -- Prologue: every player is alone in a private plot far from everyone else.
@@ -29,7 +31,8 @@ Config.EmergenceCinematic = 6 -- seconds between the announcement and the telepo
 Config.PlotOrigin = Vector3.new(0, 2000, 0)
 Config.PlotSpacing = 1500
 
--- Open world. Tag SpawnLocation-like parts with "CitySpawn" in Studio to place spawns.
+-- Open world. District 1 is generated at boot (shared/District.lua + server/District.lua) and tags
+-- its own CitySpawn pads; tag more SpawnLocation-like parts "CitySpawn" in Studio to add spawns.
 Config.CityFallbackRadius = 300
 Config.CityFallbackHeight = 10
 

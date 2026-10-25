@@ -79,6 +79,7 @@ before the windup ends and on every pulse (`Combat.lua:475, 483`).
 
 ### Damage resolution — `applyDamage` (290-350), in order
 1. **None**: dead victim, self-hit, or player-vs-player while the world is not Open (`WorldPhase.IsOpen()`).
+1b. **None (protected)**: victim carries a `ForceField` (spawn protection, forfeited by any offensive action), **or** either root is inside a safe zone (`District.InSafeZone` — the Relay Plaza, parts tagged `SafeZone`); the latter fires a `Safe` FX so both sides see why nothing happened.
 2. **Dodged**: `t < victim.iframes` → `Dodged` FX, no damage, no tag.
 3. **Facing**: `facing = victimLook · (toAttacker) > BlockMinFacing (0.1)` — hits from behind bypass block.
 4. **Block branch** (victim blocking, facing, attack not `Unblockable`):

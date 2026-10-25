@@ -36,7 +36,7 @@ The server logic for all of these already exists in `src/`. The MVP is making th
 3. **Enemy v2** — R15 raider rig, PathfindingService, telegraphed attacks with parry/dodge windows, Grunt / Brute / Gunner variants, fixes for stuck-on-wall spawning.
 4. **HUD v2** — labels, custom health bar, damage numbers, hit markers, Tab conflict fix, dodge feedback bug. *(implemented 2026-10-25, owner playtest pending)*
 5. **Fair arrival** — spawn protection, in-bounds events, rate limits, stale-comment cleanup.
-6. **District blockout** — generated first district + safe zone; dev arena kept behind `Config.Dev`.
+6. **District blockout** — generated first district + safe zone; dev arena kept behind `Config.Dev`. *(implemented 2026-10-25, owner playtest pending)*
 
 ---
 **Who it's for / what they feel:** Roblox combat-game players (Deepwoken / Cursed Gear fans) who want the tension of having everything on the line and the rush of a perfectly timed hit.

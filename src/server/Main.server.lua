@@ -1,5 +1,6 @@
 local Server = script.Parent
 
+local District = require(Server.District)
 local Arena = require(Server.Arena)
 local Gear = require(Server.Gear)
 local WorldPhase = require(Server.WorldPhase)
@@ -13,9 +14,13 @@ local Tutorial = require(Server.Tutorial)
 local Creator = require(Server.Creator)
 local Lifecycle = require(Server.Lifecycle)
 
--- Must run before WorldPhase.Init so its CitySpawn pads are found. A bug in the test arena
--- must never stop the game from starting, so it is isolated.
-local ok, err = pcall(Arena.Init)
+-- World geometry must exist before WorldPhase.Init so the CitySpawn pads are found. A bug in a
+-- generator must never stop the game from starting, so each is isolated.
+local ok, err = pcall(District.Init)
+if not ok then
+	warn("[District] failed to build:", err)
+end
+ok, err = pcall(Arena.Init)
 if not ok then
 	warn("[Arena] failed to build:", err)
 end

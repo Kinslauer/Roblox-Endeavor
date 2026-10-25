@@ -1,9 +1,9 @@
 -- Friend-testing arena (Config.Dev.Enabled). A neon coliseum with cover and a center platform,
--- eight CitySpawn pads, and an armory outside the south gate: free gear, attribute points,
--- respec, a recharge pad, and regenerating training dummies that show damage numbers.
+-- eight spawn pads, and an armory outside the south gate: free gear, attribute points, respec, a
+-- recharge pad, and regenerating training dummies. Built at Config.Dev.ArenaOffset, outside
+-- District 1's wall; its pads are CitySpawns only when Config.Dev.SpawnInArena.
 -- Everything is generated from code so no Studio building is needed.
 local CollectionService = game:GetService("CollectionService")
-local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
@@ -27,12 +27,19 @@ local CYAN = Color3.fromRGB(0, 220, 255)
 local MAGENTA = Color3.fromRGB(255, 50, 160)
 
 local folder
+local OFFSET = Config.Dev.ArenaOffset or Vector3.zero
 
+-- Every arena part is authored around the origin and shifted by OFFSET here.
 local function part(props)
 	local p = Instance.new("Part")
 	p.Anchored = true
 	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 	for k, v in props do
+		if k == "Position" then
+			v += OFFSET
+		elseif k == "CFrame" then
+			v += OFFSET
+		end
 		p[k] = v
 	end
 	p.Parent = folder
@@ -57,18 +64,8 @@ local function glow(p, color)
 	light.Parent = p
 end
 
-local function atmosphere()
-	Lighting.ClockTime = 23
-	Lighting.Ambient = Color3.fromRGB(45, 45, 70)
-	Lighting.OutdoorAmbient = Color3.fromRGB(45, 45, 70)
-	Lighting.Brightness = 1.2
-	local bloom = Instance.new("BloomEffect")
-	bloom.Intensity, bloom.Size, bloom.Threshold = 0.7, 28, 1.6
-	bloom.Parent = Lighting
-end
-
 local function buildRing()
-	-- base slab doubles as the placeholder city ground
+	-- base slab under the arena and armory
 	part({ Name = "ArenaGround", Size = Vector3.new(700, 4, 700), Position = Vector3.new(0, 0, 0), Color = DARK, Material = Enum.Material.Asphalt })
 	local floor = column(ARENA_RADIUS - 2, 0.6, 0, GROUND_TOP, 0, { Name = "ArenaFloor", Color = MID, Material = Enum.Material.Slate })
 	CollectionService:AddTag(floor, "PlayableArea") -- ambushes only spawn on tagged ground
@@ -122,7 +119,9 @@ local function buildRing()
 		local p = polar(68, a)
 		local pad = part({ Name = "SpawnPad", Size = Vector3.new(8, 0.4, 8), Position = p + Vector3.new(0, floorTop + 0.2, 0),
 			Material = Enum.Material.Neon, Color = CYAN, Transparency = 0.5 })
-		CollectionService:AddTag(pad, "CitySpawn")
+		if Config.Dev.SpawnInArena then
+			CollectionService:AddTag(pad, "CitySpawn")
+		end
 	end
 end
 
@@ -183,7 +182,7 @@ end
 local function dummy(position)
 	local model, hum, root = NPCs.BuildRig("Training Dummy", { Health = 1000, Speed = 0 })
 	root.Anchored = true
-	model:PivotTo(CFrame.lookAt(position, position + Vector3.new(0, 0, 10)))
+	model:PivotTo(CFrame.lookAt(position + OFFSET, position + OFFSET + Vector3.new(0, 0, 10)))
 	model.Parent = folder
 	local lastHit = 0
 	local previous = hum.Health
@@ -254,7 +253,6 @@ function Arena.Init()
 	folder = Instance.new("Folder")
 	folder.Name = "Arena"
 	folder.Parent = workspace
-	atmosphere()
 	buildRing()
 	buildArmory()
 	-- a recharge pad on the center platform so flicker/charge testing is never blocked

@@ -58,6 +58,8 @@ the headless smoke-test harness.
 | `Skills.lua` | `Skills.Defs`, `Skills.Order`, `SlotCount`, `Skills.Unlocked(def, stats, tags)`, `Skills.Power(...)`. Used on both sides (server gates, client displays "(locked)"). |
 | `Items.lua` | `Items.Defs`, `Items.Recipes`, loot tables + `Items.Roll`. |
 | `Remotes.lua` | Creates the `ReplicatedStorage.Remotes` folder of `RemoteEvent`s on the server; the client `WaitForChild`s them. Same table API on both sides. |
+| `District.lua` | District 1 blockout numbers (grid, buildings, cover, lamps, wall, safe zone, spawns, lighting) and `District.InSafeZone(position)` — reads parts tagged `SafeZone` (attribute `Radius`); used by `Combat`, `NPCs` and the client HUD. |
+| `Presentation.lua` | Asset-slot registry for everything the client draws (ADR-0004): weapons, swings, impacts, sounds, camera, locomotion, aim, HUD. |
 
 ### 2. Server systems layer (`src/server/`)
 
@@ -80,7 +82,8 @@ Every system is a ModuleScript exposing an `Init()` plus a small API. Dependenci
 | `NPCs` | Procedural rigs, simple chase/attack loop via `Combat.Damage`. | — |
 | `Quests` | Rotating quests, `QuestChanged` push. | — |
 | `Events` | Weighted event director (supply drop, raider ambush). | — |
-| `Arena` | Dev-only test arena (armory, dummies); gated by `Config.Dev.Enabled`. | — |
+| `District` | Generates District 1 at boot from `shared/District.lua` + a fixed seed into `workspace.District`: street slab (`PlayableArea`), pavements, buildings / rubble, cover, lamps, perimeter wall, Relay Plaza safe zone (`SafeZone` marker + ring + beacon), 8 `CitySpawn` pads. Destroys the legacy placeholder slab. | — |
+| `Arena` | Dev-only test arena (armory, dummies) at `Config.Dev.ArenaOffset`; gated by `Config.Dev.Enabled`; its pads are `CitySpawn`s only with `Config.Dev.SpawnInArena`. | — |
 
 ### 3. Client presentation layer (`src/client/`)
 
@@ -104,7 +107,8 @@ FlickerAura, WeaponView, SwingAnimator, Audio, HudCombat, Aim, Input`.
 ## Boot Order (`src/server/Main.server.lua`)
 
 ```
-pcall(Arena.Init)      -- dev arena; isolated so a bug here cannot stop boot; must precede WorldPhase (CitySpawn pads)
+pcall(District.Init)   -- District 1 blockout; isolated so a generator bug cannot stop boot; must precede WorldPhase (CitySpawn pads)
+pcall(Arena.Init)      -- dev arena (offset, Config.Dev); isolated likewise
 WorldPhase.Init()      -- sets workspace.Phase, lays a placeholder slab if no CitySpawn tags exist
 Gear.Init()            -- Unequip / SetSkill remotes
 Stats.Init()           -- Allocate remote; Gear.Changed -> Apply + Push
