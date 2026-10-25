@@ -165,6 +165,21 @@ Presentation.Hud = {
 	DamageFlash = { Color = Color3.fromRGB(200, 30, 30), Seconds = 0.35, MaxTransparency = 0.55 },
 }
 
+-- ---------------------------------------------------------------------------------------------
+-- ViewModel: the first-person arm + weapon (client/ViewModel.lua). Offsets are in camera space
+-- (x right, y up, z back), studs; angles in degrees. EyeDistance = how far in front of the eye
+-- the rear sight sits while aiming down sights (the aim line always passes through the eye).
+-- ---------------------------------------------------------------------------------------------
+Presentation.ViewModel = {
+	FirstPersonDistance = 1.5, -- camera this close to the head counts as first person
+	EyeDistance = 0.9,
+	HipOffset = Vector3.new(0.65, -0.55, -1.4), HipAngles = Vector3.new(0, -6, 0),
+	BlendTime = 0.12, -- hip <-> sights
+	Sway = 0.6, -- weapon lag on camera turns (0 = rigid)
+	RecoilLight = 0.35, RecoilHeavy = 0.8, RecoilRecover = 3, -- kick per shot (0..1) and decay per second
+	RecoilBack = 0.25, RecoilPitch = 6, -- studs back / degrees up at kick 1
+}
+
 -- Look up the swing entry for a weapon family and label; falls back to Default.
 function Presentation.SwingFor(family, label)
 	local key = if label == "Heavy" then "Heavy" else "Light"

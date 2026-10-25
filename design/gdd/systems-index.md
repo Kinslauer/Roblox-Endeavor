@@ -61,6 +61,7 @@ brief names). "Owning GDD" is a file under `design/gdd/`.
 | 32 | Rig | `src/server/Rig.lua` | Server | P2 | Implemented | `design/quick-specs/character-creator-2026-10-25.md` | Builds the standardized R15 body from the catalog; replaces LoadCharacter |
 | 33 | Creator | `src/server/Creator.lua`, `src/client/Creator.client.lua` | Server + Client | P2 | Implemented | `design/quick-specs/character-creator-2026-10-25.md` | First-spawn look picker with live preview |
 | 34 | Animate (stopgap) | `src/client/Animate.client.lua` | Client | P3 | Placeholder | `design/quick-specs/character-creator-2026-10-25.md` | Stock R15 locomotion for server-built rigs |
+| 35 | Weapon Handling / Sight picture | `src/client/ViewModel.lua`, `SwingAnimator.lua`, `Aim.lua`, `WeaponView.lua` (sights) | Presentation | Post-MVP | Implemented (owner playtest pending) | `production/epics/weapon-handling/EPIC.md` | Two-handed stances, pistol hold, ADS first-person view with real iron sights (`Sight` attachment = aim line), validated camera-direction shots (`Config.Combat.AimCone`). Universe 2 foundation. |
 
 ---
 

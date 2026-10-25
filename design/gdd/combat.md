@@ -71,6 +71,12 @@ rhythm of pressure and recovery.
 A swing is cancelled when the character's `token` changes (hit stun, dodge, feint) or it dies, checked
 before the windup ends and on every pulse (`Combat.lua:475, 483`).
 
+### Aimed shots — `sanitizeAim`
+A ranged attack may carry the client's camera look vector. It is used only if it is a unit-ish
+vector within `Config.Combat.AimCone` (55°) of the body's facing in yaw and `AimMaxPitch` (80°) in
+pitch; otherwise the shot falls back to the body's facing. An accepted aim fires from the Head
+along the vector, which is what makes the first-person sight picture truthful.
+
 ### Hitbox — `pulse` (361-460)
 - **Melee**: `GetPartBoundsInRadius(root, spec.Range)`; a model with a Humanoid is hit if its flat offset is < 3.5 studs (point-blank always counts) or `dot(look, flatOffset) >= spec.Arc` (`Combat.lua:454`). Walls are **not** checked for melee.
 - **Ranged** (`spec.Ranged`): a single `workspace:Raycast(origin, look × Range)` on the first pulse only (`seen.__fired`); fires `Bolt` FX to the hit point; damages the first Humanoid model hit. Walls block it.

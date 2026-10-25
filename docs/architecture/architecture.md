@@ -100,9 +100,10 @@ FlickerAura, WeaponView, SwingAnimator, Audio, HudCombat, Aim, Input`.
 | `WeaponView` | Procedural weapon in the right hand from the replicated `Weapon` attribute (`Presentation.Weapons`), for players and `Combatant`-tagged NPCs. |
 | `Audio` | 3D sound on the emitter's root + 2D copy for the local player, one slot per event kind. |
 | `HudCombat` | ScreenGui `ConduitCombat` (drawn under the HUD): floating numbers over the victim from `Hit` (amount; red `-N` for the local player, big for heavy, re-tinted on `BlackFlash`) and `Block` / `Parry` / `GuardBreak` / `Dodged` words; centre reticle while `Aim` is on, which blinks (`HitMarker`) when the local player's attack lands; red edge flash when the local player takes damage. Slots in `Presentation.Hud`. |
-| `Aim` | Combat stance: body faces the camera yaw (Heartbeat), shoulder camera offset, mouse lock; toggle key. |
+| `Aim` | Combat stance: body faces the camera yaw (Heartbeat), shoulder camera offset, mouse lock; toggle key; pauses while a menu needs the mouse (`Hud.MenuOpen`) or `FreeCursorKey` is held; `SetADS` = first person + narrow FOV for ranged weapons. |
+| `ViewModel` | First-person arm + weapon under the Camera when the camera is in first person with a ranged weapon: hip pose, or the weapon's `Sight` attachment placed on the camera axis (exact iron-sight picture); sway and recoil. |
 | `FlickerAura`, `Creator.client`, `Animate.client` | Flicker / Zone aura from attributes; character-creator UI; stock locomotion clips from `Presentation.Locomotion`. |
-| `Input` | Key → remote intent mapping and panel toggles. |
+| `Input` | Key → remote intent mapping and panel toggles; ranged shots carry the camera look vector (server-validated); RMB = ADS on ranged weapons, MMB / G = special. |
 
 ## Boot Order (`src/server/Main.server.lua`)
 

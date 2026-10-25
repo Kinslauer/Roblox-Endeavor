@@ -420,6 +420,11 @@ local function pulse(char, spec, mods, seen)
 	end
 	local s, d = st(char), Gear.OfChar(char)
 	local origin, look = root.Position, root.CFrame.LookVector
+	if spec.Ranged and mods.aim then
+		-- aimed shot: from eye height, along the (validated) camera direction
+		local head = char:FindFirstChild("Head")
+		origin, look = (head and head.Position or origin + Vector3.new(0, 1.5, 0)), mods.aim
+	end
 
 	local damage = spec.Damage * (mods.damageMult or 1)
 	local posture = spec.Posture * (mods.postureMult or 1)
@@ -551,7 +556,31 @@ local function weaponOf(player)
 	return data and (Weapons.Defs[data.Equipped] or Weapons.Defs.Fists)
 end
 
-function Combat.Attack(player)
+-- A ranged shot may carry the client's camera direction so it follows the camera's pitch (the
+-- sight picture). It is only trusted inside Config.Combat.AimCone of the body's facing and
+-- AimMaxPitch up/down; anything else falls back to the body's facing. Melee ignores it.
+local function sanitizeAim(char, aim)
+	if typeof(aim) ~= "Vector3" or aim ~= aim or aim.Magnitude < 0.5 or aim.Magnitude > 1.5 then
+		return nil
+	end
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return nil
+	end
+	aim = aim.Unit
+	local flat = Vector3.new(aim.X, 0, aim.Z)
+	if flat.Magnitude < 0.05 then
+		return nil
+	end
+	local yaw = math.deg(math.acos(math.clamp(flat.Unit:Dot(root.CFrame.LookVector), -1, 1)))
+	local pitch = math.deg(math.asin(math.clamp(aim.Y, -1, 1)))
+	if yaw > C.AimCone or math.abs(pitch) > C.AimMaxPitch then
+		return nil
+	end
+	return aim
+end
+
+function Combat.Attack(player, aim)
 	local char, weapon = player.Character, weaponOf(player)
 	if not (char and weapon and Combat.CanAct(char)) then
 		return
@@ -566,7 +595,7 @@ function Combat.Attack(player)
 	s.block = false
 	char:SetAttribute("Blocking", false)
 	s.combo, s.comboWeapon = combo, weapon
-	local mods = { chargeBonus = weapon.ChargeBonus, label = combo }
+	local mods = { chargeBonus = weapon.ChargeBonus, label = combo, aim = if spec.Ranged then sanitizeAim(char, aim) else nil }
 	Combat.Swing(char, spec, mods)
 	if combo == #weapon.Attacks then -- end of the chain: recovery
 		s.busyUntil += weapon.ComboCooldown
@@ -574,7 +603,7 @@ function Combat.Attack(player)
 	s.comboExpires = s.busyUntil + weapon.ComboReset
 end
 
-function Combat.Heavy(player)
+function Combat.Heavy(player, aim)
 	local char, weapon = player.Character, weaponOf(player)
 	if not (char and weapon and Combat.CanAct(char)) then
 		return
@@ -588,7 +617,7 @@ function Combat.Heavy(player)
 	Combat.Used:Fire("Heavy", player)
 	char:SetAttribute("Blocking", false)
 	-- Heavies are criticals: they crush blocks (extra posture damage).
-	local mods = { chargeBonus = weapon.ChargeBonus, label = "Heavy", postureMult = C.CriticalPostureMult }
+	local mods = { chargeBonus = weapon.ChargeBonus, label = "Heavy", postureMult = C.CriticalPostureMult, aim = if weapon.Heavy.Ranged then sanitizeAim(char, aim) else nil }
 	Combat.Swing(char, weapon.Heavy, mods)
 end
 

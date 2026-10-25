@@ -101,6 +101,8 @@ Config.Events = {
 Config.SpawnProtectionSeconds = 8
 
 Config.Combat = {
+	AimCone = 55, -- degrees: a client-sent aim direction for a ranged shot may differ from the body's facing by at most this (yaw)
+	AimMaxPitch = 80, -- degrees up/down
 	FeintRecovery = 0.18, -- feint = cancel a swing during its windup
 	FeintRefund = 0.6, -- fraction of the swing's stamina you get back
 	CriticalPostureMult = 1.75, -- heavy attacks crush blocks

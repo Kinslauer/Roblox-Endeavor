@@ -36,6 +36,13 @@ local function isSpecialInput(input)
 	return false
 end
 
+-- Ranged shots carry the camera's look vector so the server fires along the sight line (it
+-- validates the direction against the body's facing; Config.Combat.AimCone).
+local function aimArg()
+	local camera = workspace.CurrentCamera
+	return if rangedEquipped() and camera then camera.CFrame.LookVector else nil
+end
+
 local function dodge()
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -57,7 +64,7 @@ function Input.Init()
 			return -- the cursor is free for the creator / a panel; a missed button click is not a swing
 		end
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			Remotes.Attack:FireServer()
+			Remotes.Attack:FireServer(aimArg())
 		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 			if rangedEquipped() then
 				Aim.SetADS(true) -- held: aim down sights; the special lives on SpecialKeys
@@ -65,7 +72,7 @@ function Input.Init()
 				Remotes.Heavy:FireServer()
 			end
 		elseif isSpecialInput(input) then
-			Remotes.Heavy:FireServer()
+			Remotes.Heavy:FireServer(aimArg())
 		elseif key == Enum.KeyCode.F then
 			Remotes.Block:FireServer(true)
 		elseif key == Enum.KeyCode.E then

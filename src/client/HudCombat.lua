@@ -12,6 +12,7 @@ local Debris = game:GetService("Debris")
 local Presentation = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Presentation"))
 local CombatFX = require(script.Parent.CombatFX)
 local Aim = require(script.Parent.Aim)
+local ViewModel = require(script.Parent.ViewModel)
 local H = Presentation.Hud
 
 local player = Players.LocalPlayer
@@ -132,7 +133,8 @@ local function stepReticle()
 	if not HudCombat.Reticle then
 		return
 	end
-	HudCombat.Reticle.Visible = Aim.Active()
+	-- the iron sights are the reference while aiming down them; the reticle would sit on the post
+	HudCombat.Reticle.Visible = Aim.Active() and not (Aim.ADS and ViewModel.Visible)
 	if not HudCombat.Reticle.Visible then
 		return
 	end

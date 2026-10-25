@@ -1,6 +1,7 @@
 -- Client composition root (ADR-0003 / ADR-0004). Each module is presentation or input only; the
 -- server owns every gameplay outcome. Order matters: Hud first (others use its banner/labels),
--- then the CombatEvent dispatcher, then the modules that register handlers on it, then input.
+-- then the CombatEvent dispatcher, then the modules that register handlers on it, then Aim,
+-- the first-person ViewModel (reads Aim), then input.
 local Hud = require(script.Parent.Hud)
 local CombatFX = require(script.Parent.CombatFX)
 local CameraShake = require(script.Parent.CameraShake)
@@ -11,6 +12,7 @@ local SwingAnimator = require(script.Parent.SwingAnimator)
 local Audio = require(script.Parent.Audio)
 local HudCombat = require(script.Parent.HudCombat)
 local Aim = require(script.Parent.Aim)
+local ViewModel = require(script.Parent.ViewModel)
 local Input = require(script.Parent.Input)
 
 Hud.Init()
@@ -23,4 +25,5 @@ SwingAnimator.Init()
 Audio.Init()
 HudCombat.Init()
 Aim.Init()
+ViewModel.Init()
 Input.Init()

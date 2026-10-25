@@ -197,6 +197,28 @@ do
 	c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, -4), M.V3.new(120, 5, 0))
 	run(1.2)
 end
+-- aimed shots: a ranged attack follows a client aim direction inside Config.Combat.AimCone (pitch too)
+do
+	local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+	as(player)
+	local me = player.Character
+	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -10)) -- facing -Z
+	Inventory.Add(player, "ArcPistol", 1)
+	Remotes.EquipItem:FireServer("ArcPistol"); run(0.5)
+	check("arc pistol equipped", me:GetAttribute("Weapon") == "ArcPistol")
+	local function lastBolt(n) for i = #M.FireLog, n + 1, -1 do local e = M.FireLog[i] if e[1] == "CombatEvent" and e[3] == "Bolt" then return e[5] end end return nil end
+	local mark = #M.FireLog
+	Remotes.Attack:FireServer(M.V3.new(0, 0.5, -0.866)); run(0.6) -- 30 degrees up, straight ahead
+	local up = lastBolt(mark)
+	check("aimed shot follows the camera pitch", up ~= nil and up.Y > 30)
+	run(1)
+	mark = #M.FireLog
+	Remotes.Attack:FireServer(M.V3.new(0, 0, 1)); run(0.6) -- behind the body: outside the cone
+	local back = lastBolt(mark)
+	check("aim outside the cone falls back to the body's facing", back ~= nil and back.Z < -50)
+	run(1)
+	Remotes.EquipItem:FireServer("PipeClub"); run(0.5)
+end
 -- rate limit: a burst of 40 Attack remotes is cut to the configured budget
 do
 	local RateLimit = M.mockEnv.__require(SSS.Server.RateLimit)
