@@ -13,8 +13,8 @@
 | **Table Hopper** (side-dodge with i-frames, chains into itself) | Lateral evasion that rewards reading the attack | **Side dodges** get longer i-frames than back-steps; dodging *during* an enemy's active frames refunds stamina ("Hop") | Implemented tonight |
 | **Snatch** (Devil Bringer pull) | Close the gap on *your* terms; the fight comes to you | **Snatch** skill (Kind `Pull`): yank the nearest target in a cone to arm's length and open them for a hit | Implemented tonight |
 | **Buster** (grab finisher; big on staggered enemies) | A punish that *reads* the enemy state — payoff for landing the stagger | **Buster** skill (Kind `Grab`): on a stunned / guard-broken target it is a throw with heavy damage and posture reset; otherwise a shove | Implemented tonight |
-| **High Roller / Calibur launch + air juggle** | Vertical space, enemy helpless | **Launcher**: heavies on a staggered enemy launch them; airborne enemies take bonus damage and cannot act | Planned (needs an airborne state in NPC AI) |
-| **Enemy Step** | Reset off an enemy's body | Planned with Launcher |
+| **High Roller / Calibur launch + air juggle** | Vertical space, enemy helpless | **Launcher**: a melee heavy on an *open* enemy launches it; airborne enemies are Juggled (stunned, bonus damage, every hit pops them up) | Implemented 2026-10-26 |
+| **Enemy Step** | Reset off an enemy's body | **Enemy Step**: a dodge next to a Juggled enemy hops and refunds stamina | Implemented 2026-10-26 |
 | **Momentum carries** (dash → attack → dash without the combo dropping) | The combo is a *rhythm*, not a wall | **Combo persists through dodges and Snatch**; `ComboReset` timer restarts on each | Implemented tonight |
 | **Weight by weapon** (Red Queen heavier than Blue Rose) | Different cadences per tool | Already data: `Weapons.Defs[*].Attacks` timings | Shipped |
 
@@ -50,7 +50,26 @@ tension comes from permadeath and posture, not a grade.
 ```
 SideIFrameMult = 1.3,  HopRefund = 10,  PullTime = 0.25,  PullStun = 0.6,  PullStop = 3,
 GrabStunWindow = 1.5,  (skill numbers live in Skills.Defs)
+LaunchVelocity = 70, LaunchDrift = 8, LaunchAirTime = 0.8, AirDamageMult = 1.35, AirPopVelocity = 32,
+AirPopExtend = 0.3, MaxJuggleHits = 4, LandStun = 0.45, EnemyStepRange = 9, EnemyStepRefund = 12, EnemyStepHop = 34
 ```
+
+### 2.5 Launcher, juggle, Enemy Step (implemented 2026-10-26)
+- **Launch**: a melee heavy (`mods.label == "Heavy"`, not `Ranged`) that lands on an **open** enemy — `Combat.IsOpen`
+  read *before* the hit's own stun: stunned right now, or posture-broken within `GrabStunWindow` — sets
+  `juggledUntil = now + LaunchAirTime`, stuns it for `LaunchAirTime + LandStun`, gives the root `(0, LaunchVelocity, 0) +
+  away * LaunchDrift`, sets the `Juggled` attribute and fires `Launch`. So the rhythm is: light, light (poise break), **heavy**.
+- Never launched: players (they own their physics; a helpless state is too strong under permadeath), flyers, range
+  targets, anything with a `NoLaunch` attribute. Attack specs can opt out with `NoLaunch = true`.
+- **Juggled**: damage × `AirDamageMult`; every unblocked hit *pops* it (`AirPopVelocity` up, keeps half the horizontal),
+  extends the juggle by `AirPopExtend` and the stun past the landing, up to `MaxJuggleHits` pops — then gravity wins.
+  `Juggle` fires with the pop count (HUD: "AIR xN"). Landing clears the attribute and fires `Land`; the enemy is in
+  `LandStun` hit-stun (the get-up), then its AI resumes.
+- **Enemy Step**: `Combat.Dodge` looks for a Juggled body within `EnemyStepRange` (`Combat.NearestJuggled`); if found, the
+  dodge refunds `EnemyStepRefund` stamina, adds `EnemyStepHop` to the DodgeMove velocity and fires `EnemyStep`.
+- Acceptance (smoke, 6 checks): open enemy + heavy → Juggled, vy ≥ LaunchVelocity, Launch event; hit while airborne →
+  ×AirDamageMult and a pop; dodge next to it → hop + refund; juggle ends → attribute false; heavy on a standing enemy →
+  no launch.
 
 ## 3. Acceptance criteria
 1. A dodge pressed during a landed swing's recovery moves the character and the next attack continues the combo
@@ -62,4 +81,5 @@ GrabStunWindow = 1.5,  (skill numbers live in Skills.Defs)
 6. All numbers are data; smoke covers 1–5.
 
 ## 4. Later
-Launcher + airborne state (NPC AI "Juggled"), Enemy Step, per-weapon dodge-cancel windows if weight needs expressing.
+Per-weapon dodge-cancel windows if weight needs expressing; weapon-specific launch heights (a Sledge heavy should send
+a Grunt higher than a Pipe Club); air-only attack variants (`Attacks` entries used while *you* are airborne).

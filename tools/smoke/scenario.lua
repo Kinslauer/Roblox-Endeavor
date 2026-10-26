@@ -364,6 +364,46 @@ do
 	local lost = hp - grunt.Humanoid.Health
 	check("buster only shoves a standing target", lost > 0 and lost < 20)
 	grunt:Destroy()
+	-- 6. Launcher + juggle (momentum.md 2.5): a melee heavy on an open enemy launches it; hits while
+	-- airborne pop it and deal bonus damage; a dodge next to it is an Enemy Step
+	do
+		local Enemies = M.mockEnv.__require(RS.Shared.Enemies)
+		local Weapons = M.mockEnv.__require(RS.Shared.Weapons)
+		run(1.5)
+		Remotes.EquipItem:FireServer("PipeClub"); run(0.3)
+		me:PivotTo(M.CF.lookAt(M.V3.new(200, 5, 200), M.V3.new(200, 5, 190)))
+		me:SetAttribute("Stamina", 100)
+		local g3 = NPCs.Spawn("Grunt", M.V3.new(200, 5, 194))
+		local s3 = Combat.State(g3)
+		s3.stunned = M.setNow() + 5 -- open (stunned): the launch condition
+		local mark = #M.FireLog
+		Remotes.Heavy:FireServer(); run(Weapons.Defs.PipeClub.Heavy.Windup + 0.15)
+		local v = g3.HumanoidRootPart.AssemblyLinearVelocity
+		check("heavy on an open enemy launches it", g3:GetAttribute("Juggled") == true and v ~= nil and v.Y >= Config.Momentum.LaunchVelocity - 0.01)
+		local launched = false
+		for i = mark + 1, #M.FireLog do local e = M.FireLog[i]; if e[1] == "CombatEvent" and e[3] == "Launch" and e[4] == g3 then launched = true end end
+		check("Launch event fired for the client", launched)
+		-- a plain hit while airborne: bonus damage + a pop
+		local hp = g3.Humanoid.Health
+		Combat.Damage(me, g3, 10, {})
+		check("airborne target takes bonus damage and pops back up", math.abs((hp - g3.Humanoid.Health) - 10 * Config.Momentum.AirDamageMult) < 0.5 and g3.HumanoidRootPart.AssemblyLinearVelocity.Y >= Config.Momentum.AirPopVelocity - 0.01 and s3.juggleHits == 1)
+		-- Enemy Step: dodge next to it -> stamina back and an upward DodgeMove
+		me:SetAttribute("Stamina", 50)
+		mark = #M.FireLog
+		Remotes.Dodge:FireServer(M.V3.new(1, 0, 0)); run(0.05)
+		local hop
+		for i = mark + 1, #M.FireLog do local e = M.FireLog[i]; if e[1] == "CombatEvent" and e[3] == "DodgeMove" then hop = e[4] end end
+		check("enemy step: dodge off an airborne enemy hops and refunds stamina", hop ~= nil and hop.Y >= Config.Momentum.EnemyStepHop - 0.01 and me:GetAttribute("Stamina") >= 50 - Config.Combat.DodgeCost + Config.Momentum.EnemyStepRefund - 0.01)
+		run(Config.Momentum.LaunchAirTime + Config.Momentum.AirPopExtend + 0.3)
+		check("juggle ends: Juggled cleared on landing", g3:GetAttribute("Juggled") == false and not Combat.IsJuggled(g3))
+		-- a heavy on a standing enemy does not launch
+		run(Config.Combat.HeavyCooldown + 0.5)
+		s3.stunned = 0; s3.brokenAt = nil
+		me:SetAttribute("Stamina", 100)
+		Remotes.Heavy:FireServer(); run(Weapons.Defs.PipeClub.Heavy.Windup + 0.15)
+		check("heavy on a standing enemy only staggers", g3:GetAttribute("Juggled") == false)
+		g3:Destroy()
+	end
 	me:PivotTo(M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4)))
 	data.SkillSlots["2"], data.SkillSlots["3"] = nil, nil
 	run(1)

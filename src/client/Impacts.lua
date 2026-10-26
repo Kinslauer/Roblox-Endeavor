@@ -262,8 +262,39 @@ local function onBuster(char, data)
 	end
 end
 
+-- Launch: a vertical streak under the body on the way up, shake for the attacker.
+local function onLaunch(victim, attacker)
+	local spec = I.Launch
+	local root = rootOf(victim)
+	if not root then
+		return
+	end
+	local S = spec.Streak
+	local streak = neonPart(Enum.PartType.Block, Vector3.new(S.Width, S.Height, S.Width), spec.Color, root.CFrame * CFrame.new(0, -S.Height / 2 - 1, 0))
+	CombatFX.Spawn(streak, S.Life)
+	if streak then
+		TweenService:Create(streak, TweenInfo.new(S.Life), { Transparency = 1, Size = Vector3.new(S.Width * 0.2, S.Height * 1.6, S.Width * 0.2) }):Play()
+	end
+	if attacker == player.Character then
+		CameraShake.Add(spec.Shake)
+		CameraShake.Hitstop(spec.Hitstop)
+	end
+end
+
+-- Juggle: a short hitstop per pop for the one doing the juggling.
+local function onJuggle(victim)
+	local spec = I.Juggle
+	local root = rootOf(victim)
+	if root and (root.Position - (rootOf(player.Character) and rootOf(player.Character).Position or root.Position)).Magnitude < 14 then
+		CameraShake.Add(spec.Shake)
+		CameraShake.Hitstop(spec.Hitstop)
+	end
+end
+
 function Impacts.Init()
 	CombatFX.On("Hit", onHit)
+	CombatFX.On("Launch", onLaunch)
+	CombatFX.On("Juggle", onJuggle)
 	CombatFX.On("Block", onBlock)
 	CombatFX.On("Parry", onParry)
 	CombatFX.On("GuardBreak", onGuardBreak)

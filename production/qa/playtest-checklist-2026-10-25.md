@@ -60,3 +60,5 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] Spawn test: die in the city (permadeath wipe) → you wake in District 1. Rejoin alive → District 2.
 - [ ] Range: Wave Console, wave 2 → 2 Gunners + 2 Drones. Drones hover ~9 studs up and circle you, flipping direction; their eye glows red before a shot. Can you hit them with the rifle? Does a hit visibly knock them off their line?
 - [ ] Drone spoils land on the ground under where it died.
+- [ ] Launcher: light, light (stagger), then **heavy** on a Grunt → it flies up ("LAUNCHED"), hits while it is airborne pop it ("AIR x2…") and hurt more; it lands stunned. Does the rhythm read? Too floaty / too short?
+- [ ] Enemy Step: dodge (Q) while a Grunt is in the air next to you → you hop up and get stamina back ("ENEMY STEP").

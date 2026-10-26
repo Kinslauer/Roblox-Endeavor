@@ -2,6 +2,7 @@
 -- supply defence and scaling (see Gear). Ideas ported from the combat-system reference:
 -- frame-data attacks (windup/active/end), cone hit detection, hit stun that cancels swings,
 -- posture meter with guard break, parry, i-frame dodge and wall-aware knockback.
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -338,6 +339,61 @@ local function poiseBroken(victim, vs, t, opts)
 	return false
 end
 
+-- ===== Launcher + juggle (Config.Momentum, momentum.md 2.5) =====
+
+function Combat.IsJuggled(char)
+	local s = st(char)
+	return os.clock() < (s.juggledUntil or 0)
+end
+
+-- Only non-player, non-flying bodies get launched (players own their physics and permadeath makes a
+-- helpless state too strong in PvP; drones already fly; range targets are anchored).
+local function launchable(victim)
+	return Players:GetPlayerFromCharacter(victim) == nil and not victim:GetAttribute("Flying") and not victim:GetAttribute("Target") and not victim:GetAttribute("NoLaunch")
+end
+
+local function land(victim, vs)
+	local now = os.clock()
+	if now < (vs.juggledUntil or 0) then
+		task.delay(vs.juggledUntil - now, land, victim, vs) -- a pop extended it; check again then
+		return
+	end
+	vs.juggledUntil = nil
+	if victim.Parent then
+		victim:SetAttribute("Juggled", false)
+		fx("Land", victim)
+	end
+end
+
+local function launch(attacker, victim, vs, t, direction)
+	local M = Config.Momentum
+	local root = victim:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	vs.juggledUntil, vs.juggleHits = t + M.LaunchAirTime, 0
+	Combat.Stun(victim, M.LaunchAirTime + M.LandStun)
+	root.AssemblyLinearVelocity = Vector3.new(0, M.LaunchVelocity, 0) + direction * M.LaunchDrift
+	victim:SetAttribute("Juggled", true)
+	fx("Launch", victim, attacker)
+	task.delay(M.LaunchAirTime, land, victim, vs)
+end
+
+-- A hit on a Juggled target keeps it up (until MaxJuggleHits) and keeps it stunned past the landing.
+local function pop(victim, vs, t)
+	local M = Config.Momentum
+	local root = victim:FindFirstChild("HumanoidRootPart")
+	if not root or (vs.juggleHits or 0) >= M.MaxJuggleHits then
+		return
+	end
+	vs.juggleHits = (vs.juggleHits or 0) + 1
+	vs.juggledUntil = math.max(vs.juggledUntil or t, t) + M.AirPopExtend
+	Combat.Stun(victim, (vs.juggledUntil - t) + M.LandStun)
+	local v = root.AssemblyLinearVelocity
+	root.AssemblyLinearVelocity = Vector3.new(v.X * 0.5, M.AirPopVelocity, v.Z * 0.5)
+	fx("Juggle", victim, vs.juggleHits)
+end
+
 local function applyDamage(attacker, victim, amount, opts)
 	local vhum = getHum(victim)
 	if not vhum or vhum.Health <= 0 or attacker == victim then
@@ -374,6 +430,12 @@ local function applyDamage(attacker, victim, amount, opts)
 	local aroot, vroot = attacker:FindFirstChild("HumanoidRootPart"), victim:FindFirstChild("HumanoidRootPart")
 	local away = if aroot and vroot then Vector3.new(vroot.Position.X - aroot.Position.X, 0, vroot.Position.Z - aroot.Position.Z) else Vector3.zero
 	local direction = if away.Magnitude > 0.1 then away.Unit else Vector3.zero
+	-- read "open" and "airborne" before this hit's own stun lands
+	local wasOpen = Combat.IsOpen(victim)
+	local juggled = t < (vs.juggledUntil or 0)
+	if juggled then
+		amount *= Config.Momentum.AirDamageMult -- helpless in the air
+	end
 
 	local result = "hit"
 	local facing = aroot and vroot and vroot.CFrame.LookVector:Dot(-direction) > C.BlockMinFacing
@@ -410,6 +472,13 @@ local function applyDamage(attacker, victim, amount, opts)
 		Combat.Stun(victim, opts.Stun or C.HitStunDefault)
 		if opts.Knockback and opts.Knockback > 0 then
 			knockback(victim, direction, opts.Knockback)
+		end
+	end
+	if result ~= "blocked" and vhum.Health > 0 then
+		if juggled then
+			pop(victim, vs, t) -- keep it up there
+		elseif opts.Launches and wasOpen and launchable(victim) then
+			launch(attacker, victim, vs, t, direction) -- a heavy on an open enemy sends it up
 		end
 	end
 	if result == "hit" and amount > 0.5 then
@@ -451,7 +520,8 @@ local function pulse(char, spec, mods, seen)
 		damage += s.arcBonus
 	end
 	local opts = { Posture = posture, Type = spec.Type, Knockback = spec.Knockback, Stun = spec.Stun, Unblockable = mods.unblockable, GuardBreak = mods.guardBreak,
-		Staggers = mods.label == "Heavy" } -- heavies always break enemy poise
+		Staggers = mods.label == "Heavy", -- heavies always break enemy poise
+		Launches = mods.label == "Heavy" and not spec.Ranged and not spec.NoLaunch } -- ...and launch an open enemy (Config.Momentum)
 
 	local function strike(model)
 		seen[model] = true
@@ -708,8 +778,32 @@ function Combat.Dodge(player, direction)
 		s.comboExpires = t + 0.2 + s.comboWeapon.ComboReset -- the chain is a rhythm, not a wall
 	end
 	char:SetAttribute("Blocking", false)
-	Remotes.CombatEvent:FireClient(player, "DodgeMove", direction.Unit * C.DodgeSpeed)
+	-- Enemy Step (momentum.md 2.5): a dodge next to a Juggled enemy springs off it - stamina back
+	-- and a hop, so the juggle can continue from the air.
+	local velocity = direction.Unit * C.DodgeSpeed
+	local step = root and Combat.NearestJuggled(root.Position, Config.Momentum.EnemyStepRange)
+	if step then
+		Combat.AddStamina(char, Config.Momentum.EnemyStepRefund)
+		velocity += Vector3.new(0, Config.Momentum.EnemyStepHop, 0)
+		fx("EnemyStep", char, step)
+	end
+	Remotes.CombatEvent:FireClient(player, "DodgeMove", velocity)
 	fx("Dodge", char)
+end
+
+-- The closest Juggled body within `range` of a position, or nil.
+function Combat.NearestJuggled(position, range)
+	local best, bestDist = nil, range
+	for _, model in CollectionService:GetTagged("Combatant") do
+		local root = model:GetAttribute("Juggled") and model:FindFirstChild("HumanoidRootPart")
+		if root then
+			local d = (root.Position - position).Magnitude
+			if d < bestDist then
+				best, bestDist = model, d
+			end
+		end
+	end
+	return best
 end
 
 function Combat.Init()

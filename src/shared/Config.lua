@@ -59,6 +59,21 @@ Config.Momentum = {
 	PullStun = 0.6, -- hit-stun on a snatched target
 	PullStop = 3, -- studs from the user the target lands
 	GrabStunWindow = 1.5, -- a posture break this recent still counts as "open" for Buster
+	-- Launcher + juggle (momentum.md 2.5). A melee heavy on an *open* enemy (stunned / just
+	-- posture-broken) launches it: it is Juggled (helpless, stunned until it lands) and every hit
+	-- while airborne pops it back up and deals bonus damage. Players and flyers are never launched.
+	LaunchVelocity = 70, -- studs/s up (~12 studs of height, ~0.7 s of hang)
+	LaunchDrift = 8, -- studs/s away from the attacker
+	LaunchAirTime = 0.8, -- seconds the target counts as Juggled after a launch
+	AirDamageMult = 1.35, -- damage multiplier against a Juggled target
+	AirPopVelocity = 32, -- upward studs/s each hit gives a Juggled target
+	AirPopExtend = 0.3, -- seconds each pop adds to the juggle
+	MaxJuggleHits = 4, -- pops stop after this many hits (gravity wins; no infinite juggles)
+	LandStun = 0.45, -- hit-stun after the juggle ends (the get-up)
+	-- Enemy Step: a dodge pressed next to a Juggled enemy springs off it.
+	EnemyStepRange = 9, -- studs from the airborne enemy
+	EnemyStepRefund = 12, -- stamina back (the dodge itself still costs DodgeCost)
+	EnemyStepHop = 34, -- extra upward studs/s on that dodge
 }
 
 -- Sprint: hold the key to run. Drains stamina; blocking cancels it; attacks still work (the swing
