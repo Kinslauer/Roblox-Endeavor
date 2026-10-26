@@ -62,6 +62,9 @@ Items.LootTables = {
 		{ "Scrap", 0.9, 1, 3 }, { "Wire", 0.8, 2, 4 }, { "Cloth", 0.4, 1, 2 },
 		{ "ArcPistol", 0.06, 1, 1 }, { "ArcHood", 0.06, 1, 1 },
 	},
+	Recruit = { -- war-world recruits: supply, not spoils (shipments are the real prize there)
+		{ "Ration", 0.35, 1, 1 }, { "Scrap", 0.3, 1, 2 },
+	},
 	Drone = { -- machine parts: wire and scrap, a rare optic
 		{ "Wire", 1, 2, 5 }, { "Scrap", 0.8, 1, 3 },
 		{ "ReflexOptic", 0.04, 1, 1 }, { "TargetingLens", 0.03, 1, 1 },

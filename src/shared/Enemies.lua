@@ -64,7 +64,7 @@ Enemies.Defs = {
 		Label = 1,
 		Recovery = { 0.5, 1.1 },
 		Poise = { Hits = 2, Reset = 2 },
-		Xp = 30, Loot = "Gunner",
+		Xp = 30, Loot = "Recruit", -- a ration, a little scrap: the field is not a loot pinata
 		Look = look(2, 3, 2, 2, Color3.fromRGB(70, 70, 76)),
 	},
 	-- Phase-2 Range enemy: a flying sentry. Weak, fast, keeps a distance band in the air and strafes

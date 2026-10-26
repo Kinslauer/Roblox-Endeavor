@@ -495,6 +495,63 @@ do
 	Combat.Damage(me2, mine, 0, {}) -- (no-op: same side)
 	War.Leave(player); run(0.3)
 	check("leaving the war returns to the hideout, undeployed", player:GetAttribute("Zone") == "Hideout" and me2:GetAttribute("Deployed") == nil)
+	-- Supply (design/gdd/war.md §7, build order 3): the faction pool and shipments
+	do
+		local Supply = M.mockEnv.__require(SSS.Server.Supply)
+		local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+		local SUP = Config.Supply
+		local f = data.Faction
+		data.Stash = { RiotPlate = 1, Scrap = 10 }
+		local pts = Supply.Donate(player)
+		check("donating the stash feeds your side's pool by item value", pts == SUP.Value.Armor + 10 * SUP.Value.Material and Supply.Points(f) == pts and next(data.Stash) == nil and workspace_:GetAttribute("War_Supply_" .. f) == pts)
+		Supply.AddPoints(f, SUP.Tiers[2].Points + 40 - pts)
+		check("the pool's points pick the kit tier", Supply.Tier(f).Name == SUP.Tiers[2].Name and workspace_:GetAttribute("War_Tier_" .. f) == SUP.Tiers[2].Name)
+		-- a new round: every side re-fields; ours draws the Armed kit and pays for it
+		local poolBefore = Supply.Points(f)
+		War.EndRound(); run(2 + W.PodFallSeconds + 2)
+		local armed, drawn = nil, 0
+		for model in War.Sides()[f].Recruits do drawn += 1; if model:GetAttribute("Kit") == SUP.Tiers[2].Name then armed = armed or model end end
+		check("supplied recruits spawn with the kit and the pool pays per recruit", armed ~= nil and math.abs(armed.Humanoid.MaxHealth - 90 * SUP.Tiers[2].HealthMult) < 0.01 and armed:GetAttribute("KitResist") == SUP.Tiers[2].Resist and Supply.Points(f) == poolBefore - drawn * SUP.CostPerRecruit)
+		-- a shipment: stash gear sent ahead, landing as a crate at the base
+		data.Stash = { ArcPistol = 1, Medkit = 2, Scrap = 5 }
+		local pistol0, medkit0 = Inventory.Count(player, "ArcPistol"), Inventory.Count(player, "Medkit") -- what the body already carries
+		local shipped = Supply.Ship(player)
+		check("a shipment takes shippable stash gear and leaves the materials", shipped == 3 and data.Shipment and data.Shipment.Items.ArcPistol == 1 and data.Shipment.Items.Medkit == 2 and data.Stash.ArcPistol == nil and data.Stash.Scrap == 5 and player:GetAttribute("ShipmentCount") == 3)
+		check("one shipment at a time", Supply.Ship(player) == 0)
+		Hideout.Deploy(player); run(0.6)
+		local me3 = player.Character
+		Combat.ClearProtection(me3)
+		local crates = 0
+		for _, d in workspace_:GetDescendants() do if d.Name == "Crate_" .. player.Name then crates += 1 end end
+		check("the crate waits for the shipment's delay", crates == 0)
+		data.Shipment.ReadyAt = M.mockEnv.os.time() -- the mock's clock, not the host's
+		run(0.6 + SUP.CrateFallSeconds + 0.5)
+		crates = 0
+		for _, d in workspace_:GetDescendants() do if d.Name == "Crate_" .. player.Name then crates += 1 end end
+		check("a ready shipment lands as a crate while deployed", crates == 1)
+		check("opening the crate hands over the field kit and equips the gun", War.OpenCrate(player) and Inventory.Count(player, "ArcPistol") == pistol0 + 1 and Inventory.Count(player, "Medkit") == medkit0 + 2 and data.Equipped == "ArcPistol" and data.Shipment == false and player:GetAttribute("ShipmentCount") == nil)
+		-- walk out alive: the kit goes home to the stash
+		War.Leave(player); run(0.3)
+		check("leaving alive returns the field kit to the stash", Inventory.Count(player, "ArcPistol") == pistol0 and Inventory.Count(player, "Medkit") == medkit0 and data.Stash.ArcPistol == 1 and data.Stash.Medkit == 2)
+		-- ship again, open, then die: the kit stays on the field as loot
+		Supply.Ship(player)
+		data.Shipment.ReadyAt = M.mockEnv.os.time() -- the mock's clock, not the host's
+		Hideout.Deploy(player); run(SUP.CrateFallSeconds + 1)
+		local me4 = player.Character
+		Combat.ClearProtection(me4)
+		War.OpenCrate(player)
+		local enemy
+		for id, side in War.Sides() do if id ~= f then for model in side.Recruits do enemy = enemy or model end end end
+		me4.Humanoid.Health = 10
+		Combat.Damage(enemy, me4, 50, {})
+		run(W.DownedSeconds + 0.5)
+		local kitLoot = 0
+		for _, d in workspace_:GetDescendants() do if d.Name == "Lootable" and tostring(d:GetAttribute("Label")):find("field kit") then kitLoot += 1 end end
+		check("dying on the field forfeits the kit where you fell", Inventory.Count(player, "ArcPistol") == pistol0 and data.Stash.ArcPistol == nil and kitLoot == 1)
+		run(W.RedeploySeconds + 1.5)
+		War.Leave(player); run(0.3)
+		check("after the forfeit you leave with nothing extra in the stash", player:GetAttribute("Zone") == "Hideout" and data.Stash.Medkit == nil)
+	end
 	-- back to the city for the rest of the scenario
 	Hideout.Leave(player); run(0.2)
 	Combat.ClearProtection(player.Character)

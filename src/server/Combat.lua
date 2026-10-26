@@ -610,7 +610,7 @@ local function applyDamage(attacker, victim, amount, opts)
 	if t < vs.takenUntil then
 		amount *= vs.takenMult
 	end
-	amount *= 1 - math.min(C.MaxResist, vd.Resist[opts.Type or "Physical"] or 0)
+	amount *= 1 - math.min(C.MaxResist, (vd.Resist[opts.Type or "Physical"] or 0) + (victim:GetAttribute("KitResist") or 0)) -- KitResist: a supplied recruit's armour (Config.Supply)
 
 	-- a lethal hit on a deployed player goes through the war's hook (downed instead of dead)
 	if amount >= vhum.Health and Combat.LethalHook and Combat.LethalHook(victim, attacker, amount) then

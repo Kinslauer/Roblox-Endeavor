@@ -38,8 +38,7 @@ Everyone on the war world is a recruit. Players are recruits with a will; AI rec
   home is **the hill** — so the hill is always contested, even on an empty server.
 - No friendly fire between recruits of the same side, players included — but **only in the war zone**; in the city,
   conduits owe each other nothing (`Combat.FactionOf`, `atWar`).
-- Today every recruit draws the **basic kit** (`Config.Range.Loadout`). The faction pool (kit upgrades bought with
-  conduit supplies) and shipments to your own recruits are build order 3.
+- What a recruit spawns with depends on its side's **supply pool** (§6): basic, armed or plated.
 
 ## 3. The player's loop
 
@@ -82,8 +81,47 @@ hill. A ticket, a redeploy timer and the money you did not bank is the middle.
 - DOWNED overlay with the bleed-out countdown (`DownedUntil` attribute).
 - Combat events: "Pod", "HillCaptured", "Downed", "Revive" fx; announcements for deploy / downed / died / round end.
 
-## 6. Open questions and follow-ups
-- Recruit corpses drop Gunner loot — fifteen piles after a minute. Recruits should drop ammo/supply only, or nothing.
+## 6. Supply — how the Conduit world feeds the war (build order 3)
+
+Owner's rule: *AI recruits draw from a basic kit or from a pool generated from conduit supplies; shipments go to your
+own recruits; conduits supply the pool separately.* Two consoles on the hideout's back wall, next to the stash:
+
+**Supply the War (the pool).** Donating your stash turns it into points for your side's pool by item type
+(`Config.Supply.Value`: materials 1, consumables 3, armor 10, weapons 12, cybernetics 15). The pool is server-wide
+per faction. Every AI recruit the side fields **draws** from it: `CostPerRecruit` points are spent and the recruit
+spawns with the highest **tier** the pool still reaches (`Config.Supply.Tiers`):
+
+| Tier | Pool ≥ | Health | Resist | Damage | Look |
+|---|---|---|---|---|---|
+| Basic | 0 | ×1 | +0 | ×1 | side colours |
+| Armed | 60 | ×1.25 | +8 % | ×1.1 | steel helm |
+| Plated | 200 | ×1.5 | +16 % | ×1.2 | steel helm + plated torso |
+
+So a side its conduits keep feeding fields tougher recruits, and attrition (three recruits a pod, one every 18 s from
+the facility) drains the pool back toward basic. A side nobody supplies is never locked out — it just fights with the
+basic kit. The HUD's ticket rows show each side's current tier; a tier change is announced to everyone.
+
+**Shipment (your own gear).** Sends up to `ShipmentMax` shippable items from the stash (weapons, armor, cybernetics,
+consumables — never materials) to the front. `ShipmentSeconds` later (wall clock, saved in the profile so a rejoin
+does not lose it) a **crate** drops at your base while you are deployed, with a hold-X prompt only you can use.
+Opening it hands over the items as your **field kit**: a gun is equipped first (this is a shooting war), armor and
+cybernetics are worn. The field kit follows Tarkov's one honest rule: **die and it stays where you fell** (dropped as
+loot anyone can take, 3 minutes), **walk out alive and it goes back to the stash**. Logging off returns it too —
+there is no combat-log stake in the war. One shipment at a time; the war board shows the countdown and "waiting at
+your base".
+
+Why two channels: the pool is the *collective* lever (your faction's war gets better because conduits feed it; nobody
+owns the result) and the shipment is the *personal* one (your gear, your risk, your base). Separating them keeps a
+donation from ever feeling like a loss and a shipment from ever feeling like charity.
+
+## 7. Open questions and follow-ups
+- The pool is in memory: a server restart resets it. Persist per faction in a DataStore (or MemoryStore shared
+  across servers) once the war is its own place.
+- Shipments arrive as one crate at the base; "shipments to your own recruits" (your squad spawning with your gear)
+  needs squads first.
+- Enhanced senses / cybernetics bought from the pool as war-only buffs; faction pool spending choices (buy a pod
+  early, call a drone wing) for players who want to *direct* supply, not just donate it.
+- ~~Recruit corpses drop Gunner loot~~ — now `Items.LootTables.Recruit` (a ration, a little scrap, often nothing).
 - The Range's "Rift" practice entry bypasses deployment (you are in the zone but not deployed, so you cannot be downed
   and your kills pay nothing). Fine for the firing line; remove when the war gets its own place.
 - Squad play: deploying with friends onto the same side, pods you can ride down in.

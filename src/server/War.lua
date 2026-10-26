@@ -10,6 +10,8 @@
 --     (Combat.LethalHook); an ally holds X to revive; bleeding out = death = redeploy, never permadeath
 --   * tickets: a death costs DeathTickets; at 0 the round ends, the side with the most wins, reset
 --   * pay (Wallet): zone time, revives, takedowns, a round win
+--   * supply (server/Supply.lua): recruits spawn with the kit their side's pool affords; a player's
+--     shipment lands as a crate at their base - open it to fight with it, lose it where you fall
 -- The HUD reads workspace attributes War_* ; CombatEvents Downed / Revive / HillCaptured carry the moments.
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -26,7 +28,9 @@ local Gear = require(script.Parent.Gear)
 local Inventory = require(script.Parent.Inventory)
 local NPCs = require(script.Parent.NPCs)
 local PlayerData = require(script.Parent.PlayerData)
+local Loot = require(script.Parent.Loot)
 local Range = require(script.Parent.Range)
+local Supply = require(script.Parent.Supply)
 local Wallet = require(script.Parent.Wallet)
 
 local W = Config.War
@@ -38,7 +42,7 @@ local center -- arena centre (Range.ArenaCenter)
 local sides = {} -- id -> { Def, Tickets, Recruits = { model = true }, Alive = n, Base = Vector3, NextPod, NextClone }
 local order = {} -- faction ids in Config order
 local hill = { Index = 0, Position = nil, Owner = nil, Capturing = nil, Progress = 0, MovedAt = 0, Ring = nil, Beam = nil }
-local deployed = {} -- player -> { Side = id, ZonePay = 0 }
+local deployed = {} -- player -> { Side = id, ZonePay = 0, FieldKit = { [id] = n } | nil, Crate = Part | nil }
 local round = 1
 local rng = Random.new()
 
@@ -169,7 +173,8 @@ local function hillPosition()
 end
 
 local function spawnRecruit(side, position)
-	local model = NPCs.Spawn("Recruit", position, { Faction = side.Def.Id, Cloth = side.Def.Color, Name = side.Def.Name .. " Recruit", Home = hillPosition, Despawn = false })
+	local kit = Supply.Draw(side.Def.Id) -- the pool pays for every recruit fielded and decides its kit
+	local model = NPCs.Spawn("Recruit", position, { Faction = side.Def.Id, Cloth = side.Def.Color, Name = side.Def.Name .. " Recruit", Home = hillPosition, Despawn = false, Kit = kit })
 	if not model then
 		return nil
 	end
@@ -227,6 +232,133 @@ local function tickRecruits(now)
 end
 
 -- ---------------------------------------------------------------------------------------------
+-- Shipments: a ready shipment lands as a crate at your base while you are deployed (Supply.lua owns
+-- the queue). Open it (hold X) and the items are your FIELD KIT: equipped if they can be, forfeited
+-- where you fall, returned to the stash when you leave alive.
+-- ---------------------------------------------------------------------------------------------
+local SUP = Config.Supply
+
+local function equipFieldKit(player, items)
+	local Weapons = require(Shared.Weapons)
+	local Items = require(Shared.Items)
+	local bestGun, bestMelee
+	for id in items do
+		local wdef = Weapons.Defs[id]
+		if wdef then
+			if Weapons.IsGun(wdef) then
+				bestGun = bestGun or id
+			else
+				bestMelee = bestMelee or id
+			end
+		end
+		local idef = Items.Defs[id]
+		if idef and (idef.Type == "Armor" or idef.Type == "Cybernetic") then
+			Gear.EquipGear(player, id)
+		end
+	end
+	if bestGun or bestMelee then
+		Gear.EquipWeapon(player, bestGun or bestMelee) -- a gun first: this is a shooting war
+	end
+end
+
+local function openCrate(player, crate)
+	local entry = deployed[player]
+	if not (entry and entry.Crate == crate) then
+		return
+	end
+	entry.Crate = nil
+	crate:Destroy()
+	local items = Supply.TakeShipment(player)
+	if not items then
+		return
+	end
+	entry.FieldKit = entry.FieldKit or {}
+	local n = 0
+	for id, count in items do
+		entry.FieldKit[id] = (entry.FieldKit[id] or 0) + count
+		n += count
+	end
+	equipFieldKit(player, items)
+	Combat.SyncAmmo(player.Character)
+	Combat.FX("Shipment", player.Character, player)
+	announce(player, ("Shipment opened: %d items in hand. Lose them here, or carry them home."):format(n))
+end
+
+local function dropCrate(player, entry)
+	local side = sides[entry.Side]
+	local char = player.Character
+	if not (side and char and char:FindFirstChild("HumanoidRootPart")) or entry.Crate then
+		return
+	end
+	local land = side.Base + Vector3.new(rng:NextNumber(-8, 8), 0, rng:NextNumber(6, 12))
+	local crate = part({ Name = "Crate_" .. player.Name, Size = Vector3.new(4, 3, 4), Position = land + Vector3.new(0, SUP.CrateHeight, 0), Color = side.Def.Color, Material = Enum.Material.DiamondPlate, CanCollide = true })
+	crate:SetAttribute("Owner", player.UserId)
+	entry.Crate = crate
+	TweenService:Create(crate, TweenInfo.new(SUP.CrateFallSeconds, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = land + Vector3.new(0, 1.5, 0) }):Play()
+	Remotes.CombatEvent:FireAllClients("Pod", crate, side.Def.Id)
+	announce(player, "Your shipment is coming down at the base.")
+	task.delay(SUP.CrateFallSeconds, function()
+		if not crate.Parent or entry.Crate ~= crate then
+			return
+		end
+		glow(crate, side.Def.Color, 20, 2)
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.ObjectText, prompt.ActionText, prompt.HoldDuration = "Your shipment", "Open", SUP.CrateOpenSeconds
+		prompt.MaxActivationDistance, prompt.RequiresLineOfSight = 10, false
+		prompt.KeyboardKeyCode = Enum.KeyCode.X
+		prompt.Parent = crate
+		prompt.Triggered:Connect(function(who)
+			if who == player then
+				openCrate(player, crate)
+			end
+		end)
+	end)
+end
+War.DropCrate = function(player)
+	local entry = deployed[player]
+	if entry then
+		dropCrate(player, entry)
+	end
+end
+War.OpenCrate = function(player)
+	local entry = deployed[player]
+	if entry and entry.Crate then
+		openCrate(player, entry.Crate)
+		return true
+	end
+	return false
+end
+
+local function clearCrate(entry)
+	if entry.Crate then
+		entry.Crate:Destroy()
+		entry.Crate = nil
+	end
+end
+
+-- Field kit on the way out: lost where you fell (as loot for whoever finds it) or carried home.
+local function forfeitFieldKit(player, entry, at)
+	if not entry.FieldKit then
+		return
+	end
+	local lost = Supply.Forfeit(player, entry.FieldKit)
+	entry.FieldKit = nil
+	if next(lost) and at then
+		Loot.Spawn(at, lost, { Label = player.DisplayName .. "'s field kit", Lifetime = 180 })
+		announce(player, "Your field kit stays where you fell.")
+	end
+end
+
+local function returnFieldKit(player, entry)
+	if not entry.FieldKit then
+		return
+	end
+	Supply.ReturnToStash(player, entry.FieldKit)
+	entry.FieldKit = nil
+	announce(player, "Your field kit is back in the stash.")
+end
+
+-- ---------------------------------------------------------------------------------------------
 -- Players: deploy, down, revive, death, redeploy
 -- ---------------------------------------------------------------------------------------------
 function War.IsDeployed(player)
@@ -264,17 +396,30 @@ function War.Deploy(player)
 		announce(player, Lore.Get("FirstRift"), "Lore")
 	end
 	announce(player, ("Deployed with the %s. Hold the hill, keep your recruits alive, bring the money home."):format(side.Def.Name))
+	Supply.Sync(player)
+	if Supply.ShipmentEta(player) == 0 then
+		dropCrate(player, deployed[player])
+	end
 	publish()
 	return true
 end
 
-function War.Leave(player)
+local function undeploy(player)
+	local entry = deployed[player]
 	local char = player.Character
 	if char then
 		char:SetAttribute("Deployed", nil)
 		char:SetAttribute("Downed", nil)
 	end
+	if entry then
+		clearCrate(entry)
+		returnFieldKit(player, entry) -- walked out alive: the kit comes home
+	end
 	deployed[player] = nil
+end
+
+function War.Leave(player)
+	undeploy(player)
 	Range.Leave(player)
 end
 
@@ -365,6 +510,8 @@ function War.HandleDeath(player)
 	if side then
 		side.Tickets = math.max(0, side.Tickets - W.DeathTickets)
 	end
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	forfeitFieldKit(player, entry, root and root.CFrame + Vector3.new(0, 1, 0) or nil)
 	local _, killer = Combat.GetKiller(char)
 	if killer and killer ~= player and deployed[killer] then
 		Wallet.Add(killer, W.MoneyPerPlayerTakedown)
@@ -522,16 +669,12 @@ function War.Init()
 	-- leaving the zone by any door (the Return rift, War.Leave) ends the deployment
 	local prevLeave = Range.OnLeave
 	Range.OnLeave = function(player)
-		local char = player.Character
-		if char then
-			char:SetAttribute("Deployed", nil)
-			char:SetAttribute("Downed", nil)
-		end
-		deployed[player] = nil
+		undeploy(player)
 		if prevLeave then
 			prevLeave(player)
 		end
 	end
+	Supply.Init()
 	-- takedowns of AI recruits pay the killer
 	NPCs.Killed.Event:Connect(function(killer, model)
 		if model:GetAttribute("Faction") and deployed[killer] then
@@ -550,9 +693,19 @@ function War.Init()
 		local now = os.clock()
 		tickRecruits(now)
 		tickHill(step, now)
+		for player, entry in deployed do -- shipments land while you are on the field
+			if not entry.Crate and Supply.ShipmentEta(player) == 0 and not (player.Character and player.Character:GetAttribute("Downed")) then
+				dropCrate(player, entry)
+			end
+		end
 	end)
 	-- leaving players
 	Players.PlayerRemoving:Connect(function(player)
+		local entry = deployed[player]
+		if entry then
+			clearCrate(entry)
+			returnFieldKit(player, entry) -- a leaver keeps the kit (combat-logging has no stake here)
+		end
 		deployed[player] = nil
 	end)
 	War.Built = { Sides = #order }

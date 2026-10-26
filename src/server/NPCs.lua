@@ -68,6 +68,28 @@ local function buildEnemyRig(typeName, def, opts)
 	local hum = model:FindFirstChildOfClass("Humanoid")
 	hum.MaxHealth, hum.Health, hum.WalkSpeed = def.Health, def.Health, def.Speed
 	hum.DisplayName = def.Name or typeName
+	local kit = opts and opts.Kit -- Config.Supply.Tiers[*]: the side's pool decides how well a recruit is armed
+	if kit then
+		hum.MaxHealth = def.Health * (kit.HealthMult or 1)
+		hum.Health = hum.MaxHealth
+		model:SetAttribute("Kit", kit.Name)
+		model:SetAttribute("KitResist", kit.Resist or 0)
+		model:SetAttribute("KitDamage", kit.DamageMult or 1)
+		local STEEL = Color3.fromRGB(96, 100, 110)
+		if kit.Helm and model:FindFirstChild("Head") then
+			model.Head.Color = STEEL
+			model.Head.Material = Enum.Material.Metal
+		end
+		if kit.Plate then
+			for _, partName in { "UpperTorso", "LowerTorso" } do
+				local part = model:FindFirstChild(partName)
+				if part then
+					part.Color = STEEL
+					part.Material = Enum.Material.DiamondPlate
+				end
+			end
+		end
+	end
 	hum.HealthDisplayDistance = 60
 	if def.MaxPosture then -- read by Combat.State on first contact
 		model:SetAttribute("MaxPosture", def.MaxPosture)
@@ -324,7 +346,8 @@ end
 -- Fired when a player kills an NPC: (killerPlayer, model, typeName). The war scores takedowns here.
 NPCs.Killed = Instance.new("BindableEvent")
 
--- opts: Despawn (true/false: ambush enemies despawn when idle; placed ones stay), Faction (id: the
+-- opts: Kit (Config.Supply.Tiers[*]: health / resist / damage / look of a supplied recruit),
+--       Despawn (true/false: ambush enemies despawn when idle; placed ones stay), Faction (id: the
 -- side it fights for; it then hunts the other sides' players and recruits), Cloth (Color3 tint),
 -- Name, Home (Vector3 or function -> Vector3: where it goes with nobody in sight; the war passes the hill)
 function NPCs.Spawn(typeName, position, opts)
@@ -387,7 +410,7 @@ function NPCs.Spawn(typeName, position, opts)
 		else
 			model:PivotTo(flatLook(root, troot.Position))
 		end
-		Combat.Swing(model, def.Attack, { label = def.Label })
+		Combat.Swing(model, def.Attack, { label = def.Label, damageMult = model:GetAttribute("KitDamage") })
 		local rec = def.Recovery
 		nextAttackAt = os.clock() + def.Attack.End + rng:NextNumber(rec[1], rec[2])
 	end

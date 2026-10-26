@@ -103,6 +103,26 @@ Config.War = {
 	MoneyRoundWin = 60,
 }
 
+-- Supply (design/gdd/war.md §6, Phase 3 build order 3): conduits feed the war two ways. The faction
+-- POOL (donated stash → points) decides the kit every AI recruit of that side spawns with; fielding
+-- recruits spends it, so a side nobody supplies falls back to the basic kit. SHIPMENTS are your own
+-- stash gear sent ahead: a crate lands at your base after a delay; open it and you fight with it —
+-- die and it stays on the field, walk out and it goes back to the stash.
+Config.Supply = {
+	Value = { Material = 1, Consumable = 3, Weapon = 12, Armor = 10, Cybernetic = 15 }, -- pool points per donated item by Items.Defs[*].Type
+	CostPerRecruit = 3, -- points a side spends for every recruit it fields (attrition drains the pool)
+	Tiers = { -- in order; the highest tier whose Points the pool reaches is the kit (checked at spawn)
+		{ Name = "Basic", Points = 0, HealthMult = 1, Resist = 0, DamageMult = 1 },
+		{ Name = "Armed", Points = 60, HealthMult = 1.25, Resist = 0.08, DamageMult = 1.1, Helm = true },
+		{ Name = "Plated", Points = 200, HealthMult = 1.5, Resist = 0.16, DamageMult = 1.2, Helm = true, Plate = true },
+	},
+	ShipmentSeconds = 45, -- the crate lands this long after you send it (wall clock, survives a rejoin)
+	ShipmentMax = 6, -- items per shipment (weapons, armor, cybernetics, consumables - never materials)
+	CrateHeight = 120,
+	CrateFallSeconds = 2,
+	CrateOpenSeconds = 1.5, -- hold X
+}
+
 -- Momentum & cancels (design/gdd/momentum.md): the Nero-study layer on top of the timing core.
 Config.Momentum = {
 	SideIFrameMult = 1.3, -- side dodges (|dot(dir, look)| < 0.5) get this much more i-frame time

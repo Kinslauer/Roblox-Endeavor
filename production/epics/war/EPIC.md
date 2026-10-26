@@ -1,6 +1,6 @@
 # Epic: Wardogs — the perpetual war (Phase 3, build order 2)
 
-> **Status**: Stories 001–006 implemented (owner playtest pending) · **Layer**: Core loop (war world) · **Rigor**: standard
+> **Status**: Stories 001–006, 008–009 implemented (owner playtest pending) · **Layer**: Core loop (war world) · **Rigor**: standard
 > **Brief**: `design/phase-3-brief.md` item 2 · **GDD**: `design/gdd/war.md` · **Runs in**: the Range's arena until the war world is its own place
 
 ## Overview
@@ -19,6 +19,8 @@ downs a deployed player (an ally can revive); bleeding out costs the side a tick
 | 004 | Deploy / leave: `Hideout.Deploy` → `War.Deploy` (needs a side + `Range.Unlocked`; basic kit, zone Range, first person, base pivot, entry protection, `Lore.FirstRift`); `Range.OnLeave` wrapped to un-deploy; `Combat.FactionOf`, friendly-fire refusal scoped to the war zone | Logic | Implemented — live + smoke |
 | 005 | Downed / revive / redeploy: `Combat.LethalHook` → `War.down` (1 HP, prone, stunned, Revive prompt hold X, bleed-out), `War.Revive` (`ReviveHealthFraction`, pays reviver), `War.HandleDeath` (ticket, killer pay, `task.spawn` Lifecycle.Spawn and poll for the new body, then `War.Deploy`); `Lifecycle.onDied` asks the war first; tutorial skipped for a redeploying recruit | Logic | Implemented — live: downed → bled out 19.9 s → redeployed 5.1 s later at the base, Deployed/Range/first person; smoke: down, revive, ticket, redeploy |
 | 006 | Pay + HUD: `MoneyPerZoneSecond` (fractional accumulator), `MoneyPerRevive`, `MoneyPerTakedown` via `NPCs.Killed`, `MoneyPerPlayerTakedown`, `MoneyRoundWin`; HUD war board (hill line + three ticket rows) while in the zone, DOWNED overlay with countdown | Logic + HUD | Implemented — live: board visible, money rising on the hill |
+| 008 | Supply pool (build order 3): `Config.Supply`, `server/Supply.lua` (points per faction, `Donate`, `Tier`, `Draw`, `War_Supply_*`/`War_Tier_*` attrs); hideout console "Supply the War"; `NPCs.Spawn` opts.Kit (health ×, `KitResist`, `KitDamage`, steel helm / plated torso); `Combat` adds KitResist; recruits drop `Items.LootTables.Recruit` | Logic + Content | Implemented — live: donated 68 → Armed; new round fielded 112-HP Armed recruits, pool 68→59; smoke: value, tier, kit + cost |
+| 009 | Shipments: `Supply.Ship/TakeShipment/ReturnToStash/Forfeit`, `profile.Shipment` (PERSIST); hideout console "Shipment"; `War` drops a crate at the base when ready (owner-only hold-X), field kit equipped (gun first), forfeited as loot where you fell, returned to the stash on leave / disconnect; HUD shipment line + tier per row | Logic + HUD | Implemented — live: crate landed, opened, pistol + helm equipped, leave returned both to the stash; smoke: 8 checks |
 | 007 | Owner playtest: does a round have a shape (push, hold, lose the hill, chase it)? Is 20 s downed too long alone? Do pods read as reinforcements? Recruit loot clutter | Visual/Feel | Pending |
 
 ## Acceptance criteria
@@ -27,10 +29,11 @@ downs a deployed player (an ally can revive); bleeding out costs the side a tick
 3. A lethal hit downs you; an ally's hold-X revive brings you back at 40 %; nobody coming means bleed-out → one ticket → redeploy at your base after 5 s with a fresh body, your Conduit untouched.
 4. Any side at 0 tickets ends the round: announcement, winners paid, field reset, next round immediately.
 5. Hill time, revives and takedowns pay into the wallet; the HUD shows the board in the zone.
-6. Smoke covers 1–5 (13 checks: 124/124).
+6. Donating the stash raises your side's pool; recruits spawn with the tier the pool affords and each one spends from it.
+7. A shipment lands as a crate at your base after the delay; opening it equips the gear; dying forfeits it where you fell, leaving alive returns it to the stash.
+8. Smoke covers 1–7 (24 checks: 135/135).
 
 ## Follow-ups
-- Recruit corpses drop full Gunner loot — clutter; make recruits drop supply only.
 - The Rift practice entry puts you in the zone undeployed (cannot be downed, no pay) — remove when the war has its own place.
-- Build order 3: shipments to your own recruits + the faction pool for AI kits.
+- Persist the supply pool (DataStore / MemoryStore); pool *spending* choices for players; shipments to your own squad.
 - Squads (deploy with friends, ride the pod), sea/land facility flavours, enhanced senses / cybernetics as war-world buffs.

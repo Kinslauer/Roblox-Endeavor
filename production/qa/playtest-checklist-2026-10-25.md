@@ -82,4 +82,10 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] Get downed (let a recruit finish you): screen says DOWNED with a countdown, you are prone and cannot act. Stand near a downed friendly recruit... (solo: you will bleed out at 20 s). Is 20 s too long alone?
 - [ ] After bleeding out: "You died. Redeploying from your base in 5 s" → you are back at your base, fresh body, kit on; your money/stash/side unchanged. Check the Conduit is untouched (level, inventory) when you Return.
 - [ ] Let a round finish (a side at 0 tickets): announcement "Round n: the X hold the field", +60 if it was yours, recruits cleared, hill moves, next round starts straight away.
-- [ ] Clutter: recruit corpses drop loot piles — note how bad it gets after a couple of minutes.
+- [ ] Clutter: recruits now drop only a ration / some scrap, often nothing. Still too much?
+
+## 11. Round 5b — supply (Phase 3, build order 3), added 2026-10-26
+- [ ] Hideout back wall, two new magenta consoles beside the stash: **Supply the War** (left) and **Shipment** (right). Stash some scrap and a weapon, then Supply: the message names the points and your side's kit tier; with 60+ the HUD rows should read "… · Armed" for your side on the next deploy.
+- [ ] Deploy and look at your recruits: Armed ones wear a steel helm (Plated: plated torso too) and take a few more rifle rounds to drop. Does the upgrade read at a glance?
+- [ ] Stash a gun or armour, press Shipment: "lands at your base in 45 s". Deploy; the war board shows the countdown; at 0 a crate in your colour falls at the base. Hold X: the gun is in your hands (ammo counter), armour worn.
+- [ ] Die with the kit: "Your field kit stays where you fell" — a loot pile where you went down. Return alive with a kit instead: it is back in the stash. Does the risk feel right, or should some of it come home on death?
