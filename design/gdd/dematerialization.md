@@ -86,7 +86,7 @@ hour — so paying attention to the world across cycles is how a conduit learns 
 - **Smoke**: a fragment spawns on a cycle its rule allows and not otherwise; reading it adds to Knowledge and unlocks
   ARCHIVE; a chained fragment stays absent until its precondition is read; a cycle line is drawn from the pool.
 
-## 6. The home computer: why knowledge carries (owner, 17:53)
+## 6. The home computer: why knowledge carries (owner, 17:53; table 18:02)
 "Yes it carries. Conduits have their consciousness uploaded to their home computer; that's why it's so vital they
 acquire one early. That is also how they mix and match cybernetics."
 
@@ -95,10 +95,26 @@ acquire one early. That is also how they mix and match cybernetics."
   next one. This is the fiction behind what already persists across permadeath (`PlayerData` PERSIST: money, stash,
   side, shipment, hubs, contacts met, board, house) and it now covers **Knowledge** too (`profile.Knowledge` joins
   PERSIST; ARCHIVE survives every death).
-- **Cybernetics are fitted at the computer.** Because the mind is uploaded, a conduit can re-wire the body it comes back
-  into: cybernetics are mixed and matched at the computer in the hideout (fit, swap, strip), not in the field. Today
-  `Gear.EquipGear` fits a cybernetic anywhere; this moves cybernetic changes behind the hideout zone like the weapon
-  bench (`Bench.Zone`). Armour and weapons still change anywhere. (`production/epics/hideout-computer` story 009.)
+- **Cybernetics are "ripped in" at a table you build** (owner, 18:02: "cybernetics are 'ripped in', and need a
+  specific table for doing so. It can be crafted after acquiring the knowledge and building it in your hideout").
+  The upload is what makes a body re-wireable; the table is where it's done. The chain:
+  1. **Learn it**: the table's schematic is a piece of **knowledge** (a fragment, `Clues.Fragments.RipTable`, §5) —
+     found like any other, so it carries across permadeath once read.
+  2. **Craft it**: with the schematic known, its recipe appears (salvage materials, `destruction.md` §4.4: e.g.
+     SheetMetal, Pipe, Battery, Wire; tuning later). A recipe gated by knowledge is new: `Items.Recipes[id].Needs =
+     "RipTable"`.
+  3. **Build it**: crafting gives a kit; using it in the hideout installs **the table** for that conduit (stored with
+     the hideout, `profile.House`-style, so it persists across deaths like the rest of the hideout). Shown and usable
+     only by its owner while the hideout is shared geometry.
+  4. **Rip in**: at the table, fit, swap or strip cybernetics in the three slots (Optic / Arm / Core). Nowhere else: a
+     conduit without a table can carry cybernetics but can't put them in.
+  - Today `Gear.EquipGear` fits a cybernetic anywhere; this moves it behind the table. Cybernetics already fitted when
+    the change ships stay fitted. Armour and weapons still change anywhere. A permadeath loses the cybernetics that
+    were in the body (they were the body's), never the table or the schematic.
+  - Working name **"the ripping table"**; the owner names it.
+  - Optional feel, for the owner: ripping in hurts — a short channel at the table and the body comes out of it at
+    reduced health (`Config.Cyber.RipSeconds`, `RipHealthCost`).
+  (`production/epics/hideout-computer` story 009.)
 - **"Acquire one early"**: see the open question below — today every conduit has a hideout and a computer from the
   start.
 

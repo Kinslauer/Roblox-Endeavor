@@ -137,6 +137,8 @@ furnishings are shown only to their owner (the hideout room is shared geometry f
   appear on some cycles at anomaly spots, and the ARCHIVE app for what you've read. → dematerialization.md §5.
 - Knowledge survives permadeath (owner, 17:53): "Conduits have their consciousness uploaded to their home computer;
   that's why it's so vital they acquire one early. That is also how they mix and match cybernetics." → what's on the
-  computer persists (Knowledge joins PERSIST); cybernetics are fitted at the computer. Open: is the computer acquired
+  computer persists (Knowledge joins PERSIST). Open: is the computer acquired
   rather than given? (dematerialization.md §7)
-
+- Cybernetics (owner, 18:02): "cybernetics are 'ripped in', and need a specific table for doing so. It can be crafted
+  after acquiring the knowledge and building it in your hideout." → schematic as knowledge, knowledge-gated recipe,
+  table installed in the hideout, cybernetic changes only there (dematerialization.md §6; hideout-computer story 009).

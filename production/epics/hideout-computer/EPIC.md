@@ -20,7 +20,7 @@ unannounced and drop intel that puts contracts on the board. Every enemy now dro
 | 006 | Client: `Hud` Terminal panel (three apps, Take / Drop / Order / Buy / Close), raid line under the wallet; `HouseView.lua` draws owned furnishings in the hideout | HUD | Implemented — live: panel rows + buttons, HouseView 2 parts for the rug |
 | 007 | Everything drops: `NPCs.packCarry` at spawn (weapon + kit armour + one roll), dropped in full at death; held weapons removed from roll tables; kill credit tagged before damage | Logic | Implemented — live: grunt carried PipeClub + ration + scrap, all on the ground |
 | 008 | Owner playtest: find the broker without being told; does a lead feel like a choice; are rival crews a surprise or a nuisance; does "everything drops" make corpses worth checking | Feel | Pending |
-| 009 | Cybernetics fitted at the computer (`dematerialization.md` §6): cybernetic fit / swap / strip only in the hideout (like `Bench.Zone`); a CYBER section in the terminal panel; field equips refused with a line; armour and weapons unchanged | Logic + HUD | Not started |
+| 009 | The ripping table (`dematerialization.md` §6): schematic as knowledge (`RipTable` fragment), knowledge-gated recipe (`Recipes[id].Needs`), kit -> installed in the hideout for its owner (persists), cybernetic fit / swap / strip only at the table; field equips refused with a line; existing fits kept | Logic + HUD + Content | Not started (after 010 and destruction 002 / 011) |
 | 010 | Knowledge on the computer: `profile.Knowledge` in PERSIST, the ARCHIVE app (with destruction epic story 011) | Data | Not started |
 
 ## Acceptance criteria
