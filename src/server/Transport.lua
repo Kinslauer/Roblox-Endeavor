@@ -15,6 +15,7 @@ local R = require(Shared.Regions)
 local Remotes = require(Shared.Remotes)
 local Combat = require(script.Parent.Combat)
 local PlayerData = require(script.Parent.PlayerData)
+local Raids = require(script.Parent.Raids)
 
 local T = Config.Transport
 local Transport = {}
@@ -118,6 +119,7 @@ function Transport.Ride(player, fromId, toId)
 			c:PivotTo(Transport.ArrivalCFrame(toId))
 			Combat.Protect(c, T.Protection)
 			announce(player, ("Arrived: %s."):format(to.Name), "Info")
+			Raids.OnExtract(player) -- a train out counts as extraction for a raid on its last step
 		end
 	end)
 	return true

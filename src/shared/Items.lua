@@ -11,6 +11,7 @@ Items.Defs = {
 	Cloth = { Name = "Torn Cloth", Type = "Material" },
 	Medkit = { Name = "Medkit", Type = "Consumable", Heal = 45 },
 	Ration = { Name = "Ration Pack", Type = "Consumable", Heal = 15, Stamina = 50 },
+	Intel = { Name = "Raid Intel", Type = "Consumable", Intel = true }, -- read it (Use) and a contract lands on your board
 }
 
 -- Weapons and armor are defined in their own modules; register them as items here.
@@ -49,7 +50,8 @@ Items.Recipes = {
 	CompBarrel = { Output = "CompBarrel", Count = 1, Inputs = { Scrap = 8, Wire = 1 } },
 }
 
--- Each entry rolls independently: { item, chance, min, max }
+-- Each entry rolls independently: { item, chance, min, max }. The weapon an enemy holds is NOT listed here:
+-- NPCs.packCarry adds it, so every enemy drops the thing it was hitting you with (plus what is rolled below).
 Items.LootTables = {
 	Supply = {
 		{ "Scrap", 1, 3, 7 }, { "Wire", 0.7, 1, 4 }, { "Cloth", 0.7, 1, 3 },
@@ -61,26 +63,30 @@ Items.LootTables = {
 	},
 	Raider = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 },
-		{ "PipeClub", 0.1, 1, 1 }, { "ScavHelm", 0.08, 1, 1 }, { "ScrapVest", 0.08, 1, 1 }, { "ScrapGreaves", 0.08, 1, 1 },
+		{ "ScavHelm", 0.08, 1, 1 }, { "ScrapVest", 0.08, 1, 1 }, { "ScrapGreaves", 0.08, 1, 1 },
 		{ "TacLight", 0.04, 1, 1 }, { "LaserSight", 0.02, 1, 1 },
 	},
 	Brute = {
 		{ "Scrap", 1, 2, 5 }, { "Cloth", 0.5, 1, 2 }, { "Ration", 0.4, 1, 1 },
-		{ "Sledge", 0.05, 1, 1 }, { "PlatedHelm", 0.06, 1, 1 }, { "RiotPlate", 0.06, 1, 1 }, { "PlatedGreaves", 0.06, 1, 1 },
+		{ "PlatedHelm", 0.06, 1, 1 }, { "RiotPlate", 0.06, 1, 1 }, { "PlatedGreaves", 0.06, 1, 1 },
 		{ "CompBarrel", 0.05, 1, 1 }, { "LongBarrel", 0.04, 1, 1 },
 	},
 	Gunner = {
 		{ "Scrap", 0.9, 1, 3 }, { "Wire", 0.8, 2, 4 }, { "Cloth", 0.4, 1, 2 },
-		{ "ArcPistol", 0.06, 1, 1 }, { "ArcHood", 0.06, 1, 1 },
+		{ "ArcHood", 0.06, 1, 1 },
 		{ "DotSight", 0.06, 1, 1 }, { "Brake", 0.04, 1, 1 }, { "MatchSlide", 0.03, 1, 1 }, -- the Range: sidearm parts
+	},
+	Rival = { -- a rival conduit crew: they carry what they were working on
+		{ "Intel", 0.6, 1, 1 }, { "Scrap", 0.8, 2, 5 }, { "Wire", 0.5, 1, 3 }, { "Medkit", 0.3, 1, 1 },
+		{ "DotSight", 0.08, 1, 1 }, { "ExtMag", 0.08, 1, 1 }, { "ArcHood", 0.05, 1, 1 },
 	},
 	Warmonger = { -- the open world's elite: cybernetics and the good parts
 		{ "Scrap", 1, 6, 12 }, { "Wire", 1, 4, 8 }, { "Medkit", 0.6, 1, 2 },
 		{ "NeuralCore", 0.2, 1, 1 }, { "OverclockCore", 0.1, 1, 1 }, { "ConduitHarness", 0.2, 1, 1 }, { "ArcPistol", 0.3, 1, 1 },
 		{ "LongBarrel", 0.3, 1, 1 }, { "Suppressor", 0.25, 1, 1 }, { "MatchSlide", 0.2, 1, 1 },
 	},
-	Recruit = { -- war-world recruits: supply, not spoils (shipments are the real prize there)
-		{ "Ration", 0.35, 1, 1 }, { "Scrap", 0.3, 1, 2 },
+	Recruit = { -- war-world recruits: the rifle in their hands always drops (NPCs.packCarry); this is what else they carry
+		{ "Ration", 0.5, 1, 2 }, { "Scrap", 0.6, 1, 3 }, { "Wire", 0.4, 1, 2 }, { "Medkit", 0.2, 1, 1 },
 		{ "Suppressor", 0.02, 1, 1 }, { "LongBarrel", 0.02, 1, 1 }, -- the war: a rare rifle part off a recruit
 	},
 	Drone = { -- machine parts: wire and scrap, a rare optic

@@ -86,7 +86,15 @@ collect them and see fit.
    result. Regional attachment loot tables.
 5. **Open world v1** — the region generator (wasteland, solarpunk enclave, ruined city as palettes/layouts), transport
    hubs that unlock on first visit, a train line between regions; warmongers as the elite enemy (conduit-like skills).
-6. **Multi-place split** — hideout, Conduit world, war world as places; profile + wallet in the shared DataStore.
+6. **The hideout computer** (owner, 2026-10-26) — the terminal in the hideout is where a conduit learns what there is
+   to do: a **RAIDS** app (contracts with varied objectives that end in an extraction *or* a continuation — a new lead
+   picked up on the way, your choice to follow it or go home), a **HOUSE** app (order furnishings for the hideout),
+   a **MARKET** app (the black market: gear for money). Every app is **locked until you find its contact** out in the
+   open world — the broker, the fixer, the dealer — so the computer grows with what you have seen. **Rival conduit
+   crews** run the same raids on the same ground: unannounced until you see or hear each other, and they drop
+   **raid intel** that puts a contract on your board. The rule under all of it: immersive and emergent — nothing is
+   announced that you would not have noticed yourself.
+7. **Multi-place split** — hideout, Conduit world, war world as places; profile + wallet in the shared DataStore.
 
 ## Out of scope (still)
 Hand-made meshes/animations/audio (slots exist), monetisation, matchmaking, leaderboards, the full Deepwoken-scale
@@ -103,3 +111,13 @@ fits a part at the bench, and takes the train to a second region — every step 
    from a basic kit or the faction pool; shipments go to your own*
 3. War world sides: player + two NPC factions first, or three player factions from day one? → *three player factions*
 4. First region after the city: solarpunk enclave or deeper wasteland? → *solarpunk enclave*
+
+## Added 2026-10-26 09:46 (owner): the hideout computer, raids, contacts, rival crews
+Verbatim intent: raids come from the computer in the hideout, which also orders anything for the house and gear off
+the black-market shop; all apps unlocked through gameplay by finding the proper contacts out in the open world; raids
+have varying objectives and end with an extraction or a continuation (travel on your own, or pick up a new quest on
+the way); raid contracts can also drop from enemy conduits doing the same thing, met unannounced until you physically
+see or hear each other; all of the gameplay should feel immersive and emergent like this. → build order item 6.
+Assumptions (say the word): a raid lives on the body (dying ends it; the board on the computer persists); three
+contacts to start (broker = raids, fixer = house, dealer = market), placed where the risk matches the reward; house
+furnishings are shown only to their owner (the hideout room is shared geometry for now).

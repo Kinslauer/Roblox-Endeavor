@@ -37,10 +37,16 @@ local TEMPLATE = {
 	HideoutSeen = false,
 	Shipment = false, -- { Items = { [id] = n }, ReadyAt = os.time() } gear sent ahead to the war (server/Supply.lua)
 	Hubs = {}, -- [hubId] = true: transport hubs stood on at least once (server/Transport.lua)
+	-- the hideout computer (server/Terminal.lua, server/Raids.lua)
+	Contacts = {}, -- [contactId] = true: met once in the world; opens that app
+	Board = {}, -- contracts waiting on the computer: { { Id, FromIntel? } ... }
+	House = {}, -- [furnishingId] = true: ordered for the hideout (client-rendered for the owner)
+	Raid = false, -- the raid being run: dies with the body (see server/Raids.lua)
+	RaidSeen = false,
 }
 
 -- Fields that survive a permadeath wipe: the city keeps what you carried, not what you left at home.
-local PERSIST = { "Money", "Stash", "Faction", "Shipment", "Hubs" }
+local PERSIST = { "Money", "Stash", "Faction", "Shipment", "Hubs", "Contacts", "Board", "House" }
 for _, name in Config.Stats.Names do
 	TEMPLATE.Stats[name] = 0
 end

@@ -13,6 +13,8 @@ Lore.Lines = {
 	FirstRift = "The other world has never known anything but the war. The recruits know they are in hell. They have accepted it.",
 	FirstDeath = "The city keeps what you carried. It does not keep you.",
 	FirstExtract = "The train does not ask where you have been. This room is the only place that is yours.",
+	FirstContact = "Nobody out here gives their name. They give you a line on your screen, and that is trust.",
+	FirstRaid = "A contract is a story someone else started. You find out how it ends.",
 }
 
 Lore.Seconds = 7 -- how long a lore banner stays up

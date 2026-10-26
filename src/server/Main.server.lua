@@ -7,6 +7,10 @@ local Hideout = require(Server.Hideout)
 local War = require(Server.War)
 local Regions = require(Server.Regions)
 local Transport = require(Server.Transport)
+local Raids = require(Server.Raids)
+local Terminal = require(Server.Terminal)
+local Contacts = require(Server.Contacts)
+local Rivals = require(Server.Rivals)
 local Gear = require(Server.Gear)
 local WorldPhase = require(Server.WorldPhase)
 local Stats = require(Server.Stats)
@@ -46,6 +50,14 @@ ok, err = pcall(Hideout.Init)
 if not ok then
 	warn("[Hideout] failed to build:", err)
 end
+ok, err = pcall(Contacts.Init)
+if not ok then
+	warn("[Contacts] failed to build:", err)
+end
+ok, err = pcall(Rivals.Init)
+if not ok then
+	warn("[Rivals] failed to build:", err)
+end
 ok, err = pcall(War.Init)
 if not ok then
 	warn("[War] failed to build:", err)
@@ -55,6 +67,8 @@ Gear.Init()
 Stats.Init()
 Inventory.Init()
 Bench.Init()
+Raids.Init()
+Terminal.Init()
 Quests.Init()
 Combat.Init()
 SkillRunner.Init()

@@ -312,6 +312,27 @@ local function newNavigator(model, hum, root)
 	return nav
 end
 
+-- What an enemy CARRIES is decided when it spawns and dropped in full when it dies (owner, 2026-10-26:
+-- "all enemies should drop all their loot", both worlds): the weapon in its hand, the armour its kit
+-- put on it, and one roll of its loot table (Items.LootTables[def.Loot]) made at spawn, not at death.
+local carrying = setmetatable({}, { __mode = "k" }) -- model -> { [itemId] = count }
+local KIT_ARMOR = { Armed = { "ScavHelm" }, Plated = { "PlatedHelm", "RiotPlate" } }
+
+local function packCarry(def, opts)
+	local bundle = Items.Roll(def.Loot)
+	if def.Weapon and Items.Defs[def.Weapon] then
+		bundle[def.Weapon] = (bundle[def.Weapon] or 0) + 1
+	end
+	local kit = opts and opts.Kit
+	for _, id in (kit and KIT_ARMOR[kit.Name]) or {} do
+		bundle[id] = (bundle[id] or 0) + 1
+	end
+	return bundle
+end
+NPCs.Carrying = function(model)
+	return carrying[model]
+end
+
 local function onDeath(model, root, typeName, def)
 	local _, killer = Combat.GetKiller(model)
 	if killer then
@@ -337,7 +358,8 @@ local function onDeath(model, root, typeName, def)
 			at = CFrame.new(hit.Position + Vector3.new(0, 2, 0))
 		end
 	end
-	Loot.Spawn(at, Items.Roll(def.Loot), { Label = (def.Name or typeName) .. " spoils", Lifetime = 120 })
+	Loot.Spawn(at, carrying[model] or packCarry(def, nil), { Label = (def.Name or typeName) .. " spoils", Lifetime = 120 }) -- everything it had
+	carrying[model] = nil
 	task.wait(0.2)
 	model:Destroy()
 end
@@ -369,6 +391,12 @@ function NPCs.Spawn(typeName, position, opts)
 	if opts.Faction then
 		model:SetAttribute("Faction", opts.Faction)
 	end
+	carrying[model] = packCarry(def, opts)
+	local carried = 0
+	for _, n in carrying[model] do
+		carried += n
+	end
+	model:SetAttribute("Carrying", carried)
 	model:PivotTo(CFrame.new(position))
 	model.Parent = workspace
 	root:SetNetworkOwner(nil) -- server drives this body

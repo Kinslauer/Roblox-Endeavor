@@ -17,8 +17,10 @@ local Combat = require(script.Parent.Combat)
 local Gear = require(script.Parent.Gear)
 local Inventory = require(script.Parent.Inventory)
 local PlayerData = require(script.Parent.PlayerData)
+local Raids = require(script.Parent.Raids)
 local Range = require(script.Parent.Range)
 local Supply = require(script.Parent.Supply)
+local Terminal = require(script.Parent.Terminal)
 local Wallet = require(script.Parent.Wallet)
 local War = require(script.Parent.War)
 local WorldPhase = require(script.Parent.WorldPhase)
@@ -145,6 +147,7 @@ function Hideout.Leave(player)
 	data.Location = "City"
 	player:SetAttribute("Zone", nil)
 	player:SetAttribute("ForceFirstPerson", nil)
+	Terminal.Close(player)
 	char:PivotTo(WorldPhase.GetSpawnCFrame(player))
 	Combat.Protect(char, H.TravelProtection)
 	announce(player, "Back in the city.")
@@ -157,7 +160,11 @@ function Hideout.Extract(player)
 		announce(player, "The train will not take you while you are fighting.")
 		return false
 	end
-	return Hideout.Enter(player)
+	local ok = Hideout.Enter(player)
+	if ok then
+		Raids.OnExtract(player) -- a raid on its extract step pays out here
+	end
+	return ok
 end
 
 -- Deploy to the war (server/War.lua): your side's base on the battlefield.
@@ -312,6 +319,8 @@ function Hideout.Init()
 	console(O + Vector3.new(S / 2 - 10, TOP, 8), "Return to the City", "Take the train back", CYAN, Hideout.Leave)
 	console(O + Vector3.new(-6, TOP, -S / 2 + 8), "Stash: Deposit", "Stash everything you are not wearing", GREEN, Hideout.DepositAll)
 	console(O + Vector3.new(6, TOP, -S / 2 + 8), "Stash: Withdraw", "Take everything out", GREEN, Hideout.WithdrawAll)
+	-- the computer (server/Terminal.lua): raids, the house, the black market
+	console(O + Vector3.new(-S / 2 + 10, TOP, S / 2 - 16), "Computer", "Use", Color3.fromRGB(120, 220, 255), Terminal.Open)
 	-- supply (server/Supply.lua): feed your side's pool, or send your own gear ahead
 	console(O + Vector3.new(-20, TOP, -S / 2 + 8), "Supply the War", "Donate the stash to your side's pool", MAGENTA, Supply.Donate)
 	console(O + Vector3.new(20, TOP, -S / 2 + 8), "Shipment", ("Send stash gear to your base (%d s)"):format(Config.Supply.ShipmentSeconds), MAGENTA, Supply.Ship)

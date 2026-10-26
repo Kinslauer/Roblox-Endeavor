@@ -14,7 +14,9 @@ local Permadeath = require(script.Parent.Permadeath)
 local PlayerData = require(script.Parent.PlayerData)
 local Quests = require(script.Parent.Quests)
 local Stats = require(script.Parent.Stats)
+local Raids = require(script.Parent.Raids)
 local Supply = require(script.Parent.Supply)
+local Terminal = require(script.Parent.Terminal)
 local Transport = require(script.Parent.Transport)
 local Tutorial = require(script.Parent.Tutorial)
 local Wallet = require(script.Parent.Wallet)
@@ -61,6 +63,8 @@ function Lifecycle.Spawn(player)
 	Supply.Sync(player) -- shipment attributes for the HUD
 	Bench.Publish(player) -- weapon builds for the client's recoil and bench panel
 	Transport.Sync(player)
+	Raids.Sync(player) -- the raid line + marker (a wiped profile has none)
+	Terminal.Sync(player) -- House attribute for the client's furnishings
 	local profile0 = PlayerData.Get(player)
 	player:SetAttribute("Faction", profile0 and profile0.Faction or nil)
 	Stats.Apply(player, true)

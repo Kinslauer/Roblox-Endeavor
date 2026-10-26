@@ -11,6 +11,7 @@ local Gear = require(script.Parent.Gear)
 local Inventory = {}
 Inventory.Added = Instance.new("BindableEvent") -- (player, itemId, count)
 Inventory.Crafted = Instance.new("BindableEvent") -- (player, itemId, count)
+Inventory.Used = Instance.new("BindableEvent") -- (player, itemId): a consumable was used (Raids reads intel)
 
 function Inventory.Push(player)
 	local profile = PlayerData.Get(player)
@@ -69,6 +70,7 @@ function Inventory.Use(player, itemId)
 	if def.Stamina then
 		char:SetAttribute("Stamina", math.min(char:GetAttribute("MaxStamina"), (char:GetAttribute("Stamina") or 0) + def.Stamina))
 	end
+	Inventory.Used:Fire(player, itemId)
 end
 
 function Inventory.Equip(player, itemId)

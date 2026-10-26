@@ -633,8 +633,8 @@ local function applyDamage(attacker, victim, amount, opts)
 		fx("Hit", victim, { attacker = attacker, amount = amount })
 		return "hit"
 	end
+	tag(attacker, victim) -- before the damage: Died may fire synchronously and the kill must already be credited
 	vhum:TakeDamage(amount)
-	tag(attacker, victim)
 
 	if result ~= "blocked" and t >= math.max(vs.hyperarmorUntil, vs.swingArmorUntil) and poiseBroken(victim, vs, t, opts) then
 		Combat.Stun(victim, opts.Stun or C.HitStunDefault)

@@ -459,6 +459,8 @@ do
 	check("the other sides can hurt you", Combat.Damage(theirs, me, 10, {}) == "hit" and me.Humanoid.Health < hp)
 	-- the hill: stand on it alone -> your side takes it; the holder drains the others
 	local hill = War.Hill()
+	me.Humanoid.Health = me.Humanoid.MaxHealth
+	Combat.Protect(me, 60) -- the recruits around the hill would otherwise kill the tester mid-check
 	me:PivotTo(M.CF.new(hill.Position + M.V3.new(0, 3, 0)))
 	local money0 = Wallet.Get(player)
 	local ticketsBefore = {}
@@ -471,6 +473,7 @@ do
 	for id, side in War.Sides() do if id ~= data.Faction and side.Tickets >= ticketsBefore[id] then drained = false end end
 	check("holding the hill drains the other sides' tickets", drained and War.Sides()[data.Faction].Tickets == ticketsBefore[data.Faction])
 	-- downed, then revived by an ally
+	Combat.ClearProtection(me)
 	me.Humanoid.Health = 10
 	local r = Combat.Damage(theirs, me, 50, {})
 	check("a lethal hit downs a deployed player instead of killing", r == "hit" and me:GetAttribute("Downed") == true and me.Humanoid.Health > 0 and me.HumanoidRootPart:FindFirstChild("RevivePrompt") ~= nil)
@@ -861,6 +864,87 @@ do
 	check("the warmonger flicker-steps to within reach", before > 30 and after < 12)
 	wm.Humanoid.Health = 0; run(0.5)
 	me:PivotTo(M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4)))
+end
+-- The hideout computer (design/gdd/raids.md, Phase 3 build order 6): contacts, the board, a raid with a lead, intel, the house, the black market, rival crews
+do
+	local Raids = M.mockEnv.__require(SSS.Server.Raids)
+	local Terminal = M.mockEnv.__require(SSS.Server.Terminal)
+	local Rivals = M.mockEnv.__require(SSS.Server.Rivals)
+	local Hideout = M.mockEnv.__require(SSS.Server.Hideout)
+	local NPCs = M.mockEnv.__require(SSS.Server.NPCs)
+	local Combat = M.mockEnv.__require(SSS.Server.Combat)
+	local Wallet = M.mockEnv.__require(SSS.Server.Wallet)
+	local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+	local PlayerData = M.mockEnv.__require(SSS.Server.PlayerData)
+	local RD = M.mockEnv.__require(RS.Shared.Raids)
+	as(player)
+	local me = player.Character
+	local data = PlayerData.Get(player)
+	local contacts, rivals = 0, 0
+	for _, m in workspace_:GetChildren() do
+		if m:GetAttribute("Contact") then contacts += 1 end
+		if m:GetAttribute("EnemyType") == "Rival" then rivals += 1 end
+	end
+	check("three contacts stand in the world and two rival crews work it", contacts == 3 and rivals == 4 and Rivals.Crews().RoadCrew.Alive == 2)
+	-- the board: locked until the broker
+	data.Contacts, data.Board, data.Raid = {}, { { Id = "highway_cull" } }, false
+	local board = Raids.Board(player)
+	check("the board fills to three contracts", #board == RD.BoardSize and board[1].Id == "highway_cull")
+	check("a contract needs its contact", Raids.Accept(player, 1) == false and data.Raid == false)
+	check("meeting the broker opens RAIDS", Terminal.Meet(player, "Broker") and data.Contacts.Broker == true and Terminal.State(player).Contacts.Broker == true)
+	check("taking a contract starts the raid and the HUD line", Raids.Accept(player, 1) and data.Raid and data.Raid.Id == "highway_cull" and tostring(player:GetAttribute("RaidLine")):find("Clear the Highway") ~= nil and #Raids.Board(player) == RD.BoardSize)
+	-- kills count toward the step (the killer is the player)
+	me:PivotTo(M.CF.lookAt(M.V3.new(700, 5, 700), M.V3.new(700, 5, 690)))
+	Combat.ClearProtection(me)
+	for i = 1, 4 do
+		local g = NPCs.Spawn("Grunt", M.V3.new(700, 5, 692), { Despawn = false })
+		Combat.Damage(me, g, 9999, {}); run(0.3)
+	end
+	local step = data.Raid.Steps[data.Raid.Step]
+	check("four raider kills finish the objective: the extract step", step.Kind == "extract")
+	-- every enemy drops everything it carries (owner, 2026-10-26): its weapon is always among it
+	local gunner = NPCs.Spawn("Gunner", M.V3.new(720, 5, 692), { Despawn = false })
+	local carry = NPCs.Carrying(gunner)
+	check("an enemy carries its weapon and a loot roll from the moment it spawns", carry ~= nil and carry.ArcPistol == 1 and (gunner:GetAttribute("Carrying") or 0) >= 1)
+	Combat.Damage(me, gunner, 9999, {}); run(0.4)
+	local dropped = false
+	for _, d in workspace_:GetChildren() do if d.Name == "Lootable" and (d.Position - M.V3.new(720, 5, 692)).Magnitude < 12 then dropped = true end end
+	check("its whole carry hits the ground where it died", dropped)
+	-- a lead: doing its first objective continues the raid with the bonus
+	step.Lead = "dead_drop"
+	Raids.Sync(player)
+	local wrecks = RD.Points.RoadWrecks
+	me:PivotTo(M.CF.new(wrecks + M.V3.new(0, 4, 0)))
+	run(1.3)
+	check("following the lead chains the contracts and stacks the pay", #data.Raid.Chain == 2 and data.Raid.Chain[2] == "dead_drop" and data.Raid.Bonus == RD.LeadBonus and data.Raid.Steps[data.Raid.Step].Kind == "extract")
+	-- extraction pays everything in the chain
+	local money0 = Wallet.Get(player)
+	Combat.State(me).lastHit = 0
+	local me0 = me
+	Hideout.Extract(player); run(0.3)
+	check("extracting pays the whole chain with the lead bonus", data.Raid == false and Wallet.Get(player) == money0 + math.floor((60 + 45) * RD.LeadBonus + 0.5) and player:GetAttribute("RaidLine") == nil)
+	-- intel puts a contract on the board
+	local n0 = #Raids.Board(player)
+	Inventory.Add(player, "Intel", 1)
+	Inventory.Use(player, "Intel"); run(0.1)
+	check("reading intel adds a contract to the board", #data.Board == n0 + 1 and data.Board[1].FromIntel == true and Inventory.Count(player, "Intel") == 0)
+	-- the house and the market: their contacts first
+	Wallet.Add(player, 300)
+	local m1 = Wallet.Get(player)
+	check("no house orders without the fixer", Terminal.Order(player, "Rug") == false and Wallet.Get(player) == m1)
+	Terminal.Meet(player, "Fixer")
+	check("ordering a furnishing publishes it for the owner", Terminal.Order(player, "Rug") and data.House.Rug == true and Wallet.Get(player) == m1 - 30 and tostring(player:GetAttribute("House")):find("Rug") ~= nil and Terminal.Order(player, "Rug") == false)
+	check("no black market without the dealer", Terminal.Buy(player, "Suppressor") == false)
+	Terminal.Meet(player, "Dealer")
+	local sup0 = Inventory.Count(player, "Suppressor")
+	check("the black market sells for money", Terminal.Buy(player, "Suppressor") and Inventory.Count(player, "Suppressor") == sup0 + 1 and Wallet.Get(player) == m1 - 30 - 110)
+	local state = Terminal.State(player)
+	check("the computer's state is complete", state.Contacts.Broker and state.Contacts.Fixer and state.Contacts.Dealer and #state.Board == RD.BoardSize + 1 and #state.House == #RD.House and #state.Market == #RD.Market and state.Money == Wallet.Get(player))
+	Terminal.Open(player)
+	local wasOpen = player:GetAttribute("Terminal") == true
+	Hideout.Leave(player); run(0.2)
+	check("leaving the hideout closes the computer", wasOpen and player:GetAttribute("Terminal") == nil)
+	player.Character:PivotTo(M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4)))
 end
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)

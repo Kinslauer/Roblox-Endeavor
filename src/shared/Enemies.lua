@@ -70,6 +70,20 @@ Enemies.Defs = {
 		Xp = 260, Loot = "Warmonger",
 		Look = look(3, 2, 3, 2, Color3.fromRGB(120, 30, 40)),
 	},
+	-- Rival conduits (design/gdd/raids.md): crews working the same contracts you are, patrolling between
+	-- the raid points. No announcement: they notice you when they see you (short Aggro) and so do you.
+	Rival = {
+		Name = "Rival Conduit", QuestTag = "Rival", Weapon = "ShockBaton",
+		Health = 110, Speed = 16, Aggro = 48, Leash = 160, DespawnAfter = 600,
+		Range = 7, MaxPosture = 110,
+		Attack = { Damage = 15, Posture = 9, Windup = 0.26, Active = 0.14, End = 0.6, Range = 7, Arc = 0.3, Type = "Arc", Stamina = 0 },
+		Label = 1,
+		Recovery = { 0.3, 0.7 },
+		Poise = { Hits = 3, Reset = 2.5 },
+		Dash = { MinRange = 10, Range = 30, Duration = 0.2, Stop = 4, Cooldown = 7 },
+		Xp = 120, Loot = "Rival",
+		Look = look(1, 4, 2, 3, Color3.fromRGB(30, 60, 70)),
+	},
 	Recruit = {
 		Name = "Recruit", QuestTag = "Recruit", Weapon = "ArcRifle",
 		Health = 90, Speed = 16, Aggro = 120, Leash = 400, DespawnAfter = 600,
@@ -78,7 +92,7 @@ Enemies.Defs = {
 		Label = 1,
 		Recovery = { 0.5, 1.1 },
 		Poise = { Hits = 2, Reset = 2 },
-		Xp = 30, Loot = "Recruit", -- a ration, a little scrap: the field is not a loot pinata
+		Xp = 30, Loot = "Recruit", -- plus the rifle it holds: everything it carries drops (NPCs.packCarry)
 		Look = look(2, 3, 2, 2, Color3.fromRGB(70, 70, 76)),
 	},
 	-- Phase-2 Range enemy: a flying sentry. Weak, fast, keeps a distance band in the air and strafes

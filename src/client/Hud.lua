@@ -250,6 +250,71 @@ local function buildInventory(invPanel)
 	readBuilds()
 end
 
+-- The hideout computer (server/Terminal.lua): shown while the Terminal attribute is set (the console
+-- sets it, walking out clears it). One state table from TerminalChanged renders the three apps.
+local function buildTerminal(termPanel)
+	local state
+	local CYAN, LOCK, GOLD, GREEN = Color3.fromRGB(120, 220, 255), Color3.fromRGB(140, 140, 150), Color3.fromRGB(255, 220, 120), Color3.fromRGB(170, 255, 170)
+	local function send(action, arg)
+		Remotes.Terminal:FireServer(action, arg)
+	end
+	local function render()
+		clear(termPanel)
+		if not state then
+			addRow(termPanel, "-- COMPUTER --  connecting...", { { text = "Close", color = Color3.fromRGB(120, 70, 70), fn = function() send("Close") end } }, CYAN)
+			return
+		end
+		addRow(termPanel, ("-- COMPUTER --  MONEY %d"):format(state.Money or 0), { { text = "Close", color = Color3.fromRGB(120, 70, 70), fn = function() send("Close") end } }, CYAN)
+		-- RAIDS
+		if state.Contacts.Broker or (state.Raid ~= nil) or #state.Board > 0 then
+			addRow(termPanel, if state.Contacts.Broker then "RAIDS  ·  the board" else "RAIDS  ·  (find the broker; intel still works)", {}, if state.Contacts.Broker then GOLD else LOCK)
+		else
+			addRow(termPanel, "RAIDS  ·  locked - find the broker", {}, LOCK)
+		end
+		if state.Raid then
+			addRow(termPanel, ("   ▶ %s  ·  %s"):format(state.Raid.Name, state.Raid.Line), { { text = "Drop", color = Color3.fromRGB(120, 70, 70), fn = function() send("Abandon") end } }, GOLD)
+			if state.Raid.Lead then
+				addRow(termPanel, ("      lead: %s - do its first objective to keep going"):format(state.Raid.Lead), {}, GOLD)
+			end
+		end
+		for _, entry in state.Board do
+			local tag = if entry.FromIntel then " [intel]" else ""
+			local buttons = if (not entry.Locked) and not state.Raid then { { text = "Take", color = Color3.fromRGB(60, 120, 80), fn = function() send("Accept", entry.Index) end } } else {}
+			addRow(termPanel, ("   %s%s  ·  %d money, %d xp, %d step%s"):format(entry.Name, tag, entry.Money, entry.Xp, entry.Steps, if entry.Steps == 1 then "" else "s"), buttons, if entry.Locked then LOCK else nil)
+		end
+		-- HOUSE
+		addRow(termPanel, if state.Contacts.Fixer then "HOUSE  ·  furnishings for the hideout" else "HOUSE  ·  locked - find the fixer", {}, if state.Contacts.Fixer then GREEN else LOCK)
+		if state.Contacts.Fixer then
+			for _, h in state.House do
+				addRow(termPanel, ("   %s  ·  %d%s"):format(h.Name, h.Price, if h.Owned then "  ·  owned" else ""), if h.Owned then {} else { { text = "Order", color = Color3.fromRGB(60, 120, 80), fn = function() send("Order", h.Id) end } })
+			end
+		end
+		-- MARKET
+		addRow(termPanel, if state.Contacts.Dealer then "MARKET  ·  the black market" else "MARKET  ·  locked - find the dealer", {}, if state.Contacts.Dealer then Color3.fromRGB(255, 120, 120) else LOCK)
+		if state.Contacts.Dealer then
+			for _, m in state.Market do
+				addRow(termPanel, ("   %s  ·  %d"):format(m.Name, m.Price), { { text = "Buy", color = Color3.fromRGB(140, 60, 60), fn = function() send("Buy", m.Id) end } })
+			end
+		end
+	end
+	Remotes.TerminalChanged.OnClientEvent:Connect(function(newState)
+		state = newState
+		render()
+	end)
+	player:GetAttributeChangedSignal("Terminal"):Connect(function()
+		termPanel.Visible = player:GetAttribute("Terminal") == true
+		if termPanel.Visible then
+			render()
+		end
+	end)
+	termPanel:GetPropertyChangedSignal("Visible"):Connect(function()
+		if not termPanel.Visible and player:GetAttribute("Terminal") then
+			send("Close") -- closed from the client side (Hud.CloseAll): tell the server
+		end
+	end)
+	render()
+end
+
 local function buildLoadout(loadoutPanel)
 	local loadout
 	local hotbar = {}
@@ -443,6 +508,14 @@ function Hud.Init()
 	questLabel = label({ Size = UDim2.fromOffset(360, 24), Position = UDim2.new(1, -380, 0, 20), TextXAlignment = Enum.TextXAlignment.Right, Text = "" })
 	-- wallet + side (Money / Faction player attributes; Phase 3): under the quest line, top right
 	moneyLabel = label({ Size = UDim2.fromOffset(360, 20), Position = UDim2.new(1, -380, 0, 46), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 15, Font = Enum.Font.GothamBold, Text = "", TextColor3 = Color3.fromRGB(255, 220, 120) })
+	-- the raid you are running (server/Raids.lua publishes RaidLine): under the wallet
+	local raidLabel = label({ Size = UDim2.fromOffset(420, 20), Position = UDim2.new(1, -440, 0, 68), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 14, Font = Enum.Font.GothamBold, Text = "", TextColor3 = Color3.fromRGB(255, 220, 120), TextTruncate = Enum.TextTruncate.AtEnd })
+	local function updateRaid()
+		local line = player:GetAttribute("RaidLine")
+		raidLabel.Text = if line then "RAID  ·  " .. line else ""
+	end
+	player:GetAttributeChangedSignal("RaidLine"):Connect(updateRaid)
+	updateRaid()
 	local function updateMoney()
 		local money, faction = player:GetAttribute("Money"), player:GetAttribute("Faction")
 		local side = ""
@@ -548,11 +621,13 @@ function Hud.Init()
 	Hud.Panels.Stats = panel(UDim2.fromOffset(260, 220), UDim2.fromOffset(20, 120))
 	Hud.Panels.Inventory = panel(UDim2.fromOffset(380, 400), UDim2.new(0.5, -190, 0.5, -200))
 	Hud.Panels.Loadout = panel(UDim2.fromOffset(420, 400), UDim2.new(1, -440, 0.5, -200))
+	Hud.Panels.Terminal = panel(UDim2.fromOffset(460, 440), UDim2.new(0.5, -230, 0.5, -220))
 
 	buildAnnouncements()
 	buildStats(Hud.Panels.Stats)
 	buildInventory(Hud.Panels.Inventory)
 	buildLoadout(Hud.Panels.Loadout)
+	buildTerminal(Hud.Panels.Terminal)
 	buildDeathScreen()
 	buildTutorial()
 

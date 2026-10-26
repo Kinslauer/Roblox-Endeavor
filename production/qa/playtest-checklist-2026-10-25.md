@@ -104,3 +104,12 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] Through the green arch: **Verdant Reach**. Domes, solar towers, planted beds, warm lamps. Does it read as a relief after the city? The covered market is a safe zone; open Tab inside it for the **Trader** and buy a part with war money.
 - [ ] Stand on **Verdant Station** (platform by the south edge): "unlocked". Hold X on "Train to Relay Terminal": refused until you have also stood on the city's platform (by the north gate). Then ride: a 3 s protected wait, arrive on the other platform.
 - [ ] Try the train while someone is hitting you: refused.
+
+## 14. Round 7 — the computer, raids, contacts, rival crews (Phase 3, build order 6), added 2026-10-26
+- [ ] Hideout, back-left corner: the **Computer** console (cyan). Use it: three apps, all locked, each naming who to find. Walk away: it closes.
+- [ ] Verdant Market: a person by the stalls with a name over them — **the Broker**. Talk (hold X). Back at the computer, RAIDS lists three contracts with pay and step count. Take one. The HUD shows "RAID · ..." under your money, and a tall yellow beacon stands at the point if it has one.
+- [ ] Run "Clear the Highway": four raiders on the road. When the fourth drops, either "Get to a station and extract" or a **lead** is offered. Try both across two raids: extract at a station (paid) vs. doing the lead's first objective (the raid continues; the final pay stacks ×1.5). Does the lead feel like a real choice?
+- [ ] Rival crews: two conduits in teal walking the road between the wrecks, the road's end and the enclave gate — no warning when you meet. Kill one: it drops its baton and, often, **Raid Intel**. Use the intel (Tab): a new contract on your board, takeable with no contact.
+- [ ] Ferrite Court plaza: **the Fixer** → HOUSE. Order the rug (30): it appears on your hideout floor. Only you see it.
+- [ ] The road, past the brute by the wrecks: **the Dealer** → MARKET. Buy a Suppressor (110) or Intel (50).
+- [ ] Every enemy now drops its weapon plus whatever it carried (Carrying count on the model). Loot a brute: a Sledge every time. Does that make corpses worth checking, or is the ground too busy?
