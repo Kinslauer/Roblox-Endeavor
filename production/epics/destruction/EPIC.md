@@ -31,6 +31,7 @@ hourly dematerialization (`design/gdd/dematerialization.md`); the war world tear
 | 008 | Performance budgets (loose chunks, cosmetic debris, bodies) + 20-player stress test | Infra | M | Not started | 001–006 |
 | 009 | War world: structure stages, craters, body persistence, sector rebuild (sectors = hill points) | World | L | Not started | 005 |
 | 010 | `GoreLevel` content pass (`Moderate` / `Restricted`) | Presentation | M | Not started | — |
+| 011 | Cycle clues (`design/gdd/dematerialization.md` §5): contact cycle lines, Fragment items at anomaly spots with spawn rules, visual anomalies, `profile.Knowledge`, the ARCHIVE app; placeholder content | World / Narrative | L | Not started | 007; owner: knowledge across permadeath? |
 
 ## Acceptance
 The GDD's §11 criteria, one or more per story; smoke checks for every server rule (break, salvage roll, throw clamp,

@@ -65,6 +65,28 @@ keeps "you have to find the proper contacts" true after the first find.
 - Smoke: advance the mock clock past `Seconds`; check enemies re-spawned from a different draw, contacts moved to a
   listed spot, ground loot cleared, a broken prop restored, the player's inventory and raid untouched.
 
-## 5. Open questions
-- Should the cycle carry *clues* (a line from a contact that changes each cycle, a lore fragment that only appears on
-  certain cycles) to feed the "find knowledge, escape" goal? That's the natural hook for a later story arc.
+## 5. Clues (owner, 17:48: "yes yes this")
+The cycle carries the mystery. Each cycle's draw also decides a few **clues** — small things that are only true this
+hour — so paying attention to the world across cycles is how a conduit learns what it is. Three kinds, all diegetic:
+
+| Kind | What it is | How it's found |
+|---|---|---|
+| **Cycle lines** | Each contact has a pool of lines; the cycle picks one. Most are ordinary; a few slip ("You asked me that last hour. You won't remember."). | Talk to the contact (they've moved; §2) |
+| **Fragments** | A new item type (`Type = "Fragment"`): a recovered log, a corrupted photo, a note in someone's handwriting. Each has text and an id. | Spawn only on some cycles, at authored **anomaly spots**; a fragment can also be on a rival conduit (they're looking too) |
+| **Anomalies** | Something that doesn't come back right this cycle: a sign with the wrong words, a building that flickers on its own, a lamp that stays dark, a door that's open. Purely visual. | Seen — it marks where this cycle's fragment is, without a marker |
+
+- **Knowledge** is the set of fragment ids a conduit has read (`profile.Knowledge`). Reading a fragment (Tab → Read)
+  adds it and keeps the text; the item itself is consumed. The first one unlocks a fourth computer app, **ARCHIVE**,
+  listing everything read in the order found — the same "apps unlocked through gameplay" rule as the others.
+- **Gating**: a fragment's spawn rule names its condition — a cycle index (`every 4th`), a precondition (`needs
+  fragment X read`), a place (`only while the Dealer stands at spot 3`). Chains of fragments are the story arc.
+- **Content is the owner's**: the system holds the slots (`shared/Clues.lua`: `Lines[contact]`, `Fragments[id] =
+  { Text, Spots, Rule }`, `Anomalies[id] = { Spot, Kind }`). What the truth is and how escape works is a writing job;
+  the first build ships a handful of placeholder fragments clearly marked as such.
+- **Smoke**: a fragment spawns on a cycle its rule allows and not otherwise; reading it adds to Knowledge and unlocks
+  ARCHIVE; a chained fragment stays absent until its precondition is read; a cycle line is drawn from the pool.
+
+## 6. Open questions
+- Does **knowledge survive permadeath**? Everything else the body carried is wiped. If knowledge survives, it's the
+  one thing that carries across lives (a meta-progression toward escape); if not, every new conduit starts the mystery
+  from nothing.

@@ -133,4 +133,6 @@ furnishings are shown only to their owner (the hideout room is shared geometry f
   spots, re-drawn each cycle.
 - Dead players' remains clear at the cycle reset like any other unlooted ground loot: "it's fair, it encourages leaving
   raids with what you have as conduits, and there is always more loot on the war world."
+- The cycle carries clues (owner, 17:48: "yes yes this"): contact lines that change each cycle, fragments that only
+  appear on some cycles at anomaly spots, and the ARCHIVE app for what you've read. → dematerialization.md §5.
 
