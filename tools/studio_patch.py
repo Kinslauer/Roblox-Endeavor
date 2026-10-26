@@ -74,6 +74,12 @@ def hunks(old_text, new_text, context=2):
 
 def main():
     changed = git("status", "--porcelain", "--", "src").splitlines()
+    if not changed and BASE != "HEAD":
+        # clean tree: patch Studio from BASE up to HEAD (e.g. after Studio lost unsaved pushes)
+        changed = []
+        for line in git("diff", "--name-status", BASE, "HEAD", "--", "src").splitlines():
+            status, path = line.split("\t", 1)
+            changed.append(f"{'??' if status.startswith('A') else ' M'} {path}")
     lines = [
         'local HttpService = game:GetService("HttpService")',
         "local report = {}",
