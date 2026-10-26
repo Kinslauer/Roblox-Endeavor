@@ -37,6 +37,7 @@ local function st(char)
 			windupUntil = 0, lastCost = 0,
 			flickPress = 0, lastFlickPress = 0, flickerLevel = 0, flickerUntil = 0, zoneUntil = 0,
 			skillCD = {},
+			ammo = {}, reloadUntil = 0, ads = false, adsSince = 0, -- gunplay (Config.Gunplay)
 		}
 		state[char] = s
 		if not char:GetAttribute("MaxPosture") then -- NPCs
@@ -93,6 +94,130 @@ end
 function Combat.IsOpen(char)
 	local s, t = st(char), os.clock()
 	return t < s.stunned or (s.brokenAt ~= nil and t - s.brokenAt < Config.Momentum.GrabStunWindow)
+end
+
+-- ===== Gunplay (Config.Gunplay, design/gdd/gunplay.md) =====
+local G = Config.Gunplay
+
+-- The equipped weapon's Gun block (with defaults), or nil for melee / fists.
+local function gunOf(weapon)
+	if not Weapons.IsGun(weapon) then
+		return nil
+	end
+	return setmetatable(table.clone(weapon.Gun or {}), { __index = G.DefaultGun })
+end
+
+-- Rounds left in the equipped gun's magazine (a fresh gun starts full). Mirrors to the Ammo /
+-- MaxAmmo attributes the HUD reads.
+local function syncAmmo(char, s, weaponId, gun)
+	if not gun then
+		char:SetAttribute("Ammo", nil)
+		char:SetAttribute("MaxAmmo", nil)
+		return nil
+	end
+	if s.ammo[weaponId] == nil then
+		s.ammo[weaponId] = gun.Magazine
+	end
+	char:SetAttribute("Ammo", s.ammo[weaponId])
+	char:SetAttribute("MaxAmmo", gun.Magazine)
+	return s.ammo[weaponId]
+end
+
+function Combat.SyncAmmo(char, weapon)
+	local id = char:GetAttribute("Weapon")
+	weapon = weapon or (id and Weapons.Defs[id])
+	return syncAmmo(char, st(char), id, weapon and gunOf(weapon))
+end
+
+-- Reload the equipped gun: busy for Gun.Reload seconds, then the magazine is full. A stun cancels it.
+function Combat.Reload(player)
+	local char = player.Character
+	local id = char and char:GetAttribute("Weapon")
+	local weapon = id and Weapons.Defs[id]
+	local gun = weapon and gunOf(weapon)
+	if not (gun and isAlive(char)) then
+		return false
+	end
+	local s, t = st(char), os.clock()
+	local ammo = syncAmmo(char, s, id, gun)
+	if t < s.reloadUntil or ammo >= gun.Magazine or t < s.stunned then
+		return false
+	end
+	s.reloadUntil = t + gun.Reload
+	s.busyUntil = math.max(s.busyUntil, s.reloadUntil)
+	local token = s.token
+	char:SetAttribute("Reloading", true)
+	fx("Reload", char, gun.Reload)
+	task.delay(gun.Reload, function()
+		char:SetAttribute("Reloading", false)
+		if s.token == token and isAlive(char) and char:GetAttribute("Weapon") == id then
+			s.ammo[id] = gun.Magazine
+			syncAmmo(char, s, id, gun)
+		else
+			s.reloadUntil = 0 -- interrupted: try again
+		end
+	end)
+	return true
+end
+
+-- Sights up/down. ADS is a claimed state like block: it only counts for spread after ADSSettle
+-- seconds, never while sprinting, and is visible to everyone as the ADS attribute.
+function Combat.SetADS(player, on)
+	local char = player.Character
+	if not char or type(on) ~= "boolean" then
+		return
+	end
+	local s = st(char)
+	if on and s.sprint then
+		s.sprint = false
+		char:SetAttribute("Sprinting", false)
+	end
+	if on ~= s.ads then
+		s.ads, s.adsSince = on, os.clock()
+		char:SetAttribute("ADS", on)
+	end
+end
+
+-- Spread for a shot right now (degrees of cone half-angle), from the gun and the shooter's state.
+local function spreadFor(char, s, gun, t)
+	local hum = getHum(char)
+	local ads = s.ads and t - s.adsSince >= G.Spread.ADSSettle
+	local spread = if ads then gun.Spread.ADS else gun.Spread.Hip
+	if char:GetAttribute("Sprinting") then
+		spread += G.Spread.Sprinting
+	elseif hum and hum.MoveDirection and hum.MoveDirection.Magnitude > 0.1 then
+		spread += G.Spread.Moving
+	end
+	if hum and hum.FloorMaterial == Enum.Material.Air then
+		spread += G.Spread.Airborne
+	end
+	return spread, ads
+end
+
+local spreadRng = Random.new()
+local function scatter(look, degrees)
+	if degrees <= 0 then
+		return look
+	end
+	local angle = math.rad(spreadRng:NextNumber(0, degrees))
+	local roll = spreadRng:NextNumber(0, math.pi * 2)
+	return (CFrame.lookAt(Vector3.zero, look) * CFrame.Angles(0, 0, roll) * CFrame.Angles(angle, 0, 0)).LookVector
+end
+
+-- Take one shot's worth of ammo for a gun attack; false (and an automatic reload) when empty.
+local function spendAmmo(player, char, s, id, gun, rounds)
+	local t = os.clock()
+	if t < s.reloadUntil then
+		return false
+	end
+	local ammo = syncAmmo(char, s, id, gun)
+	if ammo < rounds then
+		Combat.Reload(player)
+		return false
+	end
+	s.ammo[id] = ammo - rounds
+	syncAmmo(char, s, id, gun)
+	return true
 end
 
 function Combat.SetBusy(char, duration)
@@ -523,24 +648,32 @@ local function pulse(char, spec, mods, seen)
 		Staggers = mods.label == "Heavy", -- heavies always break enemy poise
 		Launches = mods.label == "Heavy" and not spec.Ranged and not spec.NoLaunch } -- ...and launch an open enemy (Config.Momentum)
 
-	local function strike(model)
+	-- zone: the body part a ranged shot landed on (Config.Gunplay.Zones multiplier; a headshot staggers)
+	local function strike(model, zone)
 		seen[model] = true
 		if seen.__flick == nil then
 			seen.__flick = judgeFlick(s, d) or false
 		end
 		local flick = seen.__flick
 		local hitDamage, hitOpts = damage, opts
+		if zone then
+			hitDamage *= G.Zones[zone] or G.Zones.Default
+			if zone == "Head" and G.HeadshotStaggers then
+				hitOpts = table.clone(hitOpts)
+				hitOpts.Staggers = true
+			end
+		end
 		if flick then
-			hitOpts = table.clone(opts)
+			hitOpts = table.clone(hitOpts)
 			hitOpts.Staggers = true -- a flicked hit always interrupts
 			if flick.flash then
-				hitDamage = damage * (F.BlackFlashMult + d.FlashBonus)
+				hitDamage *= (F.BlackFlashMult + d.FlashBonus)
 				hitOpts.Posture = (opts.Posture or 0) * F.BlackFlashPosture
 				hitOpts.GuardBreak = true
 				hitOpts.Stun = math.max(opts.Stun or 0, F.BlackFlashStun)
 				hitOpts.Knockback = math.max(opts.Knockback or 0, F.BlackFlashKnockback)
 			else
-				hitDamage = damage * F.DamageMult[flick.level]
+				hitDamage *= F.DamageMult[flick.level]
 			end
 		end
 		local result = Combat.Damage(char, model, hitDamage, hitOpts)
@@ -566,6 +699,7 @@ local function pulse(char, spec, mods, seen)
 		if mods.onHit then
 			mods.onHit(result, model)
 		end
+		return result
 	end
 
 	local params = OverlapParams.new()
@@ -577,6 +711,10 @@ local function pulse(char, spec, mods, seen)
 			return
 		end
 		seen.__fired = true
+		if mods.gun then -- a player's gun: spread from the gun and the shooter's state (NPC shots are exact)
+			local spread = spreadFor(char, s, mods.gun, os.clock())
+			look = scatter(look, spread)
+		end
 		local ray = RaycastParams.new()
 		ray.FilterType = Enum.RaycastFilterType.Exclude
 		ray.FilterDescendantsInstances = { char }
@@ -584,7 +722,11 @@ local function pulse(char, spec, mods, seen)
 		fx("Bolt", char, if result then result.Position else origin + look * spec.Range)
 		local model = result and result.Instance:FindFirstAncestorOfClass("Model")
 		if model and getHum(model) then
-			strike(model)
+			local zone = result.Instance.Name
+			local outcome = strike(model, zone)
+			if zone == "Head" and (outcome == "hit" or outcome == "guardbreak") then
+				fx("Headshot", model, char)
+			end
 		end
 		return
 	end
@@ -677,13 +819,17 @@ function Combat.Attack(player, aim)
 		Remotes.Announce:FireClient(player, "Ranged weapons only in the Range.", "Event")
 		return
 	end
+	local gun = gunOf(weapon)
+	if gun and not spendAmmo(player, char, s, char:GetAttribute("Weapon"), gun, 1) then
+		return -- empty or reloading (an empty click starts the reload)
+	end
 	if not Combat.SpendStamina(char, spec.Stamina) then
 		return
 	end
 	s.block = false
 	char:SetAttribute("Blocking", false)
 	s.combo, s.comboWeapon = combo, weapon
-	local mods = { chargeBonus = weapon.ChargeBonus, label = combo, aim = if spec.Ranged then sanitizeAim(char, aim) else nil }
+	local mods = { chargeBonus = weapon.ChargeBonus, label = combo, aim = if spec.Ranged then sanitizeAim(char, aim) else nil, gun = gun }
 	Combat.Swing(char, spec, mods)
 	if combo == #weapon.Attacks then -- end of the chain: recovery
 		s.busyUntil += weapon.ComboCooldown
@@ -701,14 +847,21 @@ function Combat.Heavy(player, aim)
 	if player:GetAttribute("Zone") == "Range" and not weapon.Heavy.Ranged then
 		return
 	end
-	if t - s.lastHeavy < C.HeavyCooldown or not Combat.SpendStamina(char, weapon.Heavy.Stamina) then
+	if t - s.lastHeavy < C.HeavyCooldown then
+		return
+	end
+	local gun = gunOf(weapon)
+	if gun and not spendAmmo(player, char, s, char:GetAttribute("Weapon"), gun, gun.HeavyRounds or 3) then
+		return -- the charged shot burns three rounds
+	end
+	if not Combat.SpendStamina(char, weapon.Heavy.Stamina) then
 		return
 	end
 	s.lastHeavy, s.block, s.combo = t, false, 0
 	Combat.Used:Fire("Heavy", player)
 	char:SetAttribute("Blocking", false)
 	-- Heavies are criticals: they crush blocks (extra posture damage).
-	local mods = { chargeBonus = weapon.ChargeBonus, label = "Heavy", postureMult = C.CriticalPostureMult, aim = if weapon.Heavy.Ranged then sanitizeAim(char, aim) else nil }
+	local mods = { chargeBonus = weapon.ChargeBonus, label = "Heavy", postureMult = C.CriticalPostureMult, aim = if weapon.Heavy.Ranged then sanitizeAim(char, aim) else nil, gun = gun }
 	Combat.Swing(char, weapon.Heavy, mods)
 end
 
@@ -721,6 +874,10 @@ function Combat.SetSprint(player, on)
 	local s = st(char)
 	s.sprint = on and (char:GetAttribute("Stamina") or 0) > Config.Sprint.MinStamina
 	char:SetAttribute("Sprinting", s.sprint)
+	if s.sprint and s.ads then
+		s.ads = false -- you cannot run with the sights up
+		char:SetAttribute("ADS", false)
+	end
 end
 
 local function applySpeed(char, s, d)
@@ -814,6 +971,8 @@ function Combat.Init()
 	Remotes.Block.OnServerEvent:Connect(RateLimit.Wrap("Block", L.Block, Combat.SetBlock))
 	Remotes.Dodge.OnServerEvent:Connect(RateLimit.Wrap("Dodge", L.Dodge, Combat.Dodge))
 	Remotes.Sprint.OnServerEvent:Connect(RateLimit.Wrap("Sprint", L.Sprint, Combat.SetSprint))
+	Remotes.Reload.OnServerEvent:Connect(RateLimit.Wrap("Reload", L.Reload, Combat.Reload))
+	Remotes.ADS.OnServerEvent:Connect(RateLimit.Wrap("ADS", L.ADS, Combat.SetADS))
 
 	local accumulator = 0
 	RunService.Heartbeat:Connect(function(dt)
@@ -832,6 +991,11 @@ function Combat.Init()
 				end
 				if char:GetAttribute("Zone") and t > s.zoneUntil then
 					char:SetAttribute("Zone", false)
+				end
+				local weaponId = char:GetAttribute("Weapon")
+				if weaponId ~= s.weaponSeen and Players:GetPlayerFromCharacter(char) then
+					s.weaponSeen = weaponId
+					Combat.SyncAmmo(char) -- the HUD's Ammo / MaxAmmo follow the equipped weapon
 				end
 				if s.sprint then
 					if s.block or (char:GetAttribute("Stamina") or 0) <= Config.Sprint.MinStamina then

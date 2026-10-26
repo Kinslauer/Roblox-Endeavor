@@ -76,12 +76,18 @@ Weapons.Defs = {
 		},
 		Heavy = hit(44, 28, 0.60, 0.20, 1.40, 9, { Hyperarmor = true, Knockback = 60, Stamina = 30 }),
 	},
+	-- Ranged weapons add a Gun block (design/gdd/gunplay.md; defaults in Config.Gunplay):
+	--   Magazine / Reload   shots per magazine, seconds to reload (empty-mag shot reloads for you)
+	--   Spread { Hip, ADS } base cone half-angle in degrees (server adds Config.Gunplay.Spread.Moving / Sprinting)
+	--   Recoil { Pitch, Yaw, Recover, Pattern } camera kick per shot in degrees (client), Yaw = +/- random,
+	--           Recover = degrees/s the kick returns at; Pattern = optional list of {pitch, yaw} kicks in order
 	ArcPistol = {
 		Name = "Arc Pistol", Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.3, ChargeBonus = 3,
 		Attacks = {
 			hit(9, 3, 0.08, 0.05, 0.42, 90, { Type = "Arc", Ranged = true, Stamina = 8 }),
 		},
 		Heavy = hit(22, 10, 0.50, 0.05, 1.20, 110, { Type = "Arc", Ranged = true, Stamina = 22, Knockback = 20 }),
+		Gun = { Magazine = 9, Reload = 1.3, Spread = { Hip = 2.4, ADS = 0.5 }, Recoil = { Pitch = 1.6, Yaw = 0.5, Recover = 7 } },
 	},
 	-- Universe 2 / the Range: a two-handed semi-auto rifle. Fast shots, long reach, and a charged
 	-- "lance" heavy that staggers. Only usable (and only obtainable) through the Rift at first.
@@ -91,7 +97,17 @@ Weapons.Defs = {
 			hit(14, 4, 0.05, 0.05, 0.30, 160, { Type = "Arc", Ranged = true, Stamina = 5 }),
 		},
 		Heavy = hit(40, 16, 0.60, 0.05, 1.30, 220, { Type = "Arc", Ranged = true, Stamina = 24, Knockback = 30, Stun = 0.6 }),
+		Gun = {
+			Magazine = 18, Reload = 1.7, Spread = { Hip = 3.2, ADS = 0.25 },
+			-- a climbing pattern that drifts right then left, as you would learn to pull against
+			Recoil = { Pitch = 0.9, Yaw = 0.3, Recover = 5, Pattern = { { 0.9, 0.1 }, { 1.0, 0.25 }, { 1.1, 0.35 }, { 1.0, 0.2 }, { 0.9, -0.2 }, { 0.9, -0.35 }, { 0.8, -0.2 } } },
+		},
 	},
 }
+
+-- The ranged spec of a weapon, if it is a gun (its first attack is Ranged).
+function Weapons.IsGun(def)
+	return def ~= nil and def.Attacks ~= nil and def.Attacks[1] ~= nil and def.Attacks[1].Ranged == true
+end
 
 return Weapons

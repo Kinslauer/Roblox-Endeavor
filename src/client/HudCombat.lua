@@ -223,6 +223,13 @@ local function register()
 	CombatFX.On("EnemyStep", function(char)
 		HudCombat.Number(char, "ENEMY STEP", C.Dodged, false)
 	end)
+	-- gunplay: a headshot reads as a word over the target plus the hit marker for the shooter
+	CombatFX.On("Headshot", function(victim, attacker)
+		HudCombat.Number(victim, "HEADSHOT", C.Headshot or C.Heavy, true)
+		if isMine(attacker) then
+			HudCombat.HitMarker()
+		end
+	end)
 	CombatFX.On("Snatch", function(user, target)
 		if typeof(target) == "Instance" then
 			HudCombat.Number(target, "SNATCHED", C.Snatch or C.Dodged, false)

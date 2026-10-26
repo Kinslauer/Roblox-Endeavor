@@ -1,12 +1,14 @@
 -- Input: keys -> intent remotes. The client only asks; the server decides (ADR-0001).
 -- Layout (README "Controls"): LMB attack, RMB heavy (melee) / aim down sights (ranged), MMB or G
 -- special (the heavy, any weapon), LeftShift sprint, F block/parry, Q dodge, E flick, Z feint, R/Y/V skills,
--- J attributes, Tab inventory, L loadout. X is the server-side ProximityPrompt key.
+-- J attributes, Tab inventory, L loadout, T reload (Config.Gunplay.ReloadKey). X is the
+-- server-side ProximityPrompt key.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Remotes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Remotes"))
+local Config = require(ReplicatedStorage.Shared:WaitForChild("Config"))
 local Presentation = require(ReplicatedStorage.Shared:WaitForChild("Presentation"))
 local Weapons = require(ReplicatedStorage.Shared:WaitForChild("Weapons"))
 local Hud = require(script.Parent.Hud)
@@ -68,6 +70,9 @@ function Input.Init()
 		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 			if rangedEquipped() then
 				Aim.SetADS(true) -- held: aim down sights; the special lives on SpecialKeys
+				if Aim.ADS then
+					Remotes.ADS:FireServer(true) -- the server narrows the spread after ADSSettle
+				end
 			else
 				Remotes.Heavy:FireServer()
 			end
@@ -77,6 +82,8 @@ function Input.Init()
 			Remotes.Block:FireServer(true)
 		elseif key == Enum.KeyCode.LeftShift then
 			Remotes.Sprint:FireServer(true)
+		elseif key == Config.Gunplay.ReloadKey and rangedEquipped() then
+			Remotes.Reload:FireServer()
 		elseif key == Enum.KeyCode.E then
 			Remotes.Flicker:FireServer() -- tap just before your swing connects
 		elseif key == Enum.KeyCode.Z then
@@ -98,6 +105,9 @@ function Input.Init()
 		elseif input.KeyCode == Enum.KeyCode.LeftShift then
 			Remotes.Sprint:FireServer(false)
 		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+			if Aim.ADS then
+				Remotes.ADS:FireServer(false)
+			end
 			Aim.SetADS(false)
 		end
 	end)

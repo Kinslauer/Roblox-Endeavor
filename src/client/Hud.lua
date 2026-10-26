@@ -20,7 +20,7 @@ local player = Players.LocalPlayer
 local Hud = {}
 Hud.Panels = {} -- name -> Frame (Input toggles these)
 
-local gui, banner, flickerLabel, levelLabel, questLabel, zoneLabel
+local gui, banner, flickerLabel, levelLabel, questLabel, zoneLabel, ammoLabel
 local bannerToken = 0
 local cooldowns = {} -- skillId -> os.clock() when ready
 
@@ -395,6 +395,8 @@ function Hud.Init()
 	end)
 	banner = label({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 60), TextSize = 26, Text = "", TextTransparency = 1 })
 	questLabel = label({ Size = UDim2.fromOffset(360, 24), Position = UDim2.new(1, -380, 0, 20), TextXAlignment = Enum.TextXAlignment.Right, Text = "" })
+	-- ammo counter (Ammo / MaxAmmo attributes, set by the server for guns; hidden for melee)
+	ammoLabel = label({ Size = UDim2.fromOffset(200, 34), Position = UDim2.new(1, -220, 1, -70), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 28, Font = Enum.Font.GothamBlack, Text = "", TextColor3 = Color3.fromRGB(235, 235, 240) })
 	-- shown while standing inside a safe zone (District.InSafeZone reads the tagged zone parts)
 	zoneLabel = label({ Size = UDim2.new(1, 0, 0, 22), Position = UDim2.fromOffset(0, 28), TextSize = 14, Font = Enum.Font.GothamBold, Text = "", TextColor3 = Color3.fromRGB(120, 255, 200) })
 	task.spawn(function()
@@ -435,11 +437,29 @@ function Hud.Init()
 		questLabel.Text = if title then ("%s  [%d/%d]"):format(title, progress, count) else ""
 	end)
 
+	local function bindAmmo(char)
+		local function update()
+			local ammo, max = char:GetAttribute("Ammo"), char:GetAttribute("MaxAmmo")
+			if ammo == nil or max == nil then
+				ammoLabel.Text = ""
+				return
+			end
+			local reloading = char:GetAttribute("Reloading")
+			ammoLabel.Text = if reloading then "RELOADING" else ("%d / %d"):format(ammo, max)
+			ammoLabel.TextColor3 = if reloading then Color3.fromRGB(255, 190, 40) elseif ammo == 0 then Color3.fromRGB(255, 80, 80) else Color3.fromRGB(235, 235, 240)
+		end
+		for _, attr in { "Ammo", "MaxAmmo", "Reloading" } do
+			char:GetAttributeChangedSignal(attr):Connect(update)
+		end
+		update()
+	end
+
 	local function onCharacter(char)
 		task.spawn(bindHealth, healthFill, healthValue, char)
 		bindBar(staminaFill, staminaValue, char, "Stamina", "MaxStamina")
 		bindBar(postureFill, postureValue, char, "Posture", "MaxPosture")
 		bindBar(chargeFill, chargeValue, char, "Charge", "MaxCharge")
+		bindAmmo(char)
 	end
 	player.CharacterAdded:Connect(onCharacter)
 	if player.Character then

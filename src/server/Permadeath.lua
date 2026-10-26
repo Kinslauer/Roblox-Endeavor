@@ -2,6 +2,7 @@
 local DataStoreService = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Lore = require(ReplicatedStorage.Shared.Lore)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Combat = require(script.Parent.Combat)
 local Loot = require(script.Parent.Loot)
@@ -74,6 +75,7 @@ function Permadeath.Handle(player, char)
 
 	local survived = recordLegacy(player.UserId, profile)
 	Remotes.Died:FireClient(player, { Survived = survived, Kills = profile.Kills, Level = profile.Level, Killer = killerName })
+	Remotes.Announce:FireClient(player, Lore.Get("FirstDeath"), "Lore") -- the city's one line on a death
 	PlayerData.Reset(player)
 end
 

@@ -117,6 +117,7 @@ Presentation.Impacts = {
 	Launch = { Color = Color3.fromRGB(255, 230, 120), Flash = 0.3, Hitstop = 0.06, Shake = 0.5, Streak = { Height = 10, Life = 0.3, Width = 0.6 } }, -- an open enemy sent up by a heavy
 	Juggle = { Color = Color3.fromRGB(255, 230, 120), Flash = 0.12, Hitstop = 0.03, Shake = 0.2 }, -- each hit that keeps it up
 	EnemyStep = { Color = Color3.fromRGB(120, 255, 200), Flash = 0.15, Hitstop = 0, Shake = 0.1 }, -- dodge off an airborne enemy
+	Headshot = { Color = Color3.fromRGB(255, 120, 60), Flash = 0.2, Hitstop = 0.05, Shake = 0.25 }, -- gunplay: a shot that landed on the Head
 	Bolt = { Color = Color3.fromRGB(120, 200, 255), Flash = 0.1,
 		Muzzle = { Size = 1.2, Life = 0.08 },
 		Sparks = { Count = 8, Color = Color3.fromRGB(160, 220, 255), Size = 0.25, Speed = 14, Life = 0.25 } },
@@ -142,6 +143,7 @@ Presentation.Sounds = {
 	Burst = sfx(B .. "flashbulb.wav", 0.6), Stun = sfx(B .. "collide.wav", 0.5, 0.1), Safe = sfx(B .. "electronicpingshort.wav", 0.35, 0.02),
 	Snatch = sfx(B .. "unsheath.wav", 0.5, 0.1), Buster = sfx(B .. "impact_explosion_01.mp3", 0.8, 0.05),
 	Launch = sfx(B .. "swordlunge.wav", 0.7, 0.15), Juggle = sfx(B .. "hit.wav", 0.5, 0.15), EnemyStep = sfx(B .. "action_jump.mp3", 0.5, 0.05),
+	Headshot = sfx(B .. "snap.wav", 0.7, 0.05), Reload = sfx(B .. "button.wav", 0.5, 0.1),
 	MaxPerChar = 4, -- concurrent sounds per character; the oldest is cut when exceeded
 	MaxDistance = 120, -- studs before a 3D sound is inaudible
 	LocalMix = 0.6, -- volume multiplier for the extra 2D copy of the local player's own events
@@ -194,7 +196,7 @@ Presentation.Hud = {
 		Colors = { Hit = Color3.fromRGB(255, 235, 200), Heavy = Color3.fromRGB(255, 150, 60), Taken = Color3.fromRGB(255, 80, 80),
 			Block = Color3.fromRGB(150, 170, 255), Parry = Color3.fromRGB(255, 255, 255), GuardBreak = Color3.fromRGB(255, 160, 0),
 			Dodged = Color3.fromRGB(80, 255, 230), BlackFlash = Color3.fromRGB(255, 20, 20), Safe = Color3.fromRGB(120, 255, 200),
-			Snatch = Color3.fromRGB(120, 200, 255), Buster = Color3.fromRGB(255, 200, 60), Launch = Color3.fromRGB(255, 230, 120) },
+			Snatch = Color3.fromRGB(120, 200, 255), Buster = Color3.fromRGB(255, 200, 60), Launch = Color3.fromRGB(255, 230, 120), Headshot = Color3.fromRGB(255, 120, 60) },
 		MaxLive = 24,
 	},
 	Reticle = { Size = 6, Gap = 5, Thickness = 2, Color = Color3.fromRGB(235, 235, 240), HitColor = Color3.fromRGB(255, 90, 60), HitSeconds = 0.12, HitScale = 1.8 },

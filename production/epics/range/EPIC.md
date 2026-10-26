@@ -20,6 +20,8 @@ for iron sights, `Inventory`/`Gear` for the loadout.
 | 004 | Owner playtest: rifle feel (recoil, hold, hip vs. sights), target lane readability, wave difficulty, travel feel | Visual/Feel | Pending |
 | 005 | Drone enemy: `Enemies.Defs.Drone` (`Flying` block), `NPCs.buildDroneRig` (root flown by AlignPosition/AlignOrientation, neon eye, rotors), flight AI branch (orbit inside `KeepDistance` at `Hover`, direction flips, LOS fire along the pitched look, pinned while stunned), ground-landing spoils, `Drone` loot table; waves 2–3 mix Drones in | Logic + Content | Implemented — live (prologue test): spawned 9 studs up, orbited the player at ~13 studs (rel −12/9/−5 → −3/9/−13 over 3 s), pitched −0.55 at the target, landed shots (100 → 58 HP), no errors |
 
+| 006 | Gunplay layer (`design/gdd/gunplay.md`): hit zones (`Config.Gunplay.Zones`, headshot staggers + HEADSHOT), honest camera recoil (`Weapons.Gun.Recoil`, rifle pattern; `Aim.Kick`), spread by stance (hip/ADS/moving/sprinting/airborne; `Remotes.ADS` state), magazines + reloads (`Gun.Magazine/Reload`, `Remotes.Reload`, T, empty-click auto reload, HUD ammo counter) | Logic + Presentation | Implemented — smoke 12 checks |
+
 ## Acceptance criteria
 1. `C` toggles first person anywhere; the view model appears with a ranged weapon; `C` again returns to the shoulder camera.
 2. The Rift refuses players who have not Awakened with ≥ `UnlockKills` kills (Dev mode bypasses) and tells them why.
@@ -33,4 +35,4 @@ for iron sights, `Inventory`/`Gear` for the loadout.
 ## Follow-ups
 - Drone enemy (flying strafer) — needs a non-humanoid mover in `NPCs`.
 - Range PvP and the multi-place split (brief item 5).
-- Hip-fire spread / recoil affecting the shot (currently cosmetic only).
+- Ammo as an inventory item + ammo types vs armour; stamina-driven ADS sway (gunplay.md §4).

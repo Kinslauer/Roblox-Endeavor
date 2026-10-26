@@ -300,6 +300,75 @@ do
 	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
 	run(0.5)
 end
+-- Gunplay (design/gdd/gunplay.md): magazines + reload, ADS state, hit zones, spread
+do
+	local Combat = M.mockEnv.__require(SSS.Server.Combat)
+	local NPCs = M.mockEnv.__require(SSS.Server.NPCs)
+	local Weapons = M.mockEnv.__require(RS.Shared.Weapons)
+	local Config = M.mockEnv.__require(RS.Shared.Config)
+	as(player)
+	local me = player.Character
+	local gun = Weapons.Defs.ArcRifle.Gun
+	Combat.State(me).ammo.ArcRifle = nil -- the Range block spent some: start full
+	Remotes.EquipItem:FireServer("ArcRifle"); run(0.3)
+	check("ammo attributes follow the equipped gun", me:GetAttribute("Ammo") == gun.Magazine and me:GetAttribute("MaxAmmo") == gun.Magazine)
+	me:PivotTo(M.CF.lookAt(M.V3.new(600, 5, 600), M.V3.new(600, 5, 590))) -- empty ground, facing -Z
+	me:SetAttribute("Stamina", 100)
+	for _ = 1, 3 do Remotes.Attack:FireServer(M.V3.new(0, 0, -1)); run(0.5) end -- End 0.30 + ComboCooldown 0.15 between shots
+	check("each shot spends a round", me:GetAttribute("Ammo") == gun.Magazine - 3)
+	run(0.5)
+	Remotes.Heavy:FireServer(M.V3.new(0, 0, -1)); run(0.8)
+	check("the charged shot burns three rounds", me:GetAttribute("Ammo") == gun.Magazine - 6)
+	run(0.6)
+	Remotes.Reload:FireServer(); run(0.1)
+	check("reload marks the character", me:GetAttribute("Reloading") == true)
+	local during = me:GetAttribute("Ammo")
+	Remotes.Attack:FireServer(M.V3.new(0, 0, -1)); run(0.1)
+	check("no shot while reloading", me:GetAttribute("Ammo") == during)
+	run(gun.Reload + 0.1)
+	check("magazine full after Reload seconds", me:GetAttribute("Ammo") == gun.Magazine and me:GetAttribute("Reloading") == false)
+	Combat.State(me).ammo.ArcRifle = 0; Combat.SyncAmmo(me)
+	Remotes.Attack:FireServer(M.V3.new(0, 0, -1)); run(0.1)
+	check("an empty click starts a reload on its own", me:GetAttribute("Reloading") == true)
+	run(gun.Reload + 0.2)
+	-- ADS is a server-visible state; sprinting drops the sights
+	Remotes.ADS:FireServer(true); run(0.1)
+	check("ADS attribute set from the sights remote", me:GetAttribute("ADS") == true)
+	Remotes.Sprint:FireServer(true); run(0.2)
+	check("sprinting drops the sights", me:GetAttribute("ADS") == false)
+	Remotes.Sprint:FireServer(false); run(0.3)
+	-- hit zones: the same shot on the Head does Zones.Head times the body damage (sights up: tight spread)
+	me:SetAttribute("Stamina", 100)
+	local g = NPCs.Spawn("Grunt", M.V3.new(600, 5, 580))
+	Combat.State(g).stunned = M.setNow() + 30 -- holds still, and cannot shoot back
+	Remotes.ADS:FireServer(true); run(Config.Gunplay.Spread.ADSSettle + 0.1)
+	local hp0 = g.Humanoid.Health
+	Remotes.Attack:FireServer((g.HumanoidRootPart.Position - me.Head.Position).Unit); run(0.4)
+	local bodyLoss = hp0 - g.Humanoid.Health
+	hp0 = g.Humanoid.Health
+	local mark = #M.FireLog
+	Remotes.Attack:FireServer((g.Head.Position - me.Head.Position).Unit); run(0.4)
+	local headLoss = hp0 - g.Humanoid.Health
+	local headshot = false
+	for i = mark + 1, #M.FireLog do local e = M.FireLog[i]; if e[1] == "CombatEvent" and e[3] == "Headshot" and e[4] == g then headshot = true end end
+	check("headshot multiplies damage by Zones.Head", bodyLoss > 0 and math.abs(headLoss / bodyLoss - Config.Gunplay.Zones.Head) < 0.05 and headshot)
+	Remotes.ADS:FireServer(false); run(0.1)
+	g:Destroy()
+	-- spread: hip shots at the same aim do not all land on the same point
+	local ends = {}
+	for _ = 1, 5 do
+		local m0 = #M.FireLog
+		Remotes.Attack:FireServer(M.V3.new(0, 0, -1)); run(0.5)
+		for i = m0 + 1, #M.FireLog do local e = M.FireLog[i]; if e[1] == "CombatEvent" and e[3] == "Bolt" and e[4] == me then table.insert(ends, e[5]) end end
+	end
+	local scattered = false
+	for i = 2, #ends do if (ends[i] - ends[1]).Magnitude > 0.5 then scattered = true end end
+	check("hip fire scatters inside the spread cone", #ends >= 4 and scattered)
+	Remotes.EquipItem:FireServer("PipeClub"); run(0.3)
+	check("melee weapon clears the ammo counter", me:GetAttribute("Ammo") == nil)
+	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
+	run(0.5)
+end
 -- Momentum (design/gdd/momentum.md): dodge-cancel keeps the combo, side dodges last longer, Snatch and Buster
 do
 	as(player)

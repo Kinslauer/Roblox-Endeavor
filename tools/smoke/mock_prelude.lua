@@ -152,7 +152,8 @@ function methods.PivotTo(self, cf)
 	rawset(self, "_pivot", cf)
 	local root = self.PrimaryPart or self:FindFirstChild("HumanoidRootPart")
 	if root then root.CFrame = cf end
-	for _, c in self._children do if c:IsA("BasePart") and c ~= root then c.CFrame = cf end end
+	-- every part rides along; the Head sits 2.5 studs up so head/body rays can be told apart
+	for _, c in self._children do if c:IsA("BasePart") and c ~= root then c.CFrame = if c.Name == "Head" then cf * mkcf(V3.new(0, 2.5, 0)) else cf end end
 end
 function methods.GetPivot(self) return self._pivot or mkcf(V3.zero) end
 function methods.TakeDamage(self, n) self.Health = math.max(0, self.Health - n) end
@@ -186,8 +187,9 @@ function methods.Raycast(self, origin, direction, params)
 	if len <= 0 then return nil end
 	local dir = direction.Unit
 	local best, bestT = nil, math.huge
+	-- Heads count too (radius 0.9) so hit-zone checks can aim at one; a Head beats a root at the same depth.
 	for _, d in descendants(self, {}) do
-		if d:IsA("BasePart") and d.Name == "HumanoidRootPart" and d.Position then
+		if d:IsA("BasePart") and (d.Name == "HumanoidRootPart" or d.Name == "Head") and d.Position then
 			local skip = false
 			for _, ex in excluded do if d == ex or d:IsDescendantOf(ex) then skip = true end end
 			if not skip then
@@ -195,7 +197,8 @@ function methods.Raycast(self, origin, direction, params)
 				local t = rel:Dot(dir)
 				if t > 0 and t <= len then
 					local perp = (rel - dir * t).Magnitude
-					if perp <= 2.5 and t < bestT then best, bestT = d, t end
+					local limit = if d.Name == "Head" then 0.9 else 2.5
+					if perp <= limit and (t < bestT - 0.5 or (math.abs(t - bestT) <= 0.5 and d.Name == "Head" and best and best.Name ~= "Head")) then best, bestT = d, t end
 				end
 			end
 		end

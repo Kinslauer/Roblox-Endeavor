@@ -76,6 +76,20 @@ Config.Momentum = {
 	EnemyStepHop = 34, -- extra upward studs/s on that dodge
 }
 
+-- Gunplay (design/gdd/gunplay.md): the Range's shooting rules. Per-weapon numbers live in
+-- Weapons.Defs[id].Gun; these are the shared ones.
+Config.Gunplay = {
+	-- hit zones: multiplier by the body part the shot lands on (R15 part names; Default for anything else)
+	Zones = { Head = 2.0, UpperTorso = 1.0, LowerTorso = 1.0, HumanoidRootPart = 1.0,
+		LeftUpperArm = 0.7, LeftLowerArm = 0.7, LeftHand = 0.6, RightUpperArm = 0.7, RightLowerArm = 0.7, RightHand = 0.6,
+		LeftUpperLeg = 0.75, LeftLowerLeg = 0.7, LeftFoot = 0.6, RightUpperLeg = 0.75, RightLowerLeg = 0.7, RightFoot = 0.6, Default = 1.0 },
+	HeadshotStaggers = true, -- a headshot always breaks poise
+	-- spread added to the weapon's own (degrees of cone half-angle), by the shooter's state
+	Spread = { Moving = 1.2, Sprinting = 3.0, Airborne = 2.0, ADSSettle = 0.15 }, -- ADSSettle: seconds after raising the sights before ADS spread counts
+	DefaultGun = { Magazine = 10, Reload = 1.5, Spread = { Hip = 3, ADS = 0.5 }, Recoil = { Pitch = 1.2, Yaw = 0.4, Recover = 7 } },
+	ReloadKey = Enum.KeyCode.T, -- client: manual reload (an empty-magazine shot reloads on its own)
+}
+
 -- Sprint: hold the key to run. Drains stamina; blocking cancels it; attacks still work (the swing
 -- stops you anyway).
 Config.Sprint = {
@@ -135,7 +149,7 @@ Config.Flicker = {
 Config.RateLimit = {
 	Burst = 2,
 	Attack = 6, Heavy = 4, Feint = 6, Flicker = 8, Block = 10, Dodge = 4, UseSkill = 6,
-	SetSkill = 4, Allocate = 10, UseItem = 4, EquipItem = 4, Unequip = 4, Craft = 4, TutorialSkip = 1, SetAppearance = 10, Sprint = 6,
+	SetSkill = 4, Allocate = 10, UseItem = 4, EquipItem = 4, Unequip = 4, Craft = 4, TutorialSkip = 1, SetAppearance = 10, Sprint = 6, Reload = 4, ADS = 8,
 }
 
 -- World events (server/Events.lua)

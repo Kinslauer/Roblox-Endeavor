@@ -12,8 +12,10 @@ local GameSettings = UserSettings():GetService("UserGameSettings")
 
 local Presentation = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Presentation"))
 local Config = require(ReplicatedStorage.Shared:WaitForChild("Config"))
+local Weapons = require(ReplicatedStorage.Shared:WaitForChild("Weapons"))
 local Hud = require(script.Parent.Hud)
 local CameraShake = require(script.Parent.CameraShake)
+local CombatFX = require(script.Parent.CombatFX)
 local TweenService = game:GetService("TweenService")
 local A = Presentation.Aim
 
@@ -69,6 +71,86 @@ local function lockMouse()
 	if Aim.Enabled then
 		UserInputService.MouseBehavior = if Aim.Active() then Enum.MouseBehavior.LockCenter else Enum.MouseBehavior.Default
 	end
+end
+
+-- Recoil (design/gdd/gunplay.md; numbers in Weapons.Defs[id].Gun.Recoil, defaults in
+-- Config.Gunplay.DefaultGun): the camera itself kicks on every shot and settles back at Recover
+-- degrees per second. Shots go along the camera (Input sends its LookVector), so recoil is honest -
+-- the next shot lands where the kicked view points, and pulling down against it is a real skill.
+-- A Pattern (list of {pitch, yaw}) replaces the random kick for consecutive shots.
+-- Roblox's camera reads its own CFrame back every frame, so the kick is delivered as rotation
+-- *deltas*: the impulse over KICK_TIME seconds, then the same amount back at Recover deg/s. If
+-- you pull down against it meanwhile, the view ends lower than where it started - that is the
+-- compensation skill, not a bug.
+local KICK_TIME = 0.07
+local pendingPitch, pendingYaw = 0, 0 -- still to deliver
+local appliedPitch, appliedYaw = 0, 0 -- delivered, still to recover
+local deliverRate, recoverRate = 0, 8 -- deg/s
+local patternIndex, lastShotAt = 0, 0
+local recoilRng = Random.new()
+
+function Aim.Kick(pitch, yaw, recover)
+	pendingPitch += pitch
+	pendingYaw += yaw
+	-- the whole pending kick lands within KICK_TIME; recovery waits until it has
+	deliverRate = math.max(deliverRate, (math.abs(pendingPitch) + math.abs(pendingYaw)) / KICK_TIME)
+	recoverRate = recover or recoverRate
+end
+
+local function towardZero(x, step)
+	return if math.abs(x) <= step then 0 else x - math.sign(x) * step
+end
+
+local function applyRecoil(dt)
+	if pendingPitch == 0 and pendingYaw == 0 and appliedPitch == 0 and appliedYaw == 0 then
+		return
+	end
+	local dPitch, dYaw = 0, 0
+	if pendingPitch ~= 0 or pendingYaw ~= 0 then
+		-- deliver the pending kick at deliverRate (split by how much of each axis is left)
+		local total = math.abs(pendingPitch) + math.abs(pendingYaw)
+		local budget = math.min(total, deliverRate * dt)
+		dPitch = pendingPitch * (budget / total)
+		dYaw = pendingYaw * (budget / total)
+		pendingPitch -= dPitch
+		pendingYaw -= dYaw
+		appliedPitch += dPitch
+		appliedYaw += dYaw
+		if pendingPitch == 0 and pendingYaw == 0 then
+			deliverRate = 0
+		end
+	else
+		-- nothing left to deliver: settle back at recoverRate
+		local step = recoverRate * dt
+		local rPitch, rYaw = towardZero(appliedPitch, step), towardZero(appliedYaw, step)
+		dPitch, dYaw = rPitch - appliedPitch, rYaw - appliedYaw
+		appliedPitch, appliedYaw = rPitch, rYaw
+	end
+	local camera = workspace.CurrentCamera
+	if camera and (dPitch ~= 0 or dYaw ~= 0) then
+		camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(dPitch), math.rad(dYaw), 0)
+	end
+end
+
+-- Our own ranged Swing: kick by the weapon's recoil spec (pattern position resets after a pause).
+local function onOwnSwing(char, info)
+	if char ~= player.Character or type(info) ~= "table" then
+		return
+	end
+	local def = Weapons.Defs[info.weapon]
+	if not Weapons.IsGun(def) then
+		return
+	end
+	local R = (def.Gun and def.Gun.Recoil) or Config.Gunplay.DefaultGun.Recoil
+	local now = os.clock()
+	patternIndex = if now - lastShotAt > 0.6 then 1 else patternIndex + 1
+	lastShotAt = now
+	local kick = R.Pattern and R.Pattern[math.min(patternIndex, #R.Pattern)]
+	local pitch = if kick then kick[1] else R.Pitch
+	local yaw = if kick then kick[2] else R.Yaw * recoilRng:NextNumber(-1, 1)
+	local heavy = info.label == "Heavy"
+	local mult = (if heavy then 2.2 else 1) * (if Aim.ADS then 0.85 else 1)
+	Aim.Kick(pitch * mult, yaw * mult, R.Recover)
 end
 
 -- The stance is actually steering the camera/body right now (on, and no menu wants the mouse).
@@ -200,7 +282,9 @@ function Aim.Init()
 	forced()
 	apply()
 	RunService.Heartbeat:Connect(faceCamera)
+	RunService:BindToRenderStep("ConduitRecoil", Enum.RenderPriority.Camera.Value + 1, applyRecoil) -- before Aim / ViewModel read the camera
 	RunService:BindToRenderStep("ConduitAim", Enum.RenderPriority.Camera.Value + 2, lockMouse)
+	CombatFX.On("Swing", onOwnSwing)
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if processed then
 			return
