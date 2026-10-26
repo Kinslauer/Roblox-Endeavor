@@ -39,7 +39,7 @@ Scavenge -> craft/upgrade -> take quests -> fight (NPCs, players, events) -> get
 - Safe-ish zones / spawn protection so new characters are not spawn-killed.
 
 **Then**
-- Destruction & salvage: breach points, destructible props, salvage crafting, grab-and-throw debris, explosions; war-world destruction at scale. See [systems/destruction-and-salvage.md](systems/destruction-and-salvage.md).
+- Destruction & salvage: breach points, destructible props, salvage crafting, grab-and-throw debris, explosions; war-world destruction at scale. See [design/gdd/destruction.md](../design/gdd/destruction.md).
 - Deepwoken-style depth: talent tree and more skills gated by stat thresholds and armor sets, status effects (bleed, burn, shock), armor set bonuses, weapon-specific hit effects.
 - Conduit powers: multiple trees (arc, cinder, void...) with cooldown/charge costs.
 - Pickpocketing on live players, lockpicking containers, bounty board, factions/territory.

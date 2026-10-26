@@ -2,6 +2,11 @@
 
 Status: **Designed, not implemented** · Worlds: **Conduit (Universe 1) and War World** · Owner: solo
 
+> Written 2026-10-26 15:06 in another session on the default branch (`claude/roblox-permadeath-openworld-cj3jfk`,
+> which predates Phase 3). Brought onto `claude/combat-feel` and reconciled with the current build the same day,
+> 17:30 — see §13 for what changed. The owner's locked decisions (§3) are unchanged. **Epic**:
+> `production/epics/destruction/EPIC.md`.
+
 ## 1. Overview
 
 The environment is a weapon, a resource and a door. Explosions, heavy hits and thrown debris break props and authored structures. What breaks becomes salvage (crafting materials and ammo), improvised weapons (grab and throw), or a new way in (breaching locked buildings).
@@ -31,13 +36,17 @@ The two worlds use the same system with different dials:
 
 ### 4.1 Damage types and what they can break
 
-Every hit that can break the world carries a damage type. Existing combat hits map onto these.
+Every hit that can break the world carries a **break type**. This is a new field (`Break`) on attack specs, separate
+from the `Type` that combat already uses for armour resists (`Physical` / `Arc`, `Combat.lua` resist line), so no
+existing armour changes. When an attack has no `Break`, it defaults from the weapon's `Family`: Fists / Blunt / Baton /
+Hammer -> Blunt, Blade / Spear -> Blade, any `Type = "Arc"` attack -> Arc. Explosions add a third resist class,
+`Explosive`; armour without it resists 0.
 
-| Type | Sources | Breaks |
+| Break type | Sources | Breaks |
 |---|---|---|
-| Blunt | Fists, club, sledge, baton, heavies | Props, glass, weak breach points |
-| Blade | Rebar blade, spear | Props (cloth, wood, signs), glass |
-| Arc | Arc pistol, Conduit powers | Props, electronics (streetlights, terminals, cameras) |
+| Blunt | Fists, pipe club, sledge, shock baton (breaks as Blunt), heavies | Props, glass, weak breach points |
+| Blade | Rebar blade, scrap spear | Props (cloth, wood, signs), glass |
+| Arc | Arc pistol, arc rifle, Conduit powers | Props, electronics (streetlights, terminals, cameras) |
 | Thrown | Grabbed debris | Props, glass, weak breach points |
 | Explosive | Grenades, breaching charges, artillery | Everything, including reinforced breach points and war-world structures |
 
@@ -92,17 +101,27 @@ Proposed recipes, added to `Items.Recipes`:
 
 | Output | Inputs | Notes |
 |---|---|---|
-| Arc Cell ×6 (arc pistol ammo) | Battery 1, Wire 2 | Arc pistol moves from unlimited to cell-fed |
+| Arc Cell ×6 (arc weapon reserve) | Battery 1, Wire 2 | Arc weapons already have magazines and reloads (`Weapons.Defs[id].Gun`); cells become the reserve a reload draws from (§4.4a) |
 | Scrap Rounds ×10 | Scrap 2, Powder 1 | For firearms added later |
 | Pipe Grenade ×1 | Pipe 1, Powder 2, Wire 1 | Thrown explosive |
 | Breaching Charge ×1 | SheetMetal 1, Powder 3, Wire 2, Battery 1 | Opens Reinforced breach points |
 | Sign Plating | SheetMetal 3, Cloth 1 | Armor upgrade material |
 
-A pipe or sign chunk can also be held as an improvised melee weapon. It uses the club moveset and breaks after N hits.
+A pipe or sign chunk can also be held as an improvised melee weapon. It uses the club moveset (`Presentation.Swings.Families.Blunt`) and breaks after N hits.
+
+#### 4.4a Arc Cells (reconciled)
+Today a reload is free: `Gun.Magazine` rounds, `Gun.Reload` seconds, no reserve. With cells, a reload consumes **one
+Arc Cell and refills the magazine**; with no cell carried, the reload is refused ("No cells."). Open for the owner:
+this makes every arc weapon finite, including the recruits' kit in the war, so war loadouts and shipments
+(`Config.Range.Loadout`, `Supply`) need cells in them. Alternative: cells only in the Conduit world, the war stays
+free-reload. Tuning: cells per reload (`Config.Destruction.CellsPerReload`, default 1).
 
 ### 4.5 Grab and throw (core Conduit combat)
 
-- **Grab:** a key (default `F`, holdable) picks up the targeted grabbable within 8 studs. Grabbing takes 0.2 s and is interruptible by hits.
+- **Grab:** **G** (owner, 2026-10-26 17:30; F is block / parry), hold to keep holding, picks up the targeted grabbable
+  within 8 studs. Grabbing takes 0.2 s and is interruptible by hits. G is today the second key for the special (the
+  heavy on ranged weapons, `Presentation.Aim.SpecialKeys = { MMB, G }`); when grab ships the special stays on the
+  middle mouse button only.
 - **Weight classes:**
 
 | Class | Examples | Hold | Movement | Throw |
@@ -138,9 +157,18 @@ One shared server-side `Explosion` function, not Roblox's built-in `Explosion` i
   - Bodies ragdoll, then freeze in place after settling (~4 s), so they stop costing physics. They stay in the world as cover and as part of the "piles of metal and men".
   - All gear stays lootable on the body (existing rule: everyone drops everything).
   - Each sector has a body cap. Past it, the oldest bodies are cleaned up first.
+- **Sectors are the hill points.** The war is built (`server/War.lua`, design/gdd/war.md): the hill already moves
+  between `Config.War.HillPoints` (six today) on capture or on a timer (`moveHill`). Each hill point and the ground
+  around it is a sector, and "the hill leaves a sector" is `moveHill`. Structures, craters and bodies are tracked per
+  sector from the start.
 - **Sector reset (the "limitless" part):** the map is split into sectors. When the moving hill leaves a sector and no players have been in it for a set time, the sector rebuilds: terrain is restored from a snapshot taken at server start, structures return to Intact, and bodies and wreckage are cleared. Fiction: rebuild crews and pod-dropped fortifications. Fighting always moves onto ground that can be destroyed again.
 
 ### 4.8 Conduit world: hourly dematerialization
+
+> The hourly dematerialization (owner decision, §3) is not in the code or any brief yet. Destruction only needs a
+> hook from it (`World.Dematerializing` 60 s before, `World.Rematerialized` after); the cycle itself — what else
+> resets, what players see, how it sits with the prologue / emergence phases in `WorldPhase` — needs its own short
+> design note before story 7.
 
 - When the world dematerializes, every broken prop, breach point and leftover debris chunk returns to its intact state.
 - **60 s warning:** broken things start flickering and players hear a rising hum, so no one is caught off guard.
@@ -195,9 +223,15 @@ This is where destruction systems on Roblox usually fail, so the rules are stric
 - **Combat:** hit path, damage types, posture, parry, i-frames, knockback, kill credit.
 - **Loot / Items / Inventory:** salvage remains, new materials, recipes, improvised weapons.
 - **Events:** breach noise, warnings, dematerialization timer.
+- **Enemies / barks (`NPCs`, `client/WorldFX.lua`):** breach noise is a "hear" tell — NPCs within range turn and bark,
+  the same unannounced-until-seen-or-heard rule as raids (design/gdd/raids.md §1).
+- **Raids:** a breached interior is a natural objective — a `breach` step kind (open this point) and interiors as
+  `reach` / loot targets; reinforced points make breaching charges worth ordering off the black market.
+- **Bench / Supply:** Sign Plating and salvaged parts feed `Bench`; Glass / SheetMetal / Pipe / Battery / Powder are
+  `Material` (supply value 1) and can be donated to the war like any other material.
 - **Stats / Gear:** Strength and Willpower scaling.
-- **Dematerialization cycle** (Conduit world): reset trigger. Needs its own small design note if it isn't one yet.
-- **War world** (not yet built): sectors, the moving hill, artillery calls.
+- **Dematerialization cycle** (Conduit world): reset trigger. Not built; needs its own design note (§4.8).
+- **War world** (built: `server/War.lua`): the moving hill and its points are the sectors (§4.7); artillery calls are new.
 - **Level design:** tagging props and authoring breach points and fracture/stage models.
 
 ## 9. Gore and content maturity
@@ -221,6 +255,7 @@ The **Moderate** label allows realistic but non-graphic violence and death, with
 - Explosion `Radius`, `BaseDamage`, falloff exponent, `CraterScale`
 - Loose chunk cap, settle time, cosmetic debris cap, body cap per sector
 - Dematerialization warning length
+- `GrabKey` (G), `CellsPerReload` (1)
 - Sector rebuild delay
 - `GoreLevel`
 
@@ -238,12 +273,28 @@ The **Moderate** label allows realistic but non-graphic violence and death, with
 ## 12. Build order (stories)
 
 1. Damage types on existing hits + `Destructible` prop framework (health, swap to fractured model, salvage remains).
-2. New materials and recipes; arc pistol becomes cell-fed.
+2. New materials and recipes; Arc Cells as the arc weapons' reserve (§4.4a, owner call on the war first).
 3. Grab and throw (Light class first), with server validation.
 4. Parry deflect + Medium/Heavy classes + improvised melee from chunks.
 5. Shared `Explosion` function + Pipe Grenade + Breaching Charge.
 6. `Breachable` points with tiers and noise events.
-7. Dematerialization reset hook.
+7. Dematerialization: its design note, the hourly cycle, then the reset hook.
 8. Performance budgets and stress test.
-9. War world: structure stages, terrain craters, body persistence, sector rebuild (when the war world exists).
+9. War world: structure stages, terrain craters, body persistence, sector rebuild (unblocked: the war exists; sectors = hill points).
 10. `GoreLevel` content pass.
+
+## 13. Reconciled with the current build (2026-10-26, 17:30)
+
+The first draft was written against the pre-Phase-3 game. Changes, all compatible with the owner's decisions in §3:
+
+| Was | Now | Why |
+|---|---|---|
+| Grab on `F` | Grab on **G** (owner's pick) | F is block / parry; G leaves the special on MMB only |
+| "Arc pistol moves from unlimited to cell-fed" | Arc Cells are the arc weapons' **reserve**: a reload costs a cell | Arc weapons already have magazines and reloads (gunplay layer) |
+| Damage type replaces combat's type | New `Break` field; combat's `Type` stays the resist class; `Explosive` resist added | Armour resists (`Physical` / `Arc`) keep working unchanged |
+| "War world (not yet built)" | Built; sectors = `Config.War.HillPoints`, "hill leaves" = `moveHill` | The Wardogs war shipped in Phase 3 |
+| Dematerialization assumed | Flagged as unbuilt; needs a design note before story 7 | Nothing in code or briefs defines the hourly cycle yet |
+| — | Breach noise drives NPC barks; `breach` raid step; materials feed Bench / Supply | Ties into what Phase 3 built |
+| `docs/systems/destruction-and-salvage.md` | `design/gdd/destruction.md` + epic + systems-index rows 52–53 | The project's GDD / epic layout |
+
+**Open for the owner:** Arc Cells in the war or not (§4.4a); the dematerialization note (§4.8).
