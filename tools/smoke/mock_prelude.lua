@@ -341,6 +341,7 @@ local mockEnv = {
 	game = game_, workspace = workspace_, Instance = Instance, Vector3 = V3, CFrame = CF, Color3 = Color3, UDim = UDim, UDim2 = UDim2,
 	Vector2 = Vector2, Enum = Enum, task = task_,
 	TweenInfo = { new = function() return {} end }, OverlapParams = { new = function() return {} end }, RaycastParams = { new = function() return {} end },
+	PhysicalProperties = { new = function() return {} end },
 	Random = { new = function() local r = {}; function r:NextNumber(a, b) return (a or 0) + math.random() * ((b or 1) - (a or 0)) end; function r:NextInteger(a, b) return math.random(a, b) end return r end },
 	typeof = function(v)
 		if type(v) == "table" then

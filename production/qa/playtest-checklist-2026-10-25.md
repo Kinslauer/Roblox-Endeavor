@@ -51,3 +51,12 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] Lore lines (italic, lavender) at: creator, wake-up, first swing, flicker step, first kill, first Rift.
 - [ ] Rift in Relay Plaza → the Range: rifle sights, targets fall and score, Wave Console, Rift back. Melee refused inside.
 - [ ] Spear thrust / slash, hammer swipe / slam, torso lean: do hits read now?
+
+## 8. Round 3 — District 2 + Drone, added 2026-10-26
+- [ ] From Relay Plaza walk the street just north of the plaza east: a magenta arch in the wall with "→ District 2". The gate street has lamps and kerbs; nothing blocks it.
+- [ ] District 2 (Ferrite Court): rust/brown buildings, orange-red neon, warm lamps, more rubble. Does it read as a different place at a glance?
+- [ ] Its plaza shows "SAFE ZONE · Ferrite Court" and refuses damage like Relay Plaza.
+- [ ] Ambushes in D2 are bigger (3–5) with more Brutes. Fair, or too much?
+- [ ] Spawn test: die in the city (permadeath wipe) → you wake in District 1. Rejoin alive → District 2.
+- [ ] Range: Wave Console, wave 2 → 2 Gunners + 2 Drones. Drones hover ~9 studs up and circle you, flipping direction; their eye glows red before a shot. Can you hit them with the rifle? Does a hit visibly knock them off their line?
+- [ ] Drone spoils land on the ground under where it died.

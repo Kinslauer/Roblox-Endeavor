@@ -117,9 +117,27 @@ function WorldPhase.IsOpen()
 	return phase == Config.Phases.Open
 end
 
+-- CitySpawn pads carry SpawnFor = "Fresh" | "Awakened" (District 1 / District 2). A player who has
+-- already Awakened (returning, or respawning after a city death) wakes in District 2; a fresh
+-- profile - a new player, or anyone after a permadeath wipe - wakes in District 1. Pads without the
+-- attribute (the dev arena's) are always eligible.
+local function eligibleSpawns(player)
+	local all = CollectionService:GetTagged("CitySpawn")
+	local profile = PlayerData.Get(player)
+	local want = if profile and profile.Awakened then "Awakened" else "Fresh"
+	local picked = {}
+	for _, pad in all do
+		local for_ = pad:GetAttribute("SpawnFor")
+		if for_ == nil or for_ == want then
+			table.insert(picked, pad)
+		end
+	end
+	return if #picked > 0 then picked else all
+end
+
 function WorldPhase.GetSpawnCFrame(player)
 	if phase == Config.Phases.Open then
-		local spawns = CollectionService:GetTagged("CitySpawn")
+		local spawns = eligibleSpawns(player)
 		if #spawns > 0 then
 			return spawns[rng:NextInteger(1, #spawns)].CFrame + Vector3.new(0, 4, 0)
 		end
@@ -144,11 +162,11 @@ function WorldPhase.Emerge()
 	workspace:SetAttribute("Phase", phase)
 	for _, player in Players:GetPlayers() do
 		local profile, char = PlayerData.Get(player), player.Character
+		if char then
+			char:PivotTo(WorldPhase.GetSpawnCFrame(player)) -- before Awakened flips: emergers wake in District 1
+		end
 		if profile then
 			profile.Awakened = true
-		end
-		if char then
-			char:PivotTo(WorldPhase.GetSpawnCFrame(player))
 		end
 		WorldPhase.ReleasePlot(player)
 	end

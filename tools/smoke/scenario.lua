@@ -189,10 +189,38 @@ do
 	local District = M.mockEnv.__require(RS.Shared.District)
 	local DistrictServer = M.mockEnv.__require(SSS.Server.District)
 	local CS = game_:GetService("CollectionService")
-	check("district built with its spawn pads", workspace_:FindFirstChild("District") ~= nil and DistrictServer.Built and DistrictServer.Built.Spawns == District.Spawns.Count)
-	check("arena pads are not CitySpawns in default dev config", #CS:GetTagged("CitySpawn") == District.Spawns.Count)
-	check("safe zone marker tagged with its radius", #CS:GetTagged("SafeZone") == 1 and CS:GetTagged("SafeZone")[1]:GetAttribute("Radius") == District.SafeZone.Radius)
+	local nd = #District.Districts
+	check("districts built with their spawn pads", workspace_:FindFirstChild("District") ~= nil and DistrictServer.Built and DistrictServer.Built.Spawns == District.Spawns.Count and DistrictServer.Built.Districts == 2)
+	check("arena pads are not CitySpawns in default dev config", #CS:GetTagged("CitySpawn") == District.Spawns.Count * nd)
+	check("one safe zone marker per district, tagged with its radius", #CS:GetTagged("SafeZone") == nd and CS:GetTagged("SafeZone")[1]:GetAttribute("Radius") == District.SafeZone.Radius)
 	check("plaza centre is inside, a street pad is outside", District.InSafeZone(M.V3.new(0, 5, 0)) and not District.InSafeZone(M.V3.new(120, 5, 0)))
+	-- District 2: its own plaza at the pitch, a gate street joining the two, spawn pads split by Awakened
+	do
+		local d2 = District.Districts[2]
+		local inside, zone = District.InSafeZone(d2.Origin + M.V3.new(0, 5, 0))
+		check("district 2 plaza is a safe zone with its own name", inside and zone:GetAttribute("ZoneName") == d2.Plaza)
+		check("District.At tells the districts apart", District.At(M.V3.new(0, 5, 0)) == 1 and District.At(d2.Origin) == 2 and District.At(M.V3.new(District.Pitch() / 2, 5, 0)) == nil)
+		local gate
+		for _, p in workspace_.District:GetChildren() do
+			if p.Name == "GateStreet" then gate = p end
+		end
+		check("gate street is a PlayableArea slab between the walls", gate ~= nil and CS:HasTag(gate, "PlayableArea") and gate.Position.X > District.Extent() / 2 and gate.Position.X < d2.Origin.X - District.Extent() / 2)
+		local fresh, awakened = 0, 0
+		for _, pad in CS:GetTagged("CitySpawn") do
+			if pad:GetAttribute("SpawnFor") == "Fresh" then fresh += 1 elseif pad:GetAttribute("SpawnFor") == "Awakened" then awakened += 1 end
+		end
+		check("spawn pads split Fresh / Awakened", fresh == District.Spawns.Count and awakened == District.Spawns.Count)
+		local WorldPhase = M.mockEnv.__require(SSS.Server.WorldPhase)
+		local PlayerData = M.mockEnv.__require(SSS.Server.PlayerData)
+		local prof = PlayerData.Get(player)
+		local was = prof.Awakened
+		prof.Awakened = false
+		local freshCF = WorldPhase.GetSpawnCFrame(player)
+		prof.Awakened = true
+		local awakeCF = WorldPhase.GetSpawnCFrame(player)
+		prof.Awakened = was
+		check("fresh profiles spawn in District 1, Awakened ones in District 2", District.At(freshCF.Position) == 1 and District.At(awakeCF.Position) == 2)
+	end
 	-- both inside the plaza: nothing lands
 	local hp = c2.Humanoid.Health
 	c1.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, 0), M.V3.new(0, 5, -4))
@@ -396,8 +424,9 @@ do
 	-- poise: a Grunt shrugs off the first light hit and staggers on the second; a heavy always staggers
 	do
 		local Combat2 = M.mockEnv.__require(SSS.Server.Combat)
+		me.Humanoid.Health = me.Humanoid.MaxHealth -- the earlier grunt had 12 s on us during the Buster cooldown
+		me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(300, 5, 312), M.V3.new(300, 5, 300)) -- outside its 7-stud reach
 		local g2 = NPCs.Spawn("Grunt", M.V3.new(300, 5, 300))
-		me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(300, 5, 304), M.V3.new(300, 5, 300))
 		Combat2.Damage(me, g2, 5, {})
 		local s2 = Combat2.State(g2)
 		local firstStunned = s2.stunned > M.setNow()
@@ -408,6 +437,25 @@ do
 		Combat2.Damage(me, g2, 5, { Staggers = true })
 		check("poise: a heavy (Staggers) always staggers", s2.stunned > M.setNow())
 		g2:Destroy()
+	end
+	-- Drone: a flying body (no Weapon attribute, flight constraints), spawns Hover studs up, shoots
+	-- through Combat.Swing from the air, and its spoils land on the ground
+	do
+		local hp = me.Humanoid.Health
+		local spawnMark = #M.FireLog
+		me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(500, 5, 500), M.V3.new(500, 5, 496))
+		local drone = NPCs.Spawn("Drone", M.V3.new(500, 5, 480))
+		check("drone spawned as a flyer without a weapon", drone ~= nil and drone:GetAttribute("Flying") == true and drone:GetAttribute("Weapon") == nil and drone.HumanoidRootPart:FindFirstChild("FlightPosition") ~= nil)
+		check("drone spawns at hover height", math.abs(drone.HumanoidRootPart.Position.Y - (5 + Enemies.Defs.Drone.Flying.Hover)) < 0.01)
+		local shot = false
+		run(1.2, function()
+			for _, e in eventsSince(spawnMark) do if e[1] == "CombatEvent" and e[3] == "Swing" and e[4] == drone then shot = true return true end end
+			return false
+		end)
+		check("drone fires through Combat.Swing", shot)
+		check("drone steers its flight target toward the orbit, not the player", drone.HumanoidRootPart.FlightPosition.Position ~= nil and (drone.HumanoidRootPart.FlightPosition.Position - me.HumanoidRootPart.Position).Magnitude >= Enemies.Defs.Drone.KeepDistance[1] - 0.01)
+		drone.Humanoid.Health = 0; run(0.5)
+		check("drone body removed on death", not drone.Parent)
 	end
 	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
 	c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, -4), M.V3.new(120, 5, 0))

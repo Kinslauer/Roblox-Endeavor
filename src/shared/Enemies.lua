@@ -52,6 +52,28 @@ Enemies.Defs = {
 		Xp = 50, Loot = "Gunner",
 		Look = look(1, 2, 3, 4, Color3.fromRGB(50, 70, 95)),
 	},
+	-- Phase-2 Range enemy: a flying sentry. Weak, fast, keeps a distance band in the air and strafes
+	-- around you while it fires; its rotors glow with the windup (the swing cue sits on its body).
+	-- Flying enemies use a physics-driven body (NPCs.lua "Flying"), not pathfinding, and have no Weapon
+	-- attribute (the bolt leaves its eye).
+	Drone = {
+		Name = "Sentry Drone", QuestTag = "Drone",
+		Health = 32, Speed = 24, Aggro = 95, Leash = 170, DespawnAfter = 60,
+		Flying = {
+			Hover = 9, -- studs above the target's feet (or home ground when idle)
+			Strafe = 1.1, -- orbit speed around the target, radians per second
+			FlipEvery = { 1.5, 3.5 }, -- seconds between orbit-direction changes (random in range)
+			Bob = 0.5, -- vertical wobble amplitude, studs
+			Responsiveness = 12, -- AlignPosition responsiveness (higher = snappier)
+		},
+		Range = 55, KeepDistance = { 14, 26 },
+		Attack = { Damage = 7, Posture = 2, Windup = 0.45, Active = 0.05, End = 0.8, Range = 55, Arc = 0.3, Ranged = true, Type = "Arc", Stamina = 0 },
+		Label = 1,
+		Recovery = { 0.4, 0.9 },
+		Poise = { Hits = 1, Reset = 2 }, -- every hit knocks it off its line
+		Xp = 40, Loot = "Drone",
+		Look = { Body = Color3.fromRGB(48, 52, 62), Accent = Color3.fromRGB(255, 60, 60), Rotor = Color3.fromRGB(120, 200, 255) },
+	},
 }
 
 -- Ambush composition: weighted pick per slot, at most one Brute per group.
@@ -62,6 +84,11 @@ Enemies.Ambush = {
 	Ring = 55, -- studs from the target player
 	RingShrink = 0.7, -- multiply the ring by this after each failed placement round
 	PlacementTries = 6,
+	-- Per-district overrides (index into District.Districts; NPCs.SpawnAmbush looks the centre up
+	-- with District.At). District 2 is the veterans' half: bigger, heavier groups.
+	ByDistrict = {
+		[2] = { GroupSize = { 3, 5 }, Weights = { Grunt = 40, Gunner = 35, Brute = 25 }, MaxBrutes = 2 },
+	},
 }
 
 -- Pathing / AI cadence

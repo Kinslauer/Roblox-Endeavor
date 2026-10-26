@@ -1,8 +1,10 @@
--- District 1 generator (brief build-order 6): streets, buildings, cover, lamps, a perimeter wall,
--- CitySpawn pads and one safe zone, all from shared/District.lua numbers and a fixed seed. Built
--- once at boot before WorldPhase.Init (so the CitySpawn pads are found) and regardless of
--- Config.Dev — the dev arena is a separate, offset structure (Arena.lua). Everything is anchored
--- parts under workspace.District; nothing needs Studio building.
+-- District generator (brief build-order 6; District 2 = Phase-2 build-order 4): for every entry of
+-- shared District.Districts, streets, buildings, cover, lamps, a perimeter wall, CitySpawn pads and
+-- a plaza safe zone, all from shared/District.lua numbers and that district's seed; then a gate
+-- street joining neighbours through their walls. Built once at boot before WorldPhase.Init (so the
+-- CitySpawn pads are found) and regardless of Config.Dev — the dev arena is a separate, offset
+-- structure (Arena.lua). Everything is anchored parts under workspace.District; nothing needs
+-- Studio building.
 local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,6 +15,7 @@ local District = {}
 
 local folder
 local rng
+local ctx -- the district being built (an entry of D.Districts); falls back to the D.* tables
 
 local function part(props)
 	local p = Instance.new("Part")
@@ -48,29 +51,40 @@ local function lighting()
 	end
 end
 
--- World X/Z of the south-west corner of block (bx, bz), 1-based.
+-- World X/Z of the south-west corner of block (bx, bz), 1-based, in the current district.
 local function blockOrigin(bx, bz)
 	local g = D.Grid
 	local half = D.Extent() / 2
 	local x = -half + g.StreetWidth + (bx - 1) * (g.BlockSize + g.StreetWidth)
 	local z = -half + g.StreetWidth + (bz - 1) * (g.BlockSize + g.StreetWidth)
-	return D.Origin.X + x, D.Origin.Z + z
+	return ctx.Origin.X + x, ctx.Origin.Z + z
 end
 
 local function centerBlock()
 	return math.ceil(D.Grid.Blocks / 2)
 end
 
+-- The collapsed city beyond the walls: one dark apron under every district so the horizon is not void.
+local function outskirts()
+	local extent = D.Extent()
+	local minX, maxX, minZ, maxZ = math.huge, -math.huge, math.huge, -math.huge
+	for _, d in D.Districts do
+		minX, maxX = math.min(minX, d.Origin.X), math.max(maxX, d.Origin.X)
+		minZ, maxZ = math.min(minZ, d.Origin.Z), math.max(maxZ, d.Origin.Z)
+	end
+	local pad = extent * 1.5
+	part({ Name = "Outskirts", Size = Vector3.new(maxX - minX + 2 * pad, 2, maxZ - minZ + 2 * pad),
+		Position = Vector3.new((minX + maxX) / 2, D.GroundTop - 4, (minZ + maxZ) / 2), Color = Color3.fromRGB(22, 22, 26), Material = Enum.Material.Ground })
+end
+
 local function ground()
 	local extent = D.Extent()
 	local top = D.GroundTop
 	-- one street slab under everything (tagged PlayableArea: ambushes and ground checks use it)
-	local street = part({ Name = "Streets", Size = Vector3.new(extent, 4, extent), Position = D.Origin + Vector3.new(0, top - 2, 0),
+	local street = part({ Name = "Streets", Size = Vector3.new(extent, 4, extent), Position = ctx.Origin + Vector3.new(0, top - 2, 0),
 		Color = Color3.fromRGB(44, 44, 50), Material = Enum.Material.Asphalt })
 	CollectionService:AddTag(street, "PlayableArea")
-	-- the collapsed city beyond the wall: a darker apron so the horizon is not void
-	part({ Name = "Outskirts", Size = Vector3.new(extent * 3, 2, extent * 3), Position = D.Origin + Vector3.new(0, top - 4, 0),
-		Color = Color3.fromRGB(22, 22, 26), Material = Enum.Material.Ground })
+	street:SetAttribute("District", ctx.Name)
 	-- kerbs: a raised pavement rim around every block
 	local g = D.Grid
 	local c = centerBlock()
@@ -87,7 +101,7 @@ end
 
 local function building(x, z, w, d, h, top)
 	local B = D.Buildings
-	local body = part({ Name = "Building", Size = Vector3.new(w, h, d), Position = Vector3.new(x, top + h / 2, z), Color = pick(B.Palette), Material = Enum.Material.Concrete })
+	local body = part({ Name = "Building", Size = Vector3.new(w, h, d), Position = Vector3.new(x, top + h / 2, z), Color = pick(ctx.Palette or B.Palette), Material = Enum.Material.Concrete })
 	if rng:NextNumber() < B.WindowChance then
 		-- a lit window band two thirds of the way up, on the long side
 		local y = top + h * rng:NextNumber(0.45, 0.8)
@@ -96,7 +110,7 @@ local function building(x, z, w, d, h, top)
 	end
 	if rng:NextNumber() < B.NeonChance then
 		-- a vertical neon sign strip on a random face, lit
-		local color = pick(B.Neon)
+		local color = pick(ctx.Neon or B.Neon)
 		local side = rng:NextInteger(0, 3)
 		local len = math.min(h * 0.6, 24)
 		local y = top + h - len / 2 - 2
@@ -124,12 +138,13 @@ local function blocks()
 	local g, B = D.Grid, D.Buildings
 	local c = centerBlock()
 	local top = D.GroundTop + 0.5
+	local rubbleChance = ctx.RubbleChance or B.RubbleChance
 	for bx = 1, g.Blocks do
 		for bz = 1, g.Blocks do
 			if not (bx == c and bz == c) then
 				local ox, oz = blockOrigin(bx, bz)
 				local inner = g.BlockSize - 2 * B.Inset
-				if rng:NextNumber() < B.RubbleChance then
+				if rng:NextNumber() < rubbleChance then
 					rubble(ox + g.BlockSize / 2, oz + g.BlockSize / 2, inner, inner, top)
 				else
 					-- split the block into a 2x2 of lots and fill PerBlock of them
@@ -175,8 +190,8 @@ local function cover()
 					else
 						x, z = streetCenter + side, along + shift
 					end
-					local pos = D.Origin + Vector3.new(x, top + kind.Size.Y / 2, z)
-					if not D.InSafeZone(pos) or (pos - D.Origin).Magnitude > D.SafeZone.Radius - 6 then
+					local pos = ctx.Origin + Vector3.new(x, top + kind.Size.Y / 2, z)
+					if (pos - ctx.Origin).Magnitude > D.SafeZone.Radius - 6 then
 						local yaw = if horizontal then 0 else math.pi / 2
 						part({ Name = kind.Name, Size = kind.Size, CFrame = CFrame.new(pos) * CFrame.Angles(0, yaw + rng:NextNumber(-0.2, 0.2), 0), Color = kind.Color, Material = kind.Material })
 					end
@@ -186,21 +201,27 @@ local function cover()
 	end
 end
 
+local function lamp(pos, color)
+	local L = D.Lamps
+	local top = D.GroundTop
+	local post = part({ Name = "Lamp", Size = Vector3.new(0.6, L.Height, 0.6), Position = pos + Vector3.new(0, top + L.Height / 2, 0), Color = Color3.fromRGB(40, 40, 44), Material = Enum.Material.Metal })
+	local head = part({ Name = "LampHead", Size = Vector3.new(1.4, 0.6, 1.4), Position = pos + Vector3.new(0, top + L.Height + 0.3, 0), Color = color, Material = Enum.Material.Neon, CanCollide = false })
+	glow(head, color, L.Range, L.Brightness)
+	return post
+end
+
 local function lamps()
 	local g, L = D.Grid, D.Lamps
-	local top = D.GroundTop
 	local half = D.Extent() / 2
+	local color = ctx.LampColor or L.Color
 	for i = 0, g.Blocks do
 		local line = -half + g.StreetWidth / 2 + i * (g.BlockSize + g.StreetWidth)
 		local s = -half + g.StreetWidth / 2
 		while s < half do
 			for _, p in { Vector3.new(s, 0, line + g.StreetWidth / 2 - 1), Vector3.new(line + g.StreetWidth / 2 - 1, 0, s) } do
-				local pos = D.Origin + p
-				if (pos - D.Origin).Magnitude > D.SafeZone.Radius then
-					local post = part({ Name = "Lamp", Size = Vector3.new(0.6, L.Height, 0.6), Position = pos + Vector3.new(0, top + L.Height / 2, 0), Color = Color3.fromRGB(40, 40, 44), Material = Enum.Material.Metal })
-					local head = part({ Size = Vector3.new(1.4, 0.6, 1.4), Position = pos + Vector3.new(0, top + L.Height + 0.3, 0), Color = L.Color, Material = Enum.Material.Neon, CanCollide = false })
-					glow(head, L.Color, L.Range, L.Brightness)
-					post.Name = "Lamp"
+				local pos = ctx.Origin + p
+				if (pos - ctx.Origin).Magnitude > D.SafeZone.Radius then
+					lamp(pos, color)
 				end
 			end
 			s += L.Spacing
@@ -208,21 +229,37 @@ local function lamps()
 	end
 end
 
+-- Perimeter wall. A side named in ctx.Gates gets a gap one street wide on the gate's street line.
 local function wall()
-	local W = D.Wall
+	local W, G, g = D.Wall, D.Gate, D.Grid
 	local half = D.Extent() / 2 + W.Margin
 	local top = D.GroundTop
 	local len = half * 2 + W.Thickness
-	for _, def in {
-		{ Vector3.new(0, 0, half), Vector3.new(len, W.Height, W.Thickness) },
-		{ Vector3.new(0, 0, -half), Vector3.new(len, W.Height, W.Thickness) },
-		{ Vector3.new(half, 0, 0), Vector3.new(W.Thickness, W.Height, len) },
-		{ Vector3.new(-half, 0, 0), Vector3.new(W.Thickness, W.Height, len) },
-	} do
-		part({ Name = "PerimeterWall", Size = def[2], Position = D.Origin + def[1] + Vector3.new(0, top + W.Height / 2, 0), Color = Color3.fromRGB(30, 30, 34), Material = Enum.Material.Concrete })
-		local strip = part({ Size = Vector3.new(if def[2].X > def[2].Z then len else 0.4, 0.5, if def[2].X > def[2].Z then 0.4 else len),
-			Position = D.Origin + def[1] * ((half - 0.4) / half) + Vector3.new(0, top + W.Height - 2, 0), Color = Color3.fromRGB(255, 50, 160), Material = Enum.Material.Neon, CanCollide = false })
-		strip.Name = "WallStrip"
+	local gap = g.StreetWidth + 2
+	local gateZ = D.StreetLine(G.Line)
+	local sides = {
+		{ Name = "North", Center = Vector3.new(0, 0, half), Along = "X" },
+		{ Name = "South", Center = Vector3.new(0, 0, -half), Along = "X" },
+		{ Name = "East", Center = Vector3.new(half, 0, 0), Along = "Z" },
+		{ Name = "West", Center = Vector3.new(-half, 0, 0), Along = "Z" },
+	}
+	for _, side in sides do
+		local pieces
+		if ctx.Gates and ctx.Gates[side.Name] and side.Along == "Z" then
+			-- two pieces either side of the gap (the gap is centred on gateZ)
+			local lo, hi = -half - W.Thickness / 2, gateZ - gap / 2
+			pieces = { { (lo + hi) / 2, hi - lo }, { (gateZ + gap / 2 + half + W.Thickness / 2) / 2, half + W.Thickness / 2 - (gateZ + gap / 2) } }
+		else
+			pieces = { { 0, len } }
+		end
+		for _, piece in pieces do
+			local size = if side.Along == "X" then Vector3.new(piece[2], W.Height, W.Thickness) else Vector3.new(W.Thickness, W.Height, piece[2])
+			local center = if side.Along == "X" then side.Center + Vector3.new(piece[1], 0, 0) else side.Center + Vector3.new(0, 0, piece[1])
+			part({ Name = "PerimeterWall", Size = size, Position = ctx.Origin + center + Vector3.new(0, top + W.Height / 2, 0), Color = Color3.fromRGB(30, 30, 34), Material = Enum.Material.Concrete })
+			local strip = part({ Name = "WallStrip", Size = if side.Along == "X" then Vector3.new(piece[2], 0.5, 0.4) else Vector3.new(0.4, 0.5, piece[2]),
+				Position = ctx.Origin + center * ((half - 0.4) / half) + Vector3.new(0, top + W.Height - 2, 0), Color = Color3.fromRGB(255, 50, 160), Material = Enum.Material.Neon, CanCollide = false })
+			strip.Name = "WallStrip"
+		end
 	end
 end
 
@@ -232,35 +269,36 @@ local function safeZone()
 	local top = D.GroundTop
 	local c = centerBlock()
 	local ox, oz = blockOrigin(c, c)
+	local ringColor = ctx.RingColor or S.RingColor
 	-- plaza floor: NOT tagged PlayableArea, so ambushes never land here
-	local floor = part({ Name = "Plaza", Size = Vector3.new(g.BlockSize, 0.5, g.BlockSize), Position = Vector3.new(ox + g.BlockSize / 2, top + 0.25, oz + g.BlockSize / 2), Color = S.FloorColor, Material = Enum.Material.Slate })
+	part({ Name = "Plaza", Size = Vector3.new(g.BlockSize, 0.5, g.BlockSize), Position = Vector3.new(ox + g.BlockSize / 2, top + 0.25, oz + g.BlockSize / 2), Color = ctx.FloorColor or S.FloorColor, Material = Enum.Material.Slate })
 	-- the zone marker: an invisible anchor carrying the tag + Radius; Combat/NPCs read it
-	local zone = part({ Name = "SafeZone", Size = Vector3.new(1, 1, 1), Position = D.Origin + Vector3.new(0, top + 0.5, 0), Transparency = 1, CanCollide = false, CanQuery = false })
+	local zone = part({ Name = "SafeZone", Size = Vector3.new(1, 1, 1), Position = ctx.Origin + Vector3.new(0, top + 0.5, 0), Transparency = 1, CanCollide = false, CanQuery = false })
 	zone:SetAttribute("Radius", S.Radius)
-	zone:SetAttribute("ZoneName", S.Name)
+	zone:SetAttribute("ZoneName", ctx.Plaza or S.Name)
+	zone:SetAttribute("District", ctx.Name)
 	CollectionService:AddTag(zone, "SafeZone")
 	-- neon ring on the ground at the boundary so players can see where safety ends
 	local segments = 48
 	for i = 1, segments do
 		local a = (i / segments) * math.pi * 2
-		local p = D.Origin + Vector3.new(math.cos(a) * S.Radius, top + 0.6, math.sin(a) * S.Radius)
-		part({ Name = "SafeRing", Size = Vector3.new(2 * math.pi * S.Radius / segments + 0.3, 0.15, 0.8), Material = Enum.Material.Neon, Color = S.RingColor, CanCollide = false,
-			CFrame = CFrame.lookAt(p, Vector3.new(D.Origin.X, p.Y, D.Origin.Z)) })
+		local p = ctx.Origin + Vector3.new(math.cos(a) * S.Radius, top + 0.6, math.sin(a) * S.Radius)
+		part({ Name = "SafeRing", Size = Vector3.new(2 * math.pi * S.Radius / segments + 0.3, 0.15, 0.8), Material = Enum.Material.Neon, Color = ringColor, CanCollide = false,
+			CFrame = CFrame.lookAt(p, Vector3.new(ctx.Origin.X, p.Y, ctx.Origin.Z)) })
 	end
 	-- beacon pylon
 	local B = S.Beacon
-	local pylon = part({ Name = "Beacon", Shape = Enum.PartType.Cylinder, Size = Vector3.new(B.Height, B.Radius * 2, B.Radius * 2),
-		CFrame = CFrame.new(D.Origin + Vector3.new(0, top + B.Height / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2), Color = Color3.fromRGB(40, 44, 54), Material = Enum.Material.Metal })
+	part({ Name = "Beacon", Shape = Enum.PartType.Cylinder, Size = Vector3.new(B.Height, B.Radius * 2, B.Radius * 2),
+		CFrame = CFrame.new(ctx.Origin + Vector3.new(0, top + B.Height / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2), Color = Color3.fromRGB(40, 44, 54), Material = Enum.Material.Metal })
 	local core = part({ Name = "BeaconCore", Shape = Enum.PartType.Cylinder, Size = Vector3.new(B.Height + 2, B.Radius * 0.6, B.Radius * 0.6),
-		CFrame = CFrame.new(D.Origin + Vector3.new(0, top + B.Height / 2 + 1, 0)) * CFrame.Angles(0, 0, math.pi / 2), Color = S.RingColor, Material = Enum.Material.Neon, CanCollide = false })
-	glow(core, S.RingColor, 60, 2)
+		CFrame = CFrame.new(ctx.Origin + Vector3.new(0, top + B.Height / 2 + 1, 0)) * CFrame.Angles(0, 0, math.pi / 2), Color = ringColor, Material = Enum.Material.Neon, CanCollide = false })
+	glow(core, ringColor, 60, 2)
 	-- benches / planters as plaza cover (you can still be seen, not hit)
 	for i = 1, 4 do
 		local a = (i / 4) * math.pi * 2 + math.pi / 4
-		local p = D.Origin + Vector3.new(math.cos(a) * 18, top + 1.5, math.sin(a) * 18)
-		part({ Name = "Planter", Size = Vector3.new(8, 2, 3), CFrame = CFrame.lookAt(p, Vector3.new(D.Origin.X, p.Y, D.Origin.Z)), Color = Color3.fromRGB(60, 80, 70), Material = Enum.Material.Concrete })
+		local p = ctx.Origin + Vector3.new(math.cos(a) * 18, top + 1.5, math.sin(a) * 18)
+		part({ Name = "Planter", Size = Vector3.new(8, 2, 3), CFrame = CFrame.lookAt(p, Vector3.new(ctx.Origin.X, p.Y, ctx.Origin.Z)), Color = Color3.fromRGB(60, 80, 70), Material = Enum.Material.Concrete })
 	end
-	floor.Name = "Plaza"
 	return zone
 end
 
@@ -277,11 +315,13 @@ local function spawns()
 		local line = -half + g.StreetWidth / 2 + i * (g.BlockSize + g.StreetWidth)
 		local along = rng:NextNumber(-half + 10, half - 10)
 		local p = if rng:NextNumber() < 0.5 then Vector3.new(along, 0, line) else Vector3.new(line, 0, along)
-		local pos = D.Origin + p
-		local fromPlaza = (pos - D.Origin).Magnitude
+		local pos = ctx.Origin + p
+		local fromPlaza = (pos - ctx.Origin).Magnitude
 		if fromPlaza >= S.MinFromSafeZone and fromPlaza <= S.MaxFromSafeZone then
 			local pad = part({ Name = "SpawnPad", Size = Vector3.new(8, 0.4, 8), Position = pos + Vector3.new(0, top + 0.2, 0),
-				Material = Enum.Material.Neon, Color = Color3.fromRGB(0, 220, 255), Transparency = 0.5, CanCollide = false })
+				Material = Enum.Material.Neon, Color = ctx.RingColor or Color3.fromRGB(0, 220, 255), Transparency = 0.5, CanCollide = false })
+			pad:SetAttribute("SpawnFor", ctx.SpawnFor)
+			pad:SetAttribute("District", ctx.Name)
 			CollectionService:AddTag(pad, "CitySpawn")
 			placed += 1
 		end
@@ -289,23 +329,77 @@ local function spawns()
 	return placed
 end
 
-function District.Init()
-	if workspace:FindFirstChild("District") then
-		return
+-- The gate street from district a (east wall) to district b (west wall): a PlayableArea slab
+-- between the two street edges, lamps, and a neon arch in each wall gap.
+local function gate(a, b)
+	local G, W, g = D.Gate, D.Wall, D.Grid
+	local top = D.GroundTop
+	local half = D.Extent() / 2
+	local z = a.Origin.Z + D.StreetLine(G.Line)
+	local x0, x1 = a.Origin.X + half, b.Origin.X - half -- street edges
+	local slab = part({ Name = "GateStreet", Size = Vector3.new(x1 - x0, 4, g.StreetWidth), Position = Vector3.new((x0 + x1) / 2, top - 2, z), Color = Color3.fromRGB(44, 44, 50), Material = Enum.Material.Asphalt })
+	CollectionService:AddTag(slab, "PlayableArea")
+	slab:SetAttribute("Gate", true)
+	-- kerbs so the corridor reads as a street, not a floor
+	for _, dz in { -g.StreetWidth / 2 - 1.5, g.StreetWidth / 2 + 1.5 } do
+		part({ Name = "GateKerb", Size = Vector3.new(x1 - x0, 1, 3), Position = Vector3.new((x0 + x1) / 2, top + 0.5, z + dz), Color = Color3.fromRGB(70, 70, 76), Material = Enum.Material.Concrete })
 	end
-	rng = Random.new(D.Seed)
-	folder = Instance.new("Folder")
-	folder.Name = "District"
-	folder.Parent = workspace
-	lighting()
+	-- lamps down both kerbs
+	local x = x0 + 10
+	while x < x1 - 5 do
+		for _, dz in { -g.StreetWidth / 2 - 1.5, g.StreetWidth / 2 + 1.5 } do
+			lamp(Vector3.new(x, 0, z + dz), D.Lamps.Color)
+		end
+		x += D.Lamps.Spacing
+	end
+	-- arches in the two wall gaps
+	for _, wx in { a.Origin.X + half + W.Margin, b.Origin.X - half - W.Margin } do
+		for _, dz in { -(g.StreetWidth + 2) / 2 - 1, (g.StreetWidth + 2) / 2 + 1 } do
+			part({ Name = "GatePillar", Size = Vector3.new(W.Thickness + 1, G.Arch.Height, 2), Position = Vector3.new(wx, top + G.Arch.Height / 2, z + dz), Color = Color3.fromRGB(40, 44, 54), Material = Enum.Material.Metal })
+		end
+		local beam = part({ Name = "GateBeam", Size = Vector3.new(W.Thickness + 1, 1.5, g.StreetWidth + 6), Position = Vector3.new(wx, top + G.Arch.Height + 0.75, z), Color = G.Arch.Color, Material = Enum.Material.Neon, CanCollide = false })
+		glow(beam, G.Arch.Color, 40, 1.5)
+		local label = Instance.new("BillboardGui")
+		label.Size, label.StudsOffset, label.AlwaysOnTop, label.MaxDistance = UDim2.fromOffset(260, 40), Vector3.new(0, 3, 0), true, 140
+		local text = Instance.new("TextLabel")
+		text.Size, text.BackgroundTransparency = UDim2.fromScale(1, 1), 1
+		text.Text = if wx < (a.Origin.X + b.Origin.X) / 2 then ("→ %s"):format(b.Name) else ("%s ←"):format(a.Name)
+		text.TextColor3, text.Font, text.TextScaled = G.Arch.Color, Enum.Font.GothamBold, true
+		text.Parent = label
+		label.Parent = beam
+	end
+end
+
+local function build(def)
+	ctx = def
+	rng = Random.new(def.Seed)
 	ground()
 	blocks()
 	cover()
 	lamps()
 	wall()
 	safeZone()
-	local n = spawns()
-	District.Built = { Spawns = n, Parts = #folder:GetChildren() }
+	return spawns()
+end
+
+function District.Init()
+	if workspace:FindFirstChild("District") then
+		return
+	end
+	folder = Instance.new("Folder")
+	folder.Name = "District"
+	folder.Parent = workspace
+	lighting()
+	outskirts()
+	local spawnsByDistrict = {}
+	for _, def in D.Districts do
+		spawnsByDistrict[def.Name] = build(def)
+	end
+	for i = 1, #D.Districts - 1 do
+		gate(D.Districts[i], D.Districts[i + 1])
+	end
+	ctx = nil
+	District.Built = { Spawns = spawnsByDistrict[D.Districts[1].Name], SpawnsByDistrict = spawnsByDistrict, Districts = #D.Districts, Parts = #folder:GetChildren() }
 	-- the legacy placeholder slab is never needed once a district exists
 	local placeholder = workspace:FindFirstChild("PlaceholderCity")
 	if placeholder then

@@ -190,11 +190,20 @@ Reach and frame data mirror an existing weapon so the player's spacing knowledge
 | **Grunt** | baseline melee | Pipe Club step 3 | 70 | 13 | 12 / 8 / **0.6** / 0.16 / 0.9 / 7 | Knockback 25. Replaces the Raider 1:1 in ambushes and the `raider_cull` quest (keep `Target = "Raider"` or rename the quest). |
 | **Brute** | hyperarmored heavy | Sledge heavy | 160 | 11 | 30 / 24 / **0.9** / 0.20 / 1.6 / 9 | `Hyperarmor = true` on the swing; `MaxPosture` attribute 140. Teaches "dodge, don't trade"; its 0.20 s active still fits the dodge constraint. |
 | **Gunner** | ranged pressure | Arc Pistol | 55 | 14 | 10 / 3 / **0.5** / 0.05 / 1.4 / 60 | `Ranged = true`, `Type = "Arc"`; keeps 20-30 studs distance, fires on line of sight only. Windup 0.5 so the bolt is parryable by facing it; Arc armor matters. |
+| **Drone** (Phase 2, the Range) | flying harasser | Arc Pistol, lighter | 32 | 24 | 7 / 2 / **0.45** / 0.05 / 0.8 / 55 | `Flying = { Hover 9, Strafe 1.1 rad/s, FlipEvery 1.5-3.5 s, Bob 0.5 }`; keeps 14-26 studs, orbits the target in the air and flips direction on a timer; fires along its pitched body look with LOS. A machine body (one root flown by AlignPosition/AlignOrientation, neon eye `Head`, four rotor rings), no Weapon attribute — the swing cue is a body pulse. Poise 1: every hit knocks it off its line (knockback moves it; the constraints bring it back). Spoils land on the ground under it. |
 
-Loot: Grunt keeps the `Raider` table; Brute adds Sledge 5 % and Plated pieces 6 %; Gunner adds Wire ×2-4 and Arc Pistol 6 %. XP: Grunt 35, Brute 90, Gunner 50. All tuning.
+Loot: Grunt keeps the `Raider` table; Brute adds Sledge 5 % and Plated pieces 6 %; Gunner adds Wire ×2-4 and Arc Pistol 6 %; Drone drops Wire ×2-5, Scrap and a rare optic (`Drone` table). XP: Grunt 35, Brute 90, Gunner 50, Drone 40. All tuning.
+
+### Flying enemies (implemented 2026-10-26)
+`Enemies.Defs[*].Flying` switches `NPCs.Spawn` to `buildDroneRig` + the flight branch of the AI: no pathfinding, the AI
+steers an `AlignPosition` target (orbit point at `Hover` above the target's feet, radius clamped into `KeepDistance`) and an
+`AlignOrientation` CFrame (look at the target, pitch included, so `Combat.Swing`'s ranged pulse leaves along the body's look).
+While stunned or mid-swing the flight target is pinned to the current position, so hit-stun reads as "knocked off its line".
+Idle: hover over home. Everything else — poise, `Combat.Swing`, loot, kill credit, lore — is shared with the walkers.
 
 ### Ambush composition (proposed)
 Weighted pick per slot: Grunt 60 %, Gunner 25 %, Brute 15 %; at most one Brute per ambush; group size still 2-4. Announce stays per-player.
+Per district (`Enemies.Ambush.ByDistrict`, keyed by `District.At(center)`): District 2 = groups of 3-5, Grunt 40 / Gunner 35 / Brute 25 %, up to two Brutes.
 
 ### Acceptance Criteria (Enemy v2 — proposed)
 1. Every enemy attack goes through `Combat.Swing` and emits `Swing` before any damage; a `Hit`/`GuardBreak`/`Parry` can only follow ≥ `Windup` seconds later.

@@ -83,6 +83,74 @@ local function buildEnemyRig(typeName, def)
 	return model, hum, model.HumanoidRootPart
 end
 
+-- Flying enemy body (Enemies.Defs[*].Flying): a machine, not a person. One root part flown by an
+-- AlignPosition / AlignOrientation pair (so knockback, Snatch and hit-stun still move it and it
+-- recovers on its own), a neon "eye" named Head (the client's bolt leaves the Head or root), four
+-- rotor rings. No Weapon attribute: nothing to put in a hand. Humanoid for health/targeting only.
+local function buildDroneRig(typeName, def)
+	local L, F = def.Look, def.Flying
+	local model = Instance.new("Model")
+	model.Name = def.Name or typeName
+	local root = Instance.new("Part")
+	root.Name, root.Size, root.Color, root.Material = "HumanoidRootPart", Vector3.new(2.4, 1.2, 2.4), L.Body, Enum.Material.Metal
+	root.CustomPhysicalProperties = PhysicalProperties.new(1, 0.3, 0.3) -- light, so the flight constraints are not fighting a block of steel
+	root.Parent = model
+	local function attach(p, offset)
+		p.CFrame = root.CFrame * offset
+		p.CanCollide, p.Massless = false, true
+		local w = Instance.new("WeldConstraint")
+		w.Part0, w.Part1 = root, p
+		w.Parent = p
+		p.Parent = model
+		return p
+	end
+	local eye = Instance.new("Part")
+	eye.Name, eye.Shape, eye.Size, eye.Color, eye.Material = "Head", Enum.PartType.Ball, Vector3.new(0.9, 0.9, 0.9), L.Accent, Enum.Material.Neon
+	attach(eye, CFrame.new(0, -0.2, -1.1))
+	local light = Instance.new("PointLight")
+	light.Color, light.Range, light.Brightness = L.Accent, 10, 1.5
+	light.Parent = eye
+	for _, off in { Vector3.new(1.5, 0.4, 1.5), Vector3.new(-1.5, 0.4, 1.5), Vector3.new(1.5, 0.4, -1.5), Vector3.new(-1.5, 0.4, -1.5) } do
+		local strut = Instance.new("Part")
+		strut.Name, strut.Size, strut.Color, strut.Material = "Strut", Vector3.new(0.3, 0.3, off.Magnitude), L.Body, Enum.Material.Metal
+		attach(strut, CFrame.lookAt(Vector3.zero, off) * CFrame.new(0, 0, -off.Magnitude / 2))
+		local rotor = Instance.new("Part")
+		rotor.Name, rotor.Shape, rotor.Size, rotor.Color, rotor.Material, rotor.Transparency = "Rotor", Enum.PartType.Cylinder, Vector3.new(0.15, 1.7, 1.7), L.Rotor, Enum.Material.Neon, 0.35
+		attach(rotor, CFrame.new(off) * CFrame.Angles(0, 0, math.rad(90)))
+	end
+	local hum = Instance.new("Humanoid")
+	hum.MaxHealth, hum.Health = def.Health, def.Health
+	hum.DisplayName = def.Name or typeName
+	hum.HealthDisplayDistance = 60
+	hum.PlatformStand = true -- the constraints fly the body; the Humanoid is health + a target
+	hum.Parent = model
+	model.PrimaryPart = root
+	model:SetAttribute("EnemyType", typeName)
+	model:SetAttribute("Flying", true)
+	if def.Poise then
+		model:SetAttribute("PoiseHits", def.Poise.Hits)
+		model:SetAttribute("PoiseReset", def.Poise.Reset)
+	end
+	-- flight: the AI moves the AlignPosition target; the body follows at Speed, fighting gravity itself
+	local att = Instance.new("Attachment")
+	att.Name = "Flight"
+	att.Parent = root
+	local ap = Instance.new("AlignPosition")
+	ap.Name = "FlightPosition"
+	ap.Mode, ap.Attachment0 = Enum.PositionAlignmentMode.OneAttachment, att
+	ap.MaxForce, ap.MaxVelocity, ap.Responsiveness = 50000, def.Speed, F.Responsiveness
+	ap.Position = root.Position
+	ap.Parent = root
+	local ao = Instance.new("AlignOrientation")
+	ao.Name = "FlightOrientation"
+	ao.Mode, ao.Attachment0 = Enum.OrientationAlignmentMode.OneAttachment, att
+	ao.MaxTorque, ao.Responsiveness = 50000, 25
+	ao.CFrame = root.CFrame
+	ao.Parent = root
+	CollectionService:AddTag(model, NPCs.Tag)
+	return model, hum, root
+end
+
 -- ===== Locomotion animation (server-side; enemies have no Animate script) =====
 
 local function loadLocomotion(hum)
@@ -211,7 +279,17 @@ local function onDeath(model, root, typeName, def)
 		Quests.Progress(killer, "kill", def.QuestTag or typeName, 1)
 		Quests.Progress(killer, "kill", typeName, 1)
 	end
-	Loot.Spawn(root.CFrame, Items.Roll(def.Loot), { Label = (def.Name or typeName) .. " spoils", Lifetime = 120 })
+	local at = root.CFrame
+	if def.Flying then -- a drone dies in the air: its spoils land under it
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { model }
+		local hit = workspace:Raycast(root.Position, Vector3.new(0, -80, 0), params)
+		if hit then
+			at = CFrame.new(hit.Position + Vector3.new(0, 2, 0))
+		end
+	end
+	Loot.Spawn(at, Items.Roll(def.Loot), { Label = (def.Name or typeName) .. " spoils", Lifetime = 120 })
 	task.wait(0.2)
 	model:Destroy()
 end
@@ -226,7 +304,14 @@ function NPCs.Spawn(typeName, position, opts)
 		return nil
 	end
 	opts = opts or {}
-	local model, hum, root = buildEnemyRig(typeName, def)
+	local F = def.Flying
+	local model, hum, root
+	if F then
+		model, hum, root = buildDroneRig(typeName, def)
+		position += Vector3.new(0, F.Hover, 0) -- flyers spawn in the air
+	else
+		model, hum, root = buildEnemyRig(typeName, def)
+	end
 	model:PivotTo(CFrame.new(position))
 	model.Parent = workspace
 	root:SetNetworkOwner(nil) -- server drives this body
@@ -242,9 +327,27 @@ function NPCs.Spawn(typeName, position, opts)
 	local idleSince = os.clock()
 	local state = "Idle"
 
+	-- Flight (def.Flying): the AI steers the AlignPosition / AlignOrientation targets; physics does
+	-- the rest. Orbit direction flips on a timer so the strafe is not a fixed circle.
+	local flight = F and { ap = root:FindFirstChild("FlightPosition"), ao = root:FindFirstChild("FlightOrientation"), dir = 1, flipAt = 0 }
+	local function flyTo(pos)
+		if flight and flight.ap then
+			flight.ap.Position = pos
+		end
+	end
+	local function faceAt(pos)
+		if flight and flight.ao then
+			flight.ao.CFrame = CFrame.lookAt(root.Position, pos)
+		end
+	end
+
 	local function attack(target)
 		local troot = target.HumanoidRootPart
-		model:PivotTo(flatLook(root, troot.Position))
+		if F then
+			faceAt(troot.Position) -- the body pitches at the target; Combat.Swing fires along its look
+		else
+			model:PivotTo(flatLook(root, troot.Position))
+		end
 		Combat.Swing(model, def.Attack, { label = def.Label })
 		local rec = def.Recovery
 		nextAttackAt = os.clock() + def.Attack.End + rng:NextNumber(rec[1], rec[2])
@@ -259,6 +362,9 @@ function NPCs.Spawn(typeName, position, opts)
 			if stunnedOrBusy then
 				nav.stop() -- a stunned or swinging enemy stands still (swings are cancelled by Combat on stun)
 				setMoving(false)
+				if F then
+					flyTo(root.Position) -- a hit knocks it off its line; it holds wherever it ends up
+				end
 			else
 				local target, dist = nearestTarget(root, def.Aggro)
 				local fromHome = (root.Position - home).Magnitude
@@ -270,7 +376,25 @@ function NPCs.Spawn(typeName, position, opts)
 					idleSince = now
 					local troot = target.HumanoidRootPart
 					local canAttack = now >= nextAttackAt and Combat.CanAct(model)
-					if def.KeepDistance then
+					if F then
+						-- Drone: orbit the target inside the KeepDistance band at Hover height, fire with LOS.
+						if now > flight.flipAt then
+							flight.dir = -flight.dir
+							flight.flipAt = now + rng:NextNumber(F.FlipEvery[1], F.FlipEvery[2])
+						end
+						local rel = (root.Position - troot.Position) * Vector3.new(1, 0, 1)
+						local flat = rel.Magnitude
+						local a = (if flat > 0.1 then math.atan2(rel.Z, rel.X) else rng:NextNumber(0, math.pi * 2)) + flight.dir * F.Strafe * AI.Tick * 2
+						local r = math.clamp(flat, def.KeepDistance[1], def.KeepDistance[2])
+						local bob = math.sin(now * 2.2) * F.Bob
+						flyTo(troot.Position + Vector3.new(math.cos(a) * r, F.Hover + bob, math.sin(a) * r))
+						faceAt(troot.Position)
+						state = "Chase"
+						if canAttack and dist <= def.Range and hasLineOfSight(model, root, troot) then
+							state = "Attack"
+							attack(target)
+						end
+					elseif def.KeepDistance then
 						-- Gunner: hold a distance band and only fire with line of sight.
 						local lo, hi = def.KeepDistance[1], def.KeepDistance[2]
 						if dist < lo then
@@ -309,9 +433,18 @@ function NPCs.Spawn(typeName, position, opts)
 						end
 					end
 				else
+					if F then
+						flyTo(home)
+						local level = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+						if level.Magnitude > 0.1 then
+							faceAt(root.Position + level.Unit * 10) -- level off
+						end
+					end
 					if fromHome > 6 then
 						state = "Return"
-						nav.moveTo(home)
+						if not F then
+							nav.moveTo(home)
+						end
 						setMoving(true)
 					else
 						state = "Idle"
@@ -371,6 +504,12 @@ end
 -- that shrinks when a ring has no valid spots. Returns the models spawned.
 function NPCs.SpawnAmbush(center, size)
 	local A = Enemies.Ambush
+	-- district overrides (Enemies.Ambush.ByDistrict) layered over the defaults
+	local index = District.At(center)
+	local over = index and A.ByDistrict and A.ByDistrict[index]
+	if over then
+		A = setmetatable(table.clone(over), { __index = A })
+	end
 	size = size or rng:NextInteger(A.GroupSize[1], A.GroupSize[2])
 	local spawned, brutes = {}, 0
 	local radius = A.Ring

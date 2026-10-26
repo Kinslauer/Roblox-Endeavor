@@ -1,19 +1,23 @@
--- District 1 blockout data (brief build-order 6). The server builds the first district from these
--- numbers at boot (server/District.lua); nothing here is hand-placed. When hand-built districts
--- exist they replace the generator, and only the SafeZone / Spawn helpers below stay in use.
+-- District blockout data (brief build-order 6; District 2 is Phase-2 build-order 4). The server
+-- builds every entry of District.Districts from these numbers at boot (server/District.lua);
+-- nothing here is hand-placed. When hand-built districts exist they replace the generator, and only
+-- the SafeZone / Spawn helpers below stay in use.
 --
--- Layout: a Blocks x Blocks grid of city blocks separated by streets. The centre block is the
--- plaza, and the plaza plus a ring of street around it is the one safe zone: no damage in or out.
--- Street ground is tagged "PlayableArea" (ambush placement, NPC ground checks); the plaza is not,
--- so events never land inside the safe zone. Spawn pads are tagged "CitySpawn".
+-- Layout: each district is a Blocks x Blocks grid of city blocks separated by streets. The centre
+-- block is the plaza, and the plaza plus a ring of street around it is a safe zone: no damage in or
+-- out. Street ground is tagged "PlayableArea" (ambush placement, NPC ground checks); the plaza is
+-- not, so events never land inside the safe zone. Spawn pads are tagged "CitySpawn" and carry a
+-- SpawnFor attribute ("Fresh" | "Awakened"): WorldPhase picks pads by the player's profile, so new
+-- players wake in District 1 and returning ones in District 2. Districts share one grid and sit
+-- side by side along +X, joined by a gate street through both perimeter walls (District.Gate).
 local CollectionService = game:GetService("CollectionService")
 
 local District = {}
 
-District.Seed = 20261025 -- deterministic layout: same city every boot until the seed changes
+District.Seed = 20261025 -- District 1's seed (kept for the Districts table below)
 District.Grid = { Blocks = 5, BlockSize = 60, StreetWidth = 18 } -- 5*60 + 6*18 = 408 studs square
 District.GroundTop = 2 -- Y of the street surface (the arena uses the same ground level)
-District.Origin = Vector3.new(0, 0, 0) -- centre of the plaza
+District.Origin = Vector3.new(0, 0, 0) -- centre of District 1's plaza (Range.RiftPlaza etc. are relative to the world, i.e. this)
 
 District.Buildings = {
 	PerBlock = { 2, 4 }, -- how many boxes share one block
@@ -61,6 +65,51 @@ District.Lighting = { ClockTime = 23, Ambient = Color3.fromRGB(45, 45, 70), Brig
 function District.Extent()
 	local g = District.Grid
 	return g.Blocks * g.BlockSize + (g.Blocks + 1) * g.StreetWidth
+end
+
+-- The gate street between neighbouring districts: it leaves District 1 through its east wall and
+-- enters District 2 through its west wall, along street line `Line` (0..Blocks; line 3 is the
+-- street just north of the plaza). Length = open ground between the two walls.
+District.Gate = { Line = 3, Length = 60, Arch = { Height = 16, Color = Color3.fromRGB(255, 50, 160) } }
+
+-- Centre-to-centre distance between neighbouring districts.
+function District.Pitch()
+	return District.Extent() + 2 * District.Wall.Margin + District.Gate.Length
+end
+
+-- Z (relative to a district's origin) of street line i.
+function District.StreetLine(i)
+	local g = District.Grid
+	return -District.Extent() / 2 + g.StreetWidth / 2 + i * (g.BlockSize + g.StreetWidth)
+end
+
+-- The districts, in build order. Each has its own seed, plaza name, palette and spawn class;
+-- anything missing falls back to the District 1 tables above. Gate = which wall(s) have the gap.
+District.Districts = {
+	{
+		Name = "District 1", Seed = District.Seed, Origin = District.Origin, SpawnFor = "Fresh",
+		Plaza = "Relay Plaza", Gates = { East = true },
+	},
+	{
+		Name = "District 2", Seed = 20261026, Origin = District.Origin + Vector3.new(District.Pitch(), 0, 0), SpawnFor = "Awakened",
+		Plaza = "Ferrite Court", Gates = { West = true },
+		-- rust and sodium light: the older, ironworks half of the city
+		Palette = { Color3.fromRGB(58, 44, 40), Color3.fromRGB(72, 54, 46), Color3.fromRGB(40, 34, 34), Color3.fromRGB(84, 62, 50) },
+		Neon = { Color3.fromRGB(255, 140, 40), Color3.fromRGB(255, 60, 60), Color3.fromRGB(255, 220, 90), Color3.fromRGB(0, 220, 255) },
+		RingColor = Color3.fromRGB(255, 190, 80), LampColor = Color3.fromRGB(255, 170, 90),
+		FloorColor = Color3.fromRGB(80, 66, 60), RubbleChance = 0.5,
+	},
+}
+
+-- Which district a world position falls in (by grid footprint), or nil in the gate / outskirts.
+function District.At(position)
+	local half = District.Extent() / 2
+	for i, d in District.Districts do
+		if math.abs(position.X - d.Origin.X) <= half and math.abs(position.Z - d.Origin.Z) <= half then
+			return i, d
+		end
+	end
+	return nil
 end
 
 -- Is this world position inside any safe zone? Safe zones are parts tagged "SafeZone" with a

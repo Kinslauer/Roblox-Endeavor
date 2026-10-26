@@ -64,6 +64,8 @@ brief names). "Owning GDD" is a file under `design/gdd/`.
 | 35 | Weapon Handling / Sight picture | `src/client/ViewModel.lua`, `SwingAnimator.lua`, `Aim.lua`, `WeaponView.lua` (sights) | Presentation | Post-MVP | Implemented (owner playtest pending) | `production/epics/weapon-handling/EPIC.md` | Two-handed stances, pistol hold, ADS first-person view with real iron sights (`Sight` attachment = aim line), validated camera-direction shots (`Config.Combat.AimCone`). Universe 2 foundation. |
 | 36 | The Range (Universe 2 prototype) | `src/server/Range.lua`, `Config.Range`, `Weapons.ArcRifle` | Gameplay | Phase 2 | Implemented (owner playtest pending) | `production/epics/range/EPIC.md` | In-place shooter zone: Rifts, forced first person, Arc Rifle, target lane with distance scoring, Gunner waves, ranged-only rule. |
 | 37 | Momentum & Cancels (Nero study) | `Config.Momentum`, `Skills.Snatch/Buster`, `Combat.Dodge`, `SkillRunner` Pull/Grab | Core | Phase 2 | Implemented (owner playtest pending) | `design/gdd/momentum.md` | Dodge-cancel keeps the combo, side dodges longer i-frames, Hop stamina refund, Snatch pull, Buster throw/shove. Launcher + juggle planned. |
+| 38 | District 2 + gate street | `District.Districts`, `District.Gate`, `server/District.lua` (ctx), `WorldPhase.eligibleSpawns`, `Enemies.Ambush.ByDistrict` | Gameplay | Phase 2 | Implemented (owner playtest pending) | `production/epics/district-2/EPIC.md` | Second seeded district (Ferrite Court) at `District.Pitch()` along +X, gate street through both walls, spawn pads split Fresh/Awakened, heavier ambush mix in D2. |
+| 39 | Drone (flying enemy) | `Enemies.Defs.Drone`, `NPCs.buildDroneRig` + flight AI | Gameplay | Phase 2 | Implemented (owner playtest pending) | `design/gdd/enemies.md` (Flying enemies) | Constraint-flown machine body, orbit/strafe in the air, LOS fire along the pitched look; in Range waves 2–3. |
 
 ---
 
@@ -167,7 +169,7 @@ Systems without a GDD, ordered by how many open MVP epics touch them.
 
 | Metric | Count |
 |--------|-------|
-| Total systems identified | 30 (26 in code, 4 planned) |
+| Total systems identified | 39 (35 in code, 4 planned) |
 | Design docs started | 4 system GDDs + concept + this index |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |

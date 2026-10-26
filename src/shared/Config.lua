@@ -45,7 +45,7 @@ Config.Range = {
 	RiftPlaza = Vector3.new(0, 2, 22), -- the Rift's spot in Relay Plaza (world)
 	Loadout = { "ArcRifle" }, -- granted on first entry
 	Targets = { Distances = { 20, 40, 60, 80, 100 }, Health = 40, ResetSeconds = 3, LaneSpacing = 12 },
-	Waves = { { Gunner = 2 }, { Gunner = 3 }, { Gunner = 4 } },
+	Waves = { { Gunner = 2 }, { Gunner = 2, Drone = 2 }, { Gunner = 3, Drone = 3 } },
 	WaveRing = 44, -- studs from the arena centre where a wave spawns
 	WaveRewardScrap = 10,
 	EntryProtection = 4, -- seconds of ForceField after travelling
