@@ -96,6 +96,7 @@ function Terminal.Sync(player)
 	local data = PlayerData.Get(player)
 	if data then
 		publishHouse(player, data)
+		player:SetAttribute("Computer", data.Computer == true) -- the client draws the desk empty or lit (HouseView)
 	end
 end
 
@@ -115,7 +116,8 @@ function Terminal.Meet(player, contactId)
 	data.Contacts[contactId] = true
 	announce(player, ("%s: \"%s\""):format(c.Name, c.Line), "Info")
 	task.delay(2, function()
-		announce(player, ("%s unlocked on your computer."):format(c.App), "Info")
+		announce(player, if data.Computer then ("%s unlocked on your computer."):format(c.App)
+			else ("You'll need a computer of your own for %s. Until then you only remember the way."):format(c.App), "Info")
 		if first then
 			task.delay(2, function()
 				announce(player, Lore.Get("FirstContact"), "Lore")
@@ -126,7 +128,48 @@ function Terminal.Meet(player, contactId)
 	return true
 end
 
+-- Install a Home Computer at the empty desk: the upload (design/gdd/dematerialization.md §6). From here the
+-- mind is backed up - contacts met, knowledge, the board and the house survive a permadeath.
+function Terminal.Install(player)
+	local data = PlayerData.Get(player)
+	if not data or data.Computer or not Inventory.Remove(player, "HomeComputer", 1) then
+		return false
+	end
+	data.Computer = true
+	Terminal.Sync(player)
+	announce(player, Lore.Get("Upload"), "Lore")
+	local apps = {}
+	for id in data.Contacts or {} do
+		local c = R.Contacts[id]
+		if c then
+			table.insert(apps, c.App)
+		end
+	end
+	if #apps > 0 then
+		task.delay(2, function()
+			announce(player, ("%s on your computer."):format(table.concat(apps, ", ")), "Info")
+		end)
+	end
+	return true
+end
+
 function Terminal.Open(player)
+	local data = PlayerData.Get(player)
+	if not data then
+		return
+	end
+	if not data.Computer then
+		if Inventory.Count(player, "HomeComputer") > 0 then
+			Terminal.Install(player)
+		else
+			if not data.EmptyDeskSeen then
+				data.EmptyDeskSeen = true
+				announce(player, Lore.Get("EmptyDesk"), "Lore")
+			end
+			announce(player, "The desk is empty. Find a working computer out there, or build one (Tab).", "Info")
+			return
+		end
+	end
 	player:SetAttribute("Terminal", true)
 	Terminal.Push(player)
 end

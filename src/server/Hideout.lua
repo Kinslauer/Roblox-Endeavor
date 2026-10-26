@@ -69,6 +69,8 @@ local function console(position, title, action, color, onUse, parent, hold)
 	text.TextColor3, text.Font, text.TextScaled = color, Enum.Font.GothamBold, true
 	text.Parent = billboard
 	billboard.Parent = body
+	body:SetAttribute("Console", title)
+	screen:SetAttribute("Console", title)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ObjectText, prompt.ActionText, prompt.HoldDuration = title, action, hold or 0.4
 	prompt.MaxActivationDistance, prompt.RequiresLineOfSight = 10, false

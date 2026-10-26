@@ -86,7 +86,41 @@ local function rebuild()
 	end
 end
 
+-- The computer console is shared geometry; whether it is a lit machine or an empty desk is yours alone
+-- (the Computer player attribute, server/Terminal.lua): without one the screen is dark and the label says so.
+local function drawDesk()
+	local has = player:GetAttribute("Computer") == true
+	for _, d in workspace:GetDescendants() do
+		if d:GetAttribute("Console") == "Computer" and d:IsA("BasePart") then
+			if d.Name == "Screen" then
+				if d:GetAttribute("LitColor") == nil then
+					d:SetAttribute("LitColor", d.Color)
+				end
+				d.Material = if has then Enum.Material.Neon else Enum.Material.SmoothPlastic
+				d.Color = if has then d:GetAttribute("LitColor") else Color3.fromRGB(18, 18, 22)
+				local light = d:FindFirstChildOfClass("PointLight")
+				if light then
+					light.Enabled = has
+				end
+			else
+				local billboard = d:FindFirstChildOfClass("BillboardGui")
+				local text = billboard and billboard:FindFirstChildOfClass("TextLabel")
+				if text then
+					text.Text = if has then "Computer" else "Empty desk"
+				end
+				local prompt = d:FindFirstChildOfClass("ProximityPrompt")
+				if prompt then
+					prompt.ObjectText, prompt.ActionText = if has then "Computer" else "Empty desk", if has then "Use" else "Install"
+				end
+			end
+		end
+	end
+end
+
 function HouseView.Init()
+	player:GetAttributeChangedSignal("Computer"):Connect(drawDesk)
+	player:GetAttributeChangedSignal("Zone"):Connect(drawDesk) -- walking in: the room is there to draw
+	task.defer(drawDesk)
 	player:GetAttributeChangedSignal("House"):Connect(rebuild)
 	rebuild()
 end

@@ -148,3 +148,11 @@ To see one without waiting an hour, run this in the Studio command bar during Pl
 - [ ] Raider gunners and war recruits run out too: after a while one shouts "I'm out!", puts the gun away and comes at you with its fists. Kill it: the gun and any cells it had left are on the ground.
 - [ ] New materials turn up in loot: Glass, Sheet Metal, Pipe, Battery, Black Powder. Craft Arc Cells (Battery + 2 Wire = 6 cells). The trader sells single cells (8); the black market sells Battery and Powder.
 
+## 18. Round 11 — the home computer, added 2026-10-26
+(Existing characters that have met a contact keep their computer; to see the new start, use a fresh character or permadie one that hasn't.)
+- [ ] A fresh conduit's hideout: the Computer console is a dark screen labelled "Empty desk". Using it gives a lore line once, then "Find a working computer out there, or build one."
+- [ ] Meet the Broker before you have one: "You'll need a computer of your own for RAIDS."
+- [ ] Die for good before the upload: the contacts you met are gone; money and stash are still there.
+- [ ] Build one (Tab → craft: Battery 2, Glass 2, Sheet Metal 2, Wire 6) or find one (rare on rivals, warmongers, supply drops). Use the desk: the upload line, the screen lights up, any contacts you already met light their apps.
+- [ ] Die for good after: contacts, board and house are all still there. Does getting a computer early feel as vital as it should?
+

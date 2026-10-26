@@ -142,6 +142,14 @@ acquire one early. That is also how they mix and match cybernetics."
   early game should be harsher, they move to the right-hand column.)
 - **Existing profiles** when this ships: anyone who has met a contact or ordered for the house already counts as
   having a computer (`Computer = true` on load), so no one loses what they have.
+- **As built (2026-10-26)**: `Items.Defs.HomeComputer` (Type `Device`); recipe Battery 2 + Glass 2 + Sheet Metal 2 +
+  Wire 6; rare in supply drops (2 %), on rival conduits (5 %) and warmongers (10 %). The hideout's Computer console is
+  drawn per player (`client/HouseView.lua`, the `Computer` attribute): a dark screen labelled "Empty desk" (prompt
+  "Install") until installed. Using it with a computer in your bag installs it (`Terminal.Install`: the upload line,
+  then any apps whose contacts you already met). Without one: the empty-desk lore line once, then a hint. Meeting a
+  contact before the upload says you only remember the way. `PlayerData` HIDEOUT_KEPT / MIND_KEPT implement the
+  table above; `Knowledge` is in the profile, ready for the clues. Anomaly-spot finds and terminal-prop salvage come
+  with clues and destruction.
 
 ## 7. Open questions
 - None open right now.

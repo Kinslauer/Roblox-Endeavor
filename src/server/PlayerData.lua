@@ -43,10 +43,17 @@ local TEMPLATE = {
 	House = {}, -- [furnishingId] = true: ordered for the hideout (client-rendered for the owner)
 	Raid = false, -- the raid being run: dies with the body (see server/Raids.lua)
 	RaidSeen = false,
+	-- the conduit's backup (design/gdd/dematerialization.md §6): installed in the hideout, it holds the mind
+	Computer = false, -- true once a Home Computer is installed (found or built): from then on the mind is backed up
+	Knowledge = {}, -- [fragmentId] = order read: what the conduit has learned (server/Clues.lua)
+	EmptyDeskSeen = false,
 }
 
 -- Fields that survive a permadeath wipe: the city keeps what you carried, not what you left at home.
-local PERSIST = { "Money", "Stash", "Faction", "Shipment", "Hubs", "Contacts", "Board", "House" }
+-- Two kinds (design/gdd/dematerialization.md §6): what the hideout physically holds is always kept; what
+-- the mind holds is kept only once a computer has been installed to back it up.
+local HIDEOUT_KEPT = { "Money", "Stash", "Faction", "Shipment", "Hubs", "Computer", "EmptyDeskSeen" }
+local MIND_KEPT = { "Contacts", "Board", "House", "Knowledge" }
 for _, name in Config.Stats.Names do
 	TEMPLATE.Stats[name] = 0
 end
@@ -55,6 +62,7 @@ local store = ProfileService.GetProfileStore("ConduitCharacter_v2", TEMPLATE)
 local profiles = {}
 
 local PlayerData = {}
+PlayerData.HideoutKept, PlayerData.MindKept = HIDEOUT_KEPT, MIND_KEPT
 
 local function deepCopy(value)
 	if type(value) ~= "table" then
@@ -76,8 +84,13 @@ end
 
 local function wipe(data)
 	local kept = {}
-	for _, key in PERSIST do
+	for _, key in HIDEOUT_KEPT do
 		kept[key] = data[key]
+	end
+	if data.Computer then -- backed up: the mind comes back in the next body
+		for _, key in MIND_KEPT do
+			kept[key] = data[key]
+		end
 	end
 	for key in data do
 		data[key] = nil
@@ -112,6 +125,11 @@ function PlayerData.Load(player)
 	profiles[player] = profile
 	if not profile.Data.Created then
 		newCharacter(profile.Data)
+	end
+	-- the computer became something you acquire (2026-10-26): anyone who was already using theirs keeps it
+	local d = profile.Data
+	if not d.Computer and (next(d.Contacts or {}) ~= nil or next(d.House or {}) ~= nil) then
+		d.Computer = true
 	end
 	return profile.Data
 end

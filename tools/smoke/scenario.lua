@@ -971,6 +971,33 @@ do
 	check("with the rival gone the hold counts again", data.Raid.Hold > 0 and data.Raid.Contested == false)
 	Raids.Abandon(player)
 	Hideout.Enter(player, { Quiet = true }); run(0.2)
+	-- the computer is acquired (dematerialization.md §6): an empty desk until a Home Computer is installed;
+	-- until then a permadeath takes the mind (contacts, knowledge) and leaves what the hideout holds
+	do
+		local PD = M.mockEnv.__require(SSS.Server.PlayerData)
+		data.Computer = false
+		Terminal.Open(player)
+		check("without a computer the desk is empty: no terminal", player:GetAttribute("Terminal") == nil)
+		data.Knowledge = { TestFragment = 1 }
+		data.Money, data.Stash = 77, { Scrap = 4 }
+		PD.Reset(player)
+		data = PD.Get(player)
+		check("a permadeath before the upload: contacts and knowledge are gone, money and stash stay",
+			next(data.Contacts) == nil and next(data.Knowledge) == nil and data.Money == 77 and data.Stash.Scrap == 4 and data.Computer == false)
+		for id, n in { Battery = 2, Glass = 2, SheetMetal = 2, Wire = 6 } do Inventory.Add(player, id, n) end
+		Inventory.Craft(player, "HomeComputer")
+		check("a Home Computer can be built from salvage", Inventory.Count(player, "HomeComputer") == 1)
+		Terminal.Meet(player, "Broker")
+		Terminal.Open(player)
+		check("using the desk with one installs it: the upload, then the terminal opens", data.Computer == true and Inventory.Count(player, "HomeComputer") == 0
+			and player:GetAttribute("Computer") == true and player:GetAttribute("Terminal") == true)
+		Terminal.Close(player)
+		data.Knowledge = { TestFragment = 1 }
+		PD.Reset(player)
+		data = PD.Get(player)
+		check("after the upload a permadeath keeps the mind: contacts and knowledge come back", data.Computer == true and data.Contacts.Broker == true and data.Knowledge.TestFragment == 1)
+		data.Knowledge = {}
+	end
 	Terminal.Open(player)
 	local wasOpen = player:GetAttribute("Terminal") == true
 	Hideout.Leave(player); run(0.2)

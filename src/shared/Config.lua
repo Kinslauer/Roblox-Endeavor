@@ -110,7 +110,7 @@ Config.War = {
 -- stash gear sent ahead: a crate lands at your base after a delay; open it and you fight with it —
 -- die and it stays on the field, walk out and it goes back to the stash.
 Config.Supply = {
-	Value = { Material = 1, Consumable = 3, Weapon = 12, Armor = 10, Cybernetic = 15, Part = 8, Ammo = 1 }, -- pool points per donated item by Items.Defs[*].Type
+	Value = { Material = 1, Consumable = 3, Weapon = 12, Armor = 10, Cybernetic = 15, Part = 8, Ammo = 1, Device = 15 }, -- pool points per donated item by Items.Defs[*].Type
 	CostPerRecruit = 3, -- points a side spends for every recruit it fields (attrition drains the pool)
 	Tiers = { -- in order; the highest tier whose Points the pool reaches is the kit (checked at spawn)
 		{ Name = "Basic", Points = 0, HealthMult = 1, Resist = 0, DamageMult = 1 },
