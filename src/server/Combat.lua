@@ -88,6 +88,12 @@ function Combat.CanAct(char)
 	return isAlive(char) and t >= s.stunned and t >= s.busyUntil - BUFFER
 end
 
+-- Open for a grab finisher: stunned right now, or posture-broken within GrabStunWindow.
+function Combat.IsOpen(char)
+	local s, t = st(char), os.clock()
+	return t < s.stunned or (s.brokenAt ~= nil and t - s.brokenAt < Config.Momentum.GrabStunWindow)
+end
+
 function Combat.SetBusy(char, duration)
 	st(char).busyUntil = os.clock() + duration
 end
@@ -354,6 +360,13 @@ local function applyDamage(attacker, victim, amount, opts)
 
 	local vs, t, vd = st(victim), os.clock(), Gear.OfChar(victim)
 	if t < vs.iframes then
+		if vs.dodgeIframes and t < vs.dodgeIframes then
+			vs.dodgeIframes = nil -- one refund per dodge
+			Combat.AddStamina(victim, Config.Momentum.HopRefund)
+			if vs.comboWeapon and vs.combo > 0 then
+				vs.comboExpires = t + vs.comboWeapon.ComboReset
+			end
+		end
 		fx("Dodged", victim, attacker)
 		return "dodged"
 	end
@@ -374,6 +387,7 @@ local function applyDamage(attacker, victim, amount, opts)
 		local posture = Combat.AddPosture(victim, opts.Posture or 0)
 		if opts.GuardBreak or posture >= (victim:GetAttribute("MaxPosture") or 1) then
 			victim:SetAttribute("Posture", 0)
+			vs.brokenAt = t -- Buster reads this (Config.Momentum.GrabStunWindow)
 			Combat.Stun(victim, C.GuardBreakStun)
 			fx("GuardBreak", victim, attacker)
 			result = "guardbreak"
@@ -398,7 +412,7 @@ local function applyDamage(attacker, victim, amount, opts)
 			knockback(victim, direction, opts.Knockback)
 		end
 	end
-	if result == "hit" then
+	if result == "hit" and amount > 0.5 then
 		fx("Hit", victim, { attacker = attacker, amount = amount })
 	end
 	return result
@@ -681,8 +695,18 @@ function Combat.Dodge(player, direction)
 		return
 	end
 	s.token += 1 -- dodging cancels a swing that hasn't landed yet
-	s.lastDodge, s.iframes, s.block = t, t + Gear.Get(player).DodgeIFrames, false
+	-- momentum.md 2.1: a dodge is a cancel. Side dodges (Table Hopper) get longer i-frames; the combo
+	-- survives the dodge; the recovery of a landed swing is cut short.
+	local root = char:FindFirstChild("HumanoidRootPart")
+	local look = root and Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
+	local side = look and look.Magnitude > 0 and math.abs(direction.Unit:Dot(look.Unit)) < 0.5
+	local iframes = Gear.Get(player).DodgeIFrames * (if side then Config.Momentum.SideIFrameMult else 1)
+	s.lastDodge, s.iframes, s.block = t, t + iframes, false
+	s.dodgeIframes = s.iframes -- Hop: a hit absorbed before this time refunds stamina
 	s.busyUntil = t + 0.2
+	if s.comboWeapon and s.combo > 0 then
+		s.comboExpires = t + 0.2 + s.comboWeapon.ComboReset -- the chain is a rhythm, not a wall
+	end
 	char:SetAttribute("Blocking", false)
 	Remotes.CombatEvent:FireClient(player, "DodgeMove", direction.Unit * C.DodgeSpeed)
 	fx("Dodge", char)

@@ -213,6 +213,16 @@ local function register()
 	word("GuardBreak", "GUARD BREAK")
 	word("Dodged", "DODGED")
 	word("Safe", "SAFE ZONE")
+	CombatFX.On("Snatch", function(user, target)
+		if typeof(target) == "Instance" then
+			HudCombat.Number(target, "SNATCHED", C.Snatch or C.Dodged, false)
+		end
+	end)
+	CombatFX.On("Buster", function(user, data)
+		if typeof(data) == "table" and typeof(data.target) == "Instance" and data.throw then
+			HudCombat.Number(data.target, "BUSTER", C.Buster or C.GuardBreak, true)
+		end
+	end)
 	CombatFX.On("BlackFlash", function(attacker, victim)
 		-- The server sends Hit (with the multiplied amount) and then BlackFlash. The banner (Impacts)
 		-- says BLACK FLASH; here we recolour the number that Hit just put over the victim.

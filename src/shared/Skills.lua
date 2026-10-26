@@ -45,6 +45,18 @@ Skills.Defs = {
 		Duration = 8, ArcBonus = 6,
 		Scaling = { Intelligence = 0.04 }, TagBonus = { Conduit = 0.1 },
 	},
+	Snatch = {
+		Name = "Snatch", Kind = "Pull", Desc = "Hook the nearest target and yank it to arm's length. No damage; opens them for a hit.",
+		Req = { Stats = { Agility = 5 } }, Stamina = 14, Cooldown = 6,
+		Range = 22, Arc = 0.75, Posture = 8,
+		Scaling = { Agility = 0.02 }, TagBonus = { Scav = 0.04 },
+	},
+	Buster = {
+		Name = "Buster", Kind = "Grab", Desc = "Grab and throw a staggered target for heavy damage; on a standing one, just a shove.",
+		Req = { Stats = { Strength = 6 } }, Stamina = 22, Cooldown = 10,
+		Range = 7, Arc = 0.3, Damage = 36, Posture = 0, Knockback = 70, Stun = 1.0, ShoveDamage = 8, ShoveKnockback = 35,
+		Scaling = { Strength = 0.03 }, TagBonus = { Plated = 0.05 },
+	},
 	Overclock = {
 		Name = "Overclock", Kind = "Flicker", Desc = "Prime your flicker chain to II: one well-timed flick away from a Black Flash. Needs two implants.",
 		Req = { Stats = { Intelligence = 8 }, Tags = { Cyber = 2 } }, ChargeCost = 20, Cooldown = 20, Level = 2, Hold = 8,

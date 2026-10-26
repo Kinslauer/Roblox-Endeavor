@@ -77,7 +77,7 @@ function CombatFX.Init()
 		Hud.SetCooldown(skillId, seconds)
 	end)
 	for kind, spec in Presentation.Impacts do
-		if type(spec) == "table" and spec.Flash and kind ~= "BlackFlash" and kind ~= "Bolt" then
+		if type(spec) == "table" and spec.Flash and kind ~= "BlackFlash" and kind ~= "Bolt" and kind ~= "Snatch" and kind ~= "Buster" then -- those flash the target, in Impacts
 			CombatFX.On(kind, function(char)
 				CombatFX.Flash(char, spec.Color, spec.Flash)
 			end)

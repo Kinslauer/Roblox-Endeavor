@@ -86,7 +86,87 @@ local function flicker(player, char, def)
 	Combat.SetFlicker(char, def.Level, def.Hold)
 end
 
-local KINDS = { Burst = burst, Strike = strike, Dash = dash, Buff = buff, Recover = recover, Flicker = flicker }
+-- Nearest Humanoid model inside a forward cone (dot >= arc) and range; nil when nothing qualifies.
+local function nearestInCone(char, range, arc)
+	local root = char.HumanoidRootPart
+	local look = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit
+	local params = OverlapParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { char }
+	local best, bestDist = nil, math.huge
+	local seen = {}
+	for _, part in workspace:GetPartBoundsInRadius(root.Position, range, params) do
+		local model = part:FindFirstAncestorOfClass("Model")
+		local hum = model and not seen[model] and model:FindFirstChildOfClass("Humanoid")
+		local troot = hum and model:FindFirstChild("HumanoidRootPart")
+		if troot and hum.Health > 0 then
+			seen[model] = true
+			local to = troot.Position - root.Position
+			local flat = Vector3.new(to.X, 0, to.Z)
+			if flat.Magnitude > 0.5 and flat.Unit:Dot(look) >= arc and flat.Magnitude < bestDist then
+				best, bestDist = model, flat.Magnitude
+			end
+		end
+	end
+	return best, bestDist
+end
+
+-- Snatch (momentum.md 2.2): pull the target to PullStop studs and stun it briefly. No damage.
+local function pull(player, char, def, power)
+	local M = Config.Momentum
+	local target = nearestInCone(char, def.Range, def.Arc)
+	Combat.SetBusy(char, 0.35)
+	if not target then
+		Combat.FX("Snatch", char, nil)
+		return
+	end
+	-- Combat refuses damage across the safe zone; refuse the pull the same way
+	if Combat.Damage(char, target, 0, { Posture = def.Posture * power, Unblockable = true, Stun = M.PullStun, Staggers = true }) == "none" then
+		return
+	end
+	local root, troot = char.HumanoidRootPart, target.HumanoidRootPart
+	local to = root.Position - troot.Position
+	local flat = Vector3.new(to.X, 0, to.Z)
+	local dist = math.max(flat.Magnitude - M.PullStop, 0)
+	local velocity = flat.Unit * (dist / M.PullTime) + Vector3.new(0, 8, 0)
+	local victim = game:GetService("Players"):GetPlayerFromCharacter(target)
+	if victim then
+		Remotes.CombatEvent:FireClient(victim, "Knockback", velocity) -- players own their physics
+	else
+		troot.AssemblyLinearVelocity = velocity
+	end
+	if char:GetAttribute("Weapon") then -- the chain survives a Snatch
+		local s = Combat.State(char)
+		if s.comboWeapon and s.combo > 0 then
+			s.comboExpires = os.clock() + 0.35 + s.comboWeapon.ComboReset
+		end
+	end
+	Combat.FX("Snatch", char, target)
+end
+
+-- Buster (momentum.md 2.3): throw an open target, shove a standing one.
+local function grab(player, char, def, power)
+	local target = nearestInCone(char, def.Range, def.Arc)
+	Combat.SetBusy(char, 0.5)
+	if not target then
+		return
+	end
+	local open = Combat.IsOpen(target)
+	if open then
+		local result = Combat.Damage(char, target, def.Damage * power, { Posture = 0, Unblockable = true, Knockback = def.Knockback, Stun = def.Stun, Staggers = true })
+		if result ~= "none" then
+			target:SetAttribute("Posture", 0)
+			Combat.FX("Buster", char, { target = target, throw = true })
+		end
+	else
+		local result = Combat.Damage(char, target, def.ShoveDamage * power, { Posture = 4, Unblockable = true, Knockback = def.ShoveKnockback })
+		if result ~= "none" then
+			Combat.FX("Buster", char, { target = target, throw = false })
+		end
+	end
+end
+
+local KINDS = { Burst = burst, Strike = strike, Dash = dash, Buff = buff, Recover = recover, Flicker = flicker, Pull = pull, Grab = grab }
 
 function SkillRunner.Use(player, slot)
 	local char, data = player.Character, PlayerData.Get(player)

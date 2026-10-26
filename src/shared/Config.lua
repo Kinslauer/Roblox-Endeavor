@@ -51,6 +51,16 @@ Config.Range = {
 	EntryProtection = 4, -- seconds of ForceField after travelling
 }
 
+-- Momentum & cancels (design/gdd/momentum.md): the Nero-study layer on top of the timing core.
+Config.Momentum = {
+	SideIFrameMult = 1.3, -- side dodges (|dot(dir, look)| < 0.5) get this much more i-frame time
+	HopRefund = 10, -- stamina back when a dodge's i-frames absorb a hit
+	PullTime = 0.25, -- seconds a Snatch takes to bring the target in
+	PullStun = 0.6, -- hit-stun on a snatched target
+	PullStop = 3, -- studs from the user the target lands
+	GrabStunWindow = 1.5, -- a posture break this recent still counts as "open" for Buster
+}
+
 -- Sprint: hold the key to run. Drains stamina; blocking cancels it; attacks still work (the swing
 -- stops you anyway).
 Config.Sprint = {

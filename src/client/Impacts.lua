@@ -227,6 +227,41 @@ local function onBolt(char, hitPos)
 	end
 end
 
+-- Snatch: a hook beam from the user's hand to the target (nil target = a whiff: short stub).
+local function onSnatch(char, target)
+	local spec = I.Snatch
+	local hand = char:FindFirstChild("RightHand") or rootOf(char)
+	if not hand then
+		return
+	end
+	local origin = hand.Position
+	local targetRoot = typeof(target) == "Instance" and rootOf(target)
+	local to = targetRoot and targetRoot.Position or (origin + hand.CFrame.LookVector * 6)
+	local length = (to - origin).Magnitude
+	local beam = neonPart(Enum.PartType.Block, Vector3.new(spec.Beam.Width, spec.Beam.Width, length), spec.Color, CFrame.lookAt(origin, to) * CFrame.new(0, 0, -length / 2))
+	CombatFX.Spawn(beam, spec.Beam.Life)
+	if targetRoot then
+		CombatFX.Flash(target, spec.Color, spec.Flash)
+	end
+	if char == player.Character then
+		CameraShake.Add(spec.Shake)
+	end
+end
+
+-- Buster: gold flash + heavy shake on a throw; a plain flash on a shove.
+local function onBuster(char, data)
+	local spec = I.Buster
+	local target = typeof(data) == "table" and data.target or nil
+	local throw = typeof(data) == "table" and data.throw == true
+	if typeof(target) == "Instance" then
+		CombatFX.Flash(target, spec.Color, if throw then spec.Flash else spec.Flash * 0.5)
+	end
+	if throw and (char == player.Character or target == player.Character) then
+		CameraShake.Add(spec.Shake)
+		CameraShake.Hitstop(spec.Hitstop)
+	end
+end
+
 function Impacts.Init()
 	CombatFX.On("Hit", onHit)
 	CombatFX.On("Block", onBlock)
@@ -235,6 +270,8 @@ function Impacts.Init()
 	CombatFX.On("Dodged", onDodged)
 	CombatFX.On("BlackFlash", onBlackFlash)
 	CombatFX.On("Bolt", onBolt)
+	CombatFX.On("Snatch", onSnatch)
+	CombatFX.On("Buster", onBuster)
 end
 
 return Impacts

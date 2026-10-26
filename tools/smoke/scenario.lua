@@ -272,6 +272,74 @@ do
 	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
 	run(0.5)
 end
+-- Momentum (design/gdd/momentum.md): dodge-cancel keeps the combo, side dodges last longer, Snatch and Buster
+do
+	as(player)
+	local me = player.Character
+	local Combat = M.mockEnv.__require(SSS.Server.Combat)
+	local NPCs = M.mockEnv.__require(SSS.Server.NPCs)
+	local Gear = M.mockEnv.__require(SSS.Server.Gear)
+	local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+	local Config = M.mockEnv.__require(RS.Shared.Config)
+	me:PivotTo(M.CF.lookAt(M.V3.new(200, 5, 200), M.V3.new(200, 5, 190))) -- facing -Z, empty street
+	run(1)
+	-- 1. combo survives a dodge: swing, dodge in the recovery, swing again -> combo index 2
+	Remotes.Attack:FireServer(); run(0.35)
+	Remotes.Dodge:FireServer(M.V3.new(1, 0, 0)); run(0.3)
+	Remotes.Attack:FireServer(); run(0.1)
+	local st = Combat.State(me)
+	check("combo survives a dodge-cancel (next swing is combo 2)", st.combo == 2)
+	run(1.5)
+	-- 2. side dodge i-frames > back-step i-frames
+	run(1)
+	Remotes.Dodge:FireServer(M.V3.new(1, 0, 0)); local sideFrames = Combat.State(me).iframes - M.setNow()
+	run(1.2)
+	Remotes.Dodge:FireServer(M.V3.new(0, 0, 1)); local backFrames = Combat.State(me).iframes - M.setNow()
+	check("side dodge has longer i-frames than a back-step", sideFrames > backFrames * 1.2)
+	run(1.2)
+	-- 3. Hop refund: a dodge that absorbs a hit gives stamina back
+	local grunt = NPCs.Spawn("Grunt", M.V3.new(200, 5, 194))
+	run(0.2)
+	me:SetAttribute("Stamina", 50)
+	Remotes.Dodge:FireServer(M.V3.new(1, 0, 0))
+	local afterCost = me:GetAttribute("Stamina")
+	Combat.Damage(grunt, me, 10, {})
+	check("hop: a dodged hit refunds stamina", me:GetAttribute("Stamina") >= afterCost + Config.Momentum.HopRefund - 0.01)
+	-- 4. Snatch pulls the grunt in and stuns it
+	local SkillRunner = M.mockEnv.__require(SSS.Server.SkillRunner)
+	local data = M.mockEnv.__require(SSS.Server.PlayerData).Get(player)
+	data.Stats.Agility, data.Stats.Strength = 10, 10
+	Gear.Recompute(player)
+	data.SkillSlots["2"], data.SkillSlots["3"] = "Snatch", "Buster"
+	run(1.2)
+	grunt:PivotTo(M.CF.new(200, 5, 184)) -- 16 studs ahead
+	me:SetAttribute("Stamina", 100)
+	local gs = Combat.State(grunt)
+	run(0.5)
+	Remotes.UseSkill:FireServer(2); run(0.1)
+	check("snatch stuns the target", gs.stunned > M.setNow())
+	local v = grunt.HumanoidRootPart.AssemblyLinearVelocity
+	check("snatch pulls the target toward the user", v ~= nil and v.Z > 10)
+	-- 5. Buster: throw on a stunned target (big damage, posture reset); shove on a standing one
+	grunt:PivotTo(M.CF.new(200, 5, 196)); grunt:SetAttribute("Posture", 30)
+	local hp = grunt.Humanoid.Health
+	run(0.6)
+	gs.stunned = M.setNow() + 2 -- open
+	Remotes.UseSkill:FireServer(3); run(0.1)
+	check("buster throws an open target (heavy damage, posture reset)", grunt.Humanoid.Health <= hp - 30 and grunt:GetAttribute("Posture") == 0)
+	run(12) -- cooldown
+	gs.stunned = 0; gs.brokenAt = nil
+	hp = grunt.Humanoid.Health
+	me:SetAttribute("Stamina", 100)
+	grunt:PivotTo(M.CF.new(200, 5, 196))
+	Remotes.UseSkill:FireServer(3); run(0.1)
+	local lost = hp - grunt.Humanoid.Health
+	check("buster only shoves a standing target", lost > 0 and lost < 20)
+	grunt:Destroy()
+	me:PivotTo(M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4)))
+	data.SkillSlots["2"], data.SkillSlots["3"] = nil, nil
+	run(1)
+end
 -- sprint: shift speeds the body up and drains stamina; releasing restores both
 do
 	as(player)

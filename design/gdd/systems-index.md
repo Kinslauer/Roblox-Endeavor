@@ -63,6 +63,7 @@ brief names). "Owning GDD" is a file under `design/gdd/`.
 | 34 | Animate (stopgap) | `src/client/Animate.client.lua` | Client | P3 | Placeholder | `design/quick-specs/character-creator-2026-10-25.md` | Stock R15 locomotion for server-built rigs |
 | 35 | Weapon Handling / Sight picture | `src/client/ViewModel.lua`, `SwingAnimator.lua`, `Aim.lua`, `WeaponView.lua` (sights) | Presentation | Post-MVP | Implemented (owner playtest pending) | `production/epics/weapon-handling/EPIC.md` | Two-handed stances, pistol hold, ADS first-person view with real iron sights (`Sight` attachment = aim line), validated camera-direction shots (`Config.Combat.AimCone`). Universe 2 foundation. |
 | 36 | The Range (Universe 2 prototype) | `src/server/Range.lua`, `Config.Range`, `Weapons.ArcRifle` | Gameplay | Phase 2 | Implemented (owner playtest pending) | `production/epics/range/EPIC.md` | In-place shooter zone: Rifts, forced first person, Arc Rifle, target lane with distance scoring, Gunner waves, ranged-only rule. |
+| 37 | Momentum & Cancels (Nero study) | `Config.Momentum`, `Skills.Snatch/Buster`, `Combat.Dodge`, `SkillRunner` Pull/Grab | Core | Phase 2 | Implemented (owner playtest pending) | `design/gdd/momentum.md` | Dodge-cancel keeps the combo, side dodges longer i-frames, Hop stamina refund, Snatch pull, Buster throw/shove. Launcher + juggle planned. |
 
 ---
 
