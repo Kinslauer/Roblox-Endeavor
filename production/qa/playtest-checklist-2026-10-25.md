@@ -72,3 +72,14 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] Pick a side; the HUD shows "Side · MONEY n". Deploy (needs a side) → the Range in first person; the Rift/Return there now brings you back to the hideout, not the plaza. Waves pay money.
 - [ ] Stash: deposit, then die in the city — the stash, money and side survive; you wake in District 1 as a fresh character. Withdraw at the hideout afterwards.
 - [ ] Log off in the hideout, rejoin: you wake in the hideout.
+
+## 10. Round 5 — Wardogs (Phase 3, build order 2), added 2026-10-26
+- [ ] Pick a side in the hideout and **Deploy**. You should land at your side's base pad (flag in your colour) facing the hill's beam, in first person, rifle in hand. Does the base read as a camp, not a spawn point?
+- [ ] Watch the sky over a base for ~25 s: a pod should fall and open into three recruits in that side's colours. Do pods read as reinforcements arriving?
+- [ ] The HUD war board (top): hill owner / who is capturing / progress, and three ticket rows with recruit counts. Is it readable mid-fight?
+- [ ] Walk onto the hill ring alone: "capturing" fills over ~12 s, the ring recolours to your side, 3 s later the hill moves. Money ticks up while you stand there.
+- [ ] Shoot your own recruits: nothing. Shoot another side's: normal damage, "+10 money" on the kill.
+- [ ] Get downed (let a recruit finish you): screen says DOWNED with a countdown, you are prone and cannot act. Stand near a downed friendly recruit... (solo: you will bleed out at 20 s). Is 20 s too long alone?
+- [ ] After bleeding out: "You died. Redeploying from your base in 5 s" → you are back at your base, fresh body, kit on; your money/stash/side unchanged. Check the Conduit is untouched (level, inventory) when you Return.
+- [ ] Let a round finish (a side at 0 tickets): announcement "Round n: the X hold the field", +60 if it was yours, recruits cleared, hill moves, next round starts straight away.
+- [ ] Clutter: recruit corpses drop loot piles — note how bad it gets after a couple of minutes.

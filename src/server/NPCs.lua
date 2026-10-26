@@ -56,13 +56,13 @@ end
 local CLOTH_PARTS = { "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg" }
 
 -- Enemy body: standardized rig in the variant's look, tinted "clothing" parts, weapon attribute.
-local function buildEnemyRig(typeName, def)
+local function buildEnemyRig(typeName, def, opts)
 	local model = Rig.Build(def.Look.Appearance)
-	model.Name = def.Name or typeName
+	model.Name = (opts and opts.Name) or def.Name or typeName
 	for _, partName in CLOTH_PARTS do
 		local part = model:FindFirstChild(partName)
 		if part then
-			part.Color = def.Look.Cloth
+			part.Color = (opts and opts.Cloth) or def.Look.Cloth
 		end
 	end
 	local hum = model:FindFirstChildOfClass("Humanoid")
@@ -183,16 +183,40 @@ end
 
 -- ===== Helpers =====
 
-local function nearestTarget(root, aggro)
+-- Which side a body fights for: players carry it on the Player, NPCs on the model. nil = nobody's.
+local function factionOf(char)
+	local player = Players:GetPlayerFromCharacter(char)
+	return if player then player:GetAttribute("Faction") else char:GetAttribute("Faction")
+end
+NPCs.FactionOf = factionOf
+
+-- Nearest hostile. Plain enemies hunt players. A recruit with a Faction hunts players *and* other
+-- recruits of the other sides (never its own), and ignores downed bodies.
+local function nearestTarget(root, aggro, model)
 	local target, best = nil, aggro
+	local mine = model and model:GetAttribute("Faction")
 	for _, player in Players:GetPlayers() do
 		local char = player.Character
 		local troot = char and char:FindFirstChild("HumanoidRootPart")
 		local thum = char and char:FindFirstChildOfClass("Humanoid")
-		if troot and thum and thum.Health > 0 and not District.InSafeZone(troot.Position) then -- plaza is off-limits
+		if troot and thum and thum.Health > 0 and not District.InSafeZone(troot.Position) and not char:GetAttribute("Downed") -- plaza is off-limits
+			and not (mine and player:GetAttribute("Faction") == mine) then
 			local dist = (troot.Position - root.Position).Magnitude
 			if dist < best then
 				target, best = char, dist
+			end
+		end
+	end
+	if mine then
+		for _, other in CollectionService:GetTagged(NPCs.Tag) do
+			local theirs = other:GetAttribute("Faction")
+			local troot = theirs and theirs ~= mine and other ~= model and other:FindFirstChild("HumanoidRootPart")
+			local thum = troot and other:FindFirstChildOfClass("Humanoid")
+			if thum and thum.Health > 0 then
+				local dist = (troot.Position - root.Position).Magnitude
+				if dist < best then
+					target, best = other, dist
+				end
 			end
 		end
 	end
@@ -278,6 +302,7 @@ local function onDeath(model, root, typeName, def)
 		Stats.AddXp(killer, def.Xp)
 		Quests.Progress(killer, "kill", def.QuestTag or typeName, 1)
 		Quests.Progress(killer, "kill", typeName, 1)
+		NPCs.Killed:Fire(killer, model, typeName)
 	end
 	local at = root.CFrame
 	if def.Flying then -- a drone dies in the air: its spoils land under it
@@ -296,7 +321,12 @@ end
 
 -- ===== Spawning / AI =====
 
--- opts: { Despawn = true/false } (ambush enemies despawn when idle; placed ones stay)
+-- Fired when a player kills an NPC: (killerPlayer, model, typeName). The war scores takedowns here.
+NPCs.Killed = Instance.new("BindableEvent")
+
+-- opts: Despawn (true/false: ambush enemies despawn when idle; placed ones stay), Faction (id: the
+-- side it fights for; it then hunts the other sides' players and recruits), Cloth (Color3 tint),
+-- Name, Home (Vector3 or function -> Vector3: where it goes with nobody in sight; the war passes the hill)
 function NPCs.Spawn(typeName, position, opts)
 	local def = Enemies.Defs[typeName]
 	if not def then
@@ -310,7 +340,10 @@ function NPCs.Spawn(typeName, position, opts)
 		model, hum, root = buildDroneRig(typeName, def)
 		position += Vector3.new(0, F.Hover, 0) -- flyers spawn in the air
 	else
-		model, hum, root = buildEnemyRig(typeName, def)
+		model, hum, root = buildEnemyRig(typeName, def, opts)
+	end
+	if opts.Faction then
+		model:SetAttribute("Faction", opts.Faction)
 	end
 	model:PivotTo(CFrame.new(position))
 	model.Parent = workspace
@@ -323,6 +356,12 @@ function NPCs.Spawn(typeName, position, opts)
 	local setMoving = loadLocomotion(hum)
 	local nav = newNavigator(model, hum, root)
 	local home = position
+	local function homeNow()
+		if type(opts.Home) == "function" then
+			return opts.Home(model) or home
+		end
+		return opts.Home or home
+	end
 	local nextAttackAt = 0
 	local idleSince = os.clock()
 	local state = "Idle"
@@ -366,8 +405,9 @@ function NPCs.Spawn(typeName, position, opts)
 					flyTo(root.Position) -- a hit knocks it off its line; it holds wherever it ends up
 				end
 			else
-				local target, dist = nearestTarget(root, def.Aggro)
-				local fromHome = (root.Position - home).Magnitude
+				local target, dist = nearestTarget(root, def.Aggro, model)
+				local goal = homeNow()
+				local fromHome = (root.Position - goal).Magnitude
 				if target and fromHome > def.Leash then
 					target = nil -- leashed: give up and walk back
 				end
@@ -434,7 +474,7 @@ function NPCs.Spawn(typeName, position, opts)
 					end
 				else
 					if F then
-						flyTo(home)
+						flyTo(goal)
 						local level = root.CFrame.LookVector * Vector3.new(1, 0, 1)
 						if level.Magnitude > 0.1 then
 							faceAt(root.Position + level.Unit * 10) -- level off
@@ -443,7 +483,7 @@ function NPCs.Spawn(typeName, position, opts)
 					if fromHome > 6 then
 						state = "Return"
 						if not F then
-							nav.moveTo(home)
+							nav.moveTo(goal)
 						end
 						setMoving(true)
 					else

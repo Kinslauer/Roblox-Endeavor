@@ -15,11 +15,15 @@ local Quests = require(script.Parent.Quests)
 local Stats = require(script.Parent.Stats)
 local Tutorial = require(script.Parent.Tutorial)
 local Wallet = require(script.Parent.Wallet)
+local War = require(script.Parent.War)
 local WorldPhase = require(script.Parent.WorldPhase)
 
 local Lifecycle = {}
 
 local function onDied(player)
+	if War.HandleDeath(player) then
+		return -- a death in the war costs the deployment and a ticket, never the Conduit (War redeploys)
+	end
 	if WorldPhase.IsOpen() then
 		Permadeath.Handle(player, player.Character)
 		task.wait(Config.RespawnDelay)
@@ -67,8 +71,8 @@ function Lifecycle.Spawn(player)
 		end
 		Combat.Protect(char, Config.SpawnProtectionSeconds) -- fair arrival: nobody gets spawn-killed
 		Quests.Assign(player)
-	elseif Config.Tutorial.Enabled then
-		Tutorial.Start(player)
+	elseif Config.Tutorial.Enabled and not War.IsDeployed(player) then
+		Tutorial.Start(player) -- (a redeploying recruit is about to be pivoted to their base, not the plot)
 	end
 	Quests.Push(player)
 end
@@ -93,6 +97,7 @@ local function onPlayerRemoving(player)
 end
 
 function Lifecycle.Init()
+	War.Respawn = Lifecycle.Spawn -- the war redeploys through a normal spawn
 	Players.CharacterAutoLoads = false
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)

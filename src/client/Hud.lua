@@ -412,6 +412,56 @@ function Hud.Init()
 	player:GetAttributeChangedSignal("Money"):Connect(updateMoney)
 	player:GetAttributeChangedSignal("Faction"):Connect(updateMoney)
 	updateMoney()
+	-- the war board (server/War.lua publishes War_* workspace attributes): tickets per side and the
+	-- hill, shown while deployed; plus the DOWNED overlay for your own body
+	local warBoard = make("Frame", { Size = UDim2.fromOffset(300, 92), Position = UDim2.new(0.5, -150, 0, 100), BackgroundColor3 = Color3.fromRGB(15, 15, 20), BackgroundTransparency = 0.35, BorderSizePixel = 0, Visible = false })
+	local hillLine = label({ Size = UDim2.new(1, -8, 0, 20), Position = UDim2.fromOffset(4, 2), TextSize = 14, Font = Enum.Font.GothamBold, Text = "", Parent = warBoard })
+	local rows = {}
+	for i, f in Config.War.Factions do
+		local row = make("Frame", { Size = UDim2.new(1, -8, 0, 18), Position = UDim2.fromOffset(4, 24 + (i - 1) * 22), BackgroundColor3 = Color3.fromRGB(28, 28, 34), BorderSizePixel = 0 }, warBoard)
+		local fill = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = f.Color, BackgroundTransparency = 0.35, BorderSizePixel = 0 }, row)
+		label({ Size = UDim2.new(0.6, 0, 1, 0), Position = UDim2.fromOffset(4, 0), TextXAlignment = Enum.TextXAlignment.Left, TextSize = 12, Font = Enum.Font.GothamBold, Text = f.Name, ZIndex = 2, Parent = row })
+		local value = label({ Size = UDim2.new(0.4, -4, 1, 0), Position = UDim2.new(0.6, 0, 0, 0), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 12, Text = "", ZIndex = 2, Parent = row })
+		rows[f.Id] = { fill = fill, value = value, def = f }
+	end
+	local downedLabel = label({ Size = UDim2.new(1, 0, 0, 60), Position = UDim2.new(0, 0, 0.6, 0), TextSize = 30, Font = Enum.Font.GothamBlack, Text = "", TextColor3 = Color3.fromRGB(255, 90, 90), Visible = false })
+	task.spawn(function()
+		while true do
+			task.wait(0.25)
+			local inWar = player:GetAttribute("Zone") == "Range" and workspace:GetAttribute("War_Round") ~= nil
+			warBoard.Visible = inWar
+			if inWar then
+				local owner, capturing, progress = workspace:GetAttribute("War_HillOwner") or "", workspace:GetAttribute("War_HillCapturing") or "", workspace:GetAttribute("War_HillProgress") or 0
+				local function nameOf(id)
+					for _, f in Config.War.Factions do
+						if f.Id == id then
+							return f.Name
+						end
+					end
+					return "nobody"
+				end
+				local text = ("HILL: %s"):format(if owner ~= "" then nameOf(owner) else "unclaimed")
+				if capturing ~= "" then
+					text ..= ("  ·  %s taking it %d%%"):format(nameOf(capturing), math.floor(progress * 100 + 0.5))
+				end
+				hillLine.Text = text
+				for id, row in rows do
+					local tickets = workspace:GetAttribute("War_Tickets_" .. id) or 0
+					local recruits = workspace:GetAttribute("War_Recruits_" .. id) or 0
+					row.fill.Size = UDim2.fromScale(math.clamp(tickets / math.max(Config.War.Tickets, 1), 0, 1), 1)
+					row.value.Text = ("%d tickets  ·  %d recruits"):format(tickets, recruits)
+					row.fill.BackgroundTransparency = if id == player:GetAttribute("Faction") then 0.1 else 0.45
+				end
+			end
+			local char = player.Character
+			local downed = char and char:GetAttribute("Downed")
+			downedLabel.Visible = downed == true
+			if downed then
+				local left = math.max(0, (char:GetAttribute("DownedUntil") or 0) - workspace:GetServerTimeNow())
+				downedLabel.Text = ("DOWNED\nan ally can revive you (hold X)  ·  bleeding out in %d s"):format(math.ceil(left))
+			end
+		end
+	end)
 	-- ammo counter (Ammo / MaxAmmo attributes, set by the server for guns; hidden for melee)
 	ammoLabel = label({ Size = UDim2.fromOffset(200, 34), Position = UDim2.new(1, -220, 1, -70), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 28, Font = Enum.Font.GothamBlack, Text = "", TextColor3 = Color3.fromRGB(235, 235, 240) })
 	-- shown while standing inside a safe zone (District.InSafeZone reads the tagged zone parts)

@@ -71,6 +71,36 @@ Config.War = {
 		{ Id = "Hollow", Name = "Hollow Court", Color = Color3.fromRGB(190, 110, 255), Motto = "Nothing left to lose." },
 	},
 	SwitchCost = 50, -- money to change sides once you have one
+	-- Wardogs (design/gdd/war.md): a perpetual three-sided ticket battle over a moving hill, fought in
+	-- the Range's arena until the war world is its own place. Every number is tuning.
+	Tickets = 150, -- per side at the start of a round
+	DeathTickets = 1, -- a side loses this many when one of its recruits (AI or player) dies
+	HillDrainSeconds = 2, -- the side holding the hill costs each other side one ticket this often
+	HillRadius = 16,
+	CaptureSeconds = 12, -- uncontested seconds to flip the hill to your side
+	HillMoveSeconds = 90, -- the hill moves on its own after this long...
+	HillMoveOnCapture = true, -- ...or right after a capture
+	HillPoints = { Vector3.new(0, 0, 0), Vector3.new(60, 0, -40), Vector3.new(-60, 0, -40), Vector3.new(0, 0, 50), Vector3.new(55, 0, 35), Vector3.new(-55, 0, 35) }, -- relative to the arena centre
+	Bases = { Vector3.new(0, 0, 95), Vector3.new(-85, 0, -55), Vector3.new(85, 0, -55) }, -- one per side, relative to the arena centre
+	-- AI recruits (Enemies.Defs.Recruit): pods re-enter at the base, the cloning facility trickles more
+	Squad = 3, -- recruits per pod
+	MaxRecruitsPerSide = 6,
+	PodIntervalSeconds = 25,
+	PodHeight = 140, -- studs above the base the pod appears at
+	PodFallSeconds = 2.2,
+	CloneIntervalSeconds = 18, -- the facility adds one recruit this often while under the cap
+	-- recruits (AI) move on the hill when they have nobody to shoot
+	-- downed players: an ally can revive, or you bleed out and redeploy from your base
+	DownedSeconds = 20,
+	ReviveSeconds = 2.5, -- hold X on a downed ally
+	ReviveHealthFraction = 0.4,
+	RedeploySeconds = 5, -- after bleeding out / dying
+	-- pay (money): zone time, revives, takedowns
+	MoneyPerZoneSecond = 1,
+	MoneyPerRevive = 15,
+	MoneyPerTakedown = 10,
+	MoneyPerPlayerTakedown = 30,
+	MoneyRoundWin = 60,
 }
 
 -- Momentum & cancels (design/gdd/momentum.md): the Nero-study layer on top of the timing core.

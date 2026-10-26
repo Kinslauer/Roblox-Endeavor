@@ -427,6 +427,81 @@ do
 	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
 	run(0.5)
 end
+-- The war (design/gdd/war.md, Phase 3 build order 2): three sides, the moving hill, tickets, recruits, downed/revive, redeploy
+do
+	local War = M.mockEnv.__require(SSS.Server.War)
+	local Hideout = M.mockEnv.__require(SSS.Server.Hideout)
+	local NPCs = M.mockEnv.__require(SSS.Server.NPCs)
+	local Combat = M.mockEnv.__require(SSS.Server.Combat)
+	local Wallet = M.mockEnv.__require(SSS.Server.Wallet)
+	local PlayerData = M.mockEnv.__require(SSS.Server.PlayerData)
+	local Config = M.mockEnv.__require(RS.Shared.Config)
+	local CS = game_:GetService("CollectionService")
+	as(player)
+	local me = player.Character
+	local data = PlayerData.Get(player)
+	local W = Config.War
+	check("war built: three bases and a hill", workspace_:FindFirstChild("War") ~= nil and #CS:GetTagged("WarBase") == 3 and #CS:GetTagged("WarHill") == 1 and workspace_:GetAttribute("War_Round") == 1)
+	-- deploy from the hideout to your side's base
+	Hideout.Extract(player); run(0.2)
+	check("deploy puts you at your side's base, deployed and first person", Hideout.Deploy(player) and player:GetAttribute("Zone") == "Range" and me:GetAttribute("Deployed") == true and player:GetAttribute("ForceFirstPerson") == true and (me.HumanoidRootPart.Position - War.Sides()[data.Faction].Base).Magnitude < 10)
+	Combat.ClearProtection(me)
+	-- recruits arrive in pods for every side
+	run(W.PodFallSeconds + 6)
+	local alive = 0
+	for _, side in War.Sides() do alive += side.Alive end
+	check("pods opened into recruits on every side", alive >= 3 * math.min(W.Squad, W.MaxRecruitsPerSide) and workspace_:GetAttribute("War_Recruits_" .. data.Faction) >= W.Squad)
+	-- friendly fire: an own-side recruit cannot hurt you, an enemy recruit can
+	local mine, theirs
+	for id, side in War.Sides() do for model in side.Recruits do if id == data.Faction then mine = mine or model else theirs = theirs or model end end end
+	local hp = me.Humanoid.Health
+	check("no friendly fire inside the war", Combat.Damage(mine, me, 10, {}) == "none" and me.Humanoid.Health == hp)
+	check("the other sides can hurt you", Combat.Damage(theirs, me, 10, {}) == "hit" and me.Humanoid.Health < hp)
+	-- the hill: stand on it alone -> your side takes it; the holder drains the others
+	local hill = War.Hill()
+	me:PivotTo(M.CF.new(hill.Position + M.V3.new(0, 3, 0)))
+	local money0 = Wallet.Get(player)
+	local ticketsBefore = {}
+	for id, side in War.Sides() do ticketsBefore[id] = side.Tickets end
+	run(W.CaptureSeconds + 1.5)
+	check("a side alone on the hill captures it", hill.Owner == data.Faction and workspace_:GetAttribute("War_HillOwner") == data.Faction)
+	check("zone time pays", Wallet.Get(player) > money0)
+	run(W.HillDrainSeconds * 2 + 0.6)
+	local drained = true
+	for id, side in War.Sides() do if id ~= data.Faction and side.Tickets >= ticketsBefore[id] then drained = false end end
+	check("holding the hill drains the other sides' tickets", drained and War.Sides()[data.Faction].Tickets == ticketsBefore[data.Faction])
+	-- downed, then revived by an ally
+	me.Humanoid.Health = 10
+	local r = Combat.Damage(theirs, me, 50, {})
+	check("a lethal hit downs a deployed player instead of killing", r == "hit" and me:GetAttribute("Downed") == true and me.Humanoid.Health > 0 and me.HumanoidRootPart:FindFirstChild("RevivePrompt") ~= nil)
+	local allyMoney = 0
+	check("an ally revives you", War.Revive(me, mine) and me:GetAttribute("Downed") == false and me.Humanoid.Health >= me.Humanoid.MaxHealth * W.ReviveHealthFraction - 0.01)
+	-- bleed out -> a war death: a ticket, no permadeath, redeploy
+	local inv = M.mockEnv.__require(SSS.Server.Inventory).Count(player, "ArcRifle")
+	local level, money1 = data.Level, Wallet.Get(player)
+	local ticketsMine = War.Sides()[data.Faction].Tickets
+	me.Humanoid.Health = 10
+	Combat.Damage(theirs, me, 50, {}) -- downed again
+	run(W.DownedSeconds + 0.5) -- nobody comes: bleed out
+	check("bleeding out costs a ticket, not the character", War.Sides()[data.Faction].Tickets == ticketsMine - W.DeathTickets and PlayerData.Get(player) == data and data.Level == level and Wallet.Get(player) == money1)
+	run(W.RedeploySeconds + 0.5)
+	confirmLook(player) -- the earlier profile reset left the creator pending for the new body (test artifact)
+	run(1)
+	local me2 = player.Character
+	check("redeployed at the base with a fresh body", me2 ~= nil and me2 ~= me and me2:GetAttribute("Deployed") == true and player:GetAttribute("Zone") == "Range" and (me2.HumanoidRootPart.Position - War.Sides()[data.Faction].Base).Magnitude < 10)
+	-- takedowns pay; leaving ends the deployment
+	local money2 = Wallet.Get(player)
+	theirs.Humanoid.Health = 0; run(0.5) -- credited to us? only if we were the last attacker
+	Combat.Damage(me2, mine, 0, {}) -- (no-op: same side)
+	War.Leave(player); run(0.3)
+	check("leaving the war returns to the hideout, undeployed", player:GetAttribute("Zone") == "Hideout" and me2:GetAttribute("Deployed") == nil)
+	-- back to the city for the rest of the scenario
+	Hideout.Leave(player); run(0.2)
+	Combat.ClearProtection(player.Character)
+	Remotes.EquipItem:FireServer("PipeClub"); run(0.3)
+	player.Character.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
+	run(0.5)
+end
 -- Momentum (design/gdd/momentum.md): dodge-cancel keeps the combo, side dodges last longer, Snatch and Buster
 do
 	as(player)

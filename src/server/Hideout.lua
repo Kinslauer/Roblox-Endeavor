@@ -19,6 +19,7 @@ local Inventory = require(script.Parent.Inventory)
 local PlayerData = require(script.Parent.PlayerData)
 local Range = require(script.Parent.Range)
 local Wallet = require(script.Parent.Wallet)
+local War = require(script.Parent.War)
 local WorldPhase = require(script.Parent.WorldPhase)
 
 local H = Config.Hideout
@@ -158,14 +159,18 @@ function Hideout.Extract(player)
 	return Hideout.Enter(player)
 end
 
--- Deploy to the war: the Range stands in until Wardogs (build order 2).
+-- Deploy to the war (server/War.lua): your side's base on the battlefield.
 function Hideout.Deploy(player)
 	local data = PlayerData.Get(player)
 	if data and not data.Faction then
 		announce(player, "Choose a side first - the consoles on the left.")
 		return false
 	end
-	return Range.Enter(player)
+	if not Range.Unlocked(player) then
+		announce(player, ("The war does not want you yet. Awaken and take %d life first."):format(Config.Range.UnlockKills))
+		return false
+	end
+	return War.Deploy(player)
 end
 
 -- ---------------------------------------------------------------------------------------------

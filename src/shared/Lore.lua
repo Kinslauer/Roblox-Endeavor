@@ -10,7 +10,7 @@ Lore.Lines = {
 	Flicker = "There is a half-second where the world runs thin. Press into it and it answers.",
 	Emergence = "The walls fall away. You were never alone.",
 	FirstKill = "Something behind your eyes clicks into place. The Rift in the plaza will answer you now.",
-	FirstRift = "The Range is not a place. It is the city remembering guns.",
+	FirstRift = "The other world has never known anything but the war. The recruits know they are in hell. They have accepted it.",
 	FirstDeath = "The city keeps what you carried. It does not keep you.",
 	FirstExtract = "The train does not ask where you have been. This room is the only place that is yours.",
 }

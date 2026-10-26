@@ -52,6 +52,21 @@ Enemies.Defs = {
 		Xp = 50, Loot = "Gunner",
 		Look = look(1, 2, 3, 4, Color3.fromRGB(50, 70, 95)),
 	},
+	-- Phase-3 war world: the infantry. Every side's AI recruits are this variant, tinted by faction
+	-- (NPCs.Spawn opts.Faction / opts.Cloth); they draw the basic kit (Arc Rifle) until the faction
+	-- pool exists. They target the other two sides - players and recruits alike - and walk to the hill
+	-- when nobody is in sight (opts.Home as a function).
+	Recruit = {
+		Name = "Recruit", QuestTag = "Recruit", Weapon = "ArcRifle",
+		Health = 90, Speed = 16, Aggro = 120, Leash = 400, DespawnAfter = 600,
+		Range = 110, KeepDistance = { 18, 40 },
+		Attack = { Damage = 11, Posture = 3, Windup = 0.45, Active = 0.05, End = 1.0, Range = 110, Arc = 0.3, Ranged = true, Type = "Arc", Stamina = 0 },
+		Label = 1,
+		Recovery = { 0.5, 1.1 },
+		Poise = { Hits = 2, Reset = 2 },
+		Xp = 30, Loot = "Gunner",
+		Look = look(2, 3, 2, 2, Color3.fromRGB(70, 70, 76)),
+	},
 	-- Phase-2 Range enemy: a flying sentry. Weak, fast, keeps a distance band in the air and strafes
 	-- around you while it fires; its rotors glow with the windup (the swing cue sits on its body).
 	-- Flying enemies use a physics-driven body (NPCs.lua "Flying"), not pathfinding, and have no Weapon

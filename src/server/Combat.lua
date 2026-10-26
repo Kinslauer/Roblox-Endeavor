@@ -464,6 +464,15 @@ local function poiseBroken(victim, vs, t, opts)
 	return false
 end
 
+-- Which side a body fights for: players carry it on the Player, NPCs on the model. nil = nobody's.
+function Combat.FactionOf(char)
+	local player = Players:GetPlayerFromCharacter(char)
+	return if player then player:GetAttribute("Faction") else char:GetAttribute("Faction")
+end
+
+-- The war installs this: (victim, attacker, amount) -> true when it handled a lethal hit itself.
+Combat.LethalHook = nil
+
 -- ===== Launcher + juggle (Config.Momentum, momentum.md 2.5) =====
 
 function Combat.IsJuggled(char)
@@ -538,6 +547,19 @@ local function applyDamage(attacker, victim, amount, opts)
 			return "none"
 		end
 	end
+	do -- the war (Config.War): no friendly fire between recruits of the same side, players or AI.
+		-- Only in the war zone: in the city, conduits owe each other nothing.
+		local af, vf = Combat.FactionOf(attacker), Combat.FactionOf(victim)
+		if af and vf and af == vf then
+			local function atWar(char)
+				local p = Players:GetPlayerFromCharacter(char)
+				return if p then p:GetAttribute("Zone") == "Range" else char:GetAttribute("Faction") ~= nil
+			end
+			if atWar(attacker) or atWar(victim) then
+				return "none"
+			end
+		end
+	end
 
 	local vs, t, vd = st(victim), os.clock(), Gear.OfChar(victim)
 	if t < vs.iframes then
@@ -590,6 +612,12 @@ local function applyDamage(attacker, victim, amount, opts)
 	end
 	amount *= 1 - math.min(C.MaxResist, vd.Resist[opts.Type or "Physical"] or 0)
 
+	-- a lethal hit on a deployed player goes through the war's hook (downed instead of dead)
+	if amount >= vhum.Health and Combat.LethalHook and Combat.LethalHook(victim, attacker, amount) then
+		tag(attacker, victim)
+		fx("Hit", victim, { attacker = attacker, amount = amount })
+		return "hit"
+	end
 	vhum:TakeDamage(amount)
 	tag(attacker, victim)
 

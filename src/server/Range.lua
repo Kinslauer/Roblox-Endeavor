@@ -98,6 +98,8 @@ end
 -- ---------------------------------------------------------------------------------------------
 local firingLine = O + Vector3.new(0, TOP, 70) -- you stand here, shooting toward -Z
 local arenaCenter = O + Vector3.new(0, TOP, -150)
+Range.ArenaCenter = arenaCenter -- the war (server/War.lua) fights here
+Range.FiringLine = firingLine
 
 local function buildGround()
 	part({ Name = "RangeFloor", Size = Vector3.new(220, 4, 340), Position = O + Vector3.new(0, TOP - 2, -40), Color = Color3.fromRGB(40, 42, 50), Material = Enum.Material.Concrete })
