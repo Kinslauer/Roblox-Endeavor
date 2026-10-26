@@ -12,6 +12,7 @@ Lore.Lines = {
 	FirstKill = "Something behind your eyes clicks into place. The Rift in the plaza will answer you now.",
 	FirstRift = "The Range is not a place. It is the city remembering guns.",
 	FirstDeath = "The city keeps what you carried. It does not keep you.",
+	FirstExtract = "The train does not ask where you have been. This room is the only place that is yours.",
 }
 
 Lore.Seconds = 7 -- how long a lore banner stays up

@@ -65,3 +65,10 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] Gunplay (Range): ammo counter bottom right (18 / 18 rifle). Shots kick the camera up and drift right then left — can you learn to pull against it? T reloads; an empty click reloads on its own.
 - [ ] Hip fire while moving scatters; stop and hold RMB and the cone tightens after a beat. Sprinting drops the sights.
 - [ ] Headshots on Gunners/Targets read "HEADSHOT" and hit twice as hard. Does the rifle still feel fair at 100 studs?
+
+## 9. Round 4 — the hideout (Phase 3, build order 1), added 2026-10-26
+- [ ] Find the station: south edge of each district, street line 2 (west of the plaza column), green "STATION · EXTRACT" sign. Hold X for 4 s. Try it right after hitting someone: it should refuse.
+- [ ] The hideout: a warm private room, "SAFE ZONE · Hideout". Right side: Deploy / Return. Back: Stash deposit / withdraw. Left: the three faction consoles. Does the room read as *yours*?
+- [ ] Pick a side; the HUD shows "Side · MONEY n". Deploy (needs a side) → the Range in first person; the Rift/Return there now brings you back to the hideout, not the plaza. Waves pay money.
+- [ ] Stash: deposit, then die in the city — the stash, money and side survive; you wake in District 1 as a fresh character. Withdraw at the hideout afterwards.
+- [ ] Log off in the hideout, rejoin: you wake in the hideout.

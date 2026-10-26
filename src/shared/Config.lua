@@ -48,7 +48,29 @@ Config.Range = {
 	Waves = { { Gunner = 2 }, { Gunner = 2, Drone = 2 }, { Gunner = 3, Drone = 3 } },
 	WaveRing = 44, -- studs from the arena centre where a wave spawns
 	WaveRewardScrap = 10,
+	WaveRewardMoney = 25, -- the war pays money (Phase 3 wallet); scrap stays for the city loop
 	EntryProtection = 4, -- seconds of ForceField after travelling
+}
+
+-- Phase 3 (design/phase-3-brief.md): the hideout between the worlds, extraction hubs, the wallet.
+Config.Hideout = {
+	Origin = Vector3.new(0, 0, -1400), -- a private room offset from the city; the swap point between worlds
+	Size = 90, -- studs square
+	ExtractSeconds = 4, -- hold X at a hub this long to extract
+	TravelProtection = 4, -- seconds of ForceField after any world change
+	Hubs = { Line = 2, FromEdge = 30 }, -- one station per district: on street line Line, FromEdge studs in from the south edge
+	NoExtractInCombatSeconds = 6, -- hit a player (or been hit) this recently: the train will not take you
+}
+
+-- The war world's sides. Players pick one at the hideout; AI recruits fill every side. Switching
+-- costs money and is not instant, so sides stay populated.
+Config.War = {
+	Factions = {
+		{ Id = "Ashen", Name = "Ashen Compact", Color = Color3.fromRGB(255, 120, 60), Motto = "What burns, belongs to us." },
+		{ Id = "Meridian", Name = "Meridian Union", Color = Color3.fromRGB(80, 170, 255), Motto = "Order is the only shelter." },
+		{ Id = "Hollow", Name = "Hollow Court", Color = Color3.fromRGB(190, 110, 255), Motto = "Nothing left to lose." },
+	},
+	SwitchCost = 50, -- money to change sides once you have one
 }
 
 -- Momentum & cancels (design/gdd/momentum.md): the Nero-study layer on top of the timing core.

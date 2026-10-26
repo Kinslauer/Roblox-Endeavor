@@ -46,18 +46,26 @@ collect them and see fit.
 | Scrap as the only currency | **Money** (war world) + scrap (Conduit world) | One wallet on the profile; money moves at the hideout; shipments are timed item transfers. |
 | Lore: "the Range is the city remembering guns" | The war is a real place funded by what conduits find | Lore lines rewrite (Lore.lua is data). |
 
+## Decided (owner, 2026-10-26 — answers to the questions below)
+- **Permadeath stays in the Conduit world only.** Dying in the war world costs the deployment: you come back as a fresh
+  clone from the next pod and your side loses tickets. Gear *shipped* to the war world is at risk there; the Conduit
+  character and the hideout stash are safe.
+- **Recruits** are what soldiers on the war world are called — players included. "They all know they're really just in
+  hell. They've accepted it." AI soldiers populate every team and draw their kit from either a **basic gear kit** or a
+  **faction pool** generated from conduit supplies. **Shipments go to their respective recruits** (your own
+  deployments); AI recruits draw from the pool; conduits supply the pool separately. Two supply paths, then: personal
+  shipments → your loadout; pool donations → what your side's AI shows up wearing.
+- **Three player factions from day one.** You pick a side at the hideout; NPC infantry fills the gaps on all three
+  sides, and all three fight each other.
+- **First region** after the city: the **solarpunk enclave** — greener, safer, a trade hub with the first attachments.
+
 ## Assumed (say the word and I change them)
-- **Permadeath stays in the Conduit world only.** Dying in the war world costs the deployment (you come back as a fresh
-  clone from the next pod; your team loses tickets) — not the Conduit character. Gear *shipped* to the war world is at
-  risk there; gear left in the hideout stash is safe. Otherwise nobody would ever ship anything.
 - **Extraction** = reaching a transport hub (train station, airstrip, garage) and holding X; a short timer; nobody can
-  hurt you once you are on the train. The hideout is private and persistent (stash, bench, world select). Extracting
-  is the only way out of a Conduit run; dying is the other.
-- **Recruits** = the player's war-world bodies and NPC squadmates on their faction; shipments equip them.
-- **Three sides** = three factions the player can deploy for; at first, the player's faction vs two NPC factions,
-  all three fighting each other. Player-vs-player across factions comes with the place split.
+  hurt you once you are on the train. The hideout is private and persistent (stash, bench, world select, faction
+  choice). Extracting is the only way out of a Conduit run; dying is the other.
 - The war world is **first person** (the sight picture is the whole point); the Conduit world keeps the third-person /
   C-toggle.
+- Faction choice is sticky per character (switching costs money and a cooldown) so sides stay populated.
 - Build in-place first (offset zones, like the arena and the Range), split into places (TeleportService, shared
   DataStore) only once each loop is fun — the Phase-2 rule.
 
@@ -65,12 +73,14 @@ collect them and see fit.
 1. **Hideout + extraction** — a private offset zone with a stash, a world-select console, the practice lane and the
    weapon bench placeholder; extraction hubs in District 1 and 2 (hold X, timer, protection); `Rift` kept for dev.
    The wallet: `Money` on the profile, shown in the HUD. *Small; everything else hangs off it.*
-2. **War world v1 (Wardogs)** — in the Range arena: three factions, a moving hill (zone moves on capture or on a
-   timer), tickets per side, pods that re-enter and open into infantry squads, a cloning facility that trickles
-   reinforcements, revive (hold X on a downed ally), score for zone time / revives / takedowns → money. Deployment
-   from the hideout; death = redeploy from the next pod. Faction-aware NPC AI.
-3. **Shipments** — send stash items to the war world on a timer (`Config.Shipments.Minutes`), delivered to your
-   deployment loadout / recruits; money back the other way is instant at the hideout.
+2. **War world v1 (Wardogs)** — in the Range arena: three player factions chosen at the hideout, a moving hill (zone
+   moves on capture or on a timer), tickets per side, pods that re-enter and open into AI recruit squads, a cloning
+   facility that trickles reinforcements, revive (hold X on a downed ally), score for zone time / revives / takedowns
+   → money. Deployment from the hideout; death = redeploy from the next pod. Faction-aware AI (every side fights the
+   other two; players are targets for the other two sides).
+3. **Shipments + the pool** — send stash items to the war world on a timer (`Config.Shipments.Minutes`): personal
+   shipments land in your deployment loadout; pool donations raise the kit your side's AI recruits draw from. Money
+   back the other way is instant at the hideout.
 4. **Weapon bench v1** — gun = frame + parts; parts as items with stat deltas (recoil, spread, magazine, reload,
    ADS speed, light/laser/optic behaviour); strip and rebuild UI at the bench; the Gun block becomes the computed
    result. Regional attachment loot tables.
@@ -87,8 +97,9 @@ A player extracts from District 1 with scrap and an attachment, stands in their 
 the war, deploys, fights one full moving-hill rotation on the Range battlefield, comes back with money, buys /
 fits a part at the bench, and takes the train to a second region — every step readable, every number data.
 
-## Questions for the owner (the ones that change the build)
-1. Permadeath: Conduit world only (assumed), or does a war-world death also end the Conduit character?
-2. Recruits: your own clone bodies + NPC squadmates (assumed), or do you command a squad directly?
-3. War world sides: player + two NPC factions first (assumed), or three player factions from day one?
-4. First region after the city: solarpunk enclave (safe-ish trade hub) or more wasteland (harder, better loot)?
+## Questions asked 2026-10-26 (answered above, kept for the record)
+1. Permadeath: Conduit world only, or does a war-world death also end the Conduit character? → *deployment only*
+2. Recruits: your own clone bodies + NPC squadmates, or a squad you command? → *all soldiers are recruits; AI draw
+   from a basic kit or the faction pool; shipments go to your own*
+3. War world sides: player + two NPC factions first, or three player factions from day one? → *three player factions*
+4. First region after the city: solarpunk enclave or deeper wasteland? → *solarpunk enclave*

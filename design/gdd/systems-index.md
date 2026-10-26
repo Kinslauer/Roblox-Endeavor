@@ -67,6 +67,7 @@ brief names). "Owning GDD" is a file under `design/gdd/`.
 | 38 | District 2 + gate street | `District.Districts`, `District.Gate`, `server/District.lua` (ctx), `WorldPhase.eligibleSpawns`, `Enemies.Ambush.ByDistrict` | Gameplay | Phase 2 | Implemented (owner playtest pending) | `production/epics/district-2/EPIC.md` | Second seeded district (Ferrite Court) at `District.Pitch()` along +X, gate street through both walls, spawn pads split Fresh/Awakened, heavier ambush mix in D2. |
 | 39 | Drone (flying enemy) | `Enemies.Defs.Drone`, `NPCs.buildDroneRig` + flight AI | Gameplay | Phase 2 | Implemented (owner playtest pending) | `design/gdd/enemies.md` (Flying enemies) | Constraint-flown machine body, orbit/strafe in the air, LOS fire along the pitched look; in Range waves 2–3. |
 | 40 | Gunplay (Tarkov study) | `Config.Gunplay`, `Weapons.*.Gun`, `Combat` (zones, spread, ammo, ADS), `client/Aim` (recoil), `Hud` (ammo) | Core | Phase 2 | Implemented (owner playtest pending) | `design/gdd/gunplay.md` | Hit zones, honest camera recoil with patterns, stance spread, magazines + reloads, ADS state. |
+| 41 | Hideout + extraction + wallet | `server/Hideout.lua`, `server/Wallet.lua`, `Config.Hideout`, `Config.War`, `PlayerData.PERSIST` | Core | Phase 3 | Implemented (owner playtest pending) | `production/epics/hideout/EPIC.md` | Stations in every district (hold X, refused in combat) → private safe hideout: deploy, return, stash (survives permadeath), faction choice; Money wallet on the HUD; the Range leaves into the hideout. |
 
 ---
 
@@ -170,7 +171,7 @@ Systems without a GDD, ordered by how many open MVP epics touch them.
 
 | Metric | Count |
 |--------|-------|
-| Total systems identified | 40 (36 in code, 4 planned) |
+| Total systems identified | 41 (37 in code, 4 planned) |
 | Design docs started | 4 system GDDs + concept + this index |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |

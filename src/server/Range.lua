@@ -17,6 +17,7 @@ local Gear = require(script.Parent.Gear)
 local Inventory = require(script.Parent.Inventory)
 local NPCs = require(script.Parent.NPCs)
 local PlayerData = require(script.Parent.PlayerData)
+local Wallet = require(script.Parent.Wallet)
 
 local R = Config.Range
 local Range = {}
@@ -218,7 +219,8 @@ local function startWave(player)
 						for _, p in Players:GetPlayers() do
 							if p:GetAttribute("Zone") == Range.Zone then
 								Inventory.Add(p, "Scrap", R.WaveRewardScrap)
-								announce(p, ("Wave %d cleared. +%d scrap."):format(wave.index, R.WaveRewardScrap))
+								Wallet.Add(p, R.WaveRewardMoney) -- the war pays (Phase 3 wallet)
+								announce(p, ("Wave %d cleared. +%d scrap, +%d money."):format(wave.index, R.WaveRewardScrap, R.WaveRewardMoney))
 							end
 						end
 					end
@@ -270,10 +272,17 @@ function Range.Enter(player)
 	return true
 end
 
+-- Where leaving takes you. The hideout (Phase 3) installs itself here; without it, Relay Plaza.
+Range.OnLeave = nil
+
 function Range.Leave(player)
 	local char = player.Character
 	player:SetAttribute("Zone", nil)
 	player:SetAttribute("ForceFirstPerson", nil)
+	if Range.OnLeave then
+		Range.OnLeave(player)
+		return
+	end
 	if char and char:FindFirstChild("HumanoidRootPart") then
 		char:PivotTo(CFrame.new(R.RiftPlaza + Vector3.new(0, 4, 6)))
 		Combat.Protect(char, R.EntryProtection)
@@ -295,7 +304,7 @@ function Range.Init()
 	buildGround()
 	buildTargets()
 	rift(R.RiftPlaza, "Rift", "Enter the Range", function(player) Range.Enter(player) end)
-	rift(firingLine + Vector3.new(0, 0, 18), "Rift", "Return to Relay Plaza", function(player) Range.Leave(player) end)
+	rift(firingLine + Vector3.new(0, 0, 18), "Rift", "Return", function(player) Range.Leave(player) end)
 	console(arenaCenter + Vector3.new(0, 0, 30), "Wave Console", "Start the next wave", MAGENTA, startWave)
 	-- leaving the zone by dying: Lifecycle.Spawn clears the Zone / ForceFirstPerson attributes
 	Range.Built = { Targets = #targets }

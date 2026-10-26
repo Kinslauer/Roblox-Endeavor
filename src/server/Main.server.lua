@@ -3,6 +3,7 @@ local Server = script.Parent
 local District = require(Server.District)
 local Arena = require(Server.Arena)
 local Range = require(Server.Range)
+local Hideout = require(Server.Hideout)
 local Gear = require(Server.Gear)
 local WorldPhase = require(Server.WorldPhase)
 local Stats = require(Server.Stats)
@@ -28,6 +29,10 @@ end
 ok, err = pcall(Range.Init)
 if not ok then
 	warn("[Range] failed to build:", err)
+end
+ok, err = pcall(Hideout.Init)
+if not ok then
+	warn("[Hideout] failed to build:", err)
 end
 WorldPhase.Init()
 Gear.Init()

@@ -28,7 +28,16 @@ local TEMPLATE = {
 	Cyber = {}, -- [slot] = itemId
 	SkillSlots = {}, -- ["1"] = skillId (string keys so the table stays a dictionary)
 	Inventory = {},
+	-- Phase 3: the hideout is the account's, not the character's (see PERSIST below)
+	Money = 0, -- the war world's pay, spent at the hideout
+	Stash = {}, -- items left in the hideout: safe from permadeath
+	Faction = false, -- Config.War.Factions[*].Id once chosen at the hideout
+	Location = "City", -- "City" | "Hideout": where a (re)joining character wakes
+	HideoutSeen = false,
 }
+
+-- Fields that survive a permadeath wipe: the city keeps what you carried, not what you left at home.
+local PERSIST = { "Money", "Stash", "Faction" }
 for _, name in Config.Stats.Names do
 	TEMPLATE.Stats[name] = 0
 end
@@ -57,11 +66,20 @@ local function newCharacter(data)
 end
 
 local function wipe(data)
+	local kept = {}
+	for _, key in PERSIST do
+		kept[key] = data[key]
+	end
 	for key in data do
 		data[key] = nil
 	end
 	for key, value in TEMPLATE do
 		data[key] = deepCopy(value)
+	end
+	for key, value in kept do
+		if value ~= nil then
+			data[key] = value
+		end
 	end
 	newCharacter(data)
 end

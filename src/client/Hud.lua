@@ -20,7 +20,7 @@ local player = Players.LocalPlayer
 local Hud = {}
 Hud.Panels = {} -- name -> Frame (Input toggles these)
 
-local gui, banner, flickerLabel, levelLabel, questLabel, zoneLabel, ammoLabel
+local gui, banner, flickerLabel, levelLabel, questLabel, zoneLabel, ammoLabel, moneyLabel
 local bannerToken = 0
 local cooldowns = {} -- skillId -> os.clock() when ready
 
@@ -395,6 +395,23 @@ function Hud.Init()
 	end)
 	banner = label({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 60), TextSize = 26, Text = "", TextTransparency = 1 })
 	questLabel = label({ Size = UDim2.fromOffset(360, 24), Position = UDim2.new(1, -380, 0, 20), TextXAlignment = Enum.TextXAlignment.Right, Text = "" })
+	-- wallet + side (Money / Faction player attributes; Phase 3): under the quest line, top right
+	moneyLabel = label({ Size = UDim2.fromOffset(360, 20), Position = UDim2.new(1, -380, 0, 46), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 15, Font = Enum.Font.GothamBold, Text = "", TextColor3 = Color3.fromRGB(255, 220, 120) })
+	local function updateMoney()
+		local money, faction = player:GetAttribute("Money"), player:GetAttribute("Faction")
+		local side = ""
+		if faction then
+			for _, f in Config.War.Factions do
+				if f.Id == faction then
+					side = f.Name .. "  ·  "
+				end
+			end
+		end
+		moneyLabel.Text = if money ~= nil then ("%sMONEY %d"):format(side, money) else ""
+	end
+	player:GetAttributeChangedSignal("Money"):Connect(updateMoney)
+	player:GetAttributeChangedSignal("Faction"):Connect(updateMoney)
+	updateMoney()
 	-- ammo counter (Ammo / MaxAmmo attributes, set by the server for guns; hidden for melee)
 	ammoLabel = label({ Size = UDim2.fromOffset(200, 34), Position = UDim2.new(1, -220, 1, -70), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 28, Font = Enum.Font.GothamBlack, Text = "", TextColor3 = Color3.fromRGB(235, 235, 240) })
 	-- shown while standing inside a safe zone (District.InSafeZone reads the tagged zone parts)

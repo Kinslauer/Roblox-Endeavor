@@ -192,7 +192,9 @@ do
 	local nd = #District.Districts
 	check("districts built with their spawn pads", workspace_:FindFirstChild("District") ~= nil and DistrictServer.Built and DistrictServer.Built.Spawns == District.Spawns.Count and DistrictServer.Built.Districts == 2)
 	check("arena pads are not CitySpawns in default dev config", #CS:GetTagged("CitySpawn") == District.Spawns.Count * nd)
-	check("one safe zone marker per district, tagged with its radius", #CS:GetTagged("SafeZone") == nd and CS:GetTagged("SafeZone")[1]:GetAttribute("Radius") == District.SafeZone.Radius)
+	local plazaZones = 0
+	for _, z in CS:GetTagged("SafeZone") do if z:GetAttribute("District") and z:GetAttribute("Radius") == District.SafeZone.Radius then plazaZones += 1 end end
+	check("one plaza safe zone per district, tagged with its radius", plazaZones == nd)
 	check("plaza centre is inside, a street pad is outside", District.InSafeZone(M.V3.new(0, 5, 0)) and not District.InSafeZone(M.V3.new(120, 5, 0)))
 	-- District 2: its own plaza at the pitch, a gate street joining the two, spawn pads split by Awakened
 	do
@@ -292,9 +294,11 @@ do
 	local mark2 = #M.FireLog
 	for _ = 1, 4 do Remotes.Attack:FireServer(dir); run(0.4) end
 	check("rifle shots knock the target down", target.Humanoid.Health < hp0)
-	-- back through the rift
+	-- back through the rift: the war lets you out into the hideout (Phase 3), first person released
 	Range.Leave(player); run(0.3)
-	check("rift back clears the zone flags", player:GetAttribute("Zone") == nil and player:GetAttribute("ForceFirstPerson") == nil)
+	check("rift back lands in the hideout, first person released", player:GetAttribute("Zone") == "Hideout" and player:GetAttribute("ForceFirstPerson") == nil)
+	M.mockEnv.__require(SSS.Server.Hideout).Leave(player); run(0.2)
+	check("hideout -> city clears the zone", player:GetAttribute("Zone") == nil)
 	Combat.ClearProtection(me) -- travel protection would otherwise swallow the enemy checks below
 	Remotes.EquipItem:FireServer("PipeClub"); run(0.3)
 	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
@@ -366,6 +370,60 @@ do
 	check("hip fire scatters inside the spread cone", #ends >= 4 and scattered)
 	Remotes.EquipItem:FireServer("PipeClub"); run(0.3)
 	check("melee weapon clears the ammo counter", me:GetAttribute("Ammo") == nil)
+	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
+	run(0.5)
+end
+-- Hideout (design/phase-3-brief.md, build order 1): extraction hubs, the room, stash, wallet, faction, deploy/return
+do
+	local Hideout = M.mockEnv.__require(SSS.Server.Hideout)
+	local Range = M.mockEnv.__require(SSS.Server.Range)
+	local Wallet = M.mockEnv.__require(SSS.Server.Wallet)
+	local PlayerData = M.mockEnv.__require(SSS.Server.PlayerData)
+	local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+	local District = M.mockEnv.__require(RS.Shared.District)
+	local Config = M.mockEnv.__require(RS.Shared.Config)
+	local CS = game_:GetService("CollectionService")
+	as(player)
+	local me = player.Character
+	local data = PlayerData.Get(player)
+	check("hideout built with one station per district", workspace_:FindFirstChild("Hideout") ~= nil and Hideout.Built and Hideout.Built.Hubs == #District.Districts and #CS:GetTagged("ExtractHub") == #District.Districts)
+	local hubPos = CS:GetTagged("ExtractHub")[1].Position
+	check("the station stands inside its district's footprint", District.At(hubPos) == 1)
+	-- extraction is refused mid-fight, allowed otherwise
+	player:SetAttribute("LastCombat", M.setNow())
+	check("no extraction while in combat", Hideout.Extract(player) == false and player:GetAttribute("Zone") == nil)
+	player:SetAttribute("LastCombat", nil)
+	local ok = Hideout.Extract(player)
+	local pos = me.HumanoidRootPart.Position
+	check("extracting takes you to the hideout", ok and player:GetAttribute("Zone") == "Hideout" and (pos - Config.Hideout.Origin).Magnitude < Config.Hideout.Size and data.Location == "Hideout")
+	check("the hideout is a safe zone", District.InSafeZone(pos) == true)
+	-- stash: everything not worn goes in, survives a wipe, comes back out
+	Inventory.Add(player, "Wire", 5)
+	local before = Inventory.Count(player, "Wire")
+	local moved = Hideout.DepositAll(player)
+	check("deposit moves unworn items into the stash", moved >= before and Inventory.Count(player, "Wire") == 0 and (data.Stash.Wire or 0) >= before and Inventory.Count(player, data.Equipped) == 1)
+	-- wallet + faction
+	Wallet.Add(player, 120)
+	check("wallet pays into the Money attribute", Wallet.Get(player) == 120 and player:GetAttribute("Money") == 120)
+	check("deploy refused without a side", Hideout.Deploy(player) == false and player:GetAttribute("Zone") == "Hideout")
+	check("faction chosen at the hideout", Hideout.SetFaction(player, "Ashen") and data.Faction == "Ashen" and player:GetAttribute("Faction") == "Ashen")
+	check("changing sides costs money", Hideout.SetFaction(player, "Meridian") and Wallet.Get(player) == 120 - Config.War.SwitchCost)
+	-- deploy -> the Range (stand-in war world), leave -> back home, not the plaza
+	check("deploy from the hideout enters the war zone", Hideout.Deploy(player) and player:GetAttribute("Zone") == "Range")
+	Range.Leave(player); run(0.2)
+	check("leaving the war returns to the hideout", player:GetAttribute("Zone") == "Hideout" and (me.HumanoidRootPart.Position - Config.Hideout.Origin).Magnitude < Config.Hideout.Size)
+	-- persistence: money, stash and faction survive a permadeath wipe; Location does not
+	local stashWire = data.Stash.Wire
+	PlayerData.Reset(player)
+	data = PlayerData.Get(player)
+	check("money, stash and faction survive the wipe", data.Money == 120 - Config.War.SwitchCost and data.Stash.Wire == stashWire and data.Faction == "Meridian" and data.Location == "City")
+	local back = Hideout.WithdrawAll(player)
+	check("withdraw empties the stash into the inventory", back >= stashWire and Inventory.Count(player, "Wire") >= stashWire and next(data.Stash) == nil)
+	-- back to the city for the rest of the scenario
+	Hideout.Leave(player); run(0.2)
+	check("return to the city leaves the hideout zone", player:GetAttribute("Zone") == nil and District.At(me.HumanoidRootPart.Position) ~= nil)
+	M.mockEnv.__require(SSS.Server.Combat).ClearProtection(me)
+	Remotes.EquipItem:FireServer("PipeClub"); run(0.3)
 	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
 	run(0.5)
 end

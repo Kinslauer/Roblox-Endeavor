@@ -7,12 +7,14 @@ local Combat = require(script.Parent.Combat)
 local Creator = require(script.Parent.Creator)
 local Rig = require(script.Parent.Rig)
 local Gear = require(script.Parent.Gear)
+local Hideout = require(script.Parent.Hideout)
 local Inventory = require(script.Parent.Inventory)
 local Permadeath = require(script.Parent.Permadeath)
 local PlayerData = require(script.Parent.PlayerData)
 local Quests = require(script.Parent.Quests)
 local Stats = require(script.Parent.Stats)
 local Tutorial = require(script.Parent.Tutorial)
+local Wallet = require(script.Parent.Wallet)
 local WorldPhase = require(script.Parent.WorldPhase)
 
 local Lifecycle = {}
@@ -39,9 +41,18 @@ function Lifecycle.Spawn(player)
 	end
 	player:SetAttribute("Zone", nil) -- a fresh body always starts in the city (Range sets these)
 	player:SetAttribute("ForceFirstPerson", nil)
-	char:PivotTo(WorldPhase.GetSpawnCFrame(player))
+	local home = if WorldPhase.IsOpen() then Hideout.SpawnCFrame(player) else nil -- left off in the hideout: wake there
+	if home then
+		char:PivotTo(home)
+		player:SetAttribute("Zone", Hideout.Zone)
+	else
+		char:PivotTo(WorldPhase.GetSpawnCFrame(player))
+	end
 	Gear.Recompute(player) -- fresh derived stats (important after a permadeath wipe)
 	Combat.SyncAmmo(char) -- ammo counter for a gun loadout (and registers the body with Combat)
+	Wallet.Sync(player)
+	local profile0 = PlayerData.Get(player)
+	player:SetAttribute("Faction", profile0 and profile0.Faction or nil)
 	Stats.Apply(player, true)
 	Stats.Push(player)
 	Inventory.Push(player)
