@@ -31,6 +31,7 @@ local PlayerData = require(script.Parent.PlayerData)
 local Loot = require(script.Parent.Loot)
 local Range = require(script.Parent.Range)
 local Supply = require(script.Parent.Supply)
+local Travel = require(script.Parent.Travel)
 local Wallet = require(script.Parent.Wallet)
 
 local W = Config.War
@@ -375,6 +376,9 @@ function War.Deploy(player)
 	if not side then
 		announce(player, "Choose a side first - the consoles on the left.")
 		return false
+	end
+	if Travel.To(player, "War", "War") then
+		return true -- the war is its own place: its server deploys you on arrival (Location == "War")
 	end
 	for _, id in Config.Range.Loadout do -- the basic kit (the faction pool comes with shipments)
 		if Inventory.Count(player, id) == 0 then

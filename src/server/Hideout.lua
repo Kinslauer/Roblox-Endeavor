@@ -21,6 +21,7 @@ local Raids = require(script.Parent.Raids)
 local Range = require(script.Parent.Range)
 local Supply = require(script.Parent.Supply)
 local Terminal = require(script.Parent.Terminal)
+local Travel = require(script.Parent.Travel)
 local Wallet = require(script.Parent.Wallet)
 local War = require(script.Parent.War)
 local WorldPhase = require(script.Parent.WorldPhase)
@@ -120,6 +121,9 @@ function Hideout.Enter(player, opts)
 	if not (char and char:FindFirstChild("HumanoidRootPart") and data) then
 		return false
 	end
+	if Travel.To(player, "Hideout", "Hideout") then
+		return true -- another place: the hideout server wakes you there (Lifecycle reads Location)
+	end
 	data.Location = "Hideout"
 	player:SetAttribute("Zone", Hideout.Zone)
 	player:SetAttribute("ForceFirstPerson", nil)
@@ -144,10 +148,13 @@ function Hideout.Leave(player)
 	if not (char and char:FindFirstChild("HumanoidRootPart") and data) then
 		return false
 	end
+	Terminal.Close(player)
+	if Travel.To(player, "Conduit", "City") then
+		return true
+	end
 	data.Location = "City"
 	player:SetAttribute("Zone", nil)
 	player:SetAttribute("ForceFirstPerson", nil)
-	Terminal.Close(player)
 	char:PivotTo(WorldPhase.GetSpawnCFrame(player))
 	Combat.Protect(char, H.TravelProtection)
 	announce(player, "Back in the city.")

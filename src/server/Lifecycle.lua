@@ -51,9 +51,12 @@ function Lifecycle.Spawn(player)
 	player:SetAttribute("Zone", nil) -- a fresh body always starts in the city (Range sets these)
 	player:SetAttribute("ForceFirstPerson", nil)
 	local home = if WorldPhase.IsOpen() then Hideout.SpawnCFrame(player) else nil -- left off in the hideout: wake there
+	local profileW = PlayerData.Get(player)
 	if home then
 		char:PivotTo(home)
 		player:SetAttribute("Zone", Hideout.Zone)
+	elseif profileW and profileW.Location == "War" and WorldPhase.IsOpen() then
+		char:PivotTo(WorldPhase.GetSpawnCFrame(player)) -- arrived by teleport to deploy (Config.Places): War.Deploy below
 	else
 		char:PivotTo(WorldPhase.GetSpawnCFrame(player))
 	end
@@ -85,6 +88,10 @@ function Lifecycle.Spawn(player)
 		Tutorial.Start(player) -- (a redeploying recruit is about to be pivoted to their base, not the plot)
 	end
 	Quests.Push(player)
+	if profileW and profileW.Location == "War" and WorldPhase.IsOpen() then
+		profileW.Location = "Hideout" -- leaving the war lands in the hideout either way
+		task.defer(War.Deploy, player)
+	end
 end
 
 local function onPlayerAdded(player)

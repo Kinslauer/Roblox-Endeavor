@@ -129,6 +129,14 @@ Config.Bench = {
 	Zone = "Hideout", -- the player's Zone attribute the bench answers in
 }
 
+-- Places (Phase 3, build order 7; server/Travel.lua): the hideout, the Conduit world and the war as
+-- separate places. Off until the places exist: with Enabled = false (or an id of 0) every trip is a
+-- pivot inside this place. Set the published place ids and flip Enabled; nothing else changes.
+Config.Places = {
+	Enabled = false,
+	Ids = { Hideout = 0, Conduit = 0, War = 0 },
+}
+
 -- Transport (design/gdd/world.md, server/Transport.lua): the lines between regions.
 Config.Transport = {
 	UnlockRadius = 16, -- stand this close to a hub once and it is yours

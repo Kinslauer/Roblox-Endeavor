@@ -967,6 +967,21 @@ do
 	local wasOpen = player:GetAttribute("Terminal") == true
 	Hideout.Leave(player); run(0.2)
 	check("leaving the hideout closes the computer", wasOpen and player:GetAttribute("Terminal") == nil)
+	-- the places door (Config.Places, server/Travel.lua): a pivot today, a teleport once the places exist
+	do
+		local Travel = M.mockEnv.__require(SSS.Server.Travel)
+		local Config = M.mockEnv.__require(RS.Shared.Config)
+		check("with places off every trip stays in this place", Travel.To(player, "Hideout", "Hideout") == false and Travel.Here() == nil)
+		Config.Places.Enabled = true
+		Config.Places.Ids.Hideout = 12345
+		local took = Travel.To(player, "Hideout", "Hideout")
+		check("with a hideout place set the door becomes a teleport and records where you are going", took == true and data.Location == "Hideout")
+		Config.Places.Enabled = false
+		Config.Places.Ids.Hideout = 0
+		run(0.3)
+		if not PlayerData.Get(player) then PlayerData.Load(player) end -- Travel released the session on the way out
+		data = PlayerData.Get(player)
+	end
 	player.Character:PivotTo(M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4)))
 end
 check("no script errors", #M.errors == 0)
