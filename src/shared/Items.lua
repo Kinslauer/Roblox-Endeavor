@@ -74,6 +74,11 @@ Items.LootTables = {
 		{ "ArcPistol", 0.06, 1, 1 }, { "ArcHood", 0.06, 1, 1 },
 		{ "DotSight", 0.06, 1, 1 }, { "Brake", 0.04, 1, 1 }, { "MatchSlide", 0.03, 1, 1 }, -- the Range: sidearm parts
 	},
+	Warmonger = { -- the open world's elite: cybernetics and the good parts
+		{ "Scrap", 1, 6, 12 }, { "Wire", 1, 4, 8 }, { "Medkit", 0.6, 1, 2 },
+		{ "NeuralCore", 0.2, 1, 1 }, { "OverclockCore", 0.1, 1, 1 }, { "ConduitHarness", 0.2, 1, 1 }, { "ArcPistol", 0.3, 1, 1 },
+		{ "LongBarrel", 0.3, 1, 1 }, { "Suppressor", 0.25, 1, 1 }, { "MatchSlide", 0.2, 1, 1 },
+	},
 	Recruit = { -- war-world recruits: supply, not spoils (shipments are the real prize there)
 		{ "Ration", 0.35, 1, 1 }, { "Scrap", 0.3, 1, 2 },
 		{ "Suppressor", 0.02, 1, 1 }, { "LongBarrel", 0.02, 1, 1 }, -- the war: a rare rifle part off a recruit

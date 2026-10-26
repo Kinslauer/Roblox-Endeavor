@@ -56,6 +56,20 @@ Enemies.Defs = {
 	-- (NPCs.Spawn opts.Faction / opts.Cloth); they draw the basic kit (Arc Rifle) until the faction
 	-- pool exists. They target the other two sides - players and recruits alike - and walk to the hill
 	-- when nobody is in sight (opts.Home as a function).
+	-- The open world's elite (design/gdd/world.md): a conduit gone wrong. Hits like a Brute, takes a
+	-- beating, and closes distance with a flicker-step (Dash) you have to read like a player's.
+	Warmonger = {
+		Name = "Warmonger", QuestTag = "Warmonger", Weapon = "Sledge",
+		Health = 340, Speed = 15, Aggro = 70, Leash = 90, DespawnAfter = 600,
+		Range = 10, MaxPosture = 220,
+		Attack = { Damage = 34, Posture = 30, Windup = 0.7, Active = 0.2, End = 1.2, Range = 10, Arc = 0.2, Knockback = 55, Hyperarmor = true, Stamina = 0 },
+		Label = "Heavy",
+		Recovery = { 0.5, 1.0 },
+		Poise = { Hits = 5, Reset = 2.5 },
+		Dash = { MinRange = 12, Range = 45, Duration = 0.22, Stop = 5, Cooldown = 5 }, -- steps to Stop studs short of you
+		Xp = 260, Loot = "Warmonger",
+		Look = look(3, 2, 3, 2, Color3.fromRGB(120, 30, 40)),
+	},
 	Recruit = {
 		Name = "Recruit", QuestTag = "Recruit", Weapon = "ArcRifle",
 		Health = 90, Speed = 16, Aggro = 120, Leash = 400, DespawnAfter = 600,

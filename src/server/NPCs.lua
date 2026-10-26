@@ -9,6 +9,7 @@ local CollectionService = game:GetService("CollectionService")
 local PathfindingService = game:GetService("PathfindingService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage.Shared
 local District = require(Shared.District)
@@ -386,6 +387,7 @@ function NPCs.Spawn(typeName, position, opts)
 		return opts.Home or home
 	end
 	local nextAttackAt = 0
+	local nextDashAt = 0
 	local idleSince = os.clock()
 	local state = "Idle"
 
@@ -479,6 +481,31 @@ function NPCs.Spawn(typeName, position, opts)
 							model:PivotTo(flatLook(root, troot.Position))
 							setMoving(false)
 						end
+					elseif def.Dash and now >= nextDashAt and dist > def.Dash.MinRange and dist <= def.Dash.Range and Combat.CanAct(model) and hasLineOfSight(model, root, troot) then
+						-- Warmonger: a flicker-step that closes the gap, then the heavy comes
+						state = "Dash"
+						nextDashAt = now + def.Dash.Cooldown
+						nav.stop()
+						setMoving(false)
+						local from = root.Position
+						local toward = (troot.Position - from) * Vector3.new(1, 0, 1)
+						local stopAt = troot.Position - (if toward.Magnitude > 0.1 then toward.Unit else root.CFrame.LookVector) * def.Dash.Stop
+						local to = Vector3.new(stopAt.X, from.Y, stopAt.Z)
+						Combat.SetBusy(model, def.Dash.Duration)
+						Combat.FX("Dash", model, { from = from, to = to, duration = def.Dash.Duration })
+						task.spawn(function()
+							local t0 = os.clock()
+							while model.Parent and hum.Health > 0 do
+								local a = math.min((os.clock() - t0) / def.Dash.Duration, 1)
+								local p = from:Lerp(to, a)
+								model:PivotTo(CFrame.lookAt(p, Vector3.new(troot.Position.X, p.Y, troot.Position.Z)))
+								if a >= 1 then
+									break
+								end
+								RunService.Heartbeat:Wait()
+							end
+							nextAttackAt = math.min(nextAttackAt, os.clock() + 0.1) -- the heavy follows the step
+						end)
 					else
 						if dist <= def.Range * 0.85 then
 							nav.stop()

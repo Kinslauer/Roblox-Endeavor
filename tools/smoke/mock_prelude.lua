@@ -27,6 +27,7 @@ V3.__div = function(a, b) if type(b) == "number" then return V3.new(a.X/b, a.Y/b
 V3.__unm = function(a) return V3.new(-a.X, -a.Y, -a.Z) end
 V3.__eq = function(a, b) return a.X == b.X and a.Y == b.Y and a.Z == b.Z end
 function V3.Dot(a, b) return a.X*b.X + a.Y*b.Y + a.Z*b.Z end
+function V3.Lerp(a, b, t) return V3.new(a.X + (b.X - a.X) * t, a.Y + (b.Y - a.Y) * t, a.Z + (b.Z - a.Z) * t) end
 function V3.Cross(a, b) return V3.new(a.Y*b.Z - a.Z*b.Y, a.Z*b.X - a.X*b.Z, a.X*b.Y - a.Y*b.X) end
 
 local CF = {}

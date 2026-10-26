@@ -5,6 +5,8 @@ local Arena = require(Server.Arena)
 local Range = require(Server.Range)
 local Hideout = require(Server.Hideout)
 local War = require(Server.War)
+local Regions = require(Server.Regions)
+local Transport = require(Server.Transport)
 local Gear = require(Server.Gear)
 local WorldPhase = require(Server.WorldPhase)
 local Stats = require(Server.Stats)
@@ -31,6 +33,14 @@ end
 ok, err = pcall(Range.Init)
 if not ok then
 	warn("[Range] failed to build:", err)
+end
+ok, err = pcall(Regions.Init)
+if not ok then
+	warn("[Regions] failed to build:", err)
+end
+ok, err = pcall(Transport.Init)
+if not ok then
+	warn("[Transport] failed to build:", err)
 end
 ok, err = pcall(Hideout.Init)
 if not ok then

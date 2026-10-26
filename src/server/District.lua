@@ -245,8 +245,8 @@ local function wall()
 	}
 	for _, side in sides do
 		local pieces
-		if ctx.Gates and ctx.Gates[side.Name] and side.Along == "Z" then
-			-- two pieces either side of the gap (the gap is centred on gateZ)
+		if ctx.Gates and ctx.Gates[side.Name] then
+			-- two pieces either side of the gap (the gap is centred on the gate street line, along the wall)
 			local lo, hi = -half - W.Thickness / 2, gateZ - gap / 2
 			pieces = { { (lo + hi) / 2, hi - lo }, { (gateZ + gap / 2 + half + W.Thickness / 2) / 2, half + W.Thickness / 2 - (gateZ + gap / 2) } }
 		else

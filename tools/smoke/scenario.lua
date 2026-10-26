@@ -639,10 +639,15 @@ do
 	gs.stunned = M.setNow() + 2 -- open
 	Remotes.UseSkill:FireServer(3); run(0.1)
 	check("buster throws an open target (heavy damage, posture reset)", grunt.Humanoid.Health <= hp - 30 and grunt:GetAttribute("Posture") == 0)
+	grunt:PivotTo(M.CF.new(200, 5, 150)) -- out of its reach while the cooldown runs (it has 12 s of free hits otherwise)
 	run(12) -- cooldown
 	gs.stunned = 0; gs.brokenAt = nil
+	local ms = Combat.State(me)
+	ms.stunned, ms.busyUntil = 0, 0
+	me.Humanoid.Health = me.Humanoid.MaxHealth
 	hp = grunt.Humanoid.Health
 	me:SetAttribute("Stamina", 100)
+	me:PivotTo(M.CF.lookAt(M.V3.new(200, 5, 200), M.V3.new(200, 5, 190)))
 	grunt:PivotTo(M.CF.new(200, 5, 196))
 	Remotes.UseSkill:FireServer(3); run(0.1)
 	local lost = hp - grunt.Humanoid.Health
@@ -793,6 +798,70 @@ local lootable = workspace_:FindFirstChild("Lootable", true)
 check("rival's remains dropped as loot", lootable ~= nil)
 run(6); confirmLook(p2); run(2)
 check("rival respawned as a fresh character", p2.Character ~= nil and p2.Character ~= c2 and p2.Character.Humanoid.Health > 0)
+
+-- The open world v1 (design/gdd/world.md, Phase 3 build order 5): the road, the enclave, the stations, the trader, the warmonger
+do
+	local Regions = M.mockEnv.__require(SSS.Server.Regions)
+	local Transport = M.mockEnv.__require(SSS.Server.Transport)
+	local R = M.mockEnv.__require(RS.Shared.Regions)
+	local NPCs = M.mockEnv.__require(SSS.Server.NPCs)
+	local Combat = M.mockEnv.__require(SSS.Server.Combat)
+	local Wallet = M.mockEnv.__require(SSS.Server.Wallet)
+	local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+	local PlayerData = M.mockEnv.__require(SSS.Server.PlayerData)
+	local Config = M.mockEnv.__require(RS.Shared.Config)
+	local CS = game_:GetService("CollectionService")
+	as(player)
+	local me = player.Character
+	local data = PlayerData.Get(player)
+	local road, market = nil, nil
+	for _, d in workspace_.Regions:GetChildren() do
+		if d.Name == "Road" then road = d end
+		if d.Name == "SafeZone" and d:GetAttribute("ZoneName") == R.Enclave.Market.Name then market = d end
+	end
+	local guards = 0
+	for _, g in R.Road.Guards do guards += g.Count end
+	check("the road and the enclave are built (playable road, safe market, all guards)", road ~= nil and CS:HasTag(road, "PlayableArea") and road:GetAttribute("Region") == "Road" and market ~= nil and Regions.Built.Guards == guards)
+	local warmonger
+	for _, m in workspace_:GetChildren() do if m:GetAttribute("EnemyType") == "Warmonger" then warmonger = m end end
+	check("a warmonger holds the road's end", warmonger ~= nil and warmonger.Humanoid.MaxHealth == 340 and R.At(warmonger.HumanoidRootPart.Position) == "Road")
+	check("regions know where you are", R.At(R.Enclave.Origin) == "Enclave" and R.At(M.V3.new(R.Road.X, 0, R.Road.Z0 + 50)) == "Road" and R.At(M.V3.new(0, 0, 0)) == nil and R.InMarket(R.Enclave.Origin) and not R.InMarket(R.Enclave.Origin + M.V3.new(100, 0, 0)))
+	-- stations: two hubs; a ride needs the far end unlocked first
+	check("two transport hubs stand", #CS:GetTagged("TransportHub") == 2 and Transport.Built.Hubs == 2)
+	data.Hubs = {}
+	me:PivotTo(M.CF.new(R.Hubs.City.Position + M.V3.new(0, 4, 0)))
+	run(1.2)
+	check("standing on a hub unlocks it", Transport.Unlocked(player, "City") and player:GetAttribute("HubsKnown") == 1)
+	check("you cannot ride to a station you have never reached", Transport.Ride(player, "City", "Enclave") == false and player:GetAttribute("Boarding") == nil)
+	me:PivotTo(M.CF.new(R.Hubs.Enclave.Position + M.V3.new(0, 4, 0)))
+	run(1.2)
+	check("reaching the far station on foot unlocks it", Transport.Unlocked(player, "Enclave") and player:GetAttribute("HubsKnown") == 2)
+	Combat.State(me).lastHit = 0
+	local rode = Transport.Ride(player, "Enclave", "City")
+	check("boarding is a protected wait", rode and player:GetAttribute("Boarding") == true and me:FindFirstChildOfClass("ForceField") ~= nil)
+	run(Config.Transport.BoardSeconds + 0.5)
+	check("the train lands you on the far platform", player:GetAttribute("Boarding") == nil and (me.HumanoidRootPart.Position - R.Hubs.City.Position).Magnitude < 10)
+	-- the trader: only in the market, for money
+	Wallet.Add(player, 100)
+	local money0, dots0 = Wallet.Get(player), Inventory.Count(player, "DotSight")
+	check("no trading outside the market", Regions.Buy(player, "DotSight") == false and Wallet.Get(player) == money0)
+	me:PivotTo(M.CF.new(R.Enclave.Origin + M.V3.new(0, 4, 0)))
+	run(1.2)
+	check("standing in the market flags you for the trader", player:GetAttribute("Market") == true)
+	check("buying a part costs its price", Regions.Buy(player, "DotSight") and Inventory.Count(player, "DotSight") == dots0 + 1 and Wallet.Get(player) == money0 - Regions.Price("DotSight"))
+	Wallet.Spend(player, Wallet.Get(player))
+	check("no money, no part", Regions.Buy(player, "ExtMag") == false)
+	-- the warmonger's dash closes a gap no walk could
+	me:PivotTo(M.CF.lookAt(M.V3.new(600, 5, 600), M.V3.new(600, 5, 560)))
+	me.Humanoid.Health = me.Humanoid.MaxHealth
+	local wm = NPCs.Spawn("Warmonger", M.V3.new(600, 5, 566), { Despawn = false })
+	local before = (wm.HumanoidRootPart.Position - me.HumanoidRootPart.Position).Magnitude
+	run(0.7)
+	local after = (wm.HumanoidRootPart.Position - me.HumanoidRootPart.Position).Magnitude
+	check("the warmonger flicker-steps to within reach", before > 30 and after < 12)
+	wm.Humanoid.Health = 0; run(0.5)
+	me:PivotTo(M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4)))
+end
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

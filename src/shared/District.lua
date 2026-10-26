@@ -88,7 +88,7 @@ end
 District.Districts = {
 	{
 		Name = "District 1", Seed = District.Seed, Origin = District.Origin, SpawnFor = "Fresh",
-		Plaza = "Relay Plaza", Gates = { East = true },
+		Plaza = "Relay Plaza", Gates = { East = true, North = true }, -- north: the road to the enclave (shared/Regions.lua)
 	},
 	{
 		Name = "District 2", Seed = 20261026, Origin = District.Origin + Vector3.new(District.Pitch(), 0, 0), SpawnFor = "Awakened",

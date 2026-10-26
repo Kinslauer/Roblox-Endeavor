@@ -12,6 +12,7 @@ local Armor = require(Shared:WaitForChild("Armor"))
 local Config = require(Shared:WaitForChild("Config"))
 local Cybernetics = require(Shared:WaitForChild("Cybernetics"))
 local Items = require(Shared:WaitForChild("Items"))
+local Regions = require(Shared:WaitForChild("Regions"))
 local Attachments = require(Shared:WaitForChild("Attachments"))
 local Weapons = require(Shared:WaitForChild("Weapons"))
 local HttpService = game:GetService("HttpService")
@@ -189,6 +190,16 @@ local function buildInventory(invPanel)
 		elseif atBench() then
 			addRow(invPanel, "-- Workbench: hold a gun to work on it --", {}, Color3.fromRGB(255, 170, 230))
 		end
+		-- the trader (server/Regions.lua): only while standing in the enclave's market
+		if player:GetAttribute("Market") then
+			addRow(invPanel, ("-- Trader: %s  ·  MONEY %d --"):format(Regions.Enclave.Market.Name, player:GetAttribute("Money") or 0), {}, Color3.fromRGB(170, 255, 170))
+			for _, entry in Regions.Enclave.Stock do
+				local def = Items.Defs[entry.Id]
+				if def then
+					addRow(invPanel, ("   %s  ·  %d"):format(def.Name, entry.Price), { { text = "Buy", color = Color3.fromRGB(60, 120, 80), fn = function() Remotes.Buy:FireServer(entry.Id) end } })
+				end
+			end
+		end
 		local ids = {}
 		for id in lastInventory do
 			table.insert(ids, id)
@@ -235,6 +246,7 @@ local function buildInventory(invPanel)
 		render()
 	end)
 	player:GetAttributeChangedSignal("Zone"):Connect(render)
+	player:GetAttributeChangedSignal("Market"):Connect(render)
 	readBuilds()
 end
 

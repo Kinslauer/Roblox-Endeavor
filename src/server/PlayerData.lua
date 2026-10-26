@@ -36,10 +36,11 @@ local TEMPLATE = {
 	Location = "City", -- "City" | "Hideout": where a (re)joining character wakes
 	HideoutSeen = false,
 	Shipment = false, -- { Items = { [id] = n }, ReadyAt = os.time() } gear sent ahead to the war (server/Supply.lua)
+	Hubs = {}, -- [hubId] = true: transport hubs stood on at least once (server/Transport.lua)
 }
 
 -- Fields that survive a permadeath wipe: the city keeps what you carried, not what you left at home.
-local PERSIST = { "Money", "Stash", "Faction", "Shipment" }
+local PERSIST = { "Money", "Stash", "Faction", "Shipment", "Hubs" }
 for _, name in Config.Stats.Names do
 	TEMPLATE.Stats[name] = 0
 end

@@ -10,7 +10,7 @@ Config.Dev = {
 	PrologueSeconds = 15, -- only used when Config.Tutorial.Enabled = false
 	ArmoryPoints = 10, -- attribute points the arena instructor hands out per use
 	PrologueMinSeconds = 8, -- Dev: the floor on the wait after everyone is ready (release uses Config.PrologueMinSeconds)
-	ArenaOffset = Vector3.new(0, 0, 820), -- the arena sits south of District 1, outside its wall
+	ArenaOffset = Vector3.new(0, 0, -820), -- the dev arena sits south (-Z) of District 1, between the city and the hideout; north is the open world
 	SpawnInArena = false, -- true = the arena's pads are also CitySpawns (spawn there for armory testing)
 }
 
@@ -129,6 +129,13 @@ Config.Bench = {
 	Zone = "Hideout", -- the player's Zone attribute the bench answers in
 }
 
+-- Transport (design/gdd/world.md, server/Transport.lua): the lines between regions.
+Config.Transport = {
+	UnlockRadius = 16, -- stand this close to a hub once and it is yours
+	BoardSeconds = 3, -- the wait on the platform (protected) before the ride
+	Protection = 4, -- seconds of ForceField on arrival
+}
+
 -- Momentum & cancels (design/gdd/momentum.md): the Nero-study layer on top of the timing core.
 Config.Momentum = {
 	SideIFrameMult = 1.3, -- side dodges (|dot(dir, look)| < 0.5) get this much more i-frame time
@@ -227,7 +234,7 @@ Config.Flicker = {
 Config.RateLimit = {
 	Burst = 2,
 	Attack = 6, Heavy = 4, Feint = 6, Flicker = 8, Block = 10, Dodge = 4, UseSkill = 6,
-	SetSkill = 4, Allocate = 10, UseItem = 4, EquipItem = 4, Unequip = 4, Craft = 4, TutorialSkip = 1, SetAppearance = 10, Sprint = 6, Reload = 4, ADS = 8, Bench = 6,
+	SetSkill = 4, Allocate = 10, UseItem = 4, EquipItem = 4, Unequip = 4, Craft = 4, TutorialSkip = 1, SetAppearance = 10, Sprint = 6, Reload = 4, ADS = 8, Bench = 6, Buy = 4,
 }
 
 -- World events (server/Events.lua)

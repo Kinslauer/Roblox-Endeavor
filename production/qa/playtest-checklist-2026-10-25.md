@@ -96,3 +96,11 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] Fit a Laser Sight: a red beam from the gun in third and first person. Does it help hip fire read?
 - [ ] Strip one slot, then "Frame": parts return to the inventory, the ammo counter clamps back to 9. Try the bench outside the hideout: refused.
 - [ ] Rifle parts (4x Scope, Light Bolt from Drones) refuse the pistol; fit them to the Arc Rifle instead when you have one.
+
+## 13. Round 6 — the open world (Phase 3, build order 5), added 2026-10-26
+- [ ] District 1 now has a north gap (gate street line, the side away from the dev arena). Walk out: a broken highway with wrecks, dead trees and dark lamps. Does it feel like leaving the city?
+- [ ] Three Grunts at a third of the way, then a Brute with two Grunts. Fight or run past: can you?
+- [ ] Near the end a **Warmonger** (red-black, Sledge). From ~30 studs it flicker-steps to you and swings a heavy. Is the step readable enough to dodge? Does it drop something worth the fight?
+- [ ] Through the green arch: **Verdant Reach**. Domes, solar towers, planted beds, warm lamps. Does it read as a relief after the city? The covered market is a safe zone; open Tab inside it for the **Trader** and buy a part with war money.
+- [ ] Stand on **Verdant Station** (platform by the south edge): "unlocked". Hold X on "Train to Relay Terminal": refused until you have also stood on the city's platform (by the north gate). Then ride: a 3 s protected wait, arrive on the other platform.
+- [ ] Try the train while someone is hitting you: refused.
