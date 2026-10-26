@@ -138,6 +138,13 @@ Config.Places = {
 	Ids = { Hideout = 0, Conduit = 0, War = 0 },
 }
 
+-- The Autonet (server/Autonet.lua; design/gdd/dematerialization.md §6): cybernetics are ripped in, and it hurts.
+Config.Cyber = {
+	RipSeconds = 4, -- one rip (a swap is two)
+	RipHealthCost = 0.35, -- share of max health per rip, paid up front; never below 1 HP
+	Range = 12, -- studs from the Autonet
+}
+
 -- The cycle (design/gdd/dematerialization.md; server/Cycle.lua): every Seconds the Conduit world comes
 -- apart and is restored exactly. Starts when the world opens. Only player / enemy spawns, contact spots and
 -- loot are re-drawn; profiles, the hideout and the war are never touched.
@@ -267,7 +274,7 @@ Config.Flicker = {
 Config.RateLimit = {
 	Burst = 2,
 	Attack = 6, Heavy = 4, Feint = 6, Flicker = 8, Block = 10, Dodge = 4, UseSkill = 6,
-	SetSkill = 4, Allocate = 10, UseItem = 4, EquipItem = 4, Unequip = 4, Craft = 4, TutorialSkip = 1, SetAppearance = 10, Sprint = 6, Reload = 4, ADS = 8, Bench = 6, Buy = 4, Terminal = 6,
+	SetSkill = 4, Allocate = 10, UseItem = 4, EquipItem = 4, Unequip = 4, Craft = 4, TutorialSkip = 1, SetAppearance = 10, Sprint = 6, Reload = 4, ADS = 8, Bench = 6, Buy = 4, Terminal = 6, Autonet = 4,
 }
 
 -- World events (server/Events.lua)

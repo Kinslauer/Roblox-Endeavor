@@ -232,8 +232,16 @@ local function buildInventory(invPanel)
 				table.insert(buttons, { text = if held then "Unequip" else "Equip", color = if held then Color3.fromRGB(120, 70, 70) else nil, fn = function()
 					if held then Remotes.Unequip:FireServer("Weapon") else Remotes.EquipItem:FireServer(id) end
 				end })
-			elseif def.Type == "Armor" or def.Type == "Cybernetic" then
-				local worn = lastArmor[def.Slot] == id or lastCyber[def.Slot] == id
+			elseif def.Type == "Cybernetic" then
+				-- ripped in or out at your Autonet only (server/Autonet.lua)
+				local fitted = lastCyber[def.Slot] == id
+				if player:GetAttribute("AtAutonet") then
+					table.insert(buttons, { text = if fitted then "Rip out" else "Rip in", color = Color3.fromRGB(150, 50, 50), fn = function()
+						if fitted then Remotes.Autonet:FireServer("Out", def.Slot) else Remotes.Autonet:FireServer("In", id) end
+					end })
+				end
+			elseif def.Type == "Armor" then
+				local worn = lastArmor[def.Slot] == id
 				table.insert(buttons, { text = if worn then "Remove" else "Wear", color = if worn then Color3.fromRGB(120, 70, 70) else nil, fn = function()
 					if worn then Remotes.Unequip:FireServer(def.Slot) else Remotes.EquipItem:FireServer(id) end
 				end })
@@ -241,6 +249,9 @@ local function buildInventory(invPanel)
 				table.insert(buttons, { text = "Fit", color = Color3.fromRGB(140, 60, 120), fn = function() Remotes.Bench:FireServer("Fit", lastEquipped, id) end })
 			end
 			local suffix = if def.Slot then (" [%s]"):format(def.Slot) else ""
+			if def.Type == "Cybernetic" and lastCyber[def.Slot] == id then
+				suffix ..= " - in you"
+			end
 			addRow(invPanel, ("%s x%d%s"):format(def.Name, lastInventory[id], suffix), buttons)
 		end
 		addRow(invPanel, "-- Crafting --", {})
@@ -264,6 +275,8 @@ local function buildInventory(invPanel)
 		lastInventory, lastEquipped, lastArmor, lastCyber = inv, equipped, armor, cyber
 		render()
 	end)
+	player:GetAttributeChangedSignal("AtAutonet"):Connect(render) -- rip buttons appear at the table
+	player:GetAttributeChangedSignal("Knowledge"):Connect(render) -- recipes you just learned
 	player:GetAttributeChangedSignal("Builds"):Connect(function()
 		readBuilds()
 		render()

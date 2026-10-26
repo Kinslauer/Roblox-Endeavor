@@ -163,3 +163,9 @@ To see one without waiting an hour, run this in the Studio command bar during Pl
 - [ ] Across a few cycles (force them from the command bar): A List of Names turns up in Ferrite Court only once you've read Hour Zero (someone who hasn't can't see it); Maintenance Log 7 only when the Dealer is at his third spot; the Autonet schematic every third cycle, sometimes on a rival.
 - [ ] Do the anomalies read as "the world came back wrong" without a marker? Too subtle, too loud?
 
+## 20. Round 13 — the Autonet, added 2026-10-26
+- [ ] Out in the field, a cybernetic in your bag has no Wear button; trying to put one in says it's ripped in at an Autonet. Ones you already had fitted stay fitted.
+- [ ] The hideout: a red "Empty bay" by the cot. Before you know the schematic it says something goes there; after reading "Schematic: Autonet" (every third cycle, sometimes on a rival) the Autonet Kit recipe appears (Sheet Metal 4, Pipe 3, Battery 2, Wire 8).
+- [ ] Install the kit at the bay. Use it: you're on the table; Tab now shows Rip in / Rip out on your cybernetics.
+- [ ] Rip one in: health drops by a third right away, you're held in place ~4 s with the screen whiting at the edges and the camera shaking, then it's in. A swap takes twice as long and costs twice as much. At low health it leaves you on 1 HP, never dead. Does it feel like it hurts? Too punishing before a raid, or just right?
+

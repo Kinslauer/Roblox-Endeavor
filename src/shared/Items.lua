@@ -23,6 +23,8 @@ Items.Defs = {
 	ArcCell = { Name = "Arc Cell", Type = "Ammo" },
 	-- the conduit's backup (design/gdd/dematerialization.md §6): install it at the empty desk in your hideout
 	HomeComputer = { Name = "Home Computer", Type = "Device" },
+	-- the table cybernetics are ripped in on (server/Autonet.lua): install it in the hideout's empty bay
+	AutonetKit = { Name = "Autonet Kit", Type = "Device" },
 }
 
 -- Weapons and armor are defined in their own modules; register them as items here.
@@ -66,6 +68,7 @@ Items.Recipes = {
 	ArcCell = { Output = "ArcCell", Count = 6, Inputs = { Battery = 1, Wire = 2 } },
 	-- no knowledge needed: the first thing a conduit should build
 	HomeComputer = { Output = "HomeComputer", Count = 1, Inputs = { Battery = 2, Glass = 2, SheetMetal = 2, Wire = 6 } },
+	AutonetKit = { Output = "AutonetKit", Count = 1, Inputs = { SheetMetal = 4, Pipe = 3, Battery = 2, Wire = 8 }, Needs = "Autonet" },
 }
 
 -- Recipe Needs = knowledge it takes (shared/Clues.lua Fragments[*].Teaches); the recipe is hidden until then.

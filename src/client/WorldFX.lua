@@ -348,6 +348,48 @@ local function trackAnomaly(part)
 	end
 end
 
+-- ---------------------------------------------------------------------------------------------
+-- Ripping (server/Autonet.lua): while your body is on the Autonet the screen whites in from the edges and
+-- the camera shakes.
+-- ---------------------------------------------------------------------------------------------
+local function ripOverlay(seconds)
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "Ripping"
+	gui.IgnoreGuiInset, gui.ResetOnSpawn, gui.DisplayOrder = true, false, 90
+	local frames = {}
+	for i, rot in { 0, 90, 180, 270 } do
+		local f = Instance.new("Frame")
+		f.BorderSizePixel, f.BackgroundColor3, f.BackgroundTransparency = 0, Color3.new(1, 1, 1), 0
+		f.AnchorPoint = Vector2.new(0.5, 0.5)
+		f.Position = ({ UDim2.fromScale(0.5, 0.06), UDim2.fromScale(0.94, 0.5), UDim2.fromScale(0.5, 0.94), UDim2.fromScale(0.06, 0.5) })[i]
+		f.Size = if rot % 180 == 0 then UDim2.fromScale(1, 0.12) else UDim2.fromScale(0.12, 1)
+		local g = Instance.new("UIGradient")
+		g.Rotation = rot + 90
+		g.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
+		g.Parent = f
+		f.Parent = gui
+		table.insert(frames, f)
+	end
+	gui.Parent = player:WaitForChild("PlayerGui")
+	task.spawn(function()
+		local t0 = os.clock()
+		while os.clock() - t0 < seconds and gui.Parent do
+			local pulse = 0.35 + 0.35 * math.abs(math.sin((os.clock() - t0) * 7))
+			for _, f in frames do
+				f.BackgroundTransparency = pulse
+			end
+			CameraShake.Add(0.08)
+			task.wait(0.1)
+		end
+		gui:Destroy()
+	end)
+end
+CombatFX.On("Rip", function(char, seconds)
+	if char == player.Character and tonumber(seconds) then
+		ripOverlay(seconds)
+	end
+end)
+
 function WorldFX.CycleState()
 	return { lights = #cycle.lights, humming = cycle.hum ~= nil, drained = cycle.cc ~= nil, white = cycle.white and cycle.white.BackgroundTransparency or 1 }
 end

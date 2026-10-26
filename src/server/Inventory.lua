@@ -79,9 +79,13 @@ end
 
 function Inventory.Equip(player, itemId)
 	local def = type(itemId) == "string" and Items.Defs[itemId]
+	if def and def.Type == "Cybernetic" then
+		Remotes.Announce:FireClient(player, "Cybernetics are ripped in at an Autonet.", "Info")
+		return -- (server/Autonet.lua)
+	end
 	if def and def.Type == "Weapon" then
 		Gear.EquipWeapon(player, itemId)
-	elseif def and (def.Type == "Armor" or def.Type == "Cybernetic") then
+	elseif def and def.Type == "Armor" then
 		Gear.EquipGear(player, itemId)
 	else
 		return

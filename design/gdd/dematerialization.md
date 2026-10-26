@@ -132,6 +132,13 @@ acquire one early. That is also how they mix and match cybernetics."
     rips (out, then in), so it costs twice. Taking damage or leaving cancels the channel with nothing changed and the
     cost paid. Recovering is ordinary healing (rations, medkits), so ripping in right before a raid is a real choice.
   (`production/epics/hideout-computer` story 009.)
+  **As built (2026-10-26)**: `server/Autonet.lua`, `Config.Cyber` (RipSeconds 4, RipHealthCost 0.35, Range 12),
+  `Remotes.Autonet`. The schematic is `Clues.Fragments.AutonetSchematic` (Teaches "Autonet"); the kit recipe is
+  Sheet Metal 4 + Pipe 3 + Battery 2 + Wire 8 (`Needs = "Autonet"`). The bay stands at the front of the hideout by the
+  cot, drawn per player ("Empty bay" / "Install" until built, HouseView). Use it when built and you are on the table
+  (`AtAutonet`, cleared when you step away); the inventory's cybernetic rows then show Rip in / Rip out. Each rip
+  costs health up front, anchors the body for the channel, whites the screen edges and shakes the camera; a swap is
+  two rips. `Inventory.Equip` and `Remotes.Unequip` refuse cybernetics everywhere; war shipments no longer put them in.
 - **The computer is acquired, and life is hard until it is** (owner, 18:03: "it should be hard before they build or
   find a computer"). A fresh conduit has a hideout with an empty desk where the computer goes; no Computer console, no
   apps. Two ways to get one:

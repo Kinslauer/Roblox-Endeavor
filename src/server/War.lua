@@ -253,7 +253,7 @@ local function equipFieldKit(player, items)
 			end
 		end
 		local idef = Items.Defs[id]
-		if idef and (idef.Type == "Armor" or idef.Type == "Cybernetic") then
+		if idef and idef.Type == "Armor" then -- (cybernetics only go in at an Autonet)
 			Gear.EquipGear(player, id)
 		end
 	end

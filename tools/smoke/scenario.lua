@@ -1230,6 +1230,57 @@ do
 		Items.Recipes.SmokeKit = nil
 		Clues.Draw(Cycle.State().Index, M.mockEnv.Random.new(9))
 	end
+	-- the Autonet (dematerialization.md §6): cybernetics are ripped in there and only there, and it hurts
+	do
+		local Autonet = M.mockEnv.__require(SSS.Server.Autonet)
+		local Hideout = M.mockEnv.__require(SSS.Server.Hideout)
+		local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+		local PlayerData = M.mockEnv.__require(SSS.Server.PlayerData)
+		local Config = M.mockEnv.__require(RS.Shared.Config)
+		local data = PlayerData.Get(player)
+		local me = player.Character
+		local hum = me.Humanoid
+		hum.MaxHealth = 100; hum.Health = 100
+		Inventory.Add(player, "ReflexOptic", 1); Inventory.Add(player, "TargetingLens", 1)
+		data.Cyber.Optic = nil
+		Inventory.Equip(player, "ReflexOptic")
+		check("a cybernetic can't be put in from the inventory in the field", data.Cyber.Optic == nil)
+		Hideout.Enter(player, { Quiet = true }); run(0.3)
+		me:PivotTo(M.CF.new(Autonet.Position))
+		data.Autonet = false
+		Autonet.Use(player)
+		local empty = data.Autonet == false and player:GetAttribute("AtAutonet") ~= true
+		for id, n in { SheetMetal = 4, Pipe = 3, Battery = 2, Wire = 8 } do Inventory.Add(player, id, n) end
+		data.Knowledge.AutonetSchematic = data.Knowledge.AutonetSchematic or 9
+		Inventory.Craft(player, "AutonetKit")
+		local kit = Inventory.Count(player, "AutonetKit") == 1
+		Autonet.Use(player)
+		check("the bay is empty until the Autonet kit (learned, then crafted) is installed", empty and kit and data.Autonet == true and Inventory.Count(player, "AutonetKit") == 0)
+		Autonet.Use(player)
+		local C = Config.Cyber
+		check("rip in: the cost is paid up front and the body is held for the channel", player:GetAttribute("AtAutonet") == true and Autonet.Rip(player, "In", "ReflexOptic")
+			and math.abs(hum.Health - (100 - 100 * C.RipHealthCost)) < 0.5 and me:GetAttribute("Ripping") == C.RipSeconds and me.HumanoidRootPart.Anchored == true)
+		run(C.RipSeconds + 0.3)
+		check("then it's in you", data.Cyber.Optic == "ReflexOptic" and me.HumanoidRootPart.Anchored == false and me:GetAttribute("Ripping") == nil)
+		hum.Health = 100
+		Autonet.Rip(player, "In", "TargetingLens")
+		check("a swap is two rips: twice the cost", math.abs(hum.Health - (100 - 200 * C.RipHealthCost)) < 0.5)
+		run(2 * C.RipSeconds + 0.3)
+		check("and twice the time, then the new piece is in", data.Cyber.Optic == "TargetingLens")
+		hum.Health = 10
+		Autonet.Rip(player, "Out", "Optic")
+		check("the Autonet never kills: 1 HP at worst", hum.Health >= 1 and hum.Health <= 1.01)
+		run(C.RipSeconds + 0.3)
+		check("rip out empties the slot", data.Cyber.Optic == nil)
+		me:PivotTo(M.CF.new(Autonet.Position + M.V3.new(40, 0, 0))); run(0.8)
+		check("step away and you're off the table: no rips", player:GetAttribute("AtAutonet") == nil and Autonet.Rip(player, "In", "ReflexOptic") == false)
+		local PD = PlayerData
+		PD.Reset(player)
+		data = PD.Get(player)
+		check("the Autonet stays with the hideout through a permadeath", data.Autonet == true)
+		hum.Health = hum.MaxHealth
+		Hideout.Leave(player); run(0.3)
+	end
 end
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)

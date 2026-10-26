@@ -47,12 +47,13 @@ local TEMPLATE = {
 	Computer = false, -- true once a Home Computer is installed (found or built): from then on the mind is backed up
 	Knowledge = {}, -- [fragmentId] = order read: what the conduit has learned (server/Clues.lua)
 	EmptyDeskSeen = false,
+	Autonet = false, -- true once the Autonet is installed in the hideout (server/Autonet.lua)
 }
 
 -- Fields that survive a permadeath wipe: the city keeps what you carried, not what you left at home.
 -- Two kinds (design/gdd/dematerialization.md §6): what the hideout physically holds is always kept; what
 -- the mind holds is kept only once a computer has been installed to back it up.
-local HIDEOUT_KEPT = { "Money", "Stash", "Faction", "Shipment", "Hubs", "Computer", "EmptyDeskSeen" }
+local HIDEOUT_KEPT = { "Money", "Stash", "Faction", "Shipment", "Hubs", "Computer", "EmptyDeskSeen", "Autonet" }
 local MIND_KEPT = { "Contacts", "Board", "House", "Knowledge" }
 for _, name in Config.Stats.Names do
 	TEMPLATE.Stats[name] = 0

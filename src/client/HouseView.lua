@@ -88,10 +88,16 @@ end
 
 -- The computer console is shared geometry; whether it is a lit machine or an empty desk is yours alone
 -- (the Computer player attribute, server/Terminal.lua): without one the screen is dark and the label says so.
+-- Same for the Autonet's bay (the Autonet attribute, server/Autonet.lua).
+local STATIONS = {
+	Computer = { Attr = "Computer", Built = "Computer", Empty = "Empty desk" },
+	Autonet = { Attr = "Autonet", Built = "Autonet", Empty = "Empty bay" },
+}
 local function drawDesk()
-	local has = player:GetAttribute("Computer") == true
 	for _, d in workspace:GetDescendants() do
-		if d:GetAttribute("Console") == "Computer" and d:IsA("BasePart") then
+		local st = STATIONS[d:GetAttribute("Console") or ""]
+		local has = st and player:GetAttribute(st.Attr) == true
+		if st and d:IsA("BasePart") then
 			if d.Name == "Screen" then
 				if d:GetAttribute("LitColor") == nil then
 					d:SetAttribute("LitColor", d.Color)
@@ -106,11 +112,11 @@ local function drawDesk()
 				local billboard = d:FindFirstChildOfClass("BillboardGui")
 				local text = billboard and billboard:FindFirstChildOfClass("TextLabel")
 				if text then
-					text.Text = if has then "Computer" else "Empty desk"
+					text.Text = if has then st.Built else st.Empty
 				end
 				local prompt = d:FindFirstChildOfClass("ProximityPrompt")
 				if prompt then
-					prompt.ObjectText, prompt.ActionText = if has then "Computer" else "Empty desk", if has then "Use" else "Install"
+					prompt.ObjectText, prompt.ActionText = if has then st.Built else st.Empty, if has then "Use" else "Install"
 				end
 			end
 		end
@@ -119,6 +125,7 @@ end
 
 function HouseView.Init()
 	player:GetAttributeChangedSignal("Computer"):Connect(drawDesk)
+	player:GetAttributeChangedSignal("Autonet"):Connect(drawDesk)
 	player:GetAttributeChangedSignal("Zone"):Connect(drawDesk) -- walking in: the room is there to draw
 	task.defer(drawDesk)
 	player:GetAttributeChangedSignal("House"):Connect(rebuild)

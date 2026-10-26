@@ -257,7 +257,13 @@ function Gear.SetSkill(player, slot, skillId)
 end
 
 function Gear.Init()
-	Remotes.Unequip.OnServerEvent:Connect(RateLimit.Wrap("Unequip", Config.RateLimit.Unequip, Gear.Unequip))
+	Remotes.Unequip.OnServerEvent:Connect(RateLimit.Wrap("Unequip", Config.RateLimit.Unequip, function(player, what)
+		if type(what) == "string" and SOURCES.Cyber.slots and table.find(SOURCES.Cyber.slots, what) then
+			Remotes.Announce:FireClient(player, "Cybernetics are ripped out at an Autonet.", "Info")
+			return -- (server/Autonet.lua)
+		end
+		Gear.Unequip(player, what)
+	end))
 	Remotes.SetSkill.OnServerEvent:Connect(RateLimit.Wrap("SetSkill", Config.RateLimit.SetSkill, Gear.SetSkill))
 end
 
