@@ -13,6 +13,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Presentation = require(Shared:WaitForChild("Presentation"))
 local CameraShake = require(script.Parent.CameraShake)
+local SwingAnimator = require(script.Parent.SwingAnimator)
 local CombatFX = require(script.Parent.CombatFX)
 local Hud = require(script.Parent.Hud)
 
@@ -131,11 +132,17 @@ local function ghost(char, seconds, color)
 end
 
 local function feel(spec, a, b, heavy)
+	-- the bodies freeze for everyone watching (Presentation.Impacts[kind].Freeze); the camera only for mine
+	local freeze = (spec.Freeze or 0) * (if heavy then I.HeavyFreezeMult or 1 else 1)
+	if freeze > 0 then
+		SwingAnimator.Freeze(a, freeze)
+		SwingAnimator.Freeze(b, freeze)
+	end
 	if not involvesMe(a, b) then
 		return
 	end
 	CameraShake.Add(spec.Shake * (if heavy then I.HeavyShakeMult else 1))
-	CameraShake.Hitstop(spec.Hitstop)
+	CameraShake.Hitstop(spec.Hitstop * (if heavy then I.HeavyHitstopMult or 1 else 1))
 end
 
 -- ===== Handlers =====
@@ -196,6 +203,8 @@ local function onBlackFlash(attacker, victim)
 			TweenService:Create(spark, TweenInfo.new(spec.Flash), { Size = Vector3.new(12, 12, 12), Transparency = 1 }):Play()
 		end
 	end
+	SwingAnimator.Freeze(attacker, spec.Freeze)
+	SwingAnimator.Freeze(victim, spec.Freeze)
 	if involvesMe(attacker, victim) then
 		local cc = Instance.new("ColorCorrectionEffect")
 		cc.Brightness, cc.Contrast, cc.Saturation, cc.TintColor = -0.35, 0.6, -1, Color3.fromRGB(255, 120, 120)

@@ -4,6 +4,7 @@
 --   flick window opens: windup - Config.Flicker.Window * rate (rate = the local player's FlickerRate,
 --   1 for everyone else; x ZoneWindowMult while in the Zone).
 --   Feint / Stun / Dodge on the same character cancel the telegraph immediately.
+--   Freeze(char, seconds) holds the pose on contact (hitstop for the body); Settle(char) dips the body on landing.
 -- Timing comes from the server payload (the same Weapons.lua numbers it judges with). Poses and
 -- colours come from Presentation.Swings; an AnimationId there replaces the procedural pose.
 --
@@ -268,6 +269,7 @@ local function cancel(char)
 	end
 	s.token += 1
 	s.active = false
+	s.freeze = nil
 	killTweens(s)
 	removeCue(s)
 	local trail = trailOf(char)
@@ -458,10 +460,50 @@ local function onSwing(char, info)
 	end)
 end
 
+-- Hitstop for the body (Presentation.Impacts[kind].Freeze): the swing pose holds its current frame
+-- for `seconds`, then carries on from where it stopped. Called by Impacts for attacker and victim.
+function SwingAnimator.Freeze(char, seconds)
+	local s = typeof(char) == "Instance" and states[char]
+	if not s or not seconds or seconds <= 0 then
+		return
+	end
+	local now = os.clock()
+	if s.freeze then -- extend, never shorten
+		s.freeze.untilT = math.max(s.freeze.untilT, now + seconds)
+	else
+		s.freeze = { at = now, untilT = now + seconds }
+	end
+end
+
+-- Landing settle (Presentation.Swings.Settle): the body sinks and rises on Landed, under any swing.
+function SwingAnimator.Settle(char, depth, seconds)
+	local s = typeof(char) == "Instance" and states[char]
+	local S = P.Settle or {}
+	if not s then
+		return
+	end
+	s.settle = { t0 = os.clock(), depth = depth or S.Depth or 0.35, seconds = seconds or S.Seconds or 0.28 }
+end
+
+local function settleDip(s, now)
+	local st = s.settle
+	if not st then
+		return nil
+	end
+	local a = (now - st.t0) / st.seconds
+	if a >= 1 then
+		s.settle = nil
+		return nil
+	end
+	-- down fast, up slow: a half-sine that peaks a third of the way in
+	local k = if a < 0.33 then math.sin(a / 0.33 * math.pi / 2) else math.cos((a - 0.33) / 0.67 * math.pi / 2)
+	return CFrame.new(0, -st.depth * k, 0)
+end
+
 -- Drives every live pose and the weapon stances. Stepped runs after the Animator has written this
 -- frame's Transforms, so what we write wins for the arms we touch.
 local function step()
-	local now = os.clock()
+	local realNow = os.clock()
 	for char, s in states do
 		if not char.Parent then
 			states[char] = nil
@@ -471,6 +513,18 @@ local function step()
 		if pose and not pose.motor.Parent then
 			s.pose = nil
 			pose = nil
+		end
+		-- hitstop: sample the timeline at the frozen instant, then shift it by the time we held
+		local now = realNow
+		if s.freeze then
+			if realNow < s.freeze.untilT then
+				now = s.freeze.at
+			else
+				if pose then
+					pose.t0 += s.freeze.untilT - s.freeze.at
+				end
+				s.freeze = nil
+			end
 		end
 		for side, joint in { Right = pose and pose.motor or shoulderOf(char), Left = pose and pose.left or shoulderOf(char, "Left") } do
 			if joint then
@@ -504,14 +558,36 @@ local function step()
 				pose.root.Transform = pose.root.Transform * dip
 			end
 		end
+		if s.settle then
+			local root = (pose and pose.root) or rootJointOf(char)
+			local dip = settleDip(s, realNow)
+			if root and dip then
+				root.Transform = root.Transform * dip
+			end
+		end
 	end
 end
 
 -- Characters we should keep posing even before their first swing (so two-handed stances show).
 local function track(char)
-	if typeof(char) == "Instance" and char:IsA("Model") then
-		stateOf(char)
+	if typeof(char) ~= "Instance" or not char:IsA("Model") then
+		return
 	end
+	local s = stateOf(char)
+	if s.landing then
+		return
+	end
+	s.landing = true
+	task.spawn(function()
+		local hum = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid", 5)
+		if hum then
+			hum.StateChanged:Connect(function(_, state)
+				if state == Enum.HumanoidStateType.Landed and states[char] then
+					SwingAnimator.Settle(char)
+				end
+			end)
+		end
+	end)
 end
 
 function SwingAnimator.Init()

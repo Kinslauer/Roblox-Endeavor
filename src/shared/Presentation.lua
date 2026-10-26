@@ -15,10 +15,12 @@ local Presentation = {}
 -- the Handle relative to the hand (identity = gripped at the top of the shaft).
 -- ---------------------------------------------------------------------------------------------
 Presentation.Weapons = {
-	Fists = { ModelName = "", Build = nil }, -- nothing in hand
-	PipeClub = { ModelName = "", Build = "Club", Length = 3.4, Color = Color3.fromRGB(110, 110, 115), Grip = CFrame.identity },
-	RebarBlade = { ModelName = "", Build = "Blade", Length = 3.6, Color = Color3.fromRGB(150, 120, 100), Accent = Color3.fromRGB(190, 185, 170), Grip = CFrame.identity },
-	ShockBaton = { ModelName = "", Build = "Baton", Length = 2.8, Color = Color3.fromRGB(40, 40, 50), Accent = Color3.fromRGB(90, 200, 255), Grip = CFrame.identity },
+	-- Idle stances (design/references/magoi-look-and-feel.md: "idle is low and ready"): one-handed weapons
+	-- hang low and a little forward, the off hand half-raised; fists keep a loose guard.
+	Fists = { ModelName = "", Build = nil, Stance = { Right = { 45, 0, -30 }, Left = { 50, 0, 30 } } }, -- nothing in hand: a loose guard
+	PipeClub = { ModelName = "", Build = "Club", Length = 3.4, Color = Color3.fromRGB(110, 110, 115), Grip = CFrame.identity, Stance = { Right = { 18, 0, -12 }, Left = { 30, 0, 25 } } },
+	RebarBlade = { ModelName = "", Build = "Blade", Length = 3.6, Color = Color3.fromRGB(150, 120, 100), Accent = Color3.fromRGB(190, 185, 170), Grip = CFrame.identity, Stance = { Right = { 22, 0, -15 }, Left = { 30, 0, 25 } } },
+	ShockBaton = { ModelName = "", Build = "Baton", Length = 2.8, Color = Color3.fromRGB(40, 40, 50), Accent = Color3.fromRGB(90, 200, 255), Grip = CFrame.identity, Stance = { Right = { 25, 0, -18 }, Left = { 35, 0, 28 } } },
 	ScrapSpear = { ModelName = "", Build = "Spear", Length = 6.5, Color = Color3.fromRGB(120, 95, 70), Accent = Color3.fromRGB(170, 170, 175), Grip = CFrame.new(0, 2.2, 0), -- held a third of the way down
 		TwoHanded = true, Stance = { Right = { 30, 0, -40 }, Left = { 45, 0, 40 } } }, -- measured: hands at (0.44, -0.4, -1.0) / (-0.17, 0, -1.3) from the root
 	Sledge = { ModelName = "", Build = "Hammer", Length = 3.8, Color = Color3.fromRGB(80, 80, 85), Accent = Color3.fromRGB(60, 60, 65), Grip = CFrame.identity,
@@ -138,6 +140,8 @@ Presentation.Swings = {
 	TrailColor = Color3.fromRGB(240, 240, 255), TrailHeavyColor = Color3.fromRGB(255, 200, 120), TrailWidth = 1,
 	-- Dust (WorldFX): the ground answers a heavy strike, a dodge, a landing. Colour of the puff.
 	DustColor = Color3.fromRGB(150, 135, 110),
+	-- Landing settle (SwingAnimator): the body sinks Depth studs on Landed and rises over Seconds.
+	Settle = { Depth = 0.35, Seconds = 0.28 },
 }
 
 -- ---------------------------------------------------------------------------------------------
@@ -148,16 +152,20 @@ Presentation.Swings = {
 -- Shake    = camera shake amplitude 0..1    Sparks  = { Count, Color, Size, Speed, Life } particle burst
 -- Ring     = { Color, Size, Life } expanding flat ring   Ghost = after-image seconds   Shards = shatter burst
 Presentation.Impacts = {
-	Hit = { Color = Color3.fromRGB(255, 70, 70), Flash = 0.15, Hitstop = 0.05, Shake = 0.35,
+	Hit = { Color = Color3.fromRGB(255, 70, 70), Flash = 0.15, Hitstop = 0.05, Shake = 0.35, Freeze = 0.05,
 		Sparks = { Count = 14, Color = Color3.fromRGB(255, 120, 60), Size = 0.35, Speed = 18, Life = 0.3 },
 		HeavyAmount = 20 }, -- damage at/above this shakes with the Heavy multiplier
 	HeavyShakeMult = 1.8,
+	-- Hitstop tuning (polish item 3): heavies punch the FOV twice as long, and the swing pose itself freezes
+	-- on contact for Freeze seconds (SwingAnimator.Freeze on the attacker and the victim; x HeavyFreezeMult).
+	HeavyHitstopMult = 2,
+	HeavyFreezeMult = 1.8,
 	Block = { Color = Color3.fromRGB(150, 150, 255), Flash = 0.15, Hitstop = 0, Shake = 0.15,
 		Sparks = { Count = 8, Color = Color3.fromRGB(140, 170, 255), Size = 0.25, Speed = 12, Life = 0.25 } },
-	Parry = { Color = Color3.fromRGB(255, 255, 255), Flash = 0.2, Hitstop = 0.08, Shake = 0.5,
+	Parry = { Color = Color3.fromRGB(255, 255, 255), Flash = 0.2, Hitstop = 0.1, Shake = 0.5, Freeze = 0.09,
 		Sparks = { Count = 18, Color = Color3.fromRGB(255, 255, 255), Size = 0.3, Speed = 22, Life = 0.3 },
 		Ring = { Color = Color3.fromRGB(255, 255, 255), Size = 9, Life = 0.3 } },
-	GuardBreak = { Color = Color3.fromRGB(255, 160, 0), Flash = 0.25, Hitstop = 0.1, Shake = 0.7,
+	GuardBreak = { Color = Color3.fromRGB(255, 160, 0), Flash = 0.25, Hitstop = 0.12, Shake = 0.7, Freeze = 0.1,
 		Shards = { Count = 16, Color = Color3.fromRGB(255, 170, 40), Size = 0.6, Speed = 26, Life = 0.6 } },
 	Burst = { Color = Color3.fromRGB(80, 170, 255), Flash = 0.15, Hitstop = 0, Shake = 0.2 },
 	Dodge = { Color = Color3.fromRGB(120, 255, 200), Flash = 0.15, Hitstop = 0, Shake = 0 },
@@ -165,7 +173,7 @@ Presentation.Impacts = {
 	Buff = { Color = Color3.fromRGB(255, 220, 120), Flash = 0.15, Hitstop = 0, Shake = 0 },
 	Flick = { Color = Color3.fromRGB(255, 60, 60), Flash = 0.15, Hitstop = 0, Shake = 0.1, LevelScale = 0.5 },
 	Feint = { Color = Color3.fromRGB(200, 200, 200), Flash = 0.15, Hitstop = 0, Shake = 0 },
-	BlackFlash = { Color = Color3.fromRGB(255, 20, 20), Flash = 0.35, Hitstop = 0.12, Shake = 1.0, BannerSeconds = 1.2 },
+	BlackFlash = { Color = Color3.fromRGB(255, 20, 20), Flash = 0.35, Hitstop = 0.14, Shake = 1.0, BannerSeconds = 1.2, Freeze = 0.14 },
 	Safe = { Color = Color3.fromRGB(120, 255, 200), Flash = 0.2, Hitstop = 0, Shake = 0 }, -- a hit refused by the safe zone
 	Snatch = { Color = Color3.fromRGB(120, 200, 255), Flash = 0.2, Hitstop = 0, Shake = 0.15, Beam = { Width = 0.25, Life = 0.25 } }, -- hook beam user -> target
 	Buster = { Color = Color3.fromRGB(255, 200, 60), Flash = 0.3, Hitstop = 0.1, Shake = 0.8 }, -- throw (shove uses Flash only)
@@ -242,6 +250,24 @@ Presentation.Aim = {
 	FirstPersonKey = Enum.KeyCode.C, -- toggle a locked first-person camera (hip-fire view model) any time
 	FirstPersonFov = 75,
 	SpecialKeys = { Enum.UserInputType.MouseButton3, Enum.KeyCode.G },
+}
+
+-- ---------------------------------------------------------------------------------------------
+-- Prompts (client/Prompts.lua): every ProximityPrompt is drawn as a small dark badge with the key letter
+-- at the thing; the action and object text sit beside it, faint until you hold the key.
+-- Nameplates (client/Nameplates.lua): Roblox's over-head name is off; a small plate sits at hip height,
+-- lower-left of the body, and fades out with distance.
+-- ---------------------------------------------------------------------------------------------
+Presentation.Prompts = {
+	BadgeSize = 30, BadgeColor = Color3.fromRGB(14, 14, 18), BadgeTransparency = 0.25, KeyColor = Color3.fromRGB(235, 235, 240),
+	LabelColor = Color3.fromRGB(220, 220, 228), LabelIdleTransparency = 0.45, HoldColor = Color3.fromRGB(255, 200, 80),
+	Font = Enum.Font.GothamBold, LabelFont = Enum.Font.Gotham, LabelTextSize = 13, KeyTextSize = 15,
+}
+Presentation.Nameplates = {
+	Offset = Vector3.new(-1.2, -0.6, 0), -- from the LowerTorso: lower-left of the body
+	Size = UDim2.fromOffset(120, 16), TextSize = 12, Font = Enum.Font.GothamMedium,
+	Color = Color3.fromRGB(225, 225, 232), NpcColor = Color3.fromRGB(255, 150, 130), ContactColor = Color3.fromRGB(150, 230, 255),
+	FadeStart = 30, FadeEnd = 70, -- studs: fully visible inside FadeStart, gone past FadeEnd
 }
 
 -- ---------------------------------------------------------------------------------------------

@@ -59,6 +59,9 @@ District.Spawns = {
 District.Wall = { Height = 36, Thickness = 4, Margin = 20 } -- perimeter: the rest of the city is "collapsed"
 
 -- Lighting for the whole open world (moved here from the dev arena so it applies without Config.Dev).
+-- Palette restraint (design/references/magoi-look-and-feel.md): neon parts and their lights are
+-- multiplied by NeonDim so hit effects carry the colour, not the buildings. 1 = the old look.
+District.NeonDim = 0.7
 District.Lighting = { ClockTime = 23, Ambient = Color3.fromRGB(45, 45, 70), Brightness = 1.2, Bloom = { Intensity = 0.7, Size = 28, Threshold = 1.6 } }
 
 -- Total side length of the built area (streets + blocks, without the wall margin).

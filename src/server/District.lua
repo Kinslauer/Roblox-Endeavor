@@ -17,6 +17,11 @@ local folder
 local rng
 local ctx -- the district being built (an entry of D.Districts); falls back to the D.* tables
 
+local function dimmed(color)
+	local k = D.NeonDim or 1
+	return Color3.new(color.R * k, color.G * k, color.B * k)
+end
+
 local function part(props)
 	local p = Instance.new("Part")
 	p.Anchored = true
@@ -24,13 +29,16 @@ local function part(props)
 	for k, v in props do
 		p[k] = v
 	end
+	if p.Material == Enum.Material.Neon and p.Name ~= "SafeRing" then
+		p.Color = dimmed(p.Color) -- palette restraint (District.NeonDim); the safe ring keeps its meaning
+	end
 	p.Parent = folder
 	return p
 end
 
 local function glow(p, color, range, brightness)
 	local light = Instance.new("PointLight")
-	light.Color, light.Range, light.Brightness = color, range or 24, brightness or 1.5
+	light.Color, light.Range, light.Brightness = dimmed(color), range or 24, (brightness or 1.5) * (D.NeonDim or 1)
 	light.Parent = p
 end
 

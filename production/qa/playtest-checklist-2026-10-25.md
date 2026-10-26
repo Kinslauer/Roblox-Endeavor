@@ -126,3 +126,8 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] Camera: with a melee weapon the camera sits farther back and higher (you can still scroll); draw a gun and it comes in over the shoulder. Does the far view make a two-enemy fight readable without losing the parry timing?
 - [ ] HUD: one bar bottom-centre — health left, stamina right, a thin posture strip under it and a thin charge strip above; the T / Y / V skill slots sit right under it. Anything you miss from the old top-left stack?
 - [ ] Enemies use the same combos (a raider's club, a rival's baton, a brute's sledge): does their body language give you the parry window?
+- [ ] Idle: with a club / blade / baton the weapon hangs low and a little forward, off hand half up; bare hands keep a loose guard. Does the stance read as "ready" without blocking the view?
+- [ ] Jump and land: the body dips and rises. Hit something: the swing freezes for a few frames on contact (longer on a heavy; a parry freezes both of you). Does the hit feel like it lands, or does the freeze read as lag?
+- [ ] District neon is 30 % dimmer (signs, lamps, gate beams); the safe ring is untouched. Do hit sparks and trails now carry the colour?
+- [ ] Prompts: every console / crate / contact shows a small dark badge with the key letter and faint text beside it; holding fills the badge amber. Readable at a glance? Try one on touch if you can.
+- [ ] Nameplates: no names over heads; a small plate at hip height, lower-left (white players, red enemies, cyan contacts), fading out past ~30 studs. Do bodies read first?

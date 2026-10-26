@@ -29,6 +29,10 @@ discipline, HUD placement, palette restraint. None of it is systems work.
 ## Proposed polish order (when combat polish comes up)
 1. ~~Far camera preset + bottom-centre bar + hotbar~~ — **done 2026-10-26** (`Presentation.Aim.Melee / Ranged`, `Hud.lua`).
 2. ~~Weapon trails on active frames + dust on dodge / land / heavy~~ — **done 2026-10-26** (`WeaponView.AddTrail`, `WorldFX.Dust`).
-3. Held wind-up poses — **done 2026-10-26** as keyframed per-step combos (`Presentation.Swings` Keys, story 006);
-   idle stance per family and hitstop tuning still open.
-4. Palette pass on the districts; custom prompt and nameplate styles.
+3. ~~Held wind-up poses, idle stance, hitstop tuning~~ — **done 2026-10-26**: keyframed per-step combos
+   (`Presentation.Swings` Keys), a stance per weapon (`Presentation.Weapons[id].Stance`), a landing settle, and a
+   body freeze on contact (`Presentation.Impacts[kind].Freeze`) with heavier camera hitstop on heavies / parries.
+4. ~~Palette pass; custom prompt and nameplate styles~~ — **done 2026-10-26**: `District.NeonDim = 0.7`,
+   `client/Prompts.lua` (key badge), `client/Nameplates.lua` (hip-height plates, distance fade).
+
+All four items are in (story 006 under `production/epics/combat-feel`). What remains is tuning by eye in a playtest.

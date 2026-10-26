@@ -1,7 +1,7 @@
-# Story 006: Keyframed attack combos + the Magoi polish pass (camera, bar, trails, dust)
+# Story 006: Keyframed attack combos + the Magoi polish pass (camera, bar, trails, dust, stances, hitstop, palette, prompts, nameplates)
 
 > **Epic**: Combat Feel
-> **Status**: Implemented (live-verified 2026-10-26; owner playtest pending)
+> **Status**: Implemented, both passes (live-verified 2026-10-26; owner playtest pending)
 > **Layer**: Presentation only
 > **Type**: Visual/Feel
 > **Estimate**: L
@@ -63,8 +63,26 @@ combo index:
 - [ ] Owner playtest: the spear combo reads as thrust, thrust, swipe; a heavy reads before it lands.
 - [ ] Owner playtest: the far camera makes a two-enemy fight readable without losing the parry window.
 
+### Second pass (same day, owner: "finish the list")
+- **Idle stances** for every weapon (`Presentation.Weapons[id].Stance`): one-handed weapons hang low and a little
+  forward with the off hand half-raised; fists keep a loose guard (live: club idle R 18° / L 30°).
+- **Landing settle** (`Presentation.Swings.Settle`, `SwingAnimator.Settle`): the body dips 0.35 studs on `Landed`
+  and rises over 0.28 s, under any swing (live: 0.42 peak after a jump). Every tracked character, not just yours.
+- **Hitstop for the body** (`Presentation.Impacts[kind].Freeze`, `SwingAnimator.Freeze`): on Hit / Parry /
+  GuardBreak / BlackFlash the attacker's and victim's swing poses hold their current frame for Freeze seconds
+  (x `HeavyFreezeMult` on heavy hits), then carry on; the camera's FOV punch is x `HeavyHitstopMult` on heavies and
+  longer on parries. Live: a club hit held the shoulder at −38° for 3 frames.
+- **Palette** (`District.NeonDim = 0.7`): every neon part and its light in the generated districts is dimmed 30 %
+  except the safe ring (its colour is information). Live: lamp heads 0.7 x their config colour.
+- **Prompts** (`client/Prompts.lua`, `Presentation.Prompts`): every ProximityPrompt is `Style = Custom` and drawn as
+  a small dark badge with the key letter, action + object text beside it at 45 % until the key is held (badge fills
+  amber over the hold). Touch / gamepad still work (the badge is a button).
+- **Nameplates** (`client/Nameplates.lua`, `Presentation.Nameplates`): Roblox's over-head name is off for players,
+  combatants and contacts; a 12 px plate sits lower-left at hip height (white / red-ish enemies / cyan contacts) and
+  fades from 30 to 70 studs. Health bars untouched. Live: 27 plates, 24 combatants' default names off.
+
 ## Follow-ups
-- Idle stance per family (weapon low and ready) and a crouch-settle on landing (polish item 3, second half).
-- Hitstop tuning on heavies and parries; freeze the attacker's pose for the hitstop frames.
-- Palette pass on the districts; custom prompt and nameplate styles (polish item 4).
 - Uploaded animations per combo index (`AnimationId` in any `Keys` entry still wins).
+- The prompt badge could not be eyeballed live (the Play client camera does not render under the MCP bridge):
+  check it first in the playtest.
+- Idle *animations* (a weight shift, a breathing sway) on top of the stances once an animation set exists.
