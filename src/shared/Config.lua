@@ -137,6 +137,24 @@ Config.Places = {
 	Ids = { Hideout = 0, Conduit = 0, War = 0 },
 }
 
+-- The cycle (design/gdd/dematerialization.md; server/Cycle.lua): every Seconds the Conduit world comes
+-- apart and is restored exactly. Starts when the world opens. Only player / enemy spawns, contact spots and
+-- loot are re-drawn; profiles, the hideout and the war are never touched.
+Config.Cycle = {
+	Seconds = 3600,
+	WarningSeconds = 60, -- the hum rises and lights flicker
+	FlickerSeconds = 5, -- the colour drains
+	WhiteoutSeconds = 1, -- the world is gone; everything is cleared and redrawn
+	Seed = 20261026, -- cycle n draws from Random.new(Seed + n)
+	GuardJitter = 0.06, -- road guards move up to this fraction of the road's length from their authored spot
+	-- what the cycle never touches (besides profiles): positions inside these
+	Exclude = {
+		HideoutMargin = 30, -- studs past the hideout room's edge
+		RangeRadius = 450, -- around Config.Range.Origin: the war and the range
+		AboveY = 1000, -- the prologue plots
+	},
+}
+
 -- Transport (design/gdd/world.md, server/Transport.lua): the lines between regions.
 Config.Transport = {
 	UnlockRadius = 16, -- stand this close to a hub once and it is yours

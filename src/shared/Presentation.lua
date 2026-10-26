@@ -312,4 +312,19 @@ function Presentation.SwingFor(family, label)
 	return entry or Presentation.Swings.Default[key]
 end
 
+-- ---------------------------------------------------------------------------------------------
+-- The cycle (client/WorldFX.lua; design/gdd/dematerialization.md §3): what the Conduit world looks and
+-- sounds like as it comes apart. Phases come from the server (workspace Cycle_Phase). Diegetic only.
+-- ---------------------------------------------------------------------------------------------
+Presentation.Cycle = {
+	Hum = { SoundId = "rbxasset://sounds/bass.wav", Looped = true, StartVolume = 0.05, PeakVolume = 0.6, StartSpeed = 0.22, PeakSpeed = 0.5 },
+	LightRadius = 170, -- studs: the lights around you that flicker
+	FlickerEvery = 0.12, -- seconds between flicker pulses
+	FlickerOff = 0.07, -- how long a flickered light stays dark
+	FlickerShare = { Start = 0.03, Peak = 0.45 }, -- share of nearby lights out per pulse, rising toward the end
+	Drain = { Saturation = -1, Contrast = 0.25, Brightness = 0.05 }, -- the colour drain over the last FlickerSeconds
+	Whiteout = { Color = Color3.fromRGB(245, 245, 250), In = 0.15, Out = 0.7 },
+	Shake = 0.15, -- camera trauma added each second of the drain
+}
+
 return Presentation

@@ -82,6 +82,20 @@ function Rivals.Crews()
 	return crews
 end
 
+-- The cycle: every crew is taken out of the world (no deaths, no drops) and comes back at a drawn point
+-- of its route, walking it from there (design/gdd/dematerialization.md §2).
+function Rivals.Reset(rng)
+	for _, crew in crews do
+		for model in crew.Members do
+			crew.Members[model] = nil
+			NPCs.Remove(model)
+		end
+		crew.Alive, crew.RespawnAt = 0, nil
+		crew.Waypoint = rng:NextInteger(1, #crew.Def.Route)
+		spawnCrew(crew)
+	end
+end
+
 function Rivals.Init()
 	for _, def in R.Crews do
 		local crew = { Def = def, Members = {}, Alive = 0, Waypoint = 1 }

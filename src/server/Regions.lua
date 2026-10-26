@@ -102,17 +102,42 @@ local function road()
 		lamp(Vector3.new(x + (if i % 2 == 0 then 1 else -1) * (Rd.Width / 2 + 2), 0, z), Color3.fromRGB(255, 200, 150), i % 2 == 1)
 		z += Rd.LampEvery
 	end
-	-- guards: placed, never despawning, home where they stand
+	return Regions.SpawnGuards(rng, 0)
+end
+
+-- The road's guards: placed, never despawning, home where they stand. `jitter` (a fraction of the road's
+-- length) moves each post along the road; the cycle calls this with its own draw (server/Cycle.lua).
+local guardModels = {}
+function Regions.SpawnGuards(draw, jitter)
+	local Rd = R.Road
+	local z0, len, x = Rd.Z0, Rd.Length, Rd.X
 	local guards = 0
 	for _, g in Rd.Guards do
+		local at = math.clamp(g.At + draw:NextNumber(-jitter, jitter), 0.08, 0.92)
 		for k = 1, g.Count do
-			local gp = Vector3.new(x + rng:NextNumber(-Rd.Width / 2 + 3, Rd.Width / 2 - 3), TOP + 3.5, z0 + len * g.At + (k - 1) * 5)
-			if NPCs.Spawn(g.Type, gp, { Despawn = false }) then
+			local gp = Vector3.new(x + draw:NextNumber(-Rd.Width / 2 + 3, Rd.Width / 2 - 3), TOP + 3.5, z0 + len * at + (k - 1) * 5)
+			local model = NPCs.Spawn(g.Type, gp, { Despawn = false })
+			if model then
+				model:SetAttribute("RoadGuard", true)
+				guardModels[model] = true
 				guards += 1
 			end
 		end
 	end
 	return guards
+end
+
+-- Live road guards (the cycle removes these and draws new ones).
+function Regions.Guards()
+	local list = {}
+	for model in guardModels do
+		if model.Parent then
+			table.insert(list, model)
+		else
+			guardModels[model] = nil
+		end
+	end
+	return list
 end
 
 -- ---------------------------------------------------------------------------------------------

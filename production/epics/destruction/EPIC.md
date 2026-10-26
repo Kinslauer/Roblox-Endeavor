@@ -27,7 +27,7 @@ hourly dematerialization (`design/gdd/dematerialization.md`); the war world tear
 | 004 | Parry deflect, Medium / Heavy classes, improvised melee from chunks | Core | M | Not started | 003 |
 | 005 | Shared `Explosion` (falloff, LOS, `Explosive` resist), Pipe Grenade, Breaching Charge | Core | L | Not started | 001 |
 | 006 | `Breachable` tiers, authored hole models, noise -> NPC barks, `breach` raid step | World | M | Not started | 005 |
-| 007 | The cycle (`design/gdd/dematerialization.md`): hourly clock, warning / white-out FX, respawn draws for enemies, crews, contacts (2–4 spots each) and the trader, ground-loot clear; then destruction's reset hook | World | L | Not started | — |
+| 007 | The cycle (`design/gdd/dematerialization.md`): hourly clock, warning / white-out FX, respawn draws for enemies, crews, contacts (2–4 spots each) and the trader, ground-loot clear; then destruction's reset hook | World | L | Cycle built (smoke; Studio push pending); destruction's reset hook waits for 001 | — |
 | 008 | Performance budgets (loose chunks, cosmetic debris, bodies) + 20-player stress test | Infra | M | Not started | 001–006 |
 | 009 | War world: structure stages, craters, body persistence, sector rebuild (sectors = hill points) | World | L | Not started | 005 |
 | 010 | `GoreLevel` content pass (`Moderate` / `Restricted`) | Presentation | M | Not started | — |

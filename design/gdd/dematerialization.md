@@ -1,6 +1,7 @@
 # The cycle: dematerialization and rematerialization (Conduit world)
 
-> **Status**: Designed, not implemented · **World**: Conduit (Universe 1) · **Epic**: `production/epics/destruction`
+> **Status**: The cycle itself implemented 2026-10-26 (`server/Cycle.lua`, client FX in `client/WorldFX.lua`; smoke 9
+> checks; Studio push pending — Studio was offline). Clues (§5) and the computer (§6) are designed, not built · **World**: Conduit (Universe 1) · **Epic**: `production/epics/destruction`
 > (story 007) · **Depends on / depended on by**: `design/gdd/destruction.md` §4.8
 > **Owner (2026-10-26 17:37)**: "The world may be simulated, or at least that is what the conduits think, and why
 > they look for knowledge and try to escape. That's why it always resets, everything in the world: terrain, POI,
@@ -17,8 +18,8 @@ they want out. The cycle is the world's heartbeat and the game's central mystery
 | Varies | What changes each cycle | Today in code |
 |---|---|---|
 | **Player spawns** | which spawn pad a fresh / respawning body wakes on | `CitySpawn` pads, picked by `WorldPhase.GetSpawnCFrame` |
-| **Enemy NPC spawns** | where guards, ambushes, warmongers and rival crews start; which routes the crews walk | fixed lists in `Regions.Guards`, `Raids.Crews`, District ambushes |
-| **Vendor encounters** | where each contact and the enclave trader stands this cycle (one of several authored spots) | fixed `Position` per contact / trader |
+| **Enemy NPC spawns** | where guards, ambushes, warmongers and rival crews start; where on its route each crew starts | built: road guard posts move up to `Config.Cycle.GuardJitter` of the road (`Regions.SpawnGuards`), crews restart at a drawn waypoint (`Rivals.Reset`); ambushes are random events already |
+| **Vendor encounters** | where each contact stands this cycle (one of 3–4 authored spots) | built: `Raids.Contacts[id].Spots`, `Contacts.Place` |
 | **Loot** | every container, body and salvage roll | already random per roll |
 
 **Restored exactly**: terrain, buildings, POIs, roads, props, breach points, lamps, signs, raid points, transport
@@ -29,29 +30,32 @@ board, house, builds. The hideout is the conduit's own space and is untouched. T
 rebuild (`destruction.md` §4.7).
 
 ### Reading of "encounters with vendor NPCs" (say the word if wrong)
-Contacts and the trader don't stand in the same place every hour: each has 2–4 authored spots in its region and the
+Contacts don't stand in the same place every hour: each has 3–4 authored spots in its region and the
 cycle picks one. Finding the Broker once unlocks RAIDS for good, but meeting them again means looking again. This
 keeps "you have to find the proper contacts" true after the first find.
+
+The enclave **trader** is a counter in Verdant Market, not a body: the market is a POI, so it stays where it is. Only the
+contacts move.
 
 ## 3. What players see
 1. **T − 60 s**: broken things start flickering; a low hum rises everywhere in the Conduit world (diegetic only — no
    HUD timer, in keeping with "nothing announced you wouldn't notice yourself").
 2. **T − 5 s**: the hum peaks; the whole world flickers; colour drains (a client ColorCorrection ramp).
 3. **T**: **dematerialize**. A second of white-out for everyone in the Conduit world. During it, server-side:
-   - every enemy NPC, rival crew, contact and trader is removed;
+   - every enemy NPC and rival crew is removed (no deaths, no drops);
    - everything on the ground nobody looted is cleared: salvage remains, enemy drops, **and dead players' remains**
      (owner, 17:48: fair — it pushes conduits to leave a raid with what they have, and the war world always has more
      loot);
    - anything held in hand (grabbed debris) dissolves out of it;
    - every broken prop, breach point, structure and terrain change is restored (§4).
-4. **T + 1 s**: **rematerialize**. Colour returns. The new cycle's draw places enemies, crews, contacts and the trader;
+4. **T + 1 s**: **rematerialize**. Colour returns. The new cycle's draw places enemies, crews and contacts;
    fresh loot is rolled where containers have it.
 - **Players stay where they stand**, with their bodies, gear and state. A player inside a resealing breach is not
   moved: that point waits until the space is clear (`destruction.md` §4.8).
 - **Fights in progress end**: the enemy you were fighting is gone. A raid in progress continues; its kill targets are
   whatever the new draw puts out there; its points (fixed POIs) are where they were.
 
-## 4. Implementation sketch
+## 4. Implementation (built 2026-10-26)
 - `server/Cycle.lua`: a server clock started when the world opens (`WorldPhase` → Open; emergence is the first
   materialization). `Config.Cycle = { Seconds = 3600, WarningSeconds = 60, FlickerSeconds = 5, WhiteoutSeconds = 1 }`.
 - Signals: `Cycle.Warning(secondsLeft)`, `Cycle.Dematerialize()`, `Cycle.Rematerialized(index, rng)`. Each cycle gets
@@ -59,7 +63,7 @@ keeps "you have to find the proper contacts" true after the first find.
 - Replicated: `workspace` attributes `Cycle_Index`, `Cycle_At` (when the next one hits) for the client FX
   (`client/WorldFX.lua`: hum, flicker, colour drain, white-out).
 - Subscribers: `NPCs` / `Regions` guards / District ambushes / `Rivals` (despawn, respawn from the draw), `Contacts`
-  and the trader (pick a spot from `Raids.Contacts[id].Spots`), `Loot` (clear unlooted ground loot), destruction
+  (pick a spot from `Raids.Contacts[id].Spots`), `Loot` (clear unlooted ground loot), destruction
   (restore props / breaches; `workspace.Terrain` snapshot via `CopyRegion` at boot, `PasteRegion` on reset).
 - **Multi-place**: once the Conduit world is its own place (`Config.Places`), each server keeps its own cycle.
 - Smoke: advance the mock clock past `Seconds`; check enemies re-spawned from a different draw, contacts moved to a
@@ -141,3 +145,16 @@ acquire one early. That is also how they mix and match cybernetics."
 
 ## 7. Open questions
 - None open right now.
+
+## 8. As built (2026-10-26)
+- `server/Cycle.lua`: Stable → Warning (T−60) → Flicker (T−5) → Whiteout (T) → Stable (T+1), 4 Hz tick on
+  `os.clock`. Starts when the world opens. `Cycle.Schedule(seconds)` forces the next one (dev / tests).
+  Signals `Cycle.Warning`, `Cycle.Dematerialized`, `Cycle.Rematerialized` for later systems (destruction, clues).
+- Clear: every body with an `EnemyType` and no `Faction` outside `Config.Cycle.Exclude` (hideout, war / range,
+  prologue plots) is removed with `NPCs.Remove` (no loot, no credit); every `Lootable` on the ground outside the
+  exclusions is destroyed. Redraw from `Random.new(Seed + index)`: road guards, rival crews, contacts.
+- Client (`WorldFX`): the hum (built-in bass, looped, pitch and volume rising), lights within 170 studs flickering
+  more and more, a colour drain with a slight tremble, a white-out frame; none of it in the hideout or the war.
+  Tunables in `Presentation.Cycle`.
+- Not yet: player spawn pads are already a random pick per spawn (no per-cycle subset); destruction and clues will
+  subscribe to the signals when they exist.

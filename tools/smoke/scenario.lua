@@ -1013,6 +1013,97 @@ do
 		local swipe = spear[3].Keys[1].R[3] > 0 and spear[3].Keys[#spear[3].Keys].R[3] < 0 -- right to left across the body
 		check("the spear combo is thrust, low thrust, swipe (distinct keyed swings)", thrust1 and thrust2 and swipe)
 	end
+	-- the cycle (design/gdd/dematerialization.md): the world comes apart and is restored; only enemy spawns,
+	-- contact spots and loot are re-drawn; the player, their profile, the hideout and the war are untouched
+	do
+		local Cycle = M.mockEnv.__require(SSS.Server.Cycle)
+		local Regions = M.mockEnv.__require(SSS.Server.Regions)
+		local Rivals = M.mockEnv.__require(SSS.Server.Rivals)
+		local Contacts = M.mockEnv.__require(SSS.Server.Contacts)
+		local Loot = M.mockEnv.__require(SSS.Server.Loot)
+		local NPCs = M.mockEnv.__require(SSS.Server.NPCs)
+		local Config = M.mockEnv.__require(RS.Shared.Config)
+		local Raids = M.mockEnv.__require(RS.Shared.Raids)
+		local PlayerData = M.mockEnv.__require(SSS.Server.PlayerData)
+		local data = PlayerData.Get(player)
+		check("the cycle is running once the world is open", Cycle.State().NextAt ~= nil and workspace_:GetAttribute("Cycle_Phase") == "Stable")
+		local oldGuards = {}
+		local guardSpots = {}
+		for _, g in Regions.Guards() do
+			oldGuards[g] = true
+			table.insert(guardSpots, g.HumanoidRootPart.Position)
+		end
+		local oldRivals = {}
+		for _, crew in Rivals.Crews() do
+			for m in crew.Members do
+				oldRivals[m] = true
+			end
+		end
+		local cityLoot = Loot.Spawn(M.CF.new(20, 5, 20), { Scrap = 1 }, {})
+		local homeLoot = Loot.Spawn(M.CF.new(Config.Hideout.Origin + M.V3.new(5, 5, 5)), { Scrap = 1 }, {})
+		local straggler = NPCs.Spawn("Grunt", M.V3.new(30, 5, 30), { Despawn = false })
+		local recruits = 0
+		for _, m in game_:GetService("CollectionService"):GetTagged(NPCs.Tag) do
+			if m:GetAttribute("Faction") then recruits += 1 end
+		end
+		local money, scrap = data.Money, data.Inventory.Scrap
+		local index0 = workspace_:GetAttribute("Cycle_Index") or 0
+		local here = player.Character.HumanoidRootPart.Position
+		Cycle.Schedule(3); run(1)
+		check("inside the last seconds the world flickers (Cycle_Phase Flicker)", workspace_:GetAttribute("Cycle_Phase") == "Flicker")
+		run(2.4)
+		local gone = straggler.Parent == nil and cityLoot.Parent == nil
+		local guardsGone = true
+		for g in oldGuards do
+			if g.Parent then guardsGone = false end
+		end
+		check("dematerialize: enemies, guards and unlooted city loot are taken out (no drops)", workspace_:GetAttribute("Cycle_Phase") == "Whiteout" and gone and guardsGone and Cycle.State().Last.Removed.Loot >= 1)
+		check("the hideout's ground is not the world's: its loot stays", homeLoot.Parent ~= nil)
+		run(1.2)
+		local guards = Regions.Guards()
+		local expected = 0
+		for _, g in M.mockEnv.__require(RS.Shared.Regions).Road.Guards do expected += g.Count end
+		local fresh = #guards == expected
+		for _, g in guards do
+			if oldGuards[g] then fresh = false end
+		end
+		local crewsOk = true
+		for _, crew in Rivals.Crews() do
+			if crew.Alive ~= crew.Def.Size then crewsOk = false end
+			for m in crew.Members do
+				if oldRivals[m] then crewsOk = false end
+			end
+		end
+		check(("rematerialize: a new cycle (%d), the road guards redrawn (%d) and the rival crews back"):format(workspace_:GetAttribute("Cycle_Index"), #guards),
+			workspace_:GetAttribute("Cycle_Phase") == "Stable" and workspace_:GetAttribute("Cycle_Index") == index0 + 1 and fresh and crewsOk)
+		local contactsOk = true
+		for id, def in Raids.Contacts do
+			local model = Contacts.Get(id)
+			local i = model and model:GetAttribute("Spot")
+			local at = i and def.Spots[i]
+			if not (at and (M.V3.new(model.HumanoidRootPart.Position.X, 0, model.HumanoidRootPart.Position.Z) - M.V3.new(at.X, 0, at.Z)).Magnitude < 0.5) then
+				contactsOk = false
+			end
+		end
+		check("every contact stands at one of its authored spots", contactsOk)
+		local recruitsAfter = 0
+		for _, m in game_:GetService("CollectionService"):GetTagged(NPCs.Tag) do
+			if m:GetAttribute("Faction") then recruitsAfter += 1 end
+		end
+		check("the war is not the Conduit world: its recruits are untouched", recruitsAfter == recruits)
+		check("the player keeps their place, money and inventory through the cycle", data.Money == money and data.Inventory.Scrap == scrap
+			and player.Character and (player.Character.HumanoidRootPart.Position - here).Magnitude < 1)
+		-- a second cycle draws differently
+		local spots1 = {}
+		for _, g in Regions.Guards() do table.insert(spots1, g.HumanoidRootPart.Position) end
+		Cycle.Schedule(0.1); run(1.8)
+		local moved = 0
+		for i, g in Regions.Guards() do
+			if spots1[i] and (g.HumanoidRootPart.Position - spots1[i]).Magnitude > 1 then moved += 1 end
+		end
+		check(("the next cycle draws the guards somewhere else (%d of %d moved)"):format(moved, #spots1), moved >= math.ceil(#spots1 / 2))
+		if homeLoot.Parent then homeLoot:Destroy() end
+	end
 end
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)

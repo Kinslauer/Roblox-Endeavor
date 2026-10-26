@@ -71,12 +71,25 @@ for _, t in Raids.Templates do
 end
 
 -- The three contacts and where they stand (server/Contacts.lua builds them). An app on the computer
--- opens when its contact has been met once.
+-- opens when its contact has been met once. Spots: where they may stand this cycle (the cycle draws one;
+-- design/gdd/dematerialization.md §2); Position is the first spot, where they stand before any cycle.
 Raids.Contacts = {
-	Broker = { Name = "the Broker", App = "RAIDS", Position = E.Origin + Vector3.new(16, 0, 14), Line = "Contracts. Read them on your computer. I don't do the work; I know who needs it done." },
-	Fixer = { Name = "the Fixer", App = "HOUSE", Position = D2.Origin + Vector3.new(-14, 0, 12), Line = "A room is not a home until someone sells you the difference. Ask the computer." },
-	Dealer = { Name = "the Dealer", App = "MARKET", Position = Vector3.new(Rd.X + 22, 0, Rd.Z0 + Rd.Length * 0.47), Line = "You found me. The shop's on your computer now. Don't ask where any of it comes from." },
+	Broker = { Name = "the Broker", App = "RAIDS", Line = "Contracts. Read them on your computer. I don't do the work; I know who needs it done.",
+		Spots = { -- between the market stalls (stalls ring the market at r22; the trader's counter is at (0, -10))
+			E.Origin + Vector3.new(16, 0, 14), E.Origin + Vector3.new(-12, 0, 17), E.Origin + Vector3.new(-20, 0, -6), E.Origin + Vector3.new(20, 0, -7),
+		} },
+	Fixer = { Name = "the Fixer", App = "HOUSE", Line = "A room is not a home until someone sells you the difference. Ask the computer.",
+		Spots = { -- Ferrite Court's plaza corners (the pylon is at the centre)
+			D2.Origin + Vector3.new(-14, 0, 12), D2.Origin + Vector3.new(15, 0, -14), D2.Origin + Vector3.new(17, 0, 16), D2.Origin + Vector3.new(-16, 0, -15),
+		} },
+	Dealer = { Name = "the Dealer", App = "MARKET", Line = "You found me. The shop's on your computer now. Don't ask where any of it comes from.",
+		Spots = { -- off the verge, always near a guard post (the risk is the price)
+			Vector3.new(Rd.X + 22, 0, Rd.Z0 + Rd.Length * 0.47), Vector3.new(Rd.X - 24, 0, Rd.Z0 + Rd.Length * 0.25), Vector3.new(Rd.X + 23, 0, Rd.Z0 + Rd.Length * 0.7),
+		} },
 }
+for _, c in Raids.Contacts do
+	c.Position = c.Spots[1]
+end
 
 -- House furnishings (the HOUSE app): client-rendered in the hideout for their owner. Offsets from the room's origin.
 Raids.House = {

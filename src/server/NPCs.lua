@@ -593,6 +593,14 @@ function NPCs.Spawn(typeName, position, opts)
 	return model
 end
 
+-- Takes a body out of the world without a death: no loot, no kill credit (the cycle's dematerialize).
+function NPCs.Remove(model)
+	carrying[model] = nil
+	if model.Parent then
+		model:Destroy()
+	end
+end
+
 -- Finds solid ground inside the playable area under/near a point. Returns a position or nil.
 -- Playable area = parts tagged "PlayableArea" (or any ground when nothing is tagged yet).
 function NPCs.FindGround(position, maxDrop)

@@ -131,3 +131,14 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] District neon is 30 % dimmer (signs, lamps, gate beams); the safe ring is untouched. Do hit sparks and trails now carry the colour?
 - [ ] Prompts: every console / crate / contact shows a small dark badge with the key letter and faint text beside it; holding fills the badge amber. Readable at a glance? Try one on touch if you can.
 - [ ] Nameplates: no names over heads; a small plate at hip height, lower-left (white players, red enemies, cyan contacts), fading out past ~30 studs. Do bodies read first?
+
+## 16. Round 9 — the cycle (dematerialization), added 2026-10-26
+To see one without waiting an hour, run this in the Studio command bar during Play (Server view):
+`require(game.ServerScriptService.Server.Cycle).Schedule(70)`
+- [ ] T−60 s: a low hum starts and rises; the lights around you start to fail, a few at a time, then more. Is it unsettling without telling you anything? Could you miss it?
+- [ ] T−5 s: the colour drains out and the camera trembles. T: the screen goes white for a second, then the world is back.
+- [ ] After: the road guards are at different posts, the rival crews are somewhere else on their routes, and the Broker / Fixer / Dealer are standing somewhere new (each has 3–4 spots). Any you couldn't find again?
+- [ ] Anything left on the ground (enemy spoils, a dead conduit's remains) is gone. Your inventory, money and position are untouched; a raid you were running is still running.
+- [ ] Stand in the hideout during one: nothing happens to you. Same deployed in the war.
+- [ ] Any contact standing inside a wall, a stall or a wreck at one of its spots? Note which.
+

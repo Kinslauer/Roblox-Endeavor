@@ -1,7 +1,8 @@
 -- Contacts (Phase 3, build order 6; design/gdd/raids.md): the three people who open the hideout
 -- computer's apps - the broker (RAIDS) in Verdant Market, the fixer (HOUSE) in Ferrite Court, the
 -- dealer (MARKET) out on the road by the wrecks. Each is a standing body with a Talk prompt; nothing
--- announces them, you find them. They cannot be hurt and nothing hunts them (not Combatants).
+-- announces them, you find them. They cannot be hurt and nothing hunts them (not Combatants). Each
+-- cycle they may stand somewhere else (Contacts.Place; Raids.Contacts[id].Spots).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
@@ -11,6 +12,8 @@ local Rig = require(script.Parent.Rig)
 local Terminal = require(script.Parent.Terminal)
 
 local Contacts = {}
+
+local models = {} -- id -> the standing body
 
 local LOOKS = {
 	Broker = { BodyType = 2, SkinTone = 3, Face = 1, Hair = 3, HairColor = 1, Cloth = Color3.fromRGB(60, 90, 70) },
@@ -48,8 +51,29 @@ local function build(id, def)
 	prompt.Triggered:Connect(function(player)
 		Terminal.Meet(player, id)
 	end)
+	model:SetAttribute("Spot", 1)
 	model.Parent = workspace
+	models[id] = model
 	return model
+end
+
+-- The cycle (server/Cycle.lua) re-draws where each contact stands: one of its authored Spots.
+function Contacts.Place(rng)
+	local placed = {}
+	for id, model in models do
+		local def = R.Contacts[id]
+		if model.Parent and def and def.Spots then
+			local i = rng:NextInteger(1, #def.Spots)
+			model:PivotTo(CFrame.new(def.Spots[i] + Vector3.new(0, District.GroundTop + 3.5, 0)))
+			model:SetAttribute("Spot", i)
+			placed[id] = i
+		end
+	end
+	return placed
+end
+
+function Contacts.Get(id)
+	return models[id]
 end
 
 function Contacts.Init()
