@@ -131,4 +131,6 @@ furnishings are shown only to their owner (the hideout room is shared geometry f
   variables are player and enemy NPC spawns, encounters with vendor NPCs and loot." → `design/gdd/dematerialization.md`.
   Assumption (say the word): "encounters with vendor NPCs" = contacts and the trader stand at one of several authored
   spots, re-drawn each cycle.
+- Dead players' remains clear at the cycle reset like any other unlooted ground loot: "it's fair, it encourages leaving
+  raids with what you have as conduits, and there is always more loot on the war world."
 

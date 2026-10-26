@@ -39,7 +39,9 @@ keeps "you have to find the proper contacts" true after the first find.
 2. **T − 5 s**: the hum peaks; the whole world flickers; colour drains (a client ColorCorrection ramp).
 3. **T**: **dematerialize**. A second of white-out for everyone in the Conduit world. During it, server-side:
    - every enemy NPC, rival crew, contact and trader is removed;
-   - everything on the ground nobody looted is cleared: salvage remains, enemy drops, **and dead players' remains**;
+   - everything on the ground nobody looted is cleared: salvage remains, enemy drops, **and dead players' remains**
+     (owner, 17:48: fair — it pushes conduits to leave a raid with what they have, and the war world always has more
+     loot);
    - anything held in hand (grabbed debris) dissolves out of it;
    - every broken prop, breach point, structure and terrain change is restored (§4).
 4. **T + 1 s**: **rematerialize**. Colour returns. The new cycle's draw places enemies, crews, contacts and the trader;
@@ -64,6 +66,5 @@ keeps "you have to find the proper contacts" true after the first find.
   listed spot, ground loot cleared, a broken prop restored, the player's inventory and raid untouched.
 
 ## 5. Open questions
-- Does a dead player's own remains clearing at the reset feel fair, or should a body's remains survive one cycle?
 - Should the cycle carry *clues* (a line from a contact that changes each cycle, a lore fragment that only appears on
   certain cycles) to feed the "find knowledge, escape" goal? That's the natural hook for a later story arc.
