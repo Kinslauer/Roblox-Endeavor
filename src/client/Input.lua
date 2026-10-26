@@ -1,7 +1,7 @@
 -- Input: keys -> intent remotes. The client only asks; the server decides (ADR-0001).
 -- Layout (README "Controls"): LMB attack, RMB heavy (melee) / aim down sights (ranged), MMB or G
--- special (the heavy, any weapon), LeftShift sprint, F block/parry, Q dodge, E flick, Z feint, R/Y/V skills,
--- J attributes, Tab inventory, L loadout, T reload (Config.Gunplay.ReloadKey). X is the
+-- special (the heavy, any weapon), LeftShift sprint, F block/parry, Q dodge, E flick, Z feint, T/Y/V skills,
+-- J attributes, Tab inventory, L loadout, R reload (Config.Gunplay.ReloadKey). X is the
 -- server-side ProximityPrompt key.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,7 +18,7 @@ local player = Players.LocalPlayer
 
 local Input = {}
 
-local SKILL_KEYS = { [Enum.KeyCode.R] = 1, [Enum.KeyCode.Y] = 2, [Enum.KeyCode.V] = 3 }
+local SKILL_KEYS = { [Enum.KeyCode.T] = 1, [Enum.KeyCode.Y] = 2, [Enum.KeyCode.V] = 3 }
 local PANEL_KEYS = { [Enum.KeyCode.J] = "Stats", [Enum.KeyCode.Tab] = "Inventory", [Enum.KeyCode.L] = "Loadout" }
 
 -- Is the equipped weapon ranged? (replicated Weapon attribute -> Weapons.Defs)

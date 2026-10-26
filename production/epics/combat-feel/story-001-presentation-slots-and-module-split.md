@@ -58,7 +58,7 @@
 
 ## QA Test Cases
 
-- **AC-3**: Setup: Play in Studio, finish or skip tutorial, reach arena. Verify: stamina/posture/charge bars move, J/Tab/L panels open, R/Y/V hotbar shows cooldowns, Q moves you, arc pistol draws a bolt, Black Flash banner shows. Pass: all present, no red Output.
+- **AC-3**: Setup: Play in Studio, finish or skip tutorial, reach arena. Verify: stamina/posture/charge bars move, J/Tab/L panels open, T/Y/V hotbar shows cooldowns, Q moves you, arc pistol draws a bolt, Black Flash banner shows. Pass: all present, no red Output.
 - **AC-5**: Setup: arena dummy "Attack" or a second client swinging; press Q during its hit. Verify: a cyan flash on your character. Pass: visible flash on a successful dodge.
 - **AC-6**: In a Server-datamodel `execute_luau`: `Players[1].Character:GetAttribute("Weapon")` equals the equipped id after equipping from the armory.
 

@@ -14,7 +14,7 @@
 | **Recoil that moves the camera**, with a per-weapon pattern you learn to pull against | Full-auto is a skill, not a hold | **Honest recoil**: the camera kicks per shot (client, `Weapons.Gun.Recoil`, optional `Pattern`), shots go along the camera, so the next round lands where the kicked view points | Implemented |
 | **Ergonomics / sway** when aiming | Heavy guns wander; stamina matters | ADS sway already exists in `ViewModel`; a stamina-driven sway is a follow-up | Later |
 | **Spread by stance** (moving, sprinting, jumping widen the cone; ADS tightens it) | Stop and aim, or miss | **Spread**: `Gun.Spread.Hip/ADS` + `Config.Gunplay.Spread.Moving/Sprinting/Airborne`; ADS only counts `ADSSettle` after raising the sights; sprinting drops the sights | Implemented |
-| **Magazines and manual reloads** (no ammo counter without checking, reload takes real time) | Counting shots is part of the fight | **Magazines**: `Gun.Magazine` rounds per weapon, `Gun.Reload` seconds; the charged heavy burns 3 rounds; an empty click reloads for you; T reloads manually; a stun or dodge cancels the reload | Implemented (counter is shown — the no-counter rule is Universe-2-place material) |
+| **Magazines and manual reloads** (no ammo counter without checking, reload takes real time) | Counting shots is part of the fight | **Magazines**: `Gun.Magazine` rounds per weapon, `Gun.Reload` seconds; the charged heavy burns 3 rounds; an empty click reloads for you; R reloads manually; a stun or dodge cancels the reload | Implemented (counter is shown — the no-counter rule is Universe-2-place material) |
 | **Ammo types / penetration vs armour** | Loadout decisions | `Type = "Arc"` already meets `Resist.Arc` on armour; per-round types are a follow-up | Later |
 | **Weapon ergonomics affecting ADS speed** | Build choices | `Presentation.ViewModel.BlendTime` is one number today; per-gun later | Later |
 | **Lean / mount** | Cover play | Not for now | Out of scope |
@@ -54,14 +54,14 @@ and posture on top), bleeding/healing minigames, weapon durability and jamming, 
 ### 2.4 Magazines and reloads
 - `Gun.Magazine` rounds, tracked per weapon in `Combat.State(char).ammo`, mirrored to the `Ammo` / `MaxAmmo` attributes
   (HUD counter, bottom right; `RELOADING` while reloading, red at 0). A light shot spends 1 round, the charged heavy
-  `Gun.HeavyRounds` (default 3). An empty magazine refuses the shot and starts the reload; T (`Config.Gunplay.ReloadKey`)
+  `Gun.HeavyRounds` (default 3). An empty magazine refuses the shot and starts the reload; R (`Config.Gunplay.ReloadKey`)
   reloads manually. `Gun.Reload` seconds busy; a stun or a dodge interrupts it (token bump) and it can be retried.
 - Magazines refill by reload only; there is no ammo inventory yet (Universe-2 place: ammo as an item, like scrap).
 
 ### 2.5 Numbers
 ```
 Config.Gunplay: Zones (above), HeadshotStaggers = true,
-  Spread = { Moving 1.2, Sprinting 3.0, Airborne 2.0, ADSSettle 0.15 }, ReloadKey = T,
+  Spread = { Moving 1.2, Sprinting 3.0, Airborne 2.0, ADSSettle 0.15 }, ReloadKey = R,
   DefaultGun = { Magazine 10, Reload 1.5, Spread { Hip 3, ADS 0.5 }, Recoil { Pitch 1.2, Yaw 0.4, Recover 7 } }
 Weapons.ArcPistol.Gun: Magazine 9, Reload 1.3, Spread { Hip 2.4, ADS 0.5 }, Recoil { Pitch 1.6, Yaw 0.5, Recover 7 }
 Weapons.ArcRifle.Gun:  Magazine 18, Reload 1.7, Spread { Hip 3.2, ADS 0.25 }, Recoil { Pitch 0.9, Yaw 0.3, Recover 5, Pattern (7 kicks) }

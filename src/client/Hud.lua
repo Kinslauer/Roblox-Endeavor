@@ -323,7 +323,7 @@ end
 local function buildLoadout(loadoutPanel)
 	local loadout
 	local hotbar = {}
-	local SLOT_KEYS = { "R", "Y", "V" }
+	local SLOT_KEYS = { "T", "Y", "V" }
 	for i = 1, Skills.SlotCount do
 		local box = make("Frame", { Size = UDim2.fromOffset(110, 44), Position = UDim2.new(0.5, -170 + (i - 1) * 116, 1, -94), BackgroundColor3 = Color3.fromRGB(15, 15, 20), BackgroundTransparency = 0.25, BorderSizePixel = 0 })
 		hotbar[i] = label({ Size = UDim2.fromScale(1, 1), TextSize = 13, TextWrapped = true, Text = SLOT_KEYS[i], Parent = box })

@@ -180,7 +180,7 @@ Config.Gunplay = {
 	-- spread added to the weapon's own (degrees of cone half-angle), by the shooter's state
 	Spread = { Moving = 1.2, Sprinting = 3.0, Airborne = 2.0, ADSSettle = 0.15 }, -- ADSSettle: seconds after raising the sights before ADS spread counts
 	DefaultGun = { Magazine = 10, Reload = 1.5, Spread = { Hip = 3, ADS = 0.5 }, Recoil = { Pitch = 1.2, Yaw = 0.4, Recover = 7 } },
-	ReloadKey = Enum.KeyCode.T, -- client: manual reload (an empty-magazine shot reloads on its own)
+	ReloadKey = Enum.KeyCode.R, -- client: manual reload (an empty-magazine shot reloads on its own)
 }
 
 -- Sprint: hold the key to run. Drains stamina; blocking cancels it; attacks still work (the swing

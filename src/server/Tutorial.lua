@@ -240,7 +240,7 @@ local STEPS = {
 	},
 	{
 		Title = "Skills",
-		Text = "Use your skill: press R. Skills unlock from your stats and armor tags and scale with both.",
+		Text = "Use your skill: press T. Skills unlock from your stats and armor tags and scale with both.",
 		Skip = function(ctx)
 			local data = dataOf(ctx)
 			return data == nil or next(data.SkillSlots) == nil -- nothing unlocked yet

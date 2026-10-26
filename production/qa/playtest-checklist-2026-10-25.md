@@ -5,7 +5,7 @@ by-eye checks only you can do. Press **Play** in Studio (the place already has e
 use Rojo instead, `git pull` in your clone first or Rojo will overwrite Studio with old files).
 
 Keys: **LMB** attack · **RMB** heavy · **E** flick · **F** block/parry · **Q**+dir dodge · **G** feint ·
-**R/Y/V** skills · **J** stats · **Tab** inventory · **L** loadout · **LeftControl** toggle aim stance ·
+**T/Y/V** skills · **R** reload · **J** stats · **Tab** inventory · **L** loadout · **LeftControl** toggle aim stance ·
 **LeftShift** sprint · **C** first person · **X** use consoles/loot · **hold LeftAlt** to free the mouse for buttons (the creator and HUD panels free it on their own). Skip the tutorial with its Skip button if you have seen it.
 
 ## 1. Combat feel (epic `combat-feel`, stories 003–005)
@@ -62,7 +62,7 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] Drone spoils land on the ground under where it died.
 - [ ] Launcher: light, light (stagger), then **heavy** on a Grunt → it flies up ("LAUNCHED"), hits while it is airborne pop it ("AIR x2…") and hurt more; it lands stunned. Does the rhythm read? Too floaty / too short?
 - [ ] Enemy Step: dodge (Q) while a Grunt is in the air next to you → you hop up and get stamina back ("ENEMY STEP").
-- [ ] Gunplay (Range): ammo counter bottom right (18 / 18 rifle). Shots kick the camera up and drift right then left — can you learn to pull against it? T reloads; an empty click reloads on its own.
+- [ ] Gunplay (Range): ammo counter bottom right (18 / 18 rifle). Shots kick the camera up and drift right then left — can you learn to pull against it? R reloads; an empty click reloads on its own.
 - [ ] Hip fire while moving scatters; stop and hold RMB and the cone tightens after a beat. Sprinting drops the sights.
 - [ ] Headshots on Gunners/Targets read "HEADSHOT" and hit twice as hard. Does the rifle still feel fair at 100 studs?
 
@@ -124,5 +124,5 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] Every melee swing leaves a thin white trail from hand to tip for the active frames; heavies leave an amber one that hangs longer. Readable from behind an enemy?
 - [ ] Dust: a low tan puff under your feet on a dodge, under an Enemy Step, where a launched body lands, and under heavies. Too much? Too little?
 - [ ] Camera: with a melee weapon the camera sits farther back and higher (you can still scroll); draw a gun and it comes in over the shoulder. Does the far view make a two-enemy fight readable without losing the parry timing?
-- [ ] HUD: one bar bottom-centre — health left, stamina right, a thin posture strip under it and a thin charge strip above; the R / Y / V skill slots sit right under it. Anything you miss from the old top-left stack?
+- [ ] HUD: one bar bottom-centre — health left, stamina right, a thin posture strip under it and a thin charge strip above; the T / Y / V skill slots sit right under it. Anything you miss from the old top-left stack?
 - [ ] Enemies use the same combos (a raider's club, a rival's baton, a brute's sledge): does their body language give you the parry window?
