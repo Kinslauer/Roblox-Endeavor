@@ -20,7 +20,10 @@ local Audio = {}
 local live = setmetatable({}, { __mode = "k" }) -- char -> { Sound, ... }
 
 local function rootOf(char)
-	return typeof(char) == "Instance" and char:FindFirstChild("HumanoidRootPart")
+	if typeof(char) ~= "Instance" then
+		return nil
+	end
+	return char:FindFirstChild("HumanoidRootPart") or (char:IsA("Model") and char.PrimaryPart) or nil -- props (Destruction) have no root
 end
 
 local function makeSound(kind, spec)

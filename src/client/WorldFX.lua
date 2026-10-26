@@ -400,6 +400,16 @@ local function feetOf(model)
 end
 
 function WorldFX.Init()
+	-- props (server/Destruction.lua): a puff where it's hit, a cloud and a jolt where it breaks
+	CombatFX.On("PropHit", function(_, point)
+		WorldFX.Dust(point, 0.25)
+	end)
+	CombatFX.On("PropBreak", function(_, point)
+		WorldFX.Dust(point, 0.9)
+		if typeof(point) == "Vector3" and distanceTo(point) < 25 then
+			CameraShake.Add(0.2)
+		end
+	end)
 	-- the ground answers: a dodge, an enemy step, a launched body landing
 	CombatFX.On("Dodge", function(model)
 		WorldFX.Dust(feetOf(model), 0.5)

@@ -138,6 +138,18 @@ Config.Places = {
 	Ids = { Hideout = 0, Conduit = 0, War = 0 },
 }
 
+-- Destruction (design/gdd/destruction.md; server/Destruction.lua, kinds in shared/Destruction.lua).
+Config.Destruction = {
+	PropsPerDistrict = 26, -- crates, barrels, signs, fences, terminals on the streets (never the plaza)
+	PropsOnRoad = 10,
+	Seed = 20261027, -- where the props stand: the same every cycle (authored, in effect)
+	HeavyMult = 1.5, -- a heavy hits a prop this much harder
+	ChunkSettleSeconds = 3, -- loose chunks freeze in place after this long
+	ChunkCap = 150, -- loose gameplay chunks in the world; past it the oldest go
+	ChunkImpulse = 18, -- studs/s outward from the hit
+	SalvageHold = 1.2, -- seconds to hold X on salvage remains
+}
+
 -- The Autonet (server/Autonet.lua; design/gdd/dematerialization.md §6): cybernetics are ripped in, and it hurts.
 Config.Cyber = {
 	RipSeconds = 4, -- one rip (a swap is two)

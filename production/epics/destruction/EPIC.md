@@ -1,6 +1,6 @@
 # Epic: Destruction & salvage (both worlds)
 
-> **Status**: Designed, not started · **Layer**: Core (combat + world + economy) · **Rigor**: standard
+> **Status**: 001, 002, 007 (the cycle), 011 (clues) implemented; 003–006, 008–010 next · **Layer**: Core (combat + world + economy) · **Rigor**: standard
 > **GDD**: `design/gdd/destruction.md` (owner decisions locked 2026-10-26; reconciled §13)
 
 ## Overview
@@ -21,7 +21,7 @@ hourly dematerialization (`design/gdd/dematerialization.md`); the war world tear
 
 | # | Story | Type | Est | Status | Blocked by |
 |---|---|---|---|---|---|
-| 001 | Break types on existing hits (`Break` field, family defaults) + `Destructible` props: health, swap to fractured model, salvage remains | Core | L | Not started | — |
+| 001 | Break types on existing hits (family defaults; `spec.Break` overrides) + `Destructible` props (crates, barrels, signs, fences, terminals, adopted streetlights): health, resists, break into chunks, salvage remains, cycle restore | Core | L | Implemented (smoke: 8 checks; Studio push pending) | — |
 | 002 | Materials (Glass, SheetMetal, Pipe, Battery, Powder) in loot tables + the Arc Cell recipe; Arc Cells as the reload reserve for players and NPCs (hands-only when out), deploy top-up, trader / black market stock, HUD cell count | Economy | M | Implemented (smoke: 4 checks; Studio push pending) | — |
 | 003 | Grab and throw on **G**, Light class, server validation; special moves to MMB only | Core | L | Not started | 001 |
 | 004 | Parry deflect, Medium / Heavy classes, improvised melee from chunks | Core | M | Not started | 003 |

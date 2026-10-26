@@ -169,3 +169,10 @@ To see one without waiting an hour, run this in the Studio command bar during Pl
 - [ ] Install the kit at the bay. Use it: you're on the table; Tab now shows Rip in / Rip out on your cybernetics.
 - [ ] Rip one in: health drops by a third right away, you're held in place ~4 s with the screen whiting at the edges and the camera shaking, then it's in. A swap takes twice as long and costs twice as much. At low health it leaves you on 1 HP, never dead. Does it feel like it hurts? Too punishing before a raid, or just right?
 
+## 21. Round 14 — breakable props and salvage, added 2026-10-26
+- [ ] The city streets and the road have crates, barrels, street signs, fence panels and terminals. Hit a crate with a club: dust puffs on each hit, then it bursts into a few chunks with a crunch and leaves "Crate salvage" (hold X).
+- [ ] A blade barely marks a streetlight; a sledge heavy takes it down (the light goes out). Arc shots fry terminals fast. Can you shoot a sign off its post?
+- [ ] Salvage tables: signs give sheet metal and pipe, terminals batteries / glass / wire (and very rarely a whole Home Computer), streetlights battery / glass / pipe, barrels powder. Does breaking things feel worth the time and noise?
+- [ ] Chunks lie where they fall and stop moving after a few seconds. Plaza props can't be broken.
+- [ ] After a cycle every prop is back exactly, lit, and the debris is gone.
+

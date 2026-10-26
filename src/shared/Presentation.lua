@@ -203,7 +203,8 @@ Presentation.Sounds = {
 	GuardBreak = sfx(B .. "glassbreak.wav", 0.9, 0.02), Dodge = sfx(B .. "action_jump_land.mp3", 0.4, 0.1), Dodged = sfx(B .. "snap.wav", 0.4),
 	Flick = sfx(B .. "clickfast.wav", 0.5, 0.05), BlackFlash = sfx(B .. "bass.wav", 1, 0),
 	Feint = sfx(B .. "button.wav", 0.3), Bolt = sfx(B .. "paintball.wav", 0.6, 0.08), Buff = sfx(B .. "electronicpingshort.wav", 0.5),
-	Burst = sfx(B .. "flashbulb.wav", 0.6), Stun = sfx(B .. "collide.wav", 0.5, 0.1), Safe = sfx(B .. "electronicpingshort.wav", 0.35, 0.02),
+	PropHit = sfx(B .. "hit.wav", 0.25, 0.15), PropBreak = sfx(B .. "glassbreak.wav", 0.55, 0.12), -- server/Destruction.lua
+		Burst = sfx(B .. "flashbulb.wav", 0.6), Stun = sfx(B .. "collide.wav", 0.5, 0.1), Safe = sfx(B .. "electronicpingshort.wav", 0.35, 0.02),
 	Snatch = sfx(B .. "unsheath.wav", 0.5, 0.1), Buster = sfx(B .. "impact_explosion_01.mp3", 0.8, 0.05),
 	Launch = sfx(B .. "swordlunge.wav", 0.7, 0.15), Juggle = sfx(B .. "hit.wav", 0.5, 0.15), EnemyStep = sfx(B .. "action_jump.mp3", 0.5, 0.05),
 	Headshot = sfx(B .. "snap.wav", 0.7, 0.05), Reload = sfx(B .. "button.wav", 0.5, 0.1),

@@ -1,6 +1,6 @@
 # Destruction & Salvage
 
-Status: **Designed, not implemented** · Worlds: **Conduit (Universe 1) and War World** · Owner: solo
+Status: **Stories 001–002 implemented 2026-10-26** (props + salvage, materials + Arc Cells; Studio push pending) · Worlds: **Conduit (Universe 1) and War World** · Owner: solo
 
 > Written 2026-10-26 15:06 in another session on the default branch (`claude/roblox-permadeath-openworld-cj3jfk`,
 > which predates Phase 3). Brought onto `claude/combat-feel` and reconciled with the current build the same day,
@@ -62,6 +62,16 @@ Tagged `Destructible` with CollectionService. Each prop has:
 On break: the intact prop is hidden, the pre-fractured version replaces it, chunks get a small outward impulse, and the client adds cosmetic dust/sparks/glass.
 
 Starter prop list: streetlight, street sign, traffic light, fence panel, crate, barrel, wrecked car door/hood, bench, vending machine, terminal, window pane.
+
+**As built (story 001)**: `shared/Destruction.lua` (kinds, `FamilyBreak`, `BreakTypeOf`) and `server/Destruction.lua`.
+Crates, barrels, street signs, fence panels and terminals stand on District 1/2 streets and the road verge
+(`Config.Destruction`: 26 per district, 10 on the road, one fixed seed, never in a plaza); every district and road
+streetlight is adopted as a Streetlight prop. Combat reaches props from melee arcs and gun rays (`Combat.PropHit`), once
+per swing; a heavy hits 1.5×. Until authored fracture models exist, a break hides the intact parts and splits each into
+chunks (tagged `DebrisChunk`, `From` = the part they came from) that fly out, freeze after 3 s and are capped at 150.
+Salvage remains are `Loot.Spawn` ("Salvage", hold 1.2 s) rolling `Items.LootTables.Salvage*`; a terminal has a 3 % chance
+of a whole Home Computer. The cycle restores every prop and clears the debris. Not yet: traffic lights, car parts,
+benches, vending machines, windows; grab and throw (story 003).
 
 ### 4.3 Breach points (Conduit)
 

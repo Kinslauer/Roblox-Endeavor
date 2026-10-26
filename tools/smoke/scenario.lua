@@ -1281,6 +1281,65 @@ do
 		hum.Health = hum.MaxHealth
 		Hideout.Leave(player); run(0.3)
 	end
+	-- destruction story 001 (destruction.md §4.1–4.4): props break by break type, become salvage, and come back
+	do
+		local Destruction = M.mockEnv.__require(SSS.Server.Destruction)
+		local Cycle = M.mockEnv.__require(SSS.Server.Cycle)
+		local Combat = M.mockEnv.__require(SSS.Server.Combat)
+		local Config = M.mockEnv.__require(RS.Shared.Config)
+		local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+		local CS = game_:GetService("CollectionService")
+		local DC = Config.Destruction
+		check(("props stand in the world (%d placed, %d streetlights adopted)"):format(Destruction.Built.Props, Destruction.Built.Streetlights), Destruction.Built.Props >= 40 and Destruction.Built.Streetlights >= 10)
+		local crate = Destruction.Spawn("Crate", M.CF.new(800, 2, 790))
+		local me = player.Character
+		if Inventory.Count(player, "PipeClub") == 0 then Inventory.Add(player, "PipeClub", 1) end
+		Remotes.EquipItem:FireServer("PipeClub"); run(0.3)
+		me:PivotTo(M.CF.lookAt(M.V3.new(800, 5, 794), M.V3.new(800, 5, 790)))
+		Combat.ClearProtection(me)
+		local hp0 = crate:GetAttribute("Health")
+		me:SetAttribute("Stamina", 100)
+		Remotes.Attack:FireServer(); run(1)
+		check("a club swing chips a crate (a Blunt hit)", crate:GetAttribute("Health") < hp0)
+		for _ = 1, 10 do
+			if crate:GetAttribute("Broken") then break end
+			me:SetAttribute("Stamina", 100); Remotes.Attack:FireServer(); run(0.9)
+		end
+		local salvage = false
+		for _, inst in workspace_:GetChildren() do
+			if inst.Name == "Lootable" and (inst.Position - M.V3.new(800, 3, 790)).Magnitude < 6 then salvage = true end
+		end
+		check(("it breaks: the crate is gone, %d chunks fly, salvage remains on the ground"):format(#Destruction.Chunks()),
+			crate:GetAttribute("Broken") == true and crate.Body.Transparency == 1 and crate.Body.CanCollide == false and #Destruction.Chunks() >= 1 and salvage)
+		local light
+		for _, m in CS:GetTagged(Destruction.Tag) do
+			if m:GetAttribute("Kind") == "Streetlight" and not m:GetAttribute("Broken") then light = m break end
+		end
+		local blade = light and Destruction.Damage(light, 10, "Blade")
+		local term = Destruction.Spawn("Terminal", M.CF.new(820, 2, 790))
+		local arc = Destruction.Damage(term, 10, "Arc")
+		check("break types meet resists: a blade barely marks a streetlight, arc fries a terminal", blade and math.abs(blade - 3) < 0.01 and arc and math.abs(arc - 15) < 0.01)
+		run(DC.ChunkSettleSeconds + 0.3)
+		local settled = true
+		for _, c in Destruction.Chunks() do
+			if c[1].Parent and not c[1].Anchored then settled = false end
+		end
+		check("loose chunks freeze once they've settled", settled)
+		for i = 1, 45 do
+			local extra = Destruction.Spawn("Fence", M.CF.new(860 + i * 3, 2, 790))
+			Destruction.Damage(extra, 999, "Blunt")
+		end
+		check(("the chunk budget holds (%d <= %d)"):format(#Destruction.Chunks(), DC.ChunkCap), #Destruction.Chunks() <= DC.ChunkCap)
+		local safe = Destruction.Spawn("Crate", M.CF.new(0, 2, 0))
+		check("a prop in a safe zone can't be hurt", Destruction.Damage(safe, 50, "Blunt") == nil and safe:GetAttribute("Broken") == false)
+		Cycle.Schedule(0.1); run(1.8)
+		check("the cycle restores every prop exactly and clears the debris", crate:GetAttribute("Broken") == false and crate:GetAttribute("Health") == crate:GetAttribute("MaxHealth")
+			and crate.Body.Transparency == 0 and crate.Body.CanCollide == true and #Destruction.Chunks() == 0 and term:GetAttribute("Health") == term:GetAttribute("MaxHealth"))
+		for _, m in CS:GetTagged(Destruction.Tag) do
+			if m.Name == "Fence Panel" and m.PrimaryPart and m.PrimaryPart.Position.X > 850 then m:Destroy() end
+		end
+		crate:Destroy(); term:Destroy(); safe:Destroy()
+	end
 end
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)

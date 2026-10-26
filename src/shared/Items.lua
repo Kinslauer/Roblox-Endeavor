@@ -121,6 +121,13 @@ Items.LootTables = {
 		{ "Suppressor", 0.02, 1, 1 }, { "LongBarrel", 0.02, 1, 1 }, -- the war: a rare rifle part off a recruit
 		{ "Powder", 0.15, 1, 2 }, { "SheetMetal", 0.2, 1, 2 },
 	},
+	-- salvage from broken props (server/Destruction.lua; design/gdd/destruction.md §4.4)
+	SalvageCrate = { { "Scrap", 0.8, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Ration", 0.25, 1, 1 }, { "ArcCell", 0.15, 1, 2 } },
+	SalvageBarrel = { { "Powder", 0.5, 1, 2 }, { "Scrap", 0.6, 1, 2 }, { "SheetMetal", 0.3, 1, 1 } },
+	SalvageSign = { { "SheetMetal", 0.9, 1, 2 }, { "Pipe", 0.6, 1, 1 } },
+	SalvageFence = { { "SheetMetal", 0.6, 1, 2 }, { "Pipe", 0.5, 1, 2 }, { "Wire", 0.5, 1, 3 } },
+	SalvageTerminal = { { "Battery", 0.6, 1, 1 }, { "Glass", 0.7, 1, 2 }, { "Wire", 0.8, 2, 4 }, { "HomeComputer", 0.03, 1, 1 } }, -- with luck, a whole one
+	SalvageStreetlight = { { "Battery", 0.5, 1, 1 }, { "Glass", 0.8, 1, 2 }, { "Pipe", 0.7, 1, 2 } },
 	Drone = { -- machine parts: wire and scrap, a rare optic
 		{ "Wire", 1, 2, 5 }, { "Scrap", 0.8, 1, 3 },
 		{ "ReflexOptic", 0.04, 1, 1 }, { "TargetingLens", 0.03, 1, 1 },

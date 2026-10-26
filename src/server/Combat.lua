@@ -802,13 +802,23 @@ local function pulse(char, spec, mods, seen)
 			if zone == "Head" and (outcome == "hit" or outcome == "guardbreak") then
 				fx("Headshot", model, char)
 			end
+		elseif model and model:GetAttribute("Kind") and Combat.PropHit then -- a prop (server/Destruction.lua)
+			Combat.PropHit(char, model, damage, spec, Weapons.Defs[char:GetAttribute("Weapon") or ""], mods.label == "Heavy", result.Position)
 		end
 		return
 	end
 
 	for _, part in workspace:GetPartBoundsInRadius(origin, spec.Range, params) do
 		local model = part:FindFirstAncestorOfClass("Model")
-		if model and not seen[model] and getHum(model) then
+		if model and not seen[model] and Combat.PropHit and model:GetAttribute("Kind") and not getHum(model) then
+			-- a prop in the arc (server/Destruction.lua): once per swing, like a body
+			local offset = part.Position - origin
+			local flat = Vector3.new(offset.X, 0, offset.Z)
+			if flat.Magnitude < 3.5 or look:Dot(flat.Unit) >= spec.Arc then
+				seen[model] = true
+				Combat.PropHit(char, model, damage, spec, Weapons.Defs[char:GetAttribute("Weapon") or ""], mods.label == "Heavy", part.Position)
+			end
+		elseif model and not seen[model] and getHum(model) then
 			local vroot = model:FindFirstChild("HumanoidRootPart")
 			if vroot then
 				local offset = vroot.Position - origin
