@@ -2,6 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Items = require(Shared.Items)
+local Clues = require(Shared.Clues)
 local Remotes = require(Shared.Remotes)
 local Config = require(Shared.Config)
 local PlayerData = require(script.Parent.PlayerData)
@@ -61,8 +62,8 @@ function Inventory.Use(player, itemId)
 	local def = type(itemId) == "string" and Items.Defs[itemId]
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if not (def and def.Type == "Consumable" and hum and hum.Health > 0) then
-		return
+	if not (def and (def.Type == "Consumable" or def.Type == "Fragment") and hum and hum.Health > 0) then
+		return -- (a Fragment is read: server/Clues.lua turns it into knowledge on Used)
 	end
 	if not Inventory.Remove(player, itemId, 1) then
 		return
@@ -92,6 +93,12 @@ function Inventory.Craft(player, recipeId)
 	local recipe = type(recipeId) == "string" and Items.Recipes[recipeId]
 	if not recipe then
 		return
+	end
+	if recipe.Needs then -- knowledge-gated (shared/Clues.lua Teaches)
+		local profile = PlayerData.Get(player)
+		if not (profile and Clues.Knows(profile.Knowledge, recipe.Needs)) then
+			return
+		end
 	end
 	for itemId, count in recipe.Inputs do
 		if Inventory.Count(player, itemId) < count then

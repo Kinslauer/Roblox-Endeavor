@@ -286,6 +286,68 @@ local function onCyclePhase()
 	end
 end
 
+-- ---------------------------------------------------------------------------------------------
+-- Anomalies (server/Clues.lua): something that came back wrong this cycle, marking a fragment. Drawn
+-- glitching; hidden, with its fragment, from a conduit who doesn't know enough yet (the Needs attribute).
+-- ---------------------------------------------------------------------------------------------
+local HttpService = game:GetService("HttpService")
+local anomalies = {}
+local function known()
+	local ok, list = pcall(HttpService.JSONDecode, HttpService, player:GetAttribute("Knowledge") or "[]")
+	local set = {}
+	for _, id in (ok and type(list) == "table") and list or {} do
+		set[id] = true
+	end
+	return set
+end
+local function canSee(inst, set)
+	local needs = inst:GetAttribute("Needs")
+	if type(needs) ~= "string" or needs == "" then
+		return true
+	end
+	for id in needs:gmatch("[^,]+") do
+		if not set[id] then
+			return false
+		end
+	end
+	return true
+end
+local function refreshClues()
+	local set = known()
+	local folder = workspace:FindFirstChild("Clues")
+	for _, d in folder and folder:GetChildren() or {} do
+		if d:IsA("BasePart") then
+			local visible = canSee(d, set)
+			d.LocalTransparencyModifier = if visible then 0 else 1
+			local prompt = d:FindFirstChildOfClass("ProximityPrompt")
+			if prompt then
+				prompt.Enabled = visible
+			end
+		end
+	end
+end
+local function animateAnomalies()
+	for part, base in anomalies do
+		if not part.Parent then
+			anomalies[part] = nil
+		elseif part.LocalTransparencyModifier < 1 then
+			local kind = part:GetAttribute("Kind")
+			local jitter = if kind == "Static" then 0.25 elseif kind == "Echo" then 0.12 else 0.05
+			part.CFrame = base * CFrame.new(math.random() * jitter - jitter / 2, math.random() * jitter - jitter / 2, 0)
+			part.Transparency = if math.random() < 0.15 then 0.95 else 0.45 + math.random() * 0.35
+			if kind == "Echo" then
+				part.Color = Color3.fromRGB(110 + math.random(0, 40), 120, 160)
+			end
+		end
+	end
+end
+local function trackAnomaly(part)
+	if part:IsA("BasePart") then
+		anomalies[part] = part.CFrame
+		task.defer(refreshClues)
+	end
+end
+
 function WorldFX.CycleState()
 	return { lights = #cycle.lights, humming = cycle.hum ~= nil, drained = cycle.cc ~= nil, white = cycle.white and cycle.white.BackgroundTransparency or 1 }
 end
@@ -354,6 +416,33 @@ function WorldFX.Init()
 		Debris:AddItem(h, 1.5)
 	end)
 	workspace:GetAttributeChangedSignal("Cycle_Phase"):Connect(onCyclePhase)
+	-- anomalies and the fragments they mark
+	for _, p in CollectionService:GetTagged("Anomaly") do
+		trackAnomaly(p)
+	end
+	CollectionService:GetInstanceAddedSignal("Anomaly"):Connect(trackAnomaly)
+	player:GetAttributeChangedSignal("Knowledge"):Connect(refreshClues)
+	workspace.ChildAdded:Connect(function(c)
+		if c.Name == "Clues" then
+			c.ChildAdded:Connect(function()
+				task.defer(refreshClues)
+			end)
+		end
+	end)
+	local cluesFolder = workspace:FindFirstChild("Clues")
+	if cluesFolder then
+		cluesFolder.ChildAdded:Connect(function()
+			task.defer(refreshClues)
+		end)
+	end
+	local glitchAcc = 0
+	RunService.Heartbeat:Connect(function(dt)
+		glitchAcc += dt
+		if glitchAcc >= 0.08 then
+			glitchAcc = 0
+			animateAnomalies()
+		end
+	end)
 	player:GetAttributeChangedSignal("Zone"):Connect(function()
 		if not inWorld() then
 			stable() -- walked into the hideout or deployed: the world's ending isn't yours

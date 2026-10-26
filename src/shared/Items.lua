@@ -2,6 +2,7 @@ local Armor = require(script.Parent.Armor)
 local Attachments = require(script.Parent.Attachments)
 local Cybernetics = require(script.Parent.Cybernetics)
 local Weapons = require(script.Parent.Weapons)
+local Clues = require(script.Parent.Clues)
 
 local Items = {}
 
@@ -37,6 +38,9 @@ end
 for id, part in Attachments.Parts do -- weapon parts for the bench (shared/Attachments.lua)
 	Items.Defs[id] = { Name = part.Name, Type = "Part", Slot = part.Slot }
 end
+for id, frag in Clues.Fragments do -- recovered pieces of the truth (shared/Clues.lua): Read them to know them
+	Items.Defs[id] = { Name = frag.Name, Type = "Fragment" }
+end
 
 Items.Recipes = {
 	Medkit = { Output = "Medkit", Count = 1, Inputs = { Cloth = 2, Scrap = 1 } },
@@ -64,6 +68,7 @@ Items.Recipes = {
 	HomeComputer = { Output = "HomeComputer", Count = 1, Inputs = { Battery = 2, Glass = 2, SheetMetal = 2, Wire = 6 } },
 }
 
+-- Recipe Needs = knowledge it takes (shared/Clues.lua Fragments[*].Teaches); the recipe is hidden until then.
 -- Each entry rolls independently: { item, chance, min, max }. The weapon an enemy holds is NOT listed here:
 -- NPCs.packCarry adds it, so every enemy drops the thing it was hitting you with (plus what is rolled below).
 Items.LootTables = {

@@ -90,6 +90,17 @@ hour — so paying attention to the world across cycles is how a conduit learns 
 - **Smoke**: a fragment spawns on a cycle its rule allows and not otherwise; reading it adds to Knowledge and unlocks
   ARCHIVE; a chained fragment stays absent until its precondition is read; a cycle line is drawn from the pool.
 
+**As built (2026-10-26)**: `shared/Clues.lua` (lines, fragments, rules: Every / Needs / While / OnRival, Anomaly kind,
+Teaches) and `server/Clues.lua` (draw on every rematerialize and at boot; pickups "Fragment" + an "Anomaly" part per
+fragment out; one conduit takes it per cycle; reading via Tab -> Read turns it into Knowledge, pushes ARCHIVE and
+unlocks recipes it Teaches). Contacts you've met say the cycle's drawn line (`CycleLine_<id>` workspace attributes);
+the first meeting is always the introduction. Client (`WorldFX`): anomalies glitch (Static jitters, Echo flickers in
+colour, Wrong barely moves) and both they and their fragment are hidden from a conduit who lacks the Needs
+(`Knowledge` player attribute). Five fragments ship, all **placeholder** text: Hour Zero (every cycle, District 1
+streets — the way in), A List of Names (every 2nd, needs Hour Zero, Ferrite Court), Maintenance Log 7 (only while the
+Dealer stands at spot 3), Schematic: Autonet (every 3rd, half the time on a rival conduit; teaches the Autonet), The
+Door (every 4th, needs the List and the Log).
+
 ## 6. The home computer: why knowledge carries (owner, 17:53; table 18:02; acquiring it 18:03)
 "Yes it carries. Conduits have their consciousness uploaded to their home computer; that's why it's so vital they
 acquire one early. That is also how they mix and match cybernetics."

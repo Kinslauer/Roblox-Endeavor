@@ -13,6 +13,7 @@ local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Lore = require(Shared.Lore)
 local R = require(Shared.Raids)
+local SC = require(Shared.Clues)
 local Remotes = require(Shared.Remotes)
 local Inventory = require(script.Parent.Inventory)
 local PlayerData = require(script.Parent.PlayerData)
@@ -75,9 +76,20 @@ function Terminal.State(player)
 			table.insert(market, { Id = m.Id, Name = def.Name, Price = m.Price })
 		end
 	end
+	-- ARCHIVE: what the conduit has read, in the order found (shared/Clues.lua; server/Clues.lua)
+	local archive = {}
+	for id, order in data.Knowledge or {} do
+		local f = SC.Fragments[id]
+		if f then
+			table.insert(archive, { Order = order, Name = f.Name, Text = f.Text })
+		end
+	end
+	table.sort(archive, function(a, b)
+		return a.Order < b.Order
+	end)
 	return {
 		Contacts = { Broker = data.Contacts.Broker == true, Fixer = data.Contacts.Fixer == true, Dealer = data.Contacts.Dealer == true },
-		Board = board, Raid = raidState, House = house, Market = market, Money = Wallet.Get(player),
+		Board = board, Raid = raidState, House = house, Market = market, Money = Wallet.Get(player), Archive = archive,
 	}
 end
 
@@ -108,13 +120,16 @@ function Terminal.Meet(player, contactId)
 		return false
 	end
 	data.Contacts = data.Contacts or {}
+	-- what they say this cycle (server/Clues.lua draws it); the first meeting is always their introduction
+	local pool, idx = SC.Lines[contactId], workspace:GetAttribute("CycleLine_" .. contactId)
+	local line = if data.Contacts[contactId] and pool and idx and pool[idx] then pool[idx][1] else c.Line
 	if data.Contacts[contactId] then
-		announce(player, ("%s: \"%s\""):format(c.Name, c.Line), "Info")
+		announce(player, ("%s: \"%s\""):format(c.Name, line), "Info")
 		return false
 	end
 	local first = next(data.Contacts) == nil
 	data.Contacts[contactId] = true
-	announce(player, ("%s: \"%s\""):format(c.Name, c.Line), "Info")
+	announce(player, ("%s: \"%s\""):format(c.Name, line), "Info")
 	task.delay(2, function()
 		announce(player, if data.Computer then ("%s unlocked on your computer."):format(c.App)
 			else ("You'll need a computer of your own for %s. Until then you only remember the way."):format(c.App), "Info")

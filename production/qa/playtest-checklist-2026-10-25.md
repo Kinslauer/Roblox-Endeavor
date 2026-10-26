@@ -156,3 +156,10 @@ To see one without waiting an hour, run this in the Studio command bar during Pl
 - [ ] Build one (Tab → craft: Battery 2, Glass 2, Sheet Metal 2, Wire 6) or find one (rare on rivals, warmongers, supply drops). Use the desk: the upload line, the screen lights up, any contacts you already met light their apps.
 - [ ] Die for good after: contacts, board and house are all still there. Does getting a computer early feel as vital as it should?
 
+## 19. Round 12 — clues, knowledge and the ARCHIVE, added 2026-10-26 (fragment texts are placeholders)
+- [ ] District 1's street corners: one of them has something wrong — a glitching glass cube with a pale slip of paper by it. Hold X: "Fragment: Hour Zero". Tab → Read: the text comes up as a lore line.
+- [ ] With a computer installed: ARCHIVE appears on it and lists what you've read, in order. Without one: "this dies with you".
+- [ ] Talk to a contact you've met: their line changes from cycle to cycle, and now and then it's wrong in a way that should bother you.
+- [ ] Across a few cycles (force them from the command bar): A List of Names turns up in Ferrite Court only once you've read Hour Zero (someone who hasn't can't see it); Maintenance Log 7 only when the Dealer is at his third spot; the Autonet schematic every third cycle, sometimes on a rival.
+- [ ] Do the anomalies read as "the world came back wrong" without a marker? Too subtle, too loud?
+

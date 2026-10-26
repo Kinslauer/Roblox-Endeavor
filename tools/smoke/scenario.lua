@@ -1161,6 +1161,75 @@ do
 		check(("the next cycle draws the guards somewhere else (%d of %d moved)"):format(moved, #spots1), moved >= math.ceil(#spots1 / 2))
 		if homeLoot.Parent then homeLoot:Destroy() end
 	end
+	-- clues (dematerialization.md §5): lines, fragments at anomaly spots, knowledge, ARCHIVE, gated recipes
+	do
+		local Clues = M.mockEnv.__require(SSS.Server.Clues)
+		local SC = M.mockEnv.__require(RS.Shared.Clues)
+		local Cycle = M.mockEnv.__require(SSS.Server.Cycle)
+		local Contacts = M.mockEnv.__require(SSS.Server.Contacts)
+		local Terminal = M.mockEnv.__require(SSS.Server.Terminal)
+		local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+		local NPCs = M.mockEnv.__require(SSS.Server.NPCs)
+		local Rivals = M.mockEnv.__require(SSS.Server.Rivals)
+		local Items = M.mockEnv.__require(RS.Shared.Items)
+		local PlayerData = M.mockEnv.__require(SSS.Server.PlayerData)
+		local data = PlayerData.Get(player)
+		data.Knowledge = {}
+		check("the cycle carries clues: the latest draw follows the cycle, every contact has a line",
+			Clues.Last and Clues.Last.Index == Cycle.State().Index and type(workspace_:GetAttribute("CycleLine_Broker")) == "number" and type(workspace_:GetAttribute("CycleLine_Dealer")) == "number")
+		local hz = Clues.Live().HourZero
+		check("the way in (Hour Zero) is out every cycle, marked by an anomaly", hz ~= nil and hz.Pickup and hz.Pickup.Parent ~= nil and hz.Anomaly and hz.Anomaly:GetAttribute("Kind") == "Static")
+		check("picking it up puts the fragment in your bag", Clues.Take(player, "HourZero") and Inventory.Count(player, "HourZero") == 1 and Clues.Live().HourZero == nil)
+		Inventory.Use(player, "HourZero")
+		local archive = Terminal.State(player).Archive
+		check("reading it makes it knowledge: the ARCHIVE lists it, the client gets the list", data.Knowledge.HourZero == 1 and Inventory.Count(player, "HourZero") == 0
+			and #archive == 1 and archive[1].Name == SC.Fragments.HourZero.Name and tostring(player:GetAttribute("Knowledge")):find("HourZero") ~= nil)
+		-- Needs: on cycle 2 the List of Names is out, but only for someone who read Hour Zero
+		Clues.Draw(2, M.mockEnv.Random.new(5))
+		local list = Clues.Live().ListOfNames
+		data.Knowledge = {}
+		local refused = list ~= nil and Clues.Take(player, "ListOfNames") == false
+		data.Knowledge = { HourZero = 1 }
+		check("a chained fragment can't be taken without what it needs, and can with it", refused and Clues.Take(player, "ListOfNames"))
+		-- While: the maintenance log only while the Dealer stands at spot 3
+		local dealer = Contacts.Get("Dealer")
+		dealer:SetAttribute("Spot", 1); Clues.Draw(1, M.mockEnv.Random.new(6))
+		local without = Clues.Live().MaintenanceLog == nil
+		dealer:SetAttribute("Spot", 3); Clues.Draw(1, M.mockEnv.Random.new(6))
+		check("a fragment tied to where a contact stands shows only then", without and Clues.Live().MaintenanceLog ~= nil)
+		-- the cycle's line: a met contact says this cycle's line
+		data.Contacts.Broker = true -- met already (the first meeting is always the introduction)
+		workspace_:SetAttribute("CycleLine_Broker", 4)
+		local before = #M.FireLog
+		Terminal.Meet(player, "Broker")
+		local said = false
+		for i = before + 1, #M.FireLog do
+			if tostring(M.FireLog[i][3]):find("last hour") then said = true end
+		end
+		check("a contact you've met says the cycle's line (some of them slip)", said)
+		-- OnRival: the Autonet schematic can be on a rival conduit instead of the ground
+		local onRival = false
+		for seed = 1, 30 do
+			Clues.Draw(3, M.mockEnv.Random.new(seed))
+			if Clues.Live().AutonetSchematic and Clues.Live().AutonetSchematic.Rival then
+				local bag = NPCs.Carrying(Clues.Live().AutonetSchematic.Rival)
+				onRival = bag and bag.AutonetSchematic == 1
+				break
+			end
+		end
+		check("some cycles a rival conduit is carrying the fragment", onRival)
+		-- knowledge-gated recipes
+		Items.Recipes.SmokeKit = { Output = "Ration", Count = 1, Inputs = { Scrap = 1 }, Needs = "Autonet" }
+		Inventory.Add(player, "Scrap", 2)
+		local r0 = Inventory.Count(player, "Ration")
+		Inventory.Craft(player, "SmokeKit")
+		local blocked = Inventory.Count(player, "Ration") == r0
+		data.Knowledge.AutonetSchematic = 3
+		Inventory.Craft(player, "SmokeKit")
+		check("a recipe that needs knowledge is refused until you know it", blocked and Inventory.Count(player, "Ration") == r0 + 1)
+		Items.Recipes.SmokeKit = nil
+		Clues.Draw(Cycle.State().Index, M.mockEnv.Random.new(9))
+	end
 end
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)

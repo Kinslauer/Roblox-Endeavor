@@ -12,6 +12,7 @@ local Armor = require(Shared:WaitForChild("Armor"))
 local Config = require(Shared:WaitForChild("Config"))
 local Cybernetics = require(Shared:WaitForChild("Cybernetics"))
 local Items = require(Shared:WaitForChild("Items"))
+local Clues = require(Shared:WaitForChild("Clues"))
 local Regions = require(Shared:WaitForChild("Regions"))
 local Attachments = require(Shared:WaitForChild("Attachments"))
 local Weapons = require(Shared:WaitForChild("Weapons"))
@@ -89,6 +90,13 @@ local function addRow(frame, text, buttons, textColor)
 		}, row)
 		btn.Activated:Connect(b.fn)
 	end
+end
+
+-- A wrapped paragraph row (the ARCHIVE's fragment texts).
+local function addNote(frame, text, textColor)
+	local row = make("Frame", { Size = UDim2.new(1, -8, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 }, frame)
+	label({ Size = UDim2.new(1, -24, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, Position = UDim2.fromOffset(18, 0), Text = text, TextColor3 = textColor,
+		TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, TextSize = 13, Font = Enum.Font.Gotham, Parent = row })
 end
 
 -- ===== Public API used by other client modules =====
@@ -217,6 +225,8 @@ local function buildInventory(invPanel)
 			local def, buttons = Items.Defs[id], {}
 			if def.Type == "Consumable" then
 				table.insert(buttons, { text = "Use", fn = function() Remotes.UseItem:FireServer(id) end })
+			elseif def.Type == "Fragment" then
+				table.insert(buttons, { text = "Read", color = Color3.fromRGB(90, 90, 140), fn = function() Remotes.UseItem:FireServer(id) end })
 			elseif def.Type == "Weapon" then
 				local held = lastEquipped == id
 				table.insert(buttons, { text = if held then "Unequip" else "Equip", color = if held then Color3.fromRGB(120, 70, 70) else nil, fn = function()
@@ -234,7 +244,15 @@ local function buildInventory(invPanel)
 			addRow(invPanel, ("%s x%d%s"):format(def.Name, lastInventory[id], suffix), buttons)
 		end
 		addRow(invPanel, "-- Crafting --", {})
+		local known = {}
+		local okK, list = pcall(HttpService.JSONDecode, HttpService, player:GetAttribute("Knowledge") or "[]")
+		for _, kid in (okK and type(list) == "table") and list or {} do
+			known[kid] = true
+		end
 		for recipeId, recipe in Items.Recipes do
+			if recipe.Needs and not Clues.Knows(known, recipe.Needs) then
+				continue -- knowledge you don't have yet (shared/Clues.lua)
+			end
 			local parts = {}
 			for id, n in recipe.Inputs do
 				table.insert(parts, ("%dx %s"):format(n, Items.Defs[id].Name))
@@ -292,6 +310,14 @@ local function buildTerminal(termPanel)
 		if state.Contacts.Fixer then
 			for _, h in state.House do
 				addRow(termPanel, ("   %s  ·  %d%s"):format(h.Name, h.Price, if h.Owned then "  ·  owned" else ""), if h.Owned then {} else { { text = "Order", color = Color3.fromRGB(60, 120, 80), fn = function() send("Order", h.Id) end } })
+			end
+		end
+		-- ARCHIVE: what you've read (unlocked by the first fragment)
+		if state.Archive and #state.Archive > 0 then
+			addRow(termPanel, ("ARCHIVE  ·  %d recovered"):format(#state.Archive), {}, Color3.fromRGB(190, 190, 255))
+			for _, f in state.Archive do
+				addRow(termPanel, "   " .. f.Name, {}, Color3.fromRGB(200, 200, 225))
+				addNote(termPanel, f.Text, Color3.fromRGB(170, 170, 195))
 			end
 		end
 		-- MARKET
