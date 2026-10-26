@@ -158,6 +158,16 @@ Powder are also on the black market. The HUD shows carried cells under the magaz
   - Thrown hits count toward the Flicker / Black Flash chain only if the throw itself was flicked.
 - **Stats:** Strength raises throw damage and the Heavy threshold; Willpower lowers throw stamina cost.
 
+**As built (story 003, Light class)**: `server/Grab.lua`, `Config.Destruction.Grab`, `Remotes.Grab` ("Grab" / "Charge"
+/ "Throw" + look direction only). Chunks carry a `Weight` from their volume (Light ≤ 8 studs³, Medium ≤ 40, else Heavy);
+only Light is grabbable for now (sign posts and plates, fence pieces, terminal halves; crate and barrel pieces are
+Medium, story 004). G grabs the nearest within 8 studs after 0.2 s (a hit in between cancels it; the chunk is claimed on
+the first request); while holding, hold G to wind up (timed on the server, full at 0.8 s) and let go to throw toward
+the camera. The flight is flown on the server with a ray per frame: past 4 studs the first body takes `Combat.Damage`
+(blockable, dodgeable, knockback), a prop takes a Thrown hit, the ground stops it. Speed and damage follow §5; the
+client's direction is clamped to the aim cone and nothing else it sends is used. Dying or the cycle drops what you hold.
+The ranged special moved to the middle mouse button only.
+
 ### 4.6 Explosions (both worlds)
 
 One shared server-side `Explosion` function, not Roblox's built-in `Explosion` instance:

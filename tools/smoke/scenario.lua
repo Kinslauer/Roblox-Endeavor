@@ -1340,6 +1340,58 @@ do
 		end
 		crate:Destroy(); term:Destroy(); safe:Destroy()
 	end
+	-- grab and throw (destruction.md §4.5, story 003): G picks up a light chunk; the throw is the server's
+	do
+		local Destruction = M.mockEnv.__require(SSS.Server.Destruction)
+		local Grab = M.mockEnv.__require(SSS.Server.Grab)
+		local NPCs = M.mockEnv.__require(SSS.Server.NPCs)
+		local Combat = M.mockEnv.__require(SSS.Server.Combat)
+		local Config = M.mockEnv.__require(RS.Shared.Config)
+		local GR = Config.Destruction.Grab
+		local me = player.Character
+		me.Humanoid.Health = me.Humanoid.MaxHealth
+		me:PivotTo(M.CF.lookAt(M.V3.new(900, 5, 900), M.V3.new(900, 5, 880)))
+		Combat.ClearProtection(me)
+		local sign = Destruction.Spawn("StreetSign", M.CF.new(900, 2, 897))
+		Destruction.Damage(sign, 999, "Blunt")
+		local light = 0
+		for _, c in Destruction.Chunks() do
+			if c[1].Parent and c[1]:GetAttribute("Kind") == "StreetSign" and c[1]:GetAttribute("Weight") == "Light" then light += 1; c[1].CFrame = M.CF.new(901, 3, 898) end
+		end
+		check(("a broken sign leaves light chunks (%d) you can pick up"):format(light), light >= 1)
+		local crate = Destruction.Spawn("Crate", M.CF.new(890, 2, 897))
+		Destruction.Damage(crate, 999, "Blunt")
+		local medium = false
+		for _, c in Destruction.Chunks() do
+			if c[1].Parent and c[1]:GetAttribute("Kind") == "Crate" then medium = medium or c[1]:GetAttribute("Weight") == "Medium" end
+		end
+		me:SetAttribute("Stamina", 100)
+		Remotes.Grab:FireServer("Grab"); run(GR.GrabSeconds + 0.1)
+		local chunk = Grab.Holding(player)
+		check("G grabs the nearest light chunk: it's in your hand (crate pieces are Medium: not yet)", chunk ~= nil and chunk:GetAttribute("Held") == player.UserId and me:GetAttribute("Holding") == "Light" and medium)
+		local grunt = NPCs.Spawn("Grunt", M.V3.new(900, 5, 886), { Despawn = false })
+		grunt.HumanoidRootPart.Anchored = true
+		local hp0 = grunt.Humanoid.Health
+		Remotes.Grab:FireServer("Charge"); run(GR.MaxCharge + 0.1)
+		Remotes.Grab:FireServer("Throw", M.V3.new(0, 0, -1)); run(0.6)
+		check(("a charged throw hits the body in its path through the normal combat hit (%d -> %d)"):format(hp0, grunt.Humanoid.Health),
+			grunt.Humanoid.Health < hp0 and Grab.Holding(player) == nil and me:GetAttribute("Holding") == nil and not Grab.Flights()[chunk])
+		-- the client only says where it looks: the speed is the formula's, never the client's
+		local f
+		for _, c in Destruction.Chunks() do
+			if c[1].Parent and c[1]:GetAttribute("Weight") == "Light" and not c[1]:GetAttribute("Held") then c[1].CFrame = M.CF.new(901, 3, 898) end
+		end
+		me:SetAttribute("Stamina", 100)
+		Remotes.Grab:FireServer("Grab"); run(GR.GrabSeconds + 0.1)
+		local second = Grab.Holding(player)
+		Remotes.Grab:FireServer("Throw", M.V3.new(0, 900, -900)); run(0.03)
+		f = second and Grab.Flights()[second]
+		local cap = GR.Classes.Light.Speed * (1 + GR.ChargeSpeed) * (1 + GR.SpeedPerStrength * 100)
+		check("an absurd aim from the client changes nothing: speed comes from the server", f ~= nil and f.Speed <= cap and f.Vel.Y < GR.Classes.Light.Speed)
+		run(2.2)
+		NPCs.Remove(grunt)
+		sign:Destroy(); crate:Destroy()
+	end
 end
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)

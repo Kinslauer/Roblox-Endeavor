@@ -4,7 +4,7 @@ Everything in the brief's build order (1–6) is implemented and verified by ins
 by-eye checks only you can do. Press **Play** in Studio (the place already has every script; if you
 use Rojo instead, `git pull` in your clone first or Rojo will overwrite Studio with old files).
 
-Keys: **LMB** attack · **RMB** heavy · **E** flick · **F** block/parry · **Q**+dir dodge · **G** feint ·
+Keys: **LMB** attack · **RMB** heavy · **E** flick · **F** block/parry · **Q**+dir dodge · **Z** feint · **G** grab / hold-and-release throw ·
 **T/Y/V** skills · **R** reload · **J** stats · **Tab** inventory · **L** loadout · **LeftControl** toggle aim stance ·
 **LeftShift** sprint · **C** first person · **X** use consoles/loot · **hold LeftAlt** to free the mouse for buttons (the creator and HUD panels free it on their own). Skip the tutorial with its Skip button if you have seen it.
 
@@ -175,4 +175,11 @@ To see one without waiting an hour, run this in the Studio command bar during Pl
 - [ ] Salvage tables: signs give sheet metal and pipe, terminals batteries / glass / wire (and very rarely a whole Home Computer), streetlights battery / glass / pipe, barrels powder. Does breaking things feel worth the time and noise?
 - [ ] Chunks lie where they fall and stop moving after a few seconds. Plaza props can't be broken.
 - [ ] After a cycle every prop is back exactly, lit, and the debris is gone.
+
+## 22. Round 15 — grab and throw, added 2026-10-26
+- [ ] Break a street sign or a fence panel, stand by the pieces, tap G: after a beat a piece is in your hand (Holding). Crate and barrel pieces are too big for now.
+- [ ] Hold G to wind up and let go: it flies where you're looking, tumbling, and drops where it lands. A full wind-up (~0.8 s) throws harder and farther and costs more stamina.
+- [ ] Throw it at a raider: it's a real hit (damage, knockback); a blocking enemy takes it on the guard; a dodge goes through it. Point-blank throws do nothing.
+- [ ] Throw it at a crate or a terminal: the prop takes the hit.
+- [ ] Ranged weapons: the special is now on the middle mouse button only (G is grab). Missing it?
 

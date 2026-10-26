@@ -1,7 +1,7 @@
 -- Input: keys -> intent remotes. The client only asks; the server decides (ADR-0001).
 -- Layout (README "Controls"): LMB attack, RMB heavy (melee) / aim down sights (ranged), MMB or G
 -- special (the heavy, any weapon), LeftShift sprint, F block/parry, Q dodge, E flick, Z feint, T/Y/V skills,
--- J attributes, Tab inventory, L loadout, R reload (Config.Gunplay.ReloadKey). X is the
+-- J attributes, Tab inventory, L loadout, R reload (Config.Gunplay.ReloadKey), G grab / hold-and-release throw. X is the
 -- server-side ProximityPrompt key.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -78,6 +78,14 @@ function Input.Init()
 			end
 		elseif isSpecialInput(input) then
 			Remotes.Heavy:FireServer(aimArg())
+		elseif key == Presentation.Aim.GrabKey then
+			-- G: grab a loose chunk; while holding, hold G to wind the throw and let go to throw (server/Grab.lua)
+			local char = player.Character
+			if char and char:GetAttribute("Holding") then
+				Remotes.Grab:FireServer("Charge")
+			else
+				Remotes.Grab:FireServer("Grab")
+			end
 		elseif key == Enum.KeyCode.F then
 			Remotes.Block:FireServer(true)
 		elseif key == Enum.KeyCode.LeftShift then
@@ -100,7 +108,13 @@ function Input.Init()
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(input)
-		if input.KeyCode == Enum.KeyCode.F then
+		if input.KeyCode == Presentation.Aim.GrabKey then
+			local char = player.Character
+			if char and char:GetAttribute("ThrowCharge") then
+				local camera = workspace.CurrentCamera
+				Remotes.Grab:FireServer("Throw", camera and camera.CFrame.LookVector or nil)
+			end
+		elseif input.KeyCode == Enum.KeyCode.F then
 			Remotes.Block:FireServer(false)
 		elseif input.KeyCode == Enum.KeyCode.LeftShift then
 			Remotes.Sprint:FireServer(false)

@@ -180,10 +180,15 @@ local function adoptLamps()
 end
 
 local function pruneChunks()
-	while #chunks > DC.ChunkCap do
-		local oldest = table.remove(chunks, 1)
-		if oldest[1].Parent then
-			oldest[1]:Destroy()
+	local i = 1
+	while #chunks > DC.ChunkCap and i <= #chunks do
+		if chunks[i][1]:GetAttribute("Held") then
+			i += 1 -- never out of someone's hands
+		else
+			local oldest = table.remove(chunks, i)
+			if oldest[1].Parent then
+				oldest[1]:Destroy()
+			end
 		end
 	end
 end
@@ -219,6 +224,9 @@ local function spawnChunks(model, K, point)
 			c.Anchored, c.CanCollide = false, true
 			c:SetAttribute("Kind", model:GetAttribute("Kind"))
 			c:SetAttribute("From", p.Name) -- a post is a pipe, a plate is sheet metal (grab and throw reads this)
+			local volume = c.Size.X * c.Size.Y * c.Size.Z
+			local GR = DC.Grab
+			c:SetAttribute("Weight", if volume <= GR.LightVolume then "Light" elseif volume <= GR.MediumVolume then "Medium" else "Heavy")
 			CollectionService:AddTag(c, Destruction.ChunkTag)
 			c.Parent = chunkFolder
 			local away = c.Position - point

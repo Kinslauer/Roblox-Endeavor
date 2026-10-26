@@ -148,6 +148,19 @@ Config.Destruction = {
 	ChunkCap = 150, -- loose gameplay chunks in the world; past it the oldest go
 	ChunkImpulse = 18, -- studs/s outward from the hit
 	SalvageHold = 1.2, -- seconds to hold X on salvage remains
+	-- grab and throw (server/Grab.lua; destruction.md §4.5, §5): G grabs, hold G and let go to throw
+	Grab = {
+		Range = 8, GrabSeconds = 0.2, MaxCharge = 0.8, -- seconds of hold for a full charge
+		ChargeSpeed = 0.6, SpeedPerStrength = 0.01, DamageExponent = 1.2, StaminaPerWillpower = 0.005,
+		MinFlight = 4, -- studs before a throw can hit anyone (no point-blank spam)
+		FlightSeconds = 2,
+		LightVolume = 8, MediumVolume = 40, -- chunk volume (studs^3) up to which it is Light / Medium; above, Heavy
+		Classes = {
+			Light = { Grabbable = true, Speed = 75, Lift = 6, Damage = 12, Posture = 10, Knockback = 18, Stamina = 10 },
+			Medium = { Grabbable = false, Speed = 55, Lift = 9, Damage = 22, Posture = 20, Knockback = 30, Stamina = 18 }, -- story 004
+			Heavy = { Grabbable = false, Speed = 35, Lift = 10, Damage = 40, Posture = 40, Knockback = 45, Stamina = 30 }, -- story 004
+		},
+	},
 }
 
 -- The Autonet (server/Autonet.lua; design/gdd/dematerialization.md §6): cybernetics are ripped in, and it hurts.
@@ -286,7 +299,7 @@ Config.Flicker = {
 Config.RateLimit = {
 	Burst = 2,
 	Attack = 6, Heavy = 4, Feint = 6, Flicker = 8, Block = 10, Dodge = 4, UseSkill = 6,
-	SetSkill = 4, Allocate = 10, UseItem = 4, EquipItem = 4, Unequip = 4, Craft = 4, TutorialSkip = 1, SetAppearance = 10, Sprint = 6, Reload = 4, ADS = 8, Bench = 6, Buy = 4, Terminal = 6, Autonet = 4,
+	SetSkill = 4, Allocate = 10, UseItem = 4, EquipItem = 4, Unequip = 4, Craft = 4, TutorialSkip = 1, SetAppearance = 10, Sprint = 6, Reload = 4, ADS = 8, Bench = 6, Buy = 4, Terminal = 6, Autonet = 4, Grab = 6,
 }
 
 -- World events (server/Events.lua)
