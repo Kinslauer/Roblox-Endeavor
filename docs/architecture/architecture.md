@@ -83,6 +83,7 @@ Every system is a ModuleScript exposing an `Init()` plus a small API. Dependenci
 | `Quests` | Rotating quests, `QuestChanged` push. | — |
 | `Events` | Weighted event director (supply drop, raider ambush). | — |
 | `District` | Generates District 1 at boot from `shared/District.lua` + a fixed seed into `workspace.District`: street slab (`PlayableArea`), pavements, buildings / rubble, cover, lamps, perimeter wall, Relay Plaza safe zone (`SafeZone` marker + ring + beacon), 8 `CitySpawn` pads. Destroys the legacy placeholder slab. | — |
+| `Range` | Universe 2 prototype zone at `Config.Range.Origin`: Rifts (plaza ↔ range), `Enter/Leave` (loadout grant, `Zone` + `ForceFirstPerson` player attributes, entry protection), pop-up targets scored by distance, Wave Console spawning `Config.Range.Waves` through `NPCs.Spawn`. `Combat.Attack/Heavy` refuse non-ranged specs while `Zone == "Range"`; `Lifecycle.Spawn` clears the flags. | — |
 | `Arena` | Dev-only test arena (armory, dummies) at `Config.Dev.ArenaOffset`; gated by `Config.Dev.Enabled`; its pads are `CitySpawn`s only with `Config.Dev.SpawnInArena`. | — |
 
 ### 3. Client presentation layer (`src/client/`)

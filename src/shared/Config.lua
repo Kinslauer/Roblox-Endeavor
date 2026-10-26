@@ -36,6 +36,20 @@ Config.PlotSpacing = 1500
 Config.CityFallbackRadius = 300
 Config.CityFallbackHeight = 10
 
+-- Universe 2 prototype: "the Range" (server/Range.lua), a first-person shooter zone built in this
+-- place at Origin, entered through a Rift in Relay Plaza. Split into its own place once it is fun.
+Config.Range = {
+	Origin = Vector3.new(1400, 0, 0),
+	UnlockKills = 1, -- Rift opens after this many kills (and Awakened); Config.Dev.Enabled bypasses
+	RiftPlaza = Vector3.new(0, 2, 22), -- the Rift's spot in Relay Plaza (world)
+	Loadout = { "ArcRifle" }, -- granted on first entry
+	Targets = { Distances = { 20, 40, 60, 80, 100 }, Health = 40, ResetSeconds = 3, LaneSpacing = 12 },
+	Waves = { { Gunner = 2 }, { Gunner = 3 }, { Gunner = 4 } },
+	WaveRing = 44, -- studs from the arena centre where a wave spawns
+	WaveRewardScrap = 10,
+	EntryProtection = 4, -- seconds of ForceField after travelling
+}
+
 Config.RespawnDelay = 5
 Config.CombatLogSeconds = 15 -- leaving this soon after combat = permadeath
 Config.CombatLogPunish = true

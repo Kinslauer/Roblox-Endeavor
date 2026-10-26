@@ -215,9 +215,50 @@ do
 	mark = #M.FireLog
 	Remotes.Attack:FireServer(M.V3.new(0, 0, 1)); run(0.6) -- behind the body: outside the cone
 	local back = lastBolt(mark)
-	check("aim outside the cone falls back to the body's facing", back ~= nil and back.Z < -50)
+	check("aim outside the cone falls back to the body's facing", back ~= nil and back.Z < 0 and math.abs(back.Y - 5) < 3) -- flat, ahead
 	run(1)
 	Remotes.EquipItem:FireServer("PipeClub"); run(0.5)
+end
+-- The Range (Universe 2 prototype): Rift travel, forced first person, rifle, ranged-only, targets, waves
+do
+	local Range = M.mockEnv.__require(SSS.Server.Range)
+	local Config = M.mockEnv.__require(RS.Shared.Config)
+	as(player)
+	local me = player.Character
+	check("range built with its targets", workspace_:FindFirstChild("Range") ~= nil and Range.Built and Range.Built.Targets == #Config.Range.Targets.Distances)
+	local entered = Range.Enter(player)
+	run(0.5)
+	local pos = me.HumanoidRootPart.CFrame.Position
+	check("rift takes you to the range firing line", entered and (pos - (Config.Range.Origin + M.V3.new(0, 2, 70))).Magnitude < 20)
+	check("range forces first person and marks the zone", player:GetAttribute("ForceFirstPerson") == true and player:GetAttribute("Zone") == "Range")
+	check("arc rifle granted and equipped on entry", me:GetAttribute("Weapon") == "ArcRifle")
+	-- melee is refused inside
+	Remotes.EquipItem:FireServer("PipeClub"); run(0.3)
+	local hp = me.Humanoid.Health
+	local Combat = M.mockEnv.__require(SSS.Server.Combat)
+	local before = #M.FireLog
+	Remotes.Attack:FireServer(); run(0.3)
+	local swung = false
+	for i = before + 1, #M.FireLog do local e = M.FireLog[i] if e[1] == "CombatEvent" and e[3] == "Swing" and e[4] == me then swung = true end end
+	check("melee swing refused in the range", not swung)
+	Remotes.EquipItem:FireServer("ArcRifle"); run(0.3)
+	-- shoot the nearest target (20 studs down the lane): aim straight at it
+	local target
+	for _, m in workspace_.Range:GetChildren() do if m.Name == "Target 20" then target = m end end
+	check("20-stud target exists", target ~= nil)
+	local hp0 = target.Humanoid.Health
+	me:PivotTo(M.CF.lookAt(target.HumanoidRootPart.Position + M.V3.new(0, 0, 20), target.HumanoidRootPart.Position)) -- PivotTo moves the Head too (aimed shots start there)
+	local dir = (target.HumanoidRootPart.Position - me.Head.Position).Unit
+	local mark2 = #M.FireLog
+	for _ = 1, 4 do Remotes.Attack:FireServer(dir); run(0.4) end
+	check("rifle shots knock the target down", target.Humanoid.Health < hp0)
+	-- back through the rift
+	Range.Leave(player); run(0.3)
+	check("rift back clears the zone flags", player:GetAttribute("Zone") == nil and player:GetAttribute("ForceFirstPerson") == nil)
+	Combat.ClearProtection(me) -- travel protection would otherwise swallow the enemy checks below
+	Remotes.EquipItem:FireServer("PipeClub"); run(0.3)
+	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
+	run(0.5)
 end
 -- rate limit: a burst of 40 Attack remotes is cut to the configured budget
 do

@@ -29,7 +29,7 @@ end
 local function apply()
 	local hum = humanoidOf()
 	if hum then
-		hum.CameraOffset = if Aim.Enabled and not Aim.ADS then A.ShoulderOffset else Vector3.zero
+		hum.CameraOffset = if Aim.Enabled and not Aim.ADS and not Aim.FirstPerson then A.ShoulderOffset else Vector3.zero
 		hum.AutoRotate = not Aim.Enabled
 	end
 	-- CameraRelative makes the character face the camera's yaw while moving; the step below
@@ -75,17 +75,13 @@ function Aim.Active()
 	return Aim.Enabled and not Hud.MenuOpen() and not UserInputService:IsKeyDown(A.FreeCursorKey)
 end
 
--- Aim down sights (ranged weapons, right mouse held): first person + narrow FOV while on.
-Aim.ADS = false
+-- First-person mode (Presentation.Aim.FirstPersonKey): camera locked to the head, hip-fire view
+-- model when a ranged weapon is held. ADS works on top of it; leaving ADS returns here, not to the
+-- shoulder camera. The shooter universe runs with this forced on.
+Aim.FirstPerson = false
 local fovTween
-function Aim.SetADS(on)
-	on = on and Aim.Enabled and not Hud.MenuOpen()
-	if on == Aim.ADS then
-		return
-	end
-	Aim.ADS = on
+local function setFov(fov)
 	local camera = workspace.CurrentCamera
-	local fov = if on then A.ADS.Fov else A.ADS.NormalFov
 	CameraShake.BaseFov = fov
 	if camera then
 		if fovTween then
@@ -94,9 +90,32 @@ function Aim.SetADS(on)
 		fovTween = TweenService:Create(camera, TweenInfo.new(A.ADS.ZoomTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { FieldOfView = fov })
 		fovTween:Play()
 	end
-	if A.ADS.FirstPerson then
-		player.CameraMode = if on then Enum.CameraMode.LockFirstPerson else Enum.CameraMode.Classic
+end
+
+local function applyCameraMode()
+	local first = Aim.FirstPerson or (Aim.ADS and A.ADS.FirstPerson)
+	player.CameraMode = if first then Enum.CameraMode.LockFirstPerson else Enum.CameraMode.Classic
+end
+
+function Aim.SetFirstPerson(on)
+	Aim.FirstPerson = on == true
+	applyCameraMode()
+	if not Aim.ADS then
+		setFov(if Aim.FirstPerson then A.FirstPersonFov else A.ADS.NormalFov)
 	end
+	apply()
+end
+
+-- Aim down sights (ranged weapons, right mouse held): first person + narrow FOV while on.
+Aim.ADS = false
+function Aim.SetADS(on)
+	on = on and Aim.Enabled and not Hud.MenuOpen()
+	if on == Aim.ADS then
+		return
+	end
+	Aim.ADS = on
+	setFov(if on then A.ADS.Fov elseif Aim.FirstPerson then A.FirstPersonFov else A.ADS.NormalFov)
+	applyCameraMode()
 	apply()
 end
 
@@ -112,16 +131,34 @@ function Aim.Init()
 	player.CharacterAdded:Connect(function()
 		task.defer(apply)
 	end)
+	-- the server forces first person in shooter zones through a player attribute
+	local forcedOn = false
+	local function forced()
+		if player:GetAttribute("ForceFirstPerson") then
+			forcedOn = true
+			Aim.SetFirstPerson(true)
+		elseif forcedOn then
+			forcedOn = false
+			Aim.SetFirstPerson(false)
+		end
+	end
+	player:GetAttributeChangedSignal("ForceFirstPerson"):Connect(forced)
+	forced()
 	apply()
 	RunService.Heartbeat:Connect(faceCamera)
 	RunService:BindToRenderStep("ConduitAim", Enum.RenderPriority.Camera.Value + 2, lockMouse)
 	UserInputService.InputBegan:Connect(function(input, processed)
-		if not processed and input.KeyCode == A.ToggleKey then
+		if processed then
+			return
+		end
+		if input.KeyCode == A.ToggleKey then
 			if Hud.MenuOpen() then
 				Hud.CloseAll() -- "lock my camera" while a panel is up means: put the panels away
 			else
 				Aim.Set(not Aim.Enabled)
 			end
+		elseif input.KeyCode == A.FirstPersonKey and not Hud.MenuOpen() and not player:GetAttribute("ForceFirstPerson") then
+			Aim.SetFirstPerson(not Aim.FirstPerson)
 		end
 	end)
 end

@@ -83,6 +83,15 @@ Weapons.Defs = {
 		},
 		Heavy = hit(22, 10, 0.50, 0.05, 1.20, 110, { Type = "Arc", Ranged = true, Stamina = 22, Knockback = 20 }),
 	},
+	-- Universe 2 / the Range: a two-handed semi-auto rifle. Fast shots, long reach, and a charged
+	-- "lance" heavy that staggers. Only usable (and only obtainable) through the Rift at first.
+	ArcRifle = {
+		Name = "Arc Rifle", Family = "Rifle", ComboReset = 0.4, ComboCooldown = 0.15, ChargeBonus = 4,
+		Attacks = {
+			hit(14, 4, 0.05, 0.05, 0.30, 160, { Type = "Arc", Ranged = true, Stamina = 5 }),
+		},
+		Heavy = hit(40, 16, 0.60, 0.05, 1.30, 220, { Type = "Arc", Ranged = true, Stamina = 24, Knockback = 30, Stun = 0.6 }),
+	},
 }
 
 return Weapons

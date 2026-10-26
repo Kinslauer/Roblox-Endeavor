@@ -24,6 +24,9 @@ Presentation.Weapons = {
 	Sledge = { ModelName = "", Build = "Hammer", Length = 3.8, Color = Color3.fromRGB(80, 80, 85), Accent = Color3.fromRGB(60, 60, 65), Grip = CFrame.identity,
 		TwoHanded = true, Stance = { Right = { 25, 0, -45 }, Left = { 35, 0, 50 } } },
 	ArcPistol = { ModelName = "", Build = "Pistol", Length = 1.3, Color = Color3.fromRGB(50, 55, 65), Accent = Color3.fromRGB(120, 200, 255), Grip = CFrame.Angles(math.rad(-90), 0, 0) }, -- barrel runs down the arm line, so it points where the arm points
+	ArcRifle = { ModelName = "", Build = "Rifle", Length = 3.2, Color = Color3.fromRGB(44, 48, 58), Accent = Color3.fromRGB(120, 200, 255), Grip = CFrame.Angles(math.rad(-90), 0, 0),
+		TwoHanded = true, Stance = { Right = { 70, 0, -20 }, Left = { 85, 0, 45 } }, -- low ready: muzzle forward-down, left hand on the fore-end
+		Sights = { Height = 0.2, Width = 0.08, NotchWidth = 0.16, Rear = 0.5, Front = -2.4, Color = Color3.fromRGB(18, 18, 22), Dot = Color3.fromRGB(120, 255, 120) } },
 	HandOffset = Vector3.new(0, -0.3, 0), -- where the fist closes, relative to the hand part's centre
 	-- TwoHanded: the left arm follows the swing (yaw/roll mirrored) and both arms hold the Stance at
 	-- rest. Stance = { Right = {pitch,yaw,roll}, Left = {...} } shoulder degrees applied while idle;
@@ -64,8 +67,13 @@ Presentation.Swings = {
 		-- Sidearm: the arm comes up to the firing line and stays there (HoldAfter seconds since the
 		-- last shot) before lowering; the heavy is a braced two-handed shot.
 		Sidearm = { -- +90 = arm level, pointing forward (see the sign note above Weapons)
-			Light = { AnimationId = "", Pose = { 90, 0, 0 }, Swing = { 90, 0, 0 }, HoldAfter = 2 },
-			Heavy = { AnimationId = "", Pose = { 95, 0, -10 }, Swing = { 90, 0, -5 }, HoldAfter = 2 },
+			Light = { AnimationId = "", Pose = { 90, 0, 0 }, Swing = { 90, 0, 0 }, HoldAfter = 2, Lean = { 0, 0 } },
+			Heavy = { AnimationId = "", Pose = { 95, 0, -10 }, Swing = { 90, 0, -5 }, HoldAfter = 2, Lean = { 0, 0 } },
+		},
+		-- Rifle: shouldered with both hands; the lance heavy braces lower and leans in.
+		Rifle = {
+			Light = { AnimationId = "", Pose = { 90, 0, -15 }, PoseL = { 95, 0, 50 }, Swing = { 90, 0, -15 }, SwingL = { 95, 0, 50 }, HoldAfter = 2, Lean = { 0, 0 } },
+			Heavy = { AnimationId = "", Pose = { 86, 0, -15 }, PoseL = { 92, 0, 50 }, Swing = { 90, 0, -15 }, SwingL = { 95, 0, 50 }, HoldAfter = 2, Lean = { 4, -6 } },
 		},
 	},
 	HoldLower = 0.3, -- seconds to lower a held arm once HoldAfter runs out
@@ -162,6 +170,8 @@ Presentation.Aim = {
 	-- Ranged weapons: right mouse = aim down sights (first person, narrow FOV) while held; the
 	-- weapon's special (its Heavy) moves to SpecialKeys. Melee weapons keep right mouse = heavy.
 	ADS = { Fov = 42, NormalFov = 70, ZoomTime = 0.12, FirstPerson = true },
+	FirstPersonKey = Enum.KeyCode.C, -- toggle a locked first-person camera (hip-fire view model) any time
+	FirstPersonFov = 75,
 	SpecialKeys = { Enum.UserInputType.MouseButton3, Enum.KeyCode.G },
 }
 

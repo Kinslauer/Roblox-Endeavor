@@ -589,6 +589,10 @@ function Combat.Attack(player, aim)
 	local s, t = st(char), os.clock()
 	local combo = if s.comboWeapon == weapon and t <= s.comboExpires then s.combo % #weapon.Attacks + 1 else 1
 	local spec = weapon.Attacks[combo]
+	if player:GetAttribute("Zone") == "Range" and not spec.Ranged then
+		Remotes.Announce:FireClient(player, "Ranged weapons only in the Range.", "Event")
+		return
+	end
 	if not Combat.SpendStamina(char, spec.Stamina) then
 		return
 	end
@@ -610,6 +614,9 @@ function Combat.Heavy(player, aim)
 	end
 	Combat.ClearProtection(char)
 	local s, t = st(char), os.clock()
+	if player:GetAttribute("Zone") == "Range" and not weapon.Heavy.Ranged then
+		return
+	end
 	if t - s.lastHeavy < C.HeavyCooldown or not Combat.SpendStamina(char, weapon.Heavy.Stamina) then
 		return
 	end

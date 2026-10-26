@@ -178,7 +178,31 @@ function methods.GetPartBoundsInRadius(self, origin, radius, params)
 	return out
 end
 function methods.GetPartBoundsInBox() return {} end
-function methods.Raycast() return nil end
+-- Raycast: hits the first HumanoidRootPart whose centre passes within 2.5 studs of the ray (models
+-- only - the world is open space in the mock). Enough for ranged shots to connect with a target.
+function methods.Raycast(self, origin, direction, params)
+	local excluded = (params and params.FilterDescendantsInstances) or {}
+	local len = direction.Magnitude
+	if len <= 0 then return nil end
+	local dir = direction.Unit
+	local best, bestT = nil, math.huge
+	for _, d in descendants(self, {}) do
+		if d:IsA("BasePart") and d.Name == "HumanoidRootPart" and d.Position then
+			local skip = false
+			for _, ex in excluded do if d == ex or d:IsDescendantOf(ex) then skip = true end end
+			if not skip then
+				local rel = d.Position - origin
+				local t = rel:Dot(dir)
+				if t > 0 and t <= len then
+					local perp = (rel - dir * t).Magnitude
+					if perp <= 2.5 and t < bestT then best, bestT = d, t end
+				end
+			end
+		end
+	end
+	if not best then return nil end
+	return { Instance = best, Position = origin + dir * bestT, Distance = bestT, Normal = -dir, Material = Enum.Material.Plastic }
+end
 function methods.IsStudio() return true end
 function methods.IsServer() return true end
 function methods.IsClient() return false end

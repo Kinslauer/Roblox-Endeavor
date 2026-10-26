@@ -101,6 +101,27 @@ Builders.Hammer = function(spec)
 	return model, handle, spec.Length / 2
 end
 
+-- Iron sights for any barrel that runs along the Handle's -Z with its top at `top`. Rear: two posts
+-- leaving a notch at z = Rear; front: one post + a glowing bead at z = Front. Both stand `Height`
+-- tall, so their tops share one line. The "Sight" attachment is that line: at the rear notch, at
+-- sight-top height, looking down the barrel. ViewModel puts the camera on it, so the front post sits
+-- centred in the notch with tops level - the classic picture; the shot goes where the post's top is.
+local function addSights(handle, spec, top, length)
+	local S = spec.Sights or { Height = 0.14, Width = 0.08, NotchWidth = 0.14, Rear = 0.2, Front = -length + 0.4, Color = Color3.fromRGB(20, 20, 24), Dot = Color3.fromRGB(120, 255, 120) }
+	for _, x in { -(S.NotchWidth / 2 + S.Width / 2), S.NotchWidth / 2 + S.Width / 2 } do
+		local post = part({ Name = "RearSight", Size = Vector3.new(S.Width, S.Height, 0.1), Color = S.Color, Material = Enum.Material.SmoothPlastic })
+		weldTo(handle, post, CFrame.new(x, top + S.Height / 2, S.Rear))
+	end
+	local front = part({ Name = "FrontSight", Size = Vector3.new(S.Width, S.Height, 0.08), Color = S.Color, Material = Enum.Material.SmoothPlastic })
+	weldTo(handle, front, CFrame.new(0, top + S.Height / 2, S.Front))
+	local dot = part({ Name = "FrontDot", Size = Vector3.new(S.Width * 0.6, S.Width * 0.6, 0.02), Color = S.Dot, Material = Enum.Material.Neon })
+	weldTo(handle, dot, CFrame.new(0, top + S.Height - S.Width * 0.45, S.Front + 0.05))
+	local sight = Instance.new("Attachment")
+	sight.Name = "Sight"
+	sight.CFrame = CFrame.new(0, top + S.Height, S.Rear)
+	sight.Parent = handle
+end
+
 Builders.Pistol = function(spec)
 	local model = Instance.new("Model")
 	-- The grip is the Handle (held upright in the fist); the body sits on top and runs forward (-Z),
@@ -114,26 +135,31 @@ Builders.Pistol = function(spec)
 	local light = Instance.new("PointLight")
 	light.Color, light.Brightness, light.Range = emitter.Color, 1, 4
 	light.Parent = emitter
-	-- Iron sights. Body top is at y = 0.75; both sights stand 0.14 tall, so their tops share y = 0.89.
-	-- Rear: two posts leaving a 0.14 notch at the back of the slide. Front: one post near the muzzle.
-	-- The "Sight" attachment is the aim line: at the rear notch, at sight-top height, looking down
-	-- the barrel (-Z). ViewModel puts the camera on this line so the front post sits centred in the
-	-- notch with its top level with the rear posts - the classic sight picture; the shot goes where
-	-- the top of the front post is.
-	local S = spec.Sights or { Height = 0.14, Width = 0.08, NotchWidth = 0.14, Rear = 0.2, Front = -spec.Length + 0.4, Color = Color3.fromRGB(20, 20, 24), Dot = Color3.fromRGB(120, 255, 120) }
-	local top = 0.75
-	for _, x in { -(S.NotchWidth / 2 + S.Width / 2), S.NotchWidth / 2 + S.Width / 2 } do
-		local post = part({ Name = "RearSight", Size = Vector3.new(S.Width, S.Height, 0.1), Color = S.Color, Material = Enum.Material.SmoothPlastic })
-		weldTo(handle, post, CFrame.new(x, top + S.Height / 2, S.Rear))
-	end
-	local front = part({ Name = "FrontSight", Size = Vector3.new(S.Width, S.Height, 0.08), Color = S.Color, Material = Enum.Material.SmoothPlastic })
-	weldTo(handle, front, CFrame.new(0, top + S.Height / 2, S.Front))
-	local dot = part({ Name = "FrontDot", Size = Vector3.new(S.Width * 0.6, S.Width * 0.6, 0.02), Color = S.Dot, Material = Enum.Material.Neon })
-	weldTo(handle, dot, CFrame.new(0, top + S.Height - S.Width * 0.45, S.Front + 0.05)) -- a glowing bead just under the post's top, on the shooter's side
-	local sight = Instance.new("Attachment")
-	sight.Name = "Sight"
-	sight.CFrame = CFrame.new(0, top + S.Height, S.Rear)
-	sight.Parent = handle
+	addSights(handle, spec, 0.75, spec.Length)
+	return model, handle, 0
+end
+
+Builders.Rifle = function(spec)
+	local model = Instance.new("Model")
+	-- Pistol grip is the Handle; receiver + barrel run forward (-Z), stock runs back (+Z).
+	local handle = part({ Name = "Handle", Size = Vector3.new(0.3, 0.9, 0.5), Color = spec.Color, Material = Enum.Material.SmoothPlastic })
+	handle.Parent = model
+	local receiver = part({ Size = Vector3.new(0.45, 0.55, 1.6), Color = spec.Color, Material = Enum.Material.Metal })
+	weldTo(handle, receiver, CFrame.new(0, 0.5, -0.4))
+	local barrel = part({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(spec.Length - 1.2, 0.22, 0.22), Color = Color3.fromRGB(70, 74, 84), Material = Enum.Material.Metal })
+	weldTo(handle, barrel, CFrame.new(0, 0.6, -1.2 - (spec.Length - 1.2) / 2) * CFrame.Angles(0, math.rad(90), 0))
+	local foreEnd = part({ Size = Vector3.new(0.4, 0.4, 1.0), Color = spec.Color, Material = Enum.Material.SmoothPlastic })
+	weldTo(handle, foreEnd, CFrame.new(0, 0.3, -1.7))
+	local stock = part({ Size = Vector3.new(0.35, 0.5, 1.0), Color = spec.Color, Material = Enum.Material.SmoothPlastic })
+	weldTo(handle, stock, CFrame.new(0, 0.35, 0.9))
+	local emitter = part({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.2, 0.3, 0.3), Color = spec.Accent or spec.Color, Material = Enum.Material.Neon })
+	weldTo(handle, emitter, CFrame.new(0, 0.6, -spec.Length + 0.1) * CFrame.Angles(0, math.rad(90), 0))
+	local light = Instance.new("PointLight")
+	light.Color, light.Brightness, light.Range = emitter.Color, 1, 5
+	light.Parent = emitter
+	local cell = part({ Size = Vector3.new(0.2, 0.3, 0.6), Color = spec.Accent or spec.Color, Material = Enum.Material.Neon, Transparency = 0.3 })
+	weldTo(handle, cell, CFrame.new(0, 0.5, -0.4) * CFrame.new(0.3, 0, 0)) -- glowing power cell on the right of the receiver
+	addSights(handle, spec, 0.775, spec.Length) -- receiver top is at 0.5 + 0.275
 	return model, handle, 0
 end
 

@@ -37,6 +37,8 @@ function Lifecycle.Spawn(player)
 	if not (root and hum) then
 		return
 	end
+	player:SetAttribute("Zone", nil) -- a fresh body always starts in the city (Range sets these)
+	player:SetAttribute("ForceFirstPerson", nil)
 	char:PivotTo(WorldPhase.GetSpawnCFrame(player))
 	Gear.Recompute(player) -- fresh derived stats (important after a permadeath wipe)
 	Stats.Apply(player, true)
