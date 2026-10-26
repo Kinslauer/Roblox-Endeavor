@@ -47,6 +47,7 @@ without being told the numbers?*
 | 003 | [Impact feedback: sparks, hitstop, shake, parry/block/dodge cues](story-003-impact-feedback.md) | Visual/Feel | M | Implemented (playtest pending) |
 | 004 | [Procedural weapon in hand](story-004-weapon-view.md) | Visual/Feel | M | Implemented (playtest pending) |
 | 005 | [Audio slots](story-005-audio-slots.md) | Integration | S | Implemented (playtest pending) |
+| 006 | [Keyframed attack combos + Magoi polish (camera, bar, trails, dust)](story-006-keyframed-combos-and-magoi-polish.md) | Visual/Feel | L | Implemented (playtest pending) |
 
 ## Definition of Done
 

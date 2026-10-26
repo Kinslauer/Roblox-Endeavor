@@ -31,10 +31,36 @@ local function humanoidOf()
 	return char and char:FindFirstChildOfClass("Humanoid"), char and char:FindFirstChild("HumanoidRootPart")
 end
 
+-- The camera preset for what the character holds (Presentation.Aim.Melee / Ranged).
+local function presetFor()
+	local char = player.Character
+	local def = char and Weapons.Defs[char:GetAttribute("Weapon") or ""] or Weapons.Defs.Fists
+	local preset = if Weapons.IsGun(def) then A.Ranged else A.Melee
+	return preset or {}, Weapons.IsGun(def)
+end
+
+-- Pin the third-person distance for a frame, then let the player scroll again.
+local pinToken = 0
+local function setDistance(distance)
+	if not distance or player.CameraMode == Enum.CameraMode.LockFirstPerson then
+		return
+	end
+	pinToken += 1
+	local token = pinToken
+	local minZ, maxZ = player.CameraMinZoomDistance, player.CameraMaxZoomDistance
+	player.CameraMinZoomDistance, player.CameraMaxZoomDistance = distance, distance
+	task.delay(0.1, function()
+		if token == pinToken then
+			player.CameraMinZoomDistance, player.CameraMaxZoomDistance = math.min(minZ, distance), math.max(maxZ, distance)
+		end
+	end)
+end
+
 local function apply()
 	local hum = humanoidOf()
 	if hum then
-		hum.CameraOffset = if Aim.Enabled and not Aim.ADS and not Aim.FirstPerson then A.ShoulderOffset else Vector3.zero
+		local preset = presetFor()
+		hum.CameraOffset = if Aim.Enabled and not Aim.ADS and not Aim.FirstPerson then (preset.ShoulderOffset or A.ShoulderOffset) else Vector3.zero
 		hum.AutoRotate = not Aim.Enabled
 	end
 	-- CameraRelative makes the character face the camera's yaw while moving; the step below
@@ -276,12 +302,28 @@ function Aim.Init()
 			setFov(baseFov())
 		end)
 	end
+	-- the camera preset follows the weapon type: melee far and high, guns in close
+	local lastGun = nil
+	local function watchWeapon(char)
+		local function refresh(force)
+			local preset, gun = presetFor()
+			apply()
+			if force or gun ~= lastGun then
+				lastGun = gun
+				setDistance(preset.Distance)
+			end
+		end
+		char:GetAttributeChangedSignal("Weapon"):Connect(refresh)
+		task.delay(0.5, refresh, true) -- a fresh body: the default camera distance is Roblox's, not ours
+	end
 	player.CharacterAdded:Connect(function(char)
 		task.defer(apply)
 		watchSprint(char)
+		watchWeapon(char)
 	end)
 	if player.Character then
 		watchSprint(player.Character)
+		watchWeapon(player.Character)
 	end
 	-- the server forces first person in shooter zones through a player attribute
 	local forcedOn = false

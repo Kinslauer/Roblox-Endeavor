@@ -45,14 +45,19 @@ local function label(props)
 	return make("TextLabel", props, props.Parent)
 end
 
--- A labelled resource bar: name on the left, numbers on the right, fill underneath.
-local function bar(y, color, name)
-	local back = make("Frame", { Size = UDim2.fromOffset(240, 14), Position = UDim2.new(0, 20, 1, y), BackgroundColor3 = Color3.fromRGB(20, 20, 24), BorderSizePixel = 0 })
+-- A resource bar: fill underneath, name and numbers on top (both omitted on a thin strip). `pos`
+-- and `size` are UDim2s. The bars sit as one composite at the bottom centre with the hotbar under
+-- them (design/references/magoi-look-and-feel.md): health | stamina, a posture strip below, charge above.
+local BAR_W = 480 -- composite width
+local function bar(pos, size, color, name)
+	local back = make("Frame", { Size = size, Position = pos, BackgroundColor3 = Color3.fromRGB(20, 20, 24), BackgroundTransparency = 0.25, BorderSizePixel = 0 })
 	local fill = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = color, BorderSizePixel = 0 }, back)
-	label({ Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.fromOffset(4, 0), Text = name, TextSize = 11, Font = Enum.Font.GothamBold,
-		TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(235, 235, 240), ZIndex = 2, Parent = back })
 	local value = label({ Size = UDim2.new(0.5, -4, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), Text = "", TextSize = 11, Font = Enum.Font.GothamMedium,
-		TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(235, 235, 240), ZIndex = 2, Parent = back })
+		TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(235, 235, 240), ZIndex = 2, Visible = name ~= nil, Parent = back })
+	if name then
+		label({ Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.fromOffset(4, 0), Text = name, TextSize = 11, Font = Enum.Font.GothamBold,
+			TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(235, 235, 240), ZIndex = 2, Parent = back })
+	end
 	return fill, value
 end
 
@@ -320,7 +325,7 @@ local function buildLoadout(loadoutPanel)
 	local hotbar = {}
 	local SLOT_KEYS = { "R", "Y", "V" }
 	for i = 1, Skills.SlotCount do
-		local box = make("Frame", { Size = UDim2.fromOffset(110, 46), Position = UDim2.new(0.5, -170 + (i - 1) * 116, 1, -66), BackgroundColor3 = Color3.fromRGB(15, 15, 20) })
+		local box = make("Frame", { Size = UDim2.fromOffset(110, 44), Position = UDim2.new(0.5, -170 + (i - 1) * 116, 1, -94), BackgroundColor3 = Color3.fromRGB(15, 15, 20), BackgroundTransparency = 0.25, BorderSizePixel = 0 })
 		hotbar[i] = label({ Size = UDim2.fromScale(1, 1), TextSize = 13, TextWrapped = true, Text = SLOT_KEYS[i], Parent = box })
 	end
 
@@ -495,12 +500,14 @@ function Hud.Init()
 	gui.Parent = player:WaitForChild("PlayerGui")
 	Hud.Gui = gui
 
-	local healthFill, healthValue = bar(-102, Color3.fromRGB(220, 70, 70), "HEALTH")
-	local staminaFill, staminaValue = bar(-84, Color3.fromRGB(90, 200, 120), "STAMINA")
-	local postureFill, postureValue = bar(-66, Color3.fromRGB(240, 150, 60), "POSTURE")
-	local chargeFill, chargeValue = bar(-48, Color3.fromRGB(80, 170, 255), "CHARGE")
-	levelLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0, 20, 1, -126), TextXAlignment = Enum.TextXAlignment.Left, Text = "" })
-	flickerLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0, 20, 1, -146), TextXAlignment = Enum.TextXAlignment.Left, Text = "", TextColor3 = Color3.fromRGB(255, 80, 80) })
+	-- bottom-centre composite: charge strip / health | stamina / posture strip, hotbar underneath (buildLoadout)
+	local half = BAR_W / 2 - 2
+	local chargeFill, chargeValue = bar(UDim2.new(0.5, -BAR_W / 2, 1, -126), UDim2.fromOffset(BAR_W, 4), Color3.fromRGB(80, 170, 255))
+	local healthFill, healthValue = bar(UDim2.new(0.5, -BAR_W / 2, 1, -120), UDim2.fromOffset(half, 14), Color3.fromRGB(220, 70, 70), "HEALTH")
+	local staminaFill, staminaValue = bar(UDim2.new(0.5, 2, 1, -120), UDim2.fromOffset(half, 14), Color3.fromRGB(90, 200, 120), "STAMINA")
+	local postureFill, postureValue = bar(UDim2.new(0.5, -BAR_W / 2, 1, -104), UDim2.fromOffset(BAR_W, 5), Color3.fromRGB(240, 150, 60))
+	levelLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0.5, -BAR_W / 2, 1, -146), TextXAlignment = Enum.TextXAlignment.Left, TextSize = 13, Text = "" })
+	flickerLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0.5, 0, 1, -146), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 13, Text = "", TextColor3 = Color3.fromRGB(255, 80, 80) })
 	pcall(function() -- our own health bar replaces Roblox's
 		game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 	end)

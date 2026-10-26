@@ -289,6 +289,14 @@ Per the brief: weapon model in hand, Motor6D procedural swing with animation-ID 
 `Block`, `Parry`, `GuardBreak`, `Dodge`, `Dodged`, `Feint`, `Flick`, `BlackFlash`, `Bolt`, `Buff`,
 `Burst`). Audio direction: short, punchy hits; bass-drop Black Flash.
 
+**Attack animations (2026-10-26, owner: "improved attack animations ... the simplest combo should come from the
+spear, and even then it's a multi-thrust and swipe")**: every combo step has its own keyframed swing in
+`Presentation.Swings` (both shoulders, waist lean + twist, a body dip; Wind / Mid / Strike phases on the server's
+timing), a weapon trail on the active frames and dust under heavies. Spear = thrust, low thrust, swipe; Blade =
+four cuts ending in an overhead; Hammer = sweep, overhead. Camera: far and high for melee, close for guns; one
+bottom-centre bar. See `production/epics/combat-feel/story-006-keyframed-combos-and-magoi-polish.md` and
+`design/references/magoi-look-and-feel.md`.
+
 ## Acceptance Criteria
 
 1. A light attack starting at `t0` cannot damage before `t0 + Windup` and cannot damage after `t0 + Windup + Active`; a second input is accepted no earlier than `t0 + End − 0.08`.

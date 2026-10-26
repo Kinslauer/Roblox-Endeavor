@@ -288,6 +288,36 @@ local function build(char, weaponId)
 	model.Parent = char
 	current[char] = weaponId
 	addPartViews(char, weaponId, model, handle)
+	if spec.Build and (spec.ModelName or "") == "" and spec.Build ~= "Pistol" and spec.Build ~= "Rifle" then
+		WeaponView.AddTrail(handle, spec.Length or 3, gripHalf or 0)
+	end
+end
+
+-- The swing trail (SwingAnimator switches it on for a swing's active frames): a ribbon from the
+-- grip to the tip. Procedural melee handles stand on Y with the shaft down local -X (see Builders).
+function WeaponView.AddTrail(handle, length, gripHalf)
+	local S = Presentation.Swings
+	local a0 = Instance.new("Attachment")
+	a0.Name = "TrailGrip"
+	a0.CFrame = CFrame.new(gripHalf * 0.4, 0, 0)
+	a0.Parent = handle
+	local a1 = Instance.new("Attachment")
+	a1.Name = "TrailTip"
+	a1.CFrame = CFrame.new(-(length - gripHalf), 0, 0)
+	a1.Parent = handle
+	local trail = Instance.new("Trail")
+	trail.Name = "SwingTrail"
+	trail.Attachment0, trail.Attachment1 = a0, a1
+	trail.Enabled = false
+	trail.Lifetime = 0.12
+	trail.MinLength = 0.05
+	trail.LightEmission, trail.LightInfluence = 1, 0
+	trail.FaceCamera = true
+	trail.WidthScale = NumberSequence.new({ NumberSequenceKeypoint.new(0, S.TrailWidth or 1), NumberSequenceKeypoint.new(1, 0.2) })
+	trail.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(1, 1) })
+	trail.Color = ColorSequence.new(S.TrailColor or Color3.new(1, 1, 1))
+	trail.Parent = handle
+	return trail
 end
 
 local function watch(char)

@@ -27,7 +27,8 @@ side of that (timing core, posture, flicker, momentum); the gap is *presentation
 discipline, HUD placement, palette restraint. None of it is systems work.
 
 ## Proposed polish order (when combat polish comes up)
-1. Far camera preset + bottom-centre bar + hotbar — the two things that change every screenshot.
-2. Weapon trails on active frames + dust on dodge / land / heavy.
-3. Held wind-up poses and idle stance; hitstop tuning.
+1. ~~Far camera preset + bottom-centre bar + hotbar~~ — **done 2026-10-26** (`Presentation.Aim.Melee / Ranged`, `Hud.lua`).
+2. ~~Weapon trails on active frames + dust on dodge / land / heavy~~ — **done 2026-10-26** (`WeaponView.AddTrail`, `WorldFX.Dust`).
+3. Held wind-up poses — **done 2026-10-26** as keyframed per-step combos (`Presentation.Swings` Keys, story 006);
+   idle stance per family and hitstop tuning still open.
 4. Palette pass on the districts; custom prompt and nameplate styles.

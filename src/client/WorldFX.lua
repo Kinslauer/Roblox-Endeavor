@@ -4,6 +4,7 @@
 --   * Dash - a warmonger's / rival's flicker-step: a streak from where it was to where it is, a shake if close
 --   * Pod / Shipment - a re-entry pod or a crate coming down: a shake when it lands near you
 --   * Downed / Revive / HillCaptured - colour pulses on the body / the ring
+--   * Dust (WorldFX.Dust) - the ground answering a dodge, a landing, a heavy strike
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,6 +21,42 @@ local WorldFX = {}
 local player = Players.LocalPlayer
 local HEAR_RANGE = 90 -- studs: a bark farther than this is not heard
 local BUBBLE_SECONDS = 3.2
+local DUST_RANGE = 120 -- studs: a puff farther than this is not drawn
+
+-- ---------------------------------------------------------------------------------------------
+-- Dust: the ground answering a body - a dodge, a landing, a heavy strike. `scale` ~1 = a heavy's
+-- puff; a dodge is 0.5. One short burst from an anchored emitter that cleans itself up.
+-- ---------------------------------------------------------------------------------------------
+local Presentation = require(Shared:WaitForChild("Presentation"))
+function WorldFX.Dust(position, scale)
+	scale = scale or 1
+	if typeof(position) ~= "Vector3" or scale <= 0 then
+		return
+	end
+	local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if me and (me.Position - position).Magnitude > DUST_RANGE then
+		return
+	end
+	local part = Instance.new("Part")
+	part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.Transparency = true, false, false, false, 1
+	part.Size = Vector3.new(0.2, 0.2, 0.2)
+	part.CFrame = CFrame.new(position)
+	local e = Instance.new("ParticleEmitter")
+	e.Color = ColorSequence.new(Presentation.Swings.DustColor or Color3.fromRGB(150, 135, 110))
+	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2 * scale), NumberSequenceKeypoint.new(1, 3 * scale) })
+	e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
+	e.Lifetime = NumberRange.new(0.35, 0.6)
+	e.Speed = NumberRange.new(6 * scale, 10 * scale)
+	e.SpreadAngle = Vector2.new(80, 80)
+	e.Acceleration = Vector3.new(0, -4, 0)
+	e.Drag = 4
+	e.Rate = 0
+	e.LightInfluence = 1
+	e.Parent = part
+	part.Parent = workspace
+	e:Emit(math.clamp(math.floor(10 * scale + 0.5), 4, 30))
+	Debris:AddItem(part, 1)
+end
 
 local function myPosition()
 	local char = player.Character
@@ -87,7 +124,22 @@ local function streak(from, to, color)
 	end
 end
 
+local function feetOf(model)
+	local root = typeof(model) == "Instance" and model:FindFirstChild("HumanoidRootPart")
+	return root and (root.Position - Vector3.new(0, 2.8, 0)) or nil
+end
+
 function WorldFX.Init()
+	-- the ground answers: a dodge, an enemy step, a launched body landing
+	CombatFX.On("Dodge", function(model)
+		WorldFX.Dust(feetOf(model), 0.5)
+	end)
+	CombatFX.On("EnemyStep", function(model)
+		WorldFX.Dust(feetOf(model), 0.7)
+	end)
+	CombatFX.On("Land", function(model)
+		WorldFX.Dust(feetOf(model), 1.1)
+	end)
 	CombatFX.On("Dash", function(model, info)
 		if type(info) ~= "table" or typeof(info.from) ~= "Vector3" or typeof(info.to) ~= "Vector3" then
 			return

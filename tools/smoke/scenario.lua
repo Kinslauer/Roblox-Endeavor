@@ -983,6 +983,36 @@ do
 		data = PlayerData.Get(player)
 	end
 	player.Character:PivotTo(M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4)))
+	-- attack animations (Presentation.Swings keyframes): every melee combo step and heavy resolves to
+	-- a keyed swing with a wind-up and a strike; the spear's three are two thrusts and a swipe
+	do
+		local Presentation = M.mockEnv.__require(RS.Shared.Presentation)
+		local Weapons = M.mockEnv.__require(RS.Shared.Weapons)
+		local ok, count, families = true, 0, {}
+		for id, def in Weapons.Defs do
+			if not Weapons.IsGun(def) and def.Attacks then
+				for i = 1, #def.Attacks do
+					local e = Presentation.SwingFor(def.Family, i)
+					local wind, strike = false, false
+					for _, k in e.Keys or {} do
+						wind = wind or k.Phase == "Wind"
+						strike = strike or k.Phase == "Strike"
+					end
+					ok = ok and e.Keys ~= nil and wind and strike
+					count += 1
+				end
+				local heavy = Presentation.SwingFor(def.Family, "Heavy")
+				ok = ok and heavy.Keys ~= nil and heavy.Dust ~= nil
+				families[def.Family] = true
+			end
+		end
+		check(("every melee combo step has a keyed swing (%d steps, wind + strike) and every heavy raises dust"):format(count), ok and count >= 15)
+		local spear = Presentation.Swings.Families.Spear
+		local thrust1 = spear[1].Keys[#spear[1].Keys].R[1] > 90 and spear[1].Keys[1].Twist > 0
+		local thrust2 = spear[2].Keys[#spear[2].Keys].Dip ~= nil and #spear[2].Keys == 3
+		local swipe = spear[3].Keys[1].R[3] > 0 and spear[3].Keys[#spear[3].Keys].R[3] < 0 -- right to left across the body
+		check("the spear combo is thrust, low thrust, swipe (distinct keyed swings)", thrust1 and thrust2 and swipe)
+	end
 end
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)

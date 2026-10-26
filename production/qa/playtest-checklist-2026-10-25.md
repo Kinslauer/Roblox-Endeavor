@@ -116,3 +116,13 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] Tells: the first time any enemy sees you it says a line in a bubble over its head (within ~90 studs). Is that enough warning for rivals, or do you want a sound too?
 - [ ] Hold the Gate while a rival crew is on the point: the timer stops and the line reads "contested" until they are dead or gone.
 - [ ] A warmonger's / rival's dash leaves a streak (red / teal) and shakes the camera when it lands next to you. Pods and crates shake when they land nearby.
+
+## 15. Round 8 — attack animations + the Magoi polish pass (combat feel), added 2026-10-26
+- [ ] Equip the **Scrap Spear** (craft or loot). Click three times: thrust, low thrust (the body dips), then a wide swipe right-to-left. Does each read as a different move? Does the third feel like the end of a chain?
+- [ ] Spear heavy (right mouse): a lunge — the body drops and leans in. Can you see it coming in time to dodge it from another client?
+- [ ] Rebar Blade: four cuts (diagonal, rising backhand, flat, overhead finisher). Pipe Club: swing, backhand, overhead. Sledge: sweep, overhead; heavy = the slam with a big dust cloud. Fists: jab, cross (left hand), hook, uppercut.
+- [ ] Every melee swing leaves a thin white trail from hand to tip for the active frames; heavies leave an amber one that hangs longer. Readable from behind an enemy?
+- [ ] Dust: a low tan puff under your feet on a dodge, under an Enemy Step, where a launched body lands, and under heavies. Too much? Too little?
+- [ ] Camera: with a melee weapon the camera sits farther back and higher (you can still scroll); draw a gun and it comes in over the shoulder. Does the far view make a two-enemy fight readable without losing the parry timing?
+- [ ] HUD: one bar bottom-centre — health left, stamina right, a thin posture strip under it and a thin charge strip above; the R / Y / V skill slots sit right under it. Anything you miss from the old top-left stack?
+- [ ] Enemies use the same combos (a raider's club, a rival's baton, a brute's sledge): does their body language give you the parry window?

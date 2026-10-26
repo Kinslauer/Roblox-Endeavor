@@ -46,23 +46,73 @@ Presentation.Weapons = {
 -- only reads right when both hands stay near the centre line.
 -- ---------------------------------------------------------------------------------------------
 Presentation.Swings = {
-	Default = { -- one-handed club / blade / baton: diagonal slash from behind the shoulder to across the body
-		Light = { AnimationId = "", Pose = { -70, 0, 40 }, Swing = { 75, 0, -55 } },
-		Heavy = { AnimationId = "", Pose = { 165, 0, 10 }, Swing = { 40, 0, -15 } }, -- overhead wind-up, chop down
+	-- Keyframed swings (design/references/magoi-look-and-feel.md: held wind-ups, snappy strikes, a settle).
+	-- An entry is a list of Keys, each a pose on the whole upper body:
+	--   R / L   right / left shoulder { pitch, yaw, roll } (sign note above Weapons)
+	--   Lean    waist pitch, degrees: + = back, - = forward         Twist  waist yaw: + = wind to the right
+	--   Dip     studs the body sinks (root joint), + = down
+	--   Phase   "Wind" (held at the end of the windup), "Mid" (inside the active frames, at Frac 0..1
+	--           of them), "Strike" (the end of the active frames). The arm starts from wherever it is,
+	--           reaches Wind over the windup (Sine), snaps Wind -> Mid -> Strike over the active frames
+	--           (Quart), and settles Strike -> stance over the recovery (Sine). Timing is the server's.
+	-- Legacy entries (Pose / Swing / PoseL / SwingL / Lean) still work: they become Wind + Strike.
+	-- Trail = seconds the weapon trail lingers during the active frames (0 = none); Dust = puff size at
+	-- the strike (0 = none). Labels: combo index 1..n, "Heavy", or a skill name; a missing index falls
+	-- back to the family's Light, then Default.
+	Default = {
+		Light = { Keys = { { Phase = "Wind", R = { -70, 0, 40 }, Lean = 6, Twist = 20 }, { Phase = "Strike", R = { 75, 0, -55 }, Lean = -10, Twist = -15 } }, Trail = 0.12 },
+		Heavy = { Keys = { { Phase = "Wind", R = { 165, 0, 10 }, Lean = 12, Twist = 10, Dip = -0.1 }, { Phase = "Strike", R = { 40, 0, -15 }, Lean = -18, Twist = -5, Dip = 0.35 } }, Trail = 0.2, Dust = 1 },
 	},
 	Families = {
-		Fists = { Light = { AnimationId = "", Pose = { -25, 0, 15 }, Swing = { 85, 0, -20 } }, Heavy = { AnimationId = "", Pose = { -60, 0, 35 }, Swing = { 90, 0, -30 } } },
-		Blunt = {}, Blade = {}, Baton = {},
-		-- Spear: light = thrust (both hands pull the shaft in to the chest, then drive it straight out);
-		-- heavy = sweeping slash from the right.
-		Spear = {
-			Light = { AnimationId = "", Pose = { 70, 0, -35 }, PoseL = { 80, 0, 45 }, Swing = { 92, 0, -8 }, SwingL = { 96, 0, 10 }, Lean = { 12, -18 } }, -- measured: hands drive 0.8-1.0 studs forward
-			Heavy = { AnimationId = "", Pose = { 80, 0, 65 }, PoseL = { 85, 0, 85 }, Swing = { 80, 0, -75 }, SwingL = { 85, 0, 5 }, Lean = { 6, -8 } },
+		-- Fists: jab, cross, hook, uppercut; heavy = a wound-up haymaker.
+		Fists = {
+			[1] = { Keys = { { Phase = "Wind", R = { 40, 0, -10 }, Lean = 2, Twist = 10 }, { Phase = "Strike", R = { 92, 0, -12 }, Lean = -6, Twist = -8 } } },
+			[2] = { Keys = { { Phase = "Wind", L = { 40, 0, 10 }, R = { 30, 0, -10 }, Twist = -12 }, { Phase = "Strike", L = { 95, 0, 10 }, R = { 30, 0, -10 }, Lean = -8, Twist = 12 } } },
+			[3] = { Keys = { { Phase = "Wind", R = { 60, 0, 50 }, Lean = 4, Twist = 25 }, { Phase = "Mid", Frac = 0.5, R = { 85, 0, 0 } }, { Phase = "Strike", R = { 80, 0, -50 }, Lean = -6, Twist = -25 } } },
+			[4] = { Keys = { { Phase = "Wind", R = { -20, 0, 10 }, Lean = 8, Dip = 0.3 }, { Phase = "Strike", R = { 120, 0, -5 }, Lean = -12, Dip = -0.2 } } },
+			Light = { Keys = { { Phase = "Wind", R = { 40, 0, -10 }, Twist = 10 }, { Phase = "Strike", R = { 92, 0, -12 }, Lean = -6, Twist = -8 } } },
+			Heavy = { Keys = { { Phase = "Wind", R = { -60, 0, 35 }, Lean = 10, Twist = 30 }, { Phase = "Strike", R = { 95, 0, -30 }, Lean = -14, Twist = -20, Dip = 0.2 } }, Dust = 0.6 },
 		},
-		-- Hammer: light = horizontal swipe right-to-left; heavy = overhead slam.
+		-- Club (PipeClub): swing right-to-left, backhand, an overhead; heavy = the big chop.
+		Blunt = {
+			[1] = { Keys = { { Phase = "Wind", R = { -50, 0, 55 }, Lean = 6, Twist = 30 }, { Phase = "Strike", R = { 70, 0, -60 }, Lean = -10, Twist = -20 } }, Trail = 0.12 },
+			[2] = { Keys = { { Phase = "Wind", R = { 40, 0, -80 }, Twist = -25 }, { Phase = "Mid", Frac = 0.5, R = { 70, 0, -10 } }, { Phase = "Strike", R = { 60, 0, 60 }, Lean = -6, Twist = 25 } }, Trail = 0.12 },
+			[3] = { Keys = { { Phase = "Wind", R = { 160, 0, 10 }, Lean = 10, Dip = -0.1 }, { Phase = "Strike", R = { 35, 0, -15 }, Lean = -16, Dip = 0.3 } }, Trail = 0.16, Dust = 0.5 },
+			Light = { Keys = { { Phase = "Wind", R = { -50, 0, 55 }, Twist = 30 }, { Phase = "Strike", R = { 70, 0, -60 }, Lean = -10, Twist = -20 } }, Trail = 0.12 },
+			Heavy = { Keys = { { Phase = "Wind", R = { 170, 0, 15 }, Lean = 14, Twist = 12, Dip = -0.15 }, { Phase = "Strike", R = { 35, 0, -20 }, Lean = -20, Twist = -8, Dip = 0.4 } }, Trail = 0.22, Dust = 1 },
+		},
+		-- Blade (RebarBlade): diagonal cut, rising reverse cut, flat cut, overhead finisher; heavy = overhead.
+		Blade = {
+			[1] = { Keys = { { Phase = "Wind", R = { -60, 0, 45 }, Lean = 5, Twist = 28 }, { Phase = "Strike", R = { 70, 0, -62 }, Lean = -9, Twist = -22 } }, Trail = 0.14 },
+			[2] = { Keys = { { Phase = "Wind", R = { 20, 0, -75 }, Lean = 4, Twist = -28 }, { Phase = "Mid", Frac = 0.5, R = { 65, 0, -20 } }, { Phase = "Strike", R = { 115, 0, 45 }, Lean = -6, Twist = 22 } }, Trail = 0.14 },
+			[3] = { Keys = { { Phase = "Wind", R = { 85, 0, 70 }, Lean = 3, Twist = 40 }, { Phase = "Mid", Frac = 0.5, R = { 88, 0, 0 }, Twist = 0 }, { Phase = "Strike", R = { 80, 0, -80 }, Lean = -8, Twist = -38 } }, Trail = 0.16 },
+			[4] = { Keys = { { Phase = "Wind", R = { 170, 0, 15 }, Lean = 12, Twist = 15, Dip = -0.15 }, { Phase = "Mid", Frac = 0.4, R = { 120, 0, 0 } }, { Phase = "Strike", R = { 30, 0, -12 }, Lean = -18, Twist = -6, Dip = 0.4 } }, Trail = 0.2, Dust = 0.6 },
+			Light = { Keys = { { Phase = "Wind", R = { -60, 0, 45 }, Twist = 28 }, { Phase = "Strike", R = { 70, 0, -62 }, Lean = -9, Twist = -22 } }, Trail = 0.14 },
+			Heavy = { Keys = { { Phase = "Wind", R = { 175, 0, 20 }, Lean = 15, Twist = 14, Dip = -0.15 }, { Phase = "Strike", R = { 40, 0, -15 }, Lean = -20, Twist = -8, Dip = 0.45 } }, Trail = 0.24, Dust = 1 },
+		},
+		-- Baton: jab, backhand, overhead crack; heavy = a two-step charge-up crack.
+		Baton = {
+			[1] = { Keys = { { Phase = "Wind", R = { 45, 0, -20 }, Twist = 10 }, { Phase = "Strike", R = { 95, 0, -15 }, Lean = -6, Twist = -8 } }, Trail = 0.1 },
+			[2] = { Keys = { { Phase = "Wind", R = { 55, 0, -80 }, Twist = -25 }, { Phase = "Mid", Frac = 0.5, R = { 75, 0, -15 } }, { Phase = "Strike", R = { 65, 0, 55 }, Lean = -5, Twist = 25 } }, Trail = 0.1 },
+			[3] = { Keys = { { Phase = "Wind", R = { 150, 0, 5 }, Lean = 8 }, { Phase = "Strike", R = { 45, 0, -15 }, Lean = -14, Dip = 0.25 } }, Trail = 0.14, Dust = 0.4 },
+			Light = { Keys = { { Phase = "Wind", R = { 45, 0, -20 }, Twist = 10 }, { Phase = "Strike", R = { 95, 0, -15 }, Lean = -6, Twist = -8 } }, Trail = 0.1 },
+			Heavy = { Keys = { { Phase = "Wind", R = { 160, 0, 15 }, Lean = 12, Twist = 12 }, { Phase = "Strike", R = { 40, 0, -15 }, Lean = -18, Twist = -6, Dip = 0.35 } }, Trail = 0.2, Dust = 0.8 },
+		},
+		-- Spear (the simplest combo, and even it is two thrusts and a swipe): the right hand drives,
+		-- the left guides; the body winds to the right and uncoils into the thrust. 3 = the sweep.
+		Spear = {
+			[1] = { Keys = { { Phase = "Wind", R = { 60, 0, -30 }, L = { 70, 0, 40 }, Lean = 10, Twist = 25 }, { Phase = "Strike", R = { 96, 0, -5 }, L = { 100, 0, 8 }, Lean = -15, Twist = -10 } }, Trail = 0.12 },
+			[2] = { Keys = { { Phase = "Wind", R = { 55, 0, -25 }, L = { 65, 0, 35 }, Lean = 8, Twist = 20, Dip = 0.1 }, { Phase = "Mid", Frac = 0.5, R = { 85, -8, -10 }, L = { 90, 0, 10 } }, { Phase = "Strike", R = { 92, -12, -4 }, L = { 97, 0, 10 }, Lean = -18, Twist = -15, Dip = 0.3 } }, Trail = 0.12 },
+			[3] = { Keys = { { Phase = "Wind", R = { 80, 0, 70 }, L = { 85, 0, 90 }, Lean = 5, Twist = 40 }, { Phase = "Mid", Frac = 0.5, R = { 86, 0, 0 }, L = { 90, 0, 30 }, Twist = 0 }, { Phase = "Strike", R = { 80, 0, -80 }, L = { 85, 0, -10 }, Lean = -8, Twist = -40 } }, Trail = 0.18, Dust = 0.4 },
+			Light = { Keys = { { Phase = "Wind", R = { 60, 0, -30 }, L = { 70, 0, 40 }, Lean = 10, Twist = 25 }, { Phase = "Strike", R = { 96, 0, -5 }, L = { 100, 0, 8 }, Lean = -15, Twist = -10 } }, Trail = 0.12 },
+			Heavy = { Keys = { { Phase = "Wind", R = { 40, 0, -30 }, L = { 50, 0, 40 }, Lean = 15, Twist = 30, Dip = 0.2 }, { Phase = "Strike", R = { 102, 0, 0 }, L = { 106, 0, 10 }, Lean = -25, Twist = -15, Dip = 0.5 } }, Trail = 0.2, Dust = 0.8 },
+		},
+		-- Hammer (Sledge): a flat sweep, then the overhead; heavy = the slam, the body goes with it.
 		Hammer = {
-			Light = { AnimationId = "", Pose = { 75, 0, 55 }, PoseL = { 80, 0, 85 }, Swing = { 70, 0, -75 }, SwingL = { 75, 0, 0 }, Lean = { 6, -8 } },
-			Heavy = { AnimationId = "", Pose = { 165, 0, -10 }, PoseL = { 165, 0, 10 }, Swing = { 35, 0, -20 }, SwingL = { 40, 0, 20 }, Lean = { 10, -20 } },
+			[1] = { Keys = { { Phase = "Wind", R = { 75, 0, 55 }, L = { 80, 0, 85 }, Lean = 6, Twist = 35 }, { Phase = "Mid", Frac = 0.5, R = { 78, 0, -10 }, L = { 82, 0, 30 }, Twist = 0 }, { Phase = "Strike", R = { 70, 0, -75 }, L = { 75, 0, 0 }, Lean = -8, Twist = -35 } }, Trail = 0.2, Dust = 0.5 },
+			[2] = { Keys = { { Phase = "Wind", R = { 165, 0, -10 }, L = { 165, 0, 10 }, Lean = 12, Dip = -0.15 }, { Phase = "Strike", R = { 35, 0, -20 }, L = { 40, 0, 20 }, Lean = -20, Dip = 0.45 } }, Trail = 0.22, Dust = 1 },
+			Light = { Keys = { { Phase = "Wind", R = { 75, 0, 55 }, L = { 80, 0, 85 }, Twist = 35 }, { Phase = "Strike", R = { 70, 0, -75 }, L = { 75, 0, 0 }, Lean = -8, Twist = -35 } }, Trail = 0.2 },
+			Heavy = { Keys = { { Phase = "Wind", R = { 175, 0, -10 }, L = { 175, 0, 10 }, Lean = 16, Dip = -0.2 }, { Phase = "Mid", Frac = 0.6, R = { 110, 0, -15 }, L = { 112, 0, 15 } }, { Phase = "Strike", R = { 30, 0, -22 }, L = { 35, 0, 22 }, Lean = -24, Dip = 0.6 } }, Trail = 0.28, Dust = 1.6 },
 		},
 		-- Sidearm: the arm comes up to the firing line and stays there (HoldAfter seconds since the
 		-- last shot) before lowering; the heavy is a braced two-handed shot.
@@ -77,12 +127,17 @@ Presentation.Swings = {
 		},
 	},
 	HoldLower = 0.3, -- seconds to lower a held arm once HoldAfter runs out
-	DefaultLean = { 6, -10 }, -- torso pitch (degrees; + = back at the wind-up, - = forward at impact) when an entry has no Lean
+	DefaultLean = { 6, -10 }, -- torso pitch (degrees; + = back at the wind-up, - = forward at impact) when a legacy entry has no Lean
 	-- Flick cue: a glow that ramps during the windup and peaks Config.Flicker.Window before impact.
 	Cue = { Color = Color3.fromRGB(255, 60, 60), ZoneColor = Color3.fromRGB(255, 200, 80), MaxBrightness = 6, MaxRange = 10 },
 	HeavyColor = Color3.fromRGB(255, 170, 60),
 	LightColor = Color3.fromRGB(230, 230, 255),
 	TweenStyle = Enum.EasingStyle.Quad,
+	-- Weapon trail (WeaponView builds it on every melee weapon; SwingAnimator switches it on for the
+	-- active frames): a thin white ribbon from the hand to the tip, longer-lived on heavies.
+	TrailColor = Color3.fromRGB(240, 240, 255), TrailHeavyColor = Color3.fromRGB(255, 200, 120), TrailWidth = 1,
+	-- Dust (WorldFX): the ground answers a heavy strike, a dodge, a landing. Colour of the puff.
+	DustColor = Color3.fromRGB(150, 135, 110),
 }
 
 -- ---------------------------------------------------------------------------------------------
@@ -175,7 +230,12 @@ Presentation.Aim = {
 	DefaultOn = true,
 	ToggleKey = Enum.KeyCode.LeftControl,
 	FreeCursorKey = Enum.KeyCode.LeftAlt, -- hold to free the mouse (click HUD buttons) without leaving the stance
-	ShoulderOffset = Vector3.new(1.75, 0.5, 0),
+	ShoulderOffset = Vector3.new(1.75, 0.5, 0), -- fallback when a weapon type has no preset below
+	-- Camera presets by weapon type (client/Aim.lua applies one when the weapon changes; scrolling
+	-- still zooms afterwards). Melee sits far and high so the whole exchange reads - the wind-up, the
+	-- dodge, the second enemy (design/references/magoi-look-and-feel.md); guns come in over the shoulder.
+	Melee = { Distance = 15, ShoulderOffset = Vector3.new(0.9, 1.4, 0) },
+	Ranged = { Distance = 9, ShoulderOffset = Vector3.new(1.75, 0.5, 0) },
 	-- Ranged weapons: right mouse = aim down sights (first person, narrow FOV) while held; the
 	-- weapon's special (its Heavy) moves to SpecialKeys. Melee weapons keep right mouse = heavy.
 	ADS = { Fov = 42, NormalFov = 70, ZoomTime = 0.12, FirstPerson = true },
