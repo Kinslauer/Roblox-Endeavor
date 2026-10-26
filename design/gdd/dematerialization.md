@@ -95,25 +95,27 @@ acquire one early. That is also how they mix and match cybernetics."
   next one. This is the fiction behind what already persists across permadeath (`PlayerData` PERSIST: money, stash,
   side, shipment, hubs, contacts met, board, house) and it now covers **Knowledge** too (`profile.Knowledge` joins
   PERSIST; ARCHIVE survives every death).
-- **Cybernetics are "ripped in" at a table you build** (owner, 18:02: "cybernetics are 'ripped in', and need a
+- **Cybernetics are "ripped in" at an Autonet you build** (owner, 18:02: "cybernetics are 'ripped in', and need a
   specific table for doing so. It can be crafted after acquiring the knowledge and building it in your hideout").
-  The upload is what makes a body re-wireable; the table is where it's done. The chain:
-  1. **Learn it**: the table's schematic is a piece of **knowledge** (a fragment, `Clues.Fragments.RipTable`, §5) —
+  The upload is what makes a body re-wireable; the **Autonet** (owner's name, 18:10) is where it's done. The chain:
+  1. **Learn it**: the Autonet's schematic is a piece of **knowledge** (a fragment, `Clues.Fragments.Autonet`, §5) —
      found like any other, so it carries across permadeath once read.
   2. **Craft it**: with the schematic known, its recipe appears (salvage materials, `destruction.md` §4.4: e.g.
      SheetMetal, Pipe, Battery, Wire; tuning later). A recipe gated by knowledge is new: `Items.Recipes[id].Needs =
-     "RipTable"`.
-  3. **Build it**: crafting gives a kit; using it in the hideout installs **the table** for that conduit (stored with
+     "Autonet"`.
+  3. **Build it**: crafting gives a kit; using it in the hideout installs **the Autonet** for that conduit (stored with
      the hideout, `profile.House`-style, so it persists across deaths like the rest of the hideout). Shown and usable
      only by its owner while the hideout is shared geometry.
-  4. **Rip in**: at the table, fit, swap or strip cybernetics in the three slots (Optic / Arm / Core). Nowhere else: a
-     conduit without a table can carry cybernetics but can't put them in.
-  - Today `Gear.EquipGear` fits a cybernetic anywhere; this moves it behind the table. Cybernetics already fitted when
+  4. **Rip in**: at the Autonet, fit, swap or strip cybernetics in the three slots (Optic / Arm / Core). Nowhere else: a
+     conduit without an Autonet can carry cybernetics but can't put them in.
+  - Today `Gear.EquipGear` fits a cybernetic anywhere; this moves it behind the Autonet. Cybernetics already fitted when
     the change ships stay fitted. Armour and weapons still change anywhere. A permadeath loses the cybernetics that
-    were in the body (they were the body's), never the table or the schematic.
-  - Working name **"the ripping table"**; the owner names it.
-  - Optional feel, for the owner: ripping in hurts — a short channel at the table and the body comes out of it at
-    reduced health (`Config.Cyber.RipSeconds`, `RipHealthCost`).
+    were in the body (they were the body's), never the Autonet or the schematic.
+  - **It hurts** (owner, 18:10). Every rip — in or out — is a channel on the Autonet (`Config.Cyber.RipSeconds`,
+    ~4 s): the body is locked in place, the screen whites at the edges, and it comes off at reduced health
+    (`RipHealthCost`, a share of max health, e.g. 35 %; never below 1 HP — the Autonet doesn't kill). A swap is two
+    rips (out, then in), so it costs twice. Taking damage or leaving cancels the channel with nothing changed and the
+    cost paid. Recovering is ordinary healing (rations, medkits), so ripping in right before a raid is a real choice.
   (`production/epics/hideout-computer` story 009.)
 - **The computer is acquired, and life is hard until it is** (owner, 18:03: "it should be hard before they build or
   find a computer"). A fresh conduit has a hideout with an empty desk where the computer goes; no Computer console, no
@@ -128,7 +130,7 @@ acquire one early. That is also how they mix and match cybernetics."
 
   | Kept by | What | Before a computer | After |
   |---|---|---|---|
-  | **The hideout** (physical) | Money, Stash, Faction, Shipment, Hubs (routes you've unlocked), the ripping table | kept | kept |
+  | **The hideout** (physical) | Money, Stash, Faction, Shipment, Hubs (routes you've unlocked), the Autonet | kept | kept |
   | **The computer** (the mind) | Knowledge, Contacts met, Board, House | **lost** — they were in the body's head | kept |
 
   So a fresh conduit's first deaths cost every fragment read and every contact met. The fastest way to stop losing
@@ -138,4 +140,4 @@ acquire one early. That is also how they mix and match cybernetics."
   having a computer (`Computer = true` on load), so no one loses what they have.
 
 ## 7. Open questions
-- The ripping table's name, and whether ripping in hurts (§6).
+- None open right now.

@@ -15,7 +15,7 @@ not tell you what else is out there. The one concession to legibility is the rai
 
 ## 2. The computer (`server/Terminal.lua`)
 > **Fiction (owner, 2026-10-26 17:53)**: a conduit's consciousness is uploaded to their home computer — that's why
-> what's on it survives permadeath, and why a body can be re-wired at all; cybernetics are ripped in at a table the
+> what's on it survives permadeath, and why a body can be re-wired at all; cybernetics are ripped in at an Autonet the
 > conduit learns, crafts and builds in the hideout (`design/gdd/dematerialization.md` §6).
 
 A console in the hideout ("Computer", hold X) opens a panel with three apps. Each is **locked until its contact has been

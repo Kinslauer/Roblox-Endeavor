@@ -145,4 +145,5 @@ furnishings are shown only to their owner (the hideout room is shared geometry f
 - The computer is acquired (owner, 18:03): "it should be hard before they build or find a computer." → found as rare
   loot or built from salvage, installed in the hideout; before the upload, knowledge / contacts / board / house die
   with the body (money, stash, side, hubs stay with the hideout — assumption). hideout-computer story 011.
+- The ripping table is called the **Autonet**, and ripping hurts (owner, 18:10): each rip is a channel that costs health.
 
