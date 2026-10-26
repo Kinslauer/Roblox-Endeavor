@@ -22,7 +22,7 @@ hourly dematerialization (`design/gdd/dematerialization.md`); the war world tear
 | # | Story | Type | Est | Status | Blocked by |
 |---|---|---|---|---|---|
 | 001 | Break types on existing hits (`Break` field, family defaults) + `Destructible` props: health, swap to fractured model, salvage remains | Core | L | Not started | — |
-| 002 | Materials (Glass, SheetMetal, Pipe, Battery, Powder) + recipes; Arc Cells as the arc reserve in both worlds (deploy kit, shipments, recruits) | Economy | M | Not started | — |
+| 002 | Materials (Glass, SheetMetal, Pipe, Battery, Powder) in loot tables + the Arc Cell recipe; Arc Cells as the reload reserve for players and NPCs (hands-only when out), deploy top-up, trader / black market stock, HUD cell count | Economy | M | Implemented (smoke: 4 checks; Studio push pending) | — |
 | 003 | Grab and throw on **G**, Light class, server validation; special moves to MMB only | Core | L | Not started | 001 |
 | 004 | Parry deflect, Medium / Heavy classes, improvised melee from chunks | Core | M | Not started | 003 |
 | 005 | Shared `Explosion` (falloff, LOS, `Explosive` resist), Pipe Grenade, Breaching Charge | Core | L | Not started | 001 |

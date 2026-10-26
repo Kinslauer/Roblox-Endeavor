@@ -54,7 +54,8 @@ and posture on top), bleeding/healing minigames, weapon durability and jamming, 
 ### 2.4 Magazines and reloads
 - `Gun.Magazine` rounds, tracked per weapon in `Combat.State(char).ammo`, mirrored to the `Ammo` / `MaxAmmo` attributes
   (HUD counter, bottom right; `RELOADING` while reloading, red at 0). A light shot spends 1 round, the charged heavy
-  `Gun.HeavyRounds` (default 3). An empty magazine refuses the shot and starts the reload; R (`Config.Gunplay.ReloadKey`)
+  `Gun.HeavyRounds` (default 3). **Every reload costs one Arc Cell** (2026-10-26, `design/gdd/destruction.md` §4.4a;
+  NPCs too). An empty magazine refuses the shot and starts the reload; R (`Config.Gunplay.ReloadKey`)
   reloads manually. `Gun.Reload` seconds busy; a stun or a dodge interrupts it (token bump) and it can be retried.
 - Magazines refill by reload only; there is no ammo inventory yet (Universe-2 place: ammo as an item, like scrap).
 

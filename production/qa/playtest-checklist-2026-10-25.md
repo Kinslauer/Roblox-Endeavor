@@ -142,3 +142,9 @@ To see one without waiting an hour, run this in the Studio command bar during Pl
 - [ ] Stand in the hideout during one: nothing happens to you. Same deployed in the war.
 - [ ] Any contact standing inside a wall, a stall or a wreck at one of its spots? Note which.
 
+## 17. Round 10 — salvage materials and Arc Cells, added 2026-10-26
+- [ ] With an arc pistol or rifle, the ammo counter has a cell count under it. Empty the magazine: R reloads and the count drops by one. With no cells, R says "No cells." and nothing happens.
+- [ ] Deploy to the war: your cells are topped up to 4. Run dry in a long fight — does that feel like pressure or like a chore?
+- [ ] Raider gunners and war recruits run out too: after a while one shouts "I'm out!", puts the gun away and comes at you with its fists. Kill it: the gun and any cells it had left are on the ground.
+- [ ] New materials turn up in loot: Glass, Sheet Metal, Pipe, Battery, Black Powder. Craft Arc Cells (Battery + 2 Wire = 6 cells). The trader sells single cells (8); the black market sells Battery and Powder.
+

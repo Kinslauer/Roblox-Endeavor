@@ -19,6 +19,8 @@ local Items = require(Shared.Items)
 local Presentation = require(Shared.Presentation)
 local Remotes = require(Shared.Remotes)
 local Combat = require(script.Parent.Combat)
+local Config = require(Shared.Config)
+local Weapons = require(Shared.Weapons)
 local Loot = require(script.Parent.Loot)
 local Quests = require(script.Parent.Quests)
 local Rig = require(script.Parent.Rig)
@@ -316,12 +318,17 @@ end
 -- "all enemies should drop all their loot", both worlds): the weapon in its hand, the armour its kit
 -- put on it, and one roll of its loot table (Items.LootTables[def.Loot]) made at spawn, not at death.
 local carrying = setmetatable({}, { __mode = "k" }) -- model -> { [itemId] = count }
+local cellRng = Random.new()
 local KIT_ARMOR = { Armed = { "ScavHelm" }, Plated = { "PlatedHelm", "RiotPlate" } }
 
 local function packCarry(def, opts)
 	local bundle = Items.Roll(def.Loot)
 	if def.Weapon and Items.Defs[def.Weapon] then
 		bundle[def.Weapon] = (bundle[def.Weapon] or 0) + 1
+		local G = Config.Gunplay
+		if Weapons.IsGun(Weapons.Defs[def.Weapon]) and not def.Flying then -- a gun comes with the cells it reloads from
+			bundle[G.CellItem] = (bundle[G.CellItem] or 0) + cellRng:NextInteger(G.NpcCells[1], G.NpcCells[2])
+		end
 	end
 	local kit = opts and opts.Kit
 	for _, id in (kit and KIT_ARMOR[kit.Name]) or {} do
@@ -435,7 +442,56 @@ function NPCs.Spawn(typeName, position, opts)
 		end
 	end
 
+	-- A gun runs dry the same way a player's does (Config.Gunplay): a magazine, a reload from a carried Arc
+	-- Cell, and with no cells left the body puts the gun away and fights with its hands.
+	local gunDef = def.Weapon and Weapons.Defs[def.Weapon]
+	local gun = not F and gunDef and Weapons.IsGun(gunDef) and def.Attack and def.Attack.Ranged and gunDef.Gun or nil
+	local rounds = gun and gun.Magazine or 0
+	local function handsOnly()
+		local fists = Weapons.Defs.Fists.Attacks[1]
+		def = setmetatable({ Attack = fists, Range = fists.Range or 6, KeepDistance = false, Label = 1, Weapon = "Fists" }, { __index = def })
+		gun = nil
+		model:SetAttribute("Weapon", "Fists")
+		model:SetAttribute("OutOfCells", true)
+		model:SetAttribute("Bark", "I'm out!|" .. string.format("%.2f", os.clock()))
+	end
+	-- true when the shot can go (a reload or the switch to fists spends this attack instead)
+	local function readyToFire()
+		if not gun then
+			return true
+		end
+		if rounds > 0 then
+			return true
+		end
+		local G = Config.Gunplay
+		local bag = carrying[model]
+		local cells = bag and bag[G.CellItem] or 0
+		if cells >= G.CellsPerReload then
+			bag[G.CellItem] = if cells - G.CellsPerReload > 0 then cells - G.CellsPerReload else nil
+			rounds = gun.Magazine
+			Combat.SetBusy(model, gun.Reload)
+			model:SetAttribute("Reloading", true)
+			Combat.FX("Reload", model, gun.Reload)
+			task.delay(gun.Reload, function()
+				if model.Parent then
+					model:SetAttribute("Reloading", false)
+				end
+			end)
+			nextAttackAt = os.clock() + gun.Reload
+		else
+			handsOnly()
+			nextAttackAt = os.clock() + 0.4
+		end
+		return false
+	end
+
 	local function attack(target)
+		if not readyToFire() then
+			return
+		end
+		if gun then
+			rounds -= 1
+		end
 		local troot = target.HumanoidRootPart
 		if F then
 			faceAt(troot.Position) -- the body pitches at the target; Combat.Swing fires along its look

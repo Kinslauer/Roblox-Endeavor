@@ -59,6 +59,7 @@ Regions.Enclave = {
 	Lamps = 20,
 	-- the trader's stock: parts and a sidearm, for money (Wallet). Prices are tuning.
 	Stock = {
+		{ Id = "ArcCell", Price = 8 }, -- one cell a purchase
 		{ Id = "DotSight", Price = 40 },
 		{ Id = "ExtMag", Price = 35 },
 		{ Id = "Brake", Price = 60 },

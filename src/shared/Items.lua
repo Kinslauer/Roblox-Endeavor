@@ -12,6 +12,14 @@ Items.Defs = {
 	Medkit = { Name = "Medkit", Type = "Consumable", Heal = 45 },
 	Ration = { Name = "Ration Pack", Type = "Consumable", Heal = 15, Stamina = 50 },
 	Intel = { Name = "Raid Intel", Type = "Consumable", Intel = true }, -- read it (Use) and a contract lands on your board
+	-- salvage (design/gdd/destruction.md §4.4): from enemies and supply today, from broken props once they break
+	Glass = { Name = "Glass", Type = "Material" },
+	SheetMetal = { Name = "Sheet Metal", Type = "Material" },
+	Pipe = { Name = "Pipe", Type = "Material" },
+	Battery = { Name = "Battery", Type = "Material" },
+	Powder = { Name = "Black Powder", Type = "Material" },
+	-- the reserve an arc weapon reloads from (Config.Gunplay.CellsPerReload per reload; both worlds, everyone)
+	ArcCell = { Name = "Arc Cell", Type = "Ammo" },
 }
 
 -- Weapons and armor are defined in their own modules; register them as items here.
@@ -48,6 +56,8 @@ Items.Recipes = {
 	TacLight = { Output = "TacLight", Count = 1, Inputs = { Wire = 3, Scrap = 2 } },
 	ExtMag = { Output = "ExtMag", Count = 1, Inputs = { Scrap = 5, Wire = 2 } },
 	CompBarrel = { Output = "CompBarrel", Count = 1, Inputs = { Scrap = 8, Wire = 1 } },
+	-- salvage (destruction.md §4.4)
+	ArcCell = { Output = "ArcCell", Count = 6, Inputs = { Battery = 1, Wire = 2 } },
 }
 
 -- Each entry rolls independently: { item, chance, min, max }. The weapon an enemy holds is NOT listed here:
@@ -60,39 +70,47 @@ Items.LootTables = {
 		{ "PlatedHelm", 0.1, 1, 1 }, { "RiotPlate", 0.06, 1, 1 }, { "ArcHood", 0.08, 1, 1 }, { "ConduitHarness", 0.04, 1, 1 }, { "ServoGreaves", 0.07, 1, 1 },
 		{ "ReflexOptic", 0.06, 1, 1 }, { "TargetingLens", 0.05, 1, 1 }, { "ServoArm", 0.05, 1, 1 }, { "ArcGauntlet", 0.04, 1, 1 }, { "NeuralCore", 0.04, 1, 1 }, { "OverclockCore", 0.02, 1, 1 },
 		{ "DotSight", 0.05, 1, 1 }, { "ExtMag", 0.05, 1, 1 }, -- city parts: the common ones
+		{ "ArcCell", 0.6, 2, 5 }, { "Battery", 0.35, 1, 2 }, { "Glass", 0.4, 1, 3 }, { "SheetMetal", 0.3, 1, 2 }, { "Pipe", 0.3, 1, 2 }, { "Powder", 0.1, 1, 2 },
 	},
 	Raider = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 },
 		{ "ScavHelm", 0.08, 1, 1 }, { "ScrapVest", 0.08, 1, 1 }, { "ScrapGreaves", 0.08, 1, 1 },
 		{ "TacLight", 0.04, 1, 1 }, { "LaserSight", 0.02, 1, 1 },
+		{ "Pipe", 0.25, 1, 1 }, { "Glass", 0.15, 1, 2 },
 	},
 	Brute = {
 		{ "Scrap", 1, 2, 5 }, { "Cloth", 0.5, 1, 2 }, { "Ration", 0.4, 1, 1 },
 		{ "PlatedHelm", 0.06, 1, 1 }, { "RiotPlate", 0.06, 1, 1 }, { "PlatedGreaves", 0.06, 1, 1 },
 		{ "CompBarrel", 0.05, 1, 1 }, { "LongBarrel", 0.04, 1, 1 },
+		{ "SheetMetal", 0.5, 1, 3 }, { "Pipe", 0.3, 1, 2 },
 	},
 	Gunner = {
 		{ "Scrap", 0.9, 1, 3 }, { "Wire", 0.8, 2, 4 }, { "Cloth", 0.4, 1, 2 },
 		{ "ArcHood", 0.06, 1, 1 },
 		{ "DotSight", 0.06, 1, 1 }, { "Brake", 0.04, 1, 1 }, { "MatchSlide", 0.03, 1, 1 }, -- the Range: sidearm parts
+		{ "Battery", 0.3, 1, 1 }, -- (the cells it carries for its gun come with the gun: NPCs.packCarry)
 	},
 	Rival = { -- a rival conduit crew: they carry what they were working on
 		{ "Intel", 0.6, 1, 1 }, { "Scrap", 0.8, 2, 5 }, { "Wire", 0.5, 1, 3 }, { "Medkit", 0.3, 1, 1 },
 		{ "DotSight", 0.08, 1, 1 }, { "ExtMag", 0.08, 1, 1 }, { "ArcHood", 0.05, 1, 1 },
+		{ "ArcCell", 0.5, 2, 4 }, { "Battery", 0.3, 1, 2 }, { "Powder", 0.15, 1, 2 },
 	},
 	Warmonger = { -- the open world's elite: cybernetics and the good parts
 		{ "Scrap", 1, 6, 12 }, { "Wire", 1, 4, 8 }, { "Medkit", 0.6, 1, 2 },
 		{ "NeuralCore", 0.2, 1, 1 }, { "OverclockCore", 0.1, 1, 1 }, { "ConduitHarness", 0.2, 1, 1 }, { "ArcPistol", 0.3, 1, 1 },
 		{ "LongBarrel", 0.3, 1, 1 }, { "Suppressor", 0.25, 1, 1 }, { "MatchSlide", 0.2, 1, 1 },
+		{ "Battery", 0.6, 1, 3 }, { "Powder", 0.4, 1, 3 }, { "SheetMetal", 0.5, 2, 4 },
 	},
 	Recruit = { -- war-world recruits: the rifle in their hands always drops (NPCs.packCarry); this is what else they carry
 		{ "Ration", 0.5, 1, 2 }, { "Scrap", 0.6, 1, 3 }, { "Wire", 0.4, 1, 2 }, { "Medkit", 0.2, 1, 1 },
 		{ "Suppressor", 0.02, 1, 1 }, { "LongBarrel", 0.02, 1, 1 }, -- the war: a rare rifle part off a recruit
+		{ "Powder", 0.15, 1, 2 }, { "SheetMetal", 0.2, 1, 2 },
 	},
 	Drone = { -- machine parts: wire and scrap, a rare optic
 		{ "Wire", 1, 2, 5 }, { "Scrap", 0.8, 1, 3 },
 		{ "ReflexOptic", 0.04, 1, 1 }, { "TargetingLens", 0.03, 1, 1 },
 		{ "Scope4x", 0.04, 1, 1 }, { "LightBolt", 0.03, 1, 1 }, -- drones carry the rifle optics
+		{ "Battery", 0.7, 1, 2 }, { "Glass", 0.3, 1, 1 },
 	},
 }
 

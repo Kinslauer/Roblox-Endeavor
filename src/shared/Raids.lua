@@ -103,6 +103,8 @@ Raids.House = {
 
 -- The black market (the MARKET app): the things the enclave's trader does not carry.
 Raids.Market = {
+	{ Id = "Powder", Price = 30 },
+	{ Id = "Battery", Price = 20 },
 	{ Id = "Suppressor", Price = 110 },
 	{ Id = "Scope4x", Price = 130 },
 	{ Id = "LightBolt", Price = 100 },

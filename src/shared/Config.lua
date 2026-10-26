@@ -44,6 +44,7 @@ Config.Range = {
 	UnlockKills = 1, -- Rift opens after this many kills (and Awakened); Config.Dev.Enabled bypasses
 	RiftPlaza = Vector3.new(0, 2, 22), -- the Rift's spot in Relay Plaza (world)
 	Loadout = { "ArcRifle" }, -- granted on first entry
+	DeployCells = 4, -- the war's basic kit tops your Arc Cells up to this on every deploy
 	Targets = { Distances = { 20, 40, 60, 80, 100 }, Health = 40, ResetSeconds = 3, LaneSpacing = 12 },
 	Waves = { { Gunner = 2 }, { Gunner = 2, Drone = 2 }, { Gunner = 3, Drone = 3 } },
 	WaveRing = 44, -- studs from the arena centre where a wave spawns
@@ -109,7 +110,7 @@ Config.War = {
 -- stash gear sent ahead: a crate lands at your base after a delay; open it and you fight with it —
 -- die and it stays on the field, walk out and it goes back to the stash.
 Config.Supply = {
-	Value = { Material = 1, Consumable = 3, Weapon = 12, Armor = 10, Cybernetic = 15, Part = 8 }, -- pool points per donated item by Items.Defs[*].Type
+	Value = { Material = 1, Consumable = 3, Weapon = 12, Armor = 10, Cybernetic = 15, Part = 8, Ammo = 1 }, -- pool points per donated item by Items.Defs[*].Type
 	CostPerRecruit = 3, -- points a side spends for every recruit it fields (attrition drains the pool)
 	Tiers = { -- in order; the highest tier whose Points the pool reaches is the kit (checked at spawn)
 		{ Name = "Basic", Points = 0, HealthMult = 1, Resist = 0, DamageMult = 1 },
@@ -198,6 +199,12 @@ Config.Gunplay = {
 	-- spread added to the weapon's own (degrees of cone half-angle), by the shooter's state
 	Spread = { Moving = 1.2, Sprinting = 3.0, Airborne = 2.0, ADSSettle = 0.15 }, -- ADSSettle: seconds after raising the sights before ADS spread counts
 	DefaultGun = { Magazine = 10, Reload = 1.5, Spread = { Hip = 3, ADS = 0.5 }, Recoil = { Pitch = 1.2, Yaw = 0.4, Recover = 7 } },
+	-- Arc Cells (design/gdd/destruction.md §4.4a; owner: "all weapons are consistent"): a reload refills the
+	-- magazine from one cell; no cell, no reload. Players and NPCs alike; NPC gunners carry a few (NpcCells
+	-- {min, max}) and fight with their hands once they are out.
+	CellItem = "ArcCell",
+	CellsPerReload = 1,
+	NpcCells = { 1, 3 },
 	ReloadKey = Enum.KeyCode.R, -- client: manual reload (an empty-magazine shot reloads on its own)
 }
 

@@ -600,6 +600,8 @@ function Hud.Init()
 	end)
 	-- ammo counter (Ammo / MaxAmmo attributes, set by the server for guns; hidden for melee)
 	ammoLabel = label({ Size = UDim2.fromOffset(200, 34), Position = UDim2.new(1, -220, 1, -70), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 28, Font = Enum.Font.GothamBlack, Text = "", TextColor3 = Color3.fromRGB(235, 235, 240) })
+	-- the Arc Cells a reload draws from (Config.Gunplay; the Cells attribute)
+	local cellsLabel = label({ Size = UDim2.fromOffset(200, 18), Position = UDim2.new(1, -220, 1, -36), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 14, Font = Enum.Font.GothamBold, Text = "", TextColor3 = Color3.fromRGB(150, 200, 255) })
 	-- shown while standing inside a safe zone (District.InSafeZone reads the tagged zone parts)
 	zoneLabel = label({ Size = UDim2.new(1, 0, 0, 22), Position = UDim2.fromOffset(0, 28), TextSize = 14, Font = Enum.Font.GothamBold, Text = "", TextColor3 = Color3.fromRGB(120, 255, 200) })
 	task.spawn(function()
@@ -647,13 +649,17 @@ function Hud.Init()
 			local ammo, max = char:GetAttribute("Ammo"), char:GetAttribute("MaxAmmo")
 			if ammo == nil or max == nil then
 				ammoLabel.Text = ""
+				cellsLabel.Text = ""
 				return
 			end
 			local reloading = char:GetAttribute("Reloading")
 			ammoLabel.Text = if reloading then "RELOADING" else ("%d / %d"):format(ammo, max)
 			ammoLabel.TextColor3 = if reloading then Color3.fromRGB(255, 190, 40) elseif ammo == 0 then Color3.fromRGB(255, 80, 80) else Color3.fromRGB(235, 235, 240)
+			local cells = char:GetAttribute("Cells") or 0
+			cellsLabel.Text = ("%d CELL%s"):format(cells, if cells == 1 then "" else "S")
+			cellsLabel.TextColor3 = if cells == 0 then Color3.fromRGB(255, 80, 80) else Color3.fromRGB(150, 200, 255)
 		end
-		for _, attr in { "Ammo", "MaxAmmo", "Reloading" } do
+		for _, attr in { "Ammo", "MaxAmmo", "Reloading", "Cells" } do
 			char:GetAttributeChangedSignal(attr):Connect(update)
 		end
 		update()

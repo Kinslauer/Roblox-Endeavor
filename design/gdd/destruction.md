@@ -115,8 +115,16 @@ Arc Cell and refills the magazine**; with no cell carried, the reload is refused
 worlds** — weapons behave the same for everyone; conduits are just stronger and more modified (stats, cybernetics,
 bench builds), never on different weapon rules. So the war needs cells: the deploy kit (`Config.Range.Loadout`) grants
 a few, shipments and the supply pool carry them, AI recruits draw them from their kit like any other item, and dead
-soldiers drop theirs (everything drops). Tuning: cells per reload (`Config.Destruction.CellsPerReload`, default 1),
+soldiers drop theirs (everything drops). Tuning: cells per reload (`Config.Gunplay.CellsPerReload`, default 1),
 cells in the deploy kit.
+
+**As built (2026-10-26, story 002):** `Items.Defs.ArcCell` (Type `Ammo`), `Config.Gunplay.CellItem / CellsPerReload`.
+`Combat.Reload` refuses without a cell ("No cells.", throttled) and spends it when the reload completes, so an
+interrupted reload costs nothing. NPC guns follow the same rule: a gunner or recruit carries 1–3 cells
+(`Config.Gunplay.NpcCells`, in its carry, so they drop with it), reloads from them, and when they run out it says so,
+puts the gun away and fights with its hands (the pistol still drops). The war's deploy tops cells up to
+`Config.Range.DeployCells` (4). Cells come from supply drops, rivals, the trader (8 each) and the recipe; Battery and
+Powder are also on the black market. The HUD shows carried cells under the magazine count.
 
 ### 4.5 Grab and throw (core Conduit combat)
 
@@ -256,7 +264,7 @@ The **Moderate** label allows realistic but non-graphic violence and death, with
 - Explosion `Radius`, `BaseDamage`, falloff exponent, `CraterScale`
 - Loose chunk cap, settle time, cosmetic debris cap, body cap per sector
 - Dematerialization warning length
-- `GrabKey` (G), `CellsPerReload` (1)
+- `GrabKey` (G); cells live in `Config.Gunplay` (`CellsPerReload`, `NpcCells`) and `Config.Range.DeployCells`
 - Sector rebuild delay
 - `GoreLevel`
 

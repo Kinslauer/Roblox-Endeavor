@@ -17,6 +17,9 @@ function Inventory.Push(player)
 	local profile = PlayerData.Get(player)
 	if profile then
 		Remotes.InventoryChanged:FireClient(player, profile.Inventory, profile.Equipped, profile.Armor, profile.Cyber)
+		if player.Character then -- the HUD's ammo line shows the cells you carry
+			player.Character:SetAttribute("Cells", profile.Inventory[Config.Gunplay.CellItem] or 0)
+		end
 	end
 end
 

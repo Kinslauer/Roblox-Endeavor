@@ -324,6 +324,13 @@ do
 	Remotes.Heavy:FireServer(M.V3.new(0, 0, -1)); run(0.8)
 	check("the charged shot burns three rounds", me:GetAttribute("Ammo") == gun.Magazine - 6)
 	run(0.6)
+	-- Arc Cells (destruction.md §4.4a): no cell, no reload; a reload spends one
+	local PD = M.mockEnv.__require(SSS.Server.PlayerData)
+	local inv = PD.Get(player).Inventory
+	inv.ArcCell = nil
+	Remotes.Reload:FireServer(); run(0.2)
+	check("with no Arc Cells the reload is refused", me:GetAttribute("Reloading") ~= true and me:GetAttribute("Ammo") == gun.Magazine - 6)
+	inv.ArcCell = 3
 	Remotes.Reload:FireServer(); run(0.1)
 	check("reload marks the character", me:GetAttribute("Reloading") == true)
 	local during = me:GetAttribute("Ammo")
@@ -331,6 +338,7 @@ do
 	check("no shot while reloading", me:GetAttribute("Ammo") == during)
 	run(gun.Reload + 0.1)
 	check("magazine full after Reload seconds", me:GetAttribute("Ammo") == gun.Magazine and me:GetAttribute("Reloading") == false)
+	check("the reload spent one cell (the HUD's Cells attribute follows)", inv.ArcCell == 2 and me:GetAttribute("Cells") == 2)
 	Combat.State(me).ammo.ArcRifle = 0; Combat.SyncAmmo(me)
 	Remotes.Attack:FireServer(M.V3.new(0, 0, -1)); run(0.1)
 	check("an empty click starts a reload on its own", me:GetAttribute("Reloading") == true)
@@ -1012,6 +1020,28 @@ do
 		local thrust2 = spear[2].Keys[#spear[2].Keys].Dip ~= nil and #spear[2].Keys == 3
 		local swipe = spear[3].Keys[1].R[3] > 0 and spear[3].Keys[#spear[3].Keys].R[3] < 0 -- right to left across the body
 		check("the spear combo is thrust, low thrust, swipe (distinct keyed swings)", thrust1 and thrust2 and swipe)
+	end
+	-- an enemy gun runs dry like yours: a magazine, a reload from a carried Arc Cell, then its hands
+	do
+		local NPCs = M.mockEnv.__require(SSS.Server.NPCs)
+		local Combat = M.mockEnv.__require(SSS.Server.Combat)
+		local me = player.Character
+		me:PivotTo(M.CF.lookAt(M.V3.new(700, 5, 700), M.V3.new(700, 5, 680)))
+		me.Humanoid.MaxHealth = 100000; me.Humanoid.Health = 100000
+		Combat.ClearProtection(me)
+		local gunner = NPCs.Spawn("Gunner", M.V3.new(700, 5, 678), { Despawn = false })
+		local bag = NPCs.Carrying(gunner)
+		check("a gunner carries Arc Cells with its pistol", bag.ArcCell ~= nil and bag.ArcCell >= 1 and bag.ArcPistol == 1)
+		bag.ArcCell = 1
+		local reloads = 0
+		gunner:GetAttributeChangedSignal("Reloading"):Connect(function()
+			if gunner:GetAttribute("Reloading") then reloads += 1 end
+		end)
+		run(70, function() return gunner:GetAttribute("OutOfCells") == true end)
+		check(("its one cell reloads it once (%d), then it is out: fists, the pistol still in its carry"):format(reloads),
+			reloads == 1 and bag.ArcCell == nil and gunner:GetAttribute("OutOfCells") == true and gunner:GetAttribute("Weapon") == "Fists" and bag.ArcPistol == 1)
+		NPCs.Remove(gunner)
+		me.Humanoid.MaxHealth = 100; me.Humanoid.Health = 100
 	end
 	-- the cycle (design/gdd/dematerialization.md): the world comes apart and is restored; only enemy spawns,
 	-- contact spots and loot are re-drawn; the player, their profile, the hideout and the war are untouched

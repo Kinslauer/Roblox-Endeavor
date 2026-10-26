@@ -135,6 +135,10 @@ local function syncAmmo(char, s, weaponId, gun)
 	s.ammo[weaponId] = math.min(s.ammo[weaponId], gun.Magazine) -- a smaller magazine fitted at the bench
 	char:SetAttribute("Ammo", s.ammo[weaponId])
 	char:SetAttribute("MaxAmmo", gun.Magazine)
+	local owner = Players:GetPlayerFromCharacter(char)
+	if owner then
+		char:SetAttribute("Cells", Combat.Cells(owner))
+	end
 	return s.ammo[weaponId]
 end
 
@@ -145,6 +149,27 @@ function Combat.SyncAmmo(char, weapon)
 end
 
 -- Reload the equipped gun: busy for Gun.Reload seconds, then the magazine is full. A stun cancels it.
+-- Arc Cells carried (Config.Gunplay.CellItem), and spending them (false when short). The Cells attribute on
+-- the character feeds the HUD's ammo line.
+function Combat.Cells(player)
+	local data = PlayerData.Get(player)
+	return data and data.Inventory and data.Inventory[G.CellItem] or 0
+end
+
+function Combat.SpendCells(player, n)
+	local data = PlayerData.Get(player)
+	local have = Combat.Cells(player)
+	if not data or have < n then
+		return false
+	end
+	data.Inventory[G.CellItem] = if have - n > 0 then have - n else nil
+	if player.Character then
+		player.Character:SetAttribute("Cells", have - n)
+	end
+	Remotes.InventoryChanged:FireClient(player, data.Inventory, data.Equipped, data.Armor, data.Cyber)
+	return true
+end
+
 function Combat.Reload(player)
 	local char = player.Character
 	local id = char and char:GetAttribute("Weapon")
@@ -158,6 +183,13 @@ function Combat.Reload(player)
 	if t < s.reloadUntil or ammo >= gun.Magazine or t < s.stunned then
 		return false
 	end
+	if Combat.Cells(player) < G.CellsPerReload then
+		if t >= (s.noCellsSaidAt or 0) + 2 then
+			s.noCellsSaidAt = t
+			Remotes.Announce:FireClient(player, "No cells.", "Event")
+		end
+		return false
+	end
 	s.reloadUntil = t + gun.Reload
 	s.busyUntil = math.max(s.busyUntil, s.reloadUntil)
 	local token = s.token
@@ -165,7 +197,7 @@ function Combat.Reload(player)
 	fx("Reload", char, gun.Reload)
 	task.delay(gun.Reload, function()
 		char:SetAttribute("Reloading", false)
-		if s.token == token and isAlive(char) and char:GetAttribute("Weapon") == id then
+		if s.token == token and isAlive(char) and char:GetAttribute("Weapon") == id and Combat.SpendCells(player, G.CellsPerReload) then
 			s.ammo[id] = gun.Magazine
 			syncAmmo(char, s, id, gun)
 		else

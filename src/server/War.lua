@@ -385,6 +385,10 @@ function War.Deploy(player)
 			Inventory.Add(player, id, 1)
 		end
 	end
+	local cellItem, topUp = Config.Gunplay.CellItem, Config.Range.DeployCells or 0
+	if Inventory.Count(player, cellItem) < topUp then -- and a few Arc Cells for its reloads
+		Inventory.Add(player, cellItem, topUp - Inventory.Count(player, cellItem))
+	end
 	Gear.EquipWeapon(player, Config.Range.Loadout[1])
 	player:SetAttribute("Zone", War.Zone)
 	player:SetAttribute("ForceFirstPerson", true)
