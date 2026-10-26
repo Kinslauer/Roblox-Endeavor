@@ -121,3 +121,14 @@ see or hear each other; all of the gameplay should feel immersive and emergent l
 Assumptions (say the word): a raid lives on the body (dying ends it; the board on the computer persists); three
 contacts to start (broker = raids, fixer = house, dealer = market), placed where the risk matches the reward; house
 furnishings are shown only to their owner (the hideout room is shared geometry for now).
+
+## Added 2026-10-26 17:30–17:37 (owner): destruction, consistent weapons, the cycle
+- Grab key for destruction's grab-and-throw: **G**.
+- "All weapons are consistent. Conduits are just stronger and more modified." → Arc Cells (reload reserve) apply in
+  both worlds; no weapon rule differs between conduits and recruits.
+- Verbatim intent: "The world may be simulated, or at least that is what the conduits think, and why they look for
+  knowledge and try to escape. That's why it always resets, everything in the world: terrain, POI, etc. The only
+  variables are player and enemy NPC spawns, encounters with vendor NPCs and loot." → `design/gdd/dematerialization.md`.
+  Assumption (say the word): "encounters with vendor NPCs" = contacts and the trader stand at one of several authored
+  spots, re-drawn each cycle.
+

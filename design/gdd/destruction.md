@@ -109,12 +109,14 @@ Proposed recipes, added to `Items.Recipes`:
 
 A pipe or sign chunk can also be held as an improvised melee weapon. It uses the club moveset (`Presentation.Swings.Families.Blunt`) and breaks after N hits.
 
-#### 4.4a Arc Cells (reconciled)
+#### 4.4a Arc Cells (reconciled; owner, 17:37: "all weapons are consistent")
 Today a reload is free: `Gun.Magazine` rounds, `Gun.Reload` seconds, no reserve. With cells, a reload consumes **one
-Arc Cell and refills the magazine**; with no cell carried, the reload is refused ("No cells."). Open for the owner:
-this makes every arc weapon finite, including the recruits' kit in the war, so war loadouts and shipments
-(`Config.Range.Loadout`, `Supply`) need cells in them. Alternative: cells only in the Conduit world, the war stays
-free-reload. Tuning: cells per reload (`Config.Destruction.CellsPerReload`, default 1).
+Arc Cell and refills the magazine**; with no cell carried, the reload is refused ("No cells."). **Same rule in both
+worlds** — weapons behave the same for everyone; conduits are just stronger and more modified (stats, cybernetics,
+bench builds), never on different weapon rules. So the war needs cells: the deploy kit (`Config.Range.Loadout`) grants
+a few, shipments and the supply pool carry them, AI recruits draw them from their kit like any other item, and dead
+soldiers drop theirs (everything drops). Tuning: cells per reload (`Config.Destruction.CellsPerReload`, default 1),
+cells in the deploy kit.
 
 ### 4.5 Grab and throw (core Conduit combat)
 
@@ -165,10 +167,9 @@ One shared server-side `Explosion` function, not Roblox's built-in `Explosion` i
 
 ### 4.8 Conduit world: hourly dematerialization
 
-> The hourly dematerialization (owner decision, §3) is not in the code or any brief yet. Destruction only needs a
-> hook from it (`World.Dematerializing` 60 s before, `World.Rematerialized` after); the cycle itself — what else
-> resets, what players see, how it sits with the prologue / emergence phases in `WorldPhase` — needs its own short
-> design note before story 7.
+> The cycle has its own design note: `design/gdd/dematerialization.md` (owner, 17:37: the conduits believe the world
+> is simulated; everything authored resets — terrain, POIs, all of it — and only player / enemy spawns, vendor
+> encounters and loot vary). Destruction subscribes to `Cycle.Warning` / `Cycle.Dematerialize` / `Cycle.Rematerialized`.
 
 - When the world dematerializes, every broken prop, breach point and leftover debris chunk returns to its intact state.
 - **60 s warning:** broken things start flickering and players hear a rising hum, so no one is caught off guard.
@@ -230,7 +231,7 @@ This is where destruction systems on Roblox usually fail, so the rules are stric
 - **Bench / Supply:** Sign Plating and salvaged parts feed `Bench`; Glass / SheetMetal / Pipe / Battery / Powder are
   `Material` (supply value 1) and can be donated to the war like any other material.
 - **Stats / Gear:** Strength and Willpower scaling.
-- **Dematerialization cycle** (Conduit world): reset trigger. Not built; needs its own design note (§4.8).
+- **Dematerialization cycle** (Conduit world): reset trigger. Designed in `design/gdd/dematerialization.md`; not built.
 - **War world** (built: `server/War.lua`): the moving hill and its points are the sectors (§4.7); artillery calls are new.
 - **Level design:** tagging props and authoring breach points and fracture/stage models.
 
@@ -273,12 +274,12 @@ The **Moderate** label allows realistic but non-graphic violence and death, with
 ## 12. Build order (stories)
 
 1. Damage types on existing hits + `Destructible` prop framework (health, swap to fractured model, salvage remains).
-2. New materials and recipes; Arc Cells as the arc weapons' reserve (§4.4a, owner call on the war first).
+2. New materials and recipes; Arc Cells as the arc weapons' reserve in both worlds (§4.4a).
 3. Grab and throw (Light class first), with server validation.
 4. Parry deflect + Medium/Heavy classes + improvised melee from chunks.
 5. Shared `Explosion` function + Pipe Grenade + Breaching Charge.
 6. `Breachable` points with tiers and noise events.
-7. Dematerialization: its design note, the hourly cycle, then the reset hook.
+7. The cycle (`design/gdd/dematerialization.md`), then destruction's reset hook.
 8. Performance budgets and stress test.
 9. War world: structure stages, terrain craters, body persistence, sector rebuild (unblocked: the war exists; sectors = hill points).
 10. `GoreLevel` content pass.
@@ -297,4 +298,5 @@ The first draft was written against the pre-Phase-3 game. Changes, all compatibl
 | — | Breach noise drives NPC barks; `breach` raid step; materials feed Bench / Supply | Ties into what Phase 3 built |
 | `docs/systems/destruction-and-salvage.md` | `design/gdd/destruction.md` + epic + systems-index rows 52–53 | The project's GDD / epic layout |
 
-**Open for the owner:** Arc Cells in the war or not (§4.4a); the dematerialization note (§4.8).
+**Settled by the owner (17:37):** Arc Cells in both worlds — all weapons are consistent (§4.4a); the cycle resets
+everything authored, only spawns, vendor encounters and loot vary (`design/gdd/dematerialization.md`).

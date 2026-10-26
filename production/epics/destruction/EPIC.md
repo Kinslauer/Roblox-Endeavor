@@ -7,7 +7,7 @@
 The environment becomes a weapon, a resource and a door. Destructible props break into pre-fractured chunks and
 salvage; authored breach points open locked interiors (loudly); chunks can be grabbed (G) and thrown through the
 normal combat hit path; one shared explosion function damages bodies and the world. The Conduit world resets on the
-hourly dematerialization; the war world tears up a sector and rebuilds it after the hill moves on.
+hourly dematerialization (`design/gdd/dematerialization.md`); the war world tears up a sector and rebuilds it after the hill moves on.
 
 ## Governing rules
 | Rule | From |
@@ -22,12 +22,12 @@ hourly dematerialization; the war world tears up a sector and rebuilds it after 
 | # | Story | Type | Est | Status | Blocked by |
 |---|---|---|---|---|---|
 | 001 | Break types on existing hits (`Break` field, family defaults) + `Destructible` props: health, swap to fractured model, salvage remains | Core | L | Not started | — |
-| 002 | Materials (Glass, SheetMetal, Pipe, Battery, Powder) + recipes; Arc Cells as arc reserve | Economy | M | Not started | owner: cells in the war? |
+| 002 | Materials (Glass, SheetMetal, Pipe, Battery, Powder) + recipes; Arc Cells as the arc reserve in both worlds (deploy kit, shipments, recruits) | Economy | M | Not started | — |
 | 003 | Grab and throw on **G**, Light class, server validation; special moves to MMB only | Core | L | Not started | 001 |
 | 004 | Parry deflect, Medium / Heavy classes, improvised melee from chunks | Core | M | Not started | 003 |
 | 005 | Shared `Explosion` (falloff, LOS, `Explosive` resist), Pipe Grenade, Breaching Charge | Core | L | Not started | 001 |
 | 006 | `Breachable` tiers, authored hole models, noise -> NPC barks, `breach` raid step | World | M | Not started | 005 |
-| 007 | Dematerialization: design note, hourly cycle, reset hook (60 s warning, no one sealed in) | World | M | Not started | owner: the note |
+| 007 | The cycle (`design/gdd/dematerialization.md`): hourly clock, warning / white-out FX, respawn draws for enemies, crews, contacts (2–4 spots each) and the trader, ground-loot clear; then destruction's reset hook | World | L | Not started | — |
 | 008 | Performance budgets (loose chunks, cosmetic debris, bodies) + 20-player stress test | Infra | M | Not started | 001–006 |
 | 009 | War world: structure stages, craters, body persistence, sector rebuild (sectors = hill points) | World | L | Not started | 005 |
 | 010 | `GoreLevel` content pass (`Moderate` / `Restricted`) | Presentation | M | Not started | — |
