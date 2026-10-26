@@ -82,9 +82,20 @@ never doubled. Kill credit is tagged before the damage lands, so a synchronous d
 4. Intel adds a [intel] contract to the board. HOUSE and MARKET refuse without their contacts and sell with them; the house attribute publishes.
 5. Leaving the hideout closes the computer. An enemy carries its weapon from spawn and drops all of it on death.
 
-## 7. Follow-ups
+## 7. The tells (added the same day)
+- **Barks** (`Enemies.Barks`, `NPCs` Bark attribute, `client/WorldFX.lua`): the first time a body sees you it says one
+  line in a speech bubble over its head — only drawn if you are within 90 studs, 12 s cooldown per body. Grunts
+  ("Fresh meat."), rivals ("They're on our contract."), warmongers ("Another one come to die."), recruits ("Open fire!").
+  That is the *hear* in "until you see or hear each other": the bubble is the warning, there is no other.
+- **Contested holds** (`Raids.Contested`): a rival crew standing inside your hold point stops the timer ("· contested"
+  on the line, one announcement). Crews walk between the raid points on their own, so this is not scripted.
+- **WorldFX** also draws the dash streak (red for a warmonger, teal for a rival, a shake if it lands near you), a shake
+  when a pod or crate lands within 40 studs, red / green pulses for downed / revived, the hill ring flashing its new
+  side's colour, and a gold pulse when a shipment is opened.
+
+## 8. Follow-ups
 - More templates per region as regions arrive; contracts that name a *place* to clear rather than a type to kill.
 - Rival crews that actually run contracts (visible objectives, racing you to a dead drop); crews that loot what you leave.
-- Seeing / hearing: footstep and voice barks for rivals at aggro range, so "unannounced" still has a tell you can learn.
+- Footstep audio and a voice sound slot for barks (Presentation) once audio assets exist.
 - A dedicated terminal UI (apps as tabs) once the row panel gets long; a radio in the hideout for the broker's lines.
 - Furnishings with function (the couch heals, the shelf is extra stash) and visible to visitors when the hideout is a place.

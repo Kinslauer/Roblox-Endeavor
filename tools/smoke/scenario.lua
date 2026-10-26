@@ -940,6 +940,29 @@ do
 	check("the black market sells for money", Terminal.Buy(player, "Suppressor") and Inventory.Count(player, "Suppressor") == sup0 + 1 and Wallet.Get(player) == m1 - 30 - 110)
 	local state = Terminal.State(player)
 	check("the computer's state is complete", state.Contacts.Broker and state.Contacts.Fixer and state.Contacts.Dealer and #state.Board == RD.BoardSize + 1 and #state.House == #RD.House and #state.Market == #RD.Market and state.Money == Wallet.Get(player))
+	-- the "hear" tell: a body that first sees you says so (Bark attribute); a rival crew on your hold point contests it
+	Hideout.Enter(player, { Quiet = true }); run(0.2)
+	me = player.Character
+	me:PivotTo(M.CF.lookAt(M.V3.new(800, 5, 800), M.V3.new(800, 5, 780)))
+	me.Humanoid.Health = me.Humanoid.MaxHealth
+	Combat.Protect(me, 30)
+	local barker = NPCs.Spawn("Grunt", M.V3.new(800, 5, 785), { Despawn = false })
+	run(0.6)
+	local bark = barker:GetAttribute("Bark")
+	check("an enemy barks once on first sight", type(bark) == "string" and bark:find("|") ~= nil)
+	barker.Humanoid.Health = 0; run(0.4)
+	data.Contacts.Broker = true
+	data.Board = { { Id = "hold_the_gate" } }; Raids.Board(player)
+	Raids.Accept(player, 1)
+	local gate = RD.Points.EnclaveGate
+	local squatter = NPCs.Spawn("Rival", gate + M.V3.new(3, 5, 0), { Despawn = false, Home = gate })
+	me:PivotTo(M.CF.new(gate + M.V3.new(0, 4, 2)))
+	run(2.5)
+	check("a rival on your hold point contests it: no progress", data.Raid.Hold == 0 and data.Raid.Contested == true and tostring(player:GetAttribute("RaidLine")):find("contested") ~= nil)
+	squatter.Humanoid.Health = 0; run(2.5)
+	check("with the rival gone the hold counts again", data.Raid.Hold > 0 and data.Raid.Contested == false)
+	Raids.Abandon(player)
+	Hideout.Enter(player, { Quiet = true }); run(0.2)
 	Terminal.Open(player)
 	local wasOpen = player:GetAttribute("Terminal") == true
 	Hideout.Leave(player); run(0.2)

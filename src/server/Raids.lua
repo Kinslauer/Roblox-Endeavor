@@ -8,6 +8,7 @@
 --     the lead's first objective and the raid continues into it (Bonus on the money at the end).
 --   * EXTRACTION: a station (Hideout.Extract) or a train (Transport.Ride) while on the extract step pays
 --     every contract in the chain. Terminal.lua owns the UI; this module owns the rules.
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -111,7 +112,7 @@ local function line(raid)
 	if step.Kind == "kill" then
 		text ..= (" (%d/%d)"):format(raid.Progress, step.Count)
 	elseif step.Kind == "hold" then
-		text ..= (" (%d/%d s)"):format(math.floor(raid.Hold or 0), step.Seconds)
+		text ..= (" (%d/%d s)%s"):format(math.floor(raid.Hold or 0), step.Seconds, if raid.Contested then "  ·  contested" else "")
 	end
 	return ("%s  ·  %s"):format(R.ById[raid.Id].Name, text)
 end
@@ -319,6 +320,22 @@ function Raids.OnExtract(player)
 	return true
 end
 
+-- A rival crew working the same point: a hold does not count while one of them stands inside it.
+-- (Rivals.lua walks crews between the raid points, so this happens on its own.)
+local function contested(point, radius)
+	for _, model in CollectionService:GetTagged(NPCs.Tag) do
+		if model:GetAttribute("EnemyType") == "Rival" then
+			local root = model:FindFirstChild("HumanoidRootPart")
+			local hum = model:FindFirstChildOfClass("Humanoid")
+			if root and hum and hum.Health > 0 and Vector3.new(root.Position.X - point.X, 0, root.Position.Z - point.Z).Magnitude <= radius then
+				return true
+			end
+		end
+	end
+	return false
+end
+Raids.Contested = contested
+
 -- reach / hold steps and the lead's first step, once a second
 local function watch()
 	local acc = 0
@@ -343,7 +360,19 @@ local function watch()
 					local point = R.Points[target.Point]
 					local d = point and Vector3.new(root.Position.X - point.X, 0, root.Position.Z - point.Z).Magnitude
 					if d and d <= target.Radius then
-						Raids.Progress(player, target.Kind, target.Point, step_dt)
+						local wasContested = raid.Contested
+						raid.Contested = target.Kind == "hold" and contested(point, target.Radius)
+						if raid.Contested then
+							if not wasContested then
+								announce(player, "A rival crew is on the point. The hold does not count until they are gone.")
+							end
+							Raids.Sync(player)
+						else
+							Raids.Progress(player, target.Kind, target.Point, step_dt)
+						end
+					elseif raid.Contested then
+						raid.Contested = false
+						Raids.Sync(player)
 					end
 				end
 			end

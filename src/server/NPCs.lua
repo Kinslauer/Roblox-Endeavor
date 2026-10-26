@@ -416,6 +416,8 @@ function NPCs.Spawn(typeName, position, opts)
 	end
 	local nextAttackAt = 0
 	local nextDashAt = 0
+	local nextBarkAt = 0
+	local hadTarget = false
 	local idleSince = os.clock()
 	local state = "Idle"
 
@@ -464,6 +466,15 @@ function NPCs.Spawn(typeName, position, opts)
 				if target and fromHome > def.Leash then
 					target = nil -- leashed: give up and walk back
 				end
+				-- first sight of someone: say so (Enemies.Barks); the client draws it over the head
+				if target and not hadTarget and now >= nextBarkAt then
+					local lines = Enemies.Barks[typeName]
+					if lines then
+						nextBarkAt = now + Enemies.BarkCooldown
+						model:SetAttribute("Bark", lines[rng:NextInteger(1, #lines)] .. "|" .. string.format("%.2f", now))
+					end
+				end
+				hadTarget = target ~= nil
 
 				if target then
 					idleSince = now

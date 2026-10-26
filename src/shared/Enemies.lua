@@ -18,6 +18,19 @@ local function look(bodyType, skin, hair, hairColor, cloth)
 	return { Appearance = { BodyType = bodyType, SkinTone = skin, Face = 1, Hair = hair, HairColor = hairColor }, Cloth = cloth }
 end
 
+-- What an enemy says when it first sees you (NPCs sets the Bark attribute; the client draws a speech
+-- bubble over its head). The "hear" half of "unannounced until you see or hear each other".
+Enemies.Barks = {
+	Grunt = { "There! Get 'em!", "Fresh meat.", "That one's carrying something." },
+	Brute = { "Mine.", "Come here." },
+	Gunner = { "Contact!", "Eyes on one." },
+	Warmonger = { "Another one come to die.", "You smell like the city." },
+	Rival = { "Contact. Take them.", "They're on our contract.", "Not today, friend." },
+	Recruit = { "Enemy sighted!", "Open fire!", "Hostile on the hill!" },
+	Drone = { "TARGET ACQUIRED." },
+}
+Enemies.BarkCooldown = 12 -- seconds before the same body speaks again
+
 Enemies.Defs = {
 	Grunt = {
 		Name = "Raider Grunt", QuestTag = "Raider", Weapon = "PipeClub",

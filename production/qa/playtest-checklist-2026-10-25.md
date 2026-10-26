@@ -113,3 +113,6 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] Ferrite Court plaza: **the Fixer** → HOUSE. Order the rug (30): it appears on your hideout floor. Only you see it.
 - [ ] The road, past the brute by the wrecks: **the Dealer** → MARKET. Buy a Suppressor (110) or Intel (50).
 - [ ] Every enemy now drops its weapon plus whatever it carried (Carrying count on the model). Loot a brute: a Sledge every time. Does that make corpses worth checking, or is the ground too busy?
+- [ ] Tells: the first time any enemy sees you it says a line in a bubble over its head (within ~90 studs). Is that enough warning for rivals, or do you want a sound too?
+- [ ] Hold the Gate while a rival crew is on the point: the timer stops and the line reads "contested" until they are dead or gone.
+- [ ] A warmonger's / rival's dash leaves a streak (red / teal) and shakes the camera when it lands next to you. Pods and crates shake when they land nearby.
