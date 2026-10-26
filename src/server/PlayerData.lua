@@ -28,6 +28,7 @@ local TEMPLATE = {
 	Cyber = {}, -- [slot] = itemId
 	SkillSlots = {}, -- ["1"] = skillId (string keys so the table stays a dictionary)
 	Inventory = {},
+	Builds = {}, -- [weaponId] = { [slot] = partId }: parts fitted at the bench (shared/Attachments.lua); the parts live here, not in Inventory
 	-- Phase 3: the hideout is the account's, not the character's (see PERSIST below)
 	Money = 0, -- the war world's pay, spent at the hideout
 	Stash = {}, -- items left in the hideout: safe from permadeath

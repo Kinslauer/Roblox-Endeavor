@@ -108,7 +108,7 @@ end
 -- ---------------------------------------------------------------------------------------------
 -- Shipments (data). War.lua turns a ready shipment into a crate at the base.
 -- ---------------------------------------------------------------------------------------------
-local SHIPPABLE = { Weapon = true, Armor = true, Cybernetic = true, Consumable = true }
+local SHIPPABLE = { Weapon = true, Armor = true, Cybernetic = true, Consumable = true, Part = true }
 
 function Supply.Shipment(player)
 	local data = PlayerData.Get(player)

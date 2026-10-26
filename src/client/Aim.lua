@@ -13,6 +13,8 @@ local GameSettings = UserSettings():GetService("UserGameSettings")
 local Presentation = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Presentation"))
 local Config = require(ReplicatedStorage.Shared:WaitForChild("Config"))
 local Weapons = require(ReplicatedStorage.Shared:WaitForChild("Weapons"))
+local Attachments = require(ReplicatedStorage.Shared:WaitForChild("Attachments"))
+local HttpService = game:GetService("HttpService")
 local Hud = require(script.Parent.Hud)
 local CameraShake = require(script.Parent.CameraShake)
 local CombatFX = require(script.Parent.CombatFX)
@@ -132,6 +134,19 @@ local function applyRecoil(dt)
 	end
 end
 
+-- Our weapon builds (server/Bench.lua publishes them as one JSON player attribute).
+local builds = {}
+local function readBuilds()
+	local raw = player:GetAttribute("Builds")
+	local ok, decoded = pcall(HttpService.JSONDecode, HttpService, raw or "{}")
+	builds = if ok and type(decoded) == "table" then decoded else {}
+end
+player:GetAttributeChangedSignal("Builds"):Connect(readBuilds)
+readBuilds()
+local function buildOf(weaponId)
+	return builds[weaponId]
+end
+
 -- Our own ranged Swing: kick by the weapon's recoil spec (pattern position resets after a pause).
 local function onOwnSwing(char, info)
 	if char ~= player.Character or type(info) ~= "table" then
@@ -141,6 +156,7 @@ local function onOwnSwing(char, info)
 	if not Weapons.IsGun(def) then
 		return
 	end
+	def = Attachments.Apply(def, buildOf(info.weapon)) -- the bench's parts change the kick (shared/Attachments.lua)
 	local R = (def.Gun and def.Gun.Recoil) or Config.Gunplay.DefaultGun.Recoil
 	local now = os.clock()
 	patternIndex = if now - lastShotAt > 0.6 then 1 else patternIndex + 1

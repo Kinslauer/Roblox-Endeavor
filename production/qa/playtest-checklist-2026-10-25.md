@@ -89,3 +89,10 @@ Write what felt wrong in one line each; I'll turn them into tuning stories.
 - [ ] Deploy and look at your recruits: Armed ones wear a steel helm (Plated: plated torso too) and take a few more rifle rounds to drop. Does the upgrade read at a glance?
 - [ ] Stash a gun or armour, press Shipment: "lands at your base in 45 s". Deploy; the war board shows the countdown; at 0 a crate in your colour falls at the base. Hold X: the gun is in your hands (ammo counter), armour worn.
 - [ ] Die with the kit: "Your field kit stays where you fell" — a loot pile where you went down. Return alive with a kit instead: it is back in the stash. Does the risk feel right, or should some of it come home on death?
+
+## 12. Round 5c — the weapon bench (Phase 3, build order 4), added 2026-10-26
+- [ ] In the hideout holding the Arc Pistol, open Tab: a pink "Workbench: Arc Pistol (mag 9, spread 2.4/0.5, kick 1.6)" header and six slot rows. Craft an Extended Magazine and a Tactical Light from scrap + wire (crafting list, bottom), then press **Fit** on each. The header numbers change; the gun in your hand shows a torch beam.
+- [ ] Deploy / go to the Range with the Dot Sight or a Brake fitted (loot them off Gunners, or `Supply` crates in the city): does the pistol feel different — tighter when aimed, less kick? Is the difference big enough to chase parts for?
+- [ ] Fit a Laser Sight: a red beam from the gun in third and first person. Does it help hip fire read?
+- [ ] Strip one slot, then "Frame": parts return to the inventory, the ammo counter clamps back to 9. Try the bench outside the hideout: refused.
+- [ ] Rifle parts (4x Scope, Light Bolt from Drones) refuse the pistol; fit them to the Arc Rifle instead when you have one.

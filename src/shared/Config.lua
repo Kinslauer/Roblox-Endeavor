@@ -109,7 +109,7 @@ Config.War = {
 -- stash gear sent ahead: a crate lands at your base after a delay; open it and you fight with it —
 -- die and it stays on the field, walk out and it goes back to the stash.
 Config.Supply = {
-	Value = { Material = 1, Consumable = 3, Weapon = 12, Armor = 10, Cybernetic = 15 }, -- pool points per donated item by Items.Defs[*].Type
+	Value = { Material = 1, Consumable = 3, Weapon = 12, Armor = 10, Cybernetic = 15, Part = 8 }, -- pool points per donated item by Items.Defs[*].Type
 	CostPerRecruit = 3, -- points a side spends for every recruit it fields (attrition drains the pool)
 	Tiers = { -- in order; the highest tier whose Points the pool reaches is the kit (checked at spawn)
 		{ Name = "Basic", Points = 0, HealthMult = 1, Resist = 0, DamageMult = 1 },
@@ -121,6 +121,12 @@ Config.Supply = {
 	CrateHeight = 120,
 	CrateFallSeconds = 2,
 	CrateOpenSeconds = 1.5, -- hold X
+}
+
+-- The weapon bench (design/gdd/gunplay.md §4, Phase 3 build order 4): strip a gun to the frame and
+-- rebuild it from parts (shared/Attachments.lua). Only at the hideout's workbench.
+Config.Bench = {
+	Zone = "Hideout", -- the player's Zone attribute the bench answers in
 }
 
 -- Momentum & cancels (design/gdd/momentum.md): the Nero-study layer on top of the timing core.
@@ -221,7 +227,7 @@ Config.Flicker = {
 Config.RateLimit = {
 	Burst = 2,
 	Attack = 6, Heavy = 4, Feint = 6, Flicker = 8, Block = 10, Dodge = 4, UseSkill = 6,
-	SetSkill = 4, Allocate = 10, UseItem = 4, EquipItem = 4, Unequip = 4, Craft = 4, TutorialSkip = 1, SetAppearance = 10, Sprint = 6, Reload = 4, ADS = 8,
+	SetSkill = 4, Allocate = 10, UseItem = 4, EquipItem = 4, Unequip = 4, Craft = 4, TutorialSkip = 1, SetAppearance = 10, Sprint = 6, Reload = 4, ADS = 8, Bench = 6,
 }
 
 -- World events (server/Events.lua)

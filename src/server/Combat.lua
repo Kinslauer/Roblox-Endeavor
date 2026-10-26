@@ -12,6 +12,7 @@ local Config = require(Shared.Config)
 local District = require(Shared.District)
 local Remotes = require(Shared.Remotes)
 local Weapons = require(Shared.Weapons)
+local Attachments = require(Shared.Attachments)
 local Gear = require(script.Parent.Gear)
 local PlayerData = require(script.Parent.PlayerData)
 local RateLimit = require(script.Parent.RateLimit)
@@ -99,6 +100,19 @@ end
 -- ===== Gunplay (Config.Gunplay, design/gdd/gunplay.md) =====
 local G = Config.Gunplay
 
+-- A character's weapon definition by id, with the bench build folded in for players
+-- (shared/Attachments.lua; the build lives in profile.Builds). NPCs use the plain definition.
+local function weaponDefOf(char, id)
+	local def = id and Weapons.Defs[id]
+	if not def then
+		return nil
+	end
+	local player = Players:GetPlayerFromCharacter(char)
+	local data = player and PlayerData.Get(player)
+	return Attachments.Apply(def, data and data.Builds and data.Builds[id])
+end
+Combat.WeaponDefOf = weaponDefOf
+
 -- The equipped weapon's Gun block (with defaults), or nil for melee / fists.
 local function gunOf(weapon)
 	if not Weapons.IsGun(weapon) then
@@ -118,6 +132,7 @@ local function syncAmmo(char, s, weaponId, gun)
 	if s.ammo[weaponId] == nil then
 		s.ammo[weaponId] = gun.Magazine
 	end
+	s.ammo[weaponId] = math.min(s.ammo[weaponId], gun.Magazine) -- a smaller magazine fitted at the bench
 	char:SetAttribute("Ammo", s.ammo[weaponId])
 	char:SetAttribute("MaxAmmo", gun.Magazine)
 	return s.ammo[weaponId]
@@ -125,7 +140,7 @@ end
 
 function Combat.SyncAmmo(char, weapon)
 	local id = char:GetAttribute("Weapon")
-	weapon = weapon or (id and Weapons.Defs[id])
+	weapon = weapon or weaponDefOf(char, id)
 	return syncAmmo(char, st(char), id, weapon and gunOf(weapon))
 end
 
@@ -133,7 +148,7 @@ end
 function Combat.Reload(player)
 	local char = player.Character
 	local id = char and char:GetAttribute("Weapon")
-	local weapon = id and Weapons.Defs[id]
+	local weapon = char and weaponDefOf(char, id)
 	local gun = weapon and gunOf(weapon)
 	if not (gun and isAlive(char)) then
 		return false
@@ -181,7 +196,7 @@ end
 -- Spread for a shot right now (degrees of cone half-angle), from the gun and the shooter's state.
 local function spreadFor(char, s, gun, t)
 	local hum = getHum(char)
-	local ads = s.ads and t - s.adsSince >= G.Spread.ADSSettle
+	local ads = s.ads and t - s.adsSince >= G.Spread.ADSSettle * (gun.SettleMult or 1) -- optics change how fast the sights settle
 	local spread = if ads then gun.Spread.ADS else gun.Spread.Hip
 	if char:GetAttribute("Sprinting") then
 		spread += G.Spread.Sprinting
@@ -807,7 +822,8 @@ end
 
 local function weaponOf(player)
 	local data = PlayerData.Get(player)
-	return data and (Weapons.Defs[data.Equipped] or Weapons.Defs.Fists)
+	local def = data and (Weapons.Defs[data.Equipped] or Weapons.Defs.Fists)
+	return def and Attachments.Apply(def, data.Builds and data.Builds[data.Equipped])
 end
 
 -- A ranged shot may carry the client's camera direction so it follows the camera's pitch (the

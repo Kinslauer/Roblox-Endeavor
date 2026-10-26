@@ -311,6 +311,40 @@ function methods.GetService(self, name)
 		function s.GetDataStore() local ds = {}; function ds.GetAsync() return nil end; function ds.SetAsync() end; function ds.UpdateAsync(_, k, f) return f(nil) end; function ds.RemoveAsync() end; return ds end
 	elseif name == "RunService" and not s._init then
 		s._init = true; s.Heartbeat = sig(s, "Heartbeat")
+	elseif name == "HttpService" and not s._init then
+		s._init = true
+		-- a small JSON: objects/arrays of strings, numbers, booleans (what the game sends through it)
+		local function enc(v)
+			local t = type(v)
+			if t == "string" then return '"' .. v:gsub('[%c"\\]', function(c) return ("\\u%04x"):format(c:byte()) end) .. '"'
+			elseif t == "number" or t == "boolean" then return tostring(v)
+			elseif t == "table" then
+				if #v > 0 or next(v) == nil then local out = {} for _, x in ipairs(v) do table.insert(out, enc(x)) end return "[" .. table.concat(out, ",") .. "]" end
+				local out = {} for k, x in v do table.insert(out, enc(tostring(k)) .. ":" .. enc(x)) end return "{" .. table.concat(out, ",") .. "}"
+			end
+			return "null"
+		end
+		local function dec(str)
+			local i = 1
+			local function ws() i = str:find("%S", i) or #str + 1 end
+			local val
+			local function strv() local j = i + 1; local out = {} while str:sub(j, j) ~= '"' do local c = str:sub(j, j); if c == "\\" then local n = str:sub(j + 1, j + 1); if n == "u" then table.insert(out, string.char(tonumber(str:sub(j + 2, j + 5), 16))); j += 6 else table.insert(out, n); j += 2 end else table.insert(out, c); j += 1 end end i = j + 1; return table.concat(out) end
+			val = function()
+				ws(); local c = str:sub(i, i)
+				if c == "{" then i += 1; local o = {}; ws(); if str:sub(i, i) == "}" then i += 1 return o end
+					while true do ws(); local k = strv(); ws(); i += 1; o[k] = val(); ws(); local d = str:sub(i, i); i += 1; if d == "}" then return o end end
+				elseif c == "[" then i += 1; local a = {}; ws(); if str:sub(i, i) == "]" then i += 1 return a end
+					while true do table.insert(a, val()); ws(); local d = str:sub(i, i); i += 1; if d == "]" then return a end end
+				elseif c == '"' then return strv()
+				elseif str:sub(i, i + 3) == "true" then i += 4 return true
+				elseif str:sub(i, i + 4) == "false" then i += 5 return false
+				elseif str:sub(i, i + 3) == "null" then i += 4 return nil
+				else local j = str:find("[,%]}%s]", i) or #str + 1; local n = tonumber(str:sub(i, j - 1)); i = j; return n end
+			end
+			return val()
+		end
+		function s.JSONEncode(_, v) return enc(v) end
+		function s.JSONDecode(_, str) return dec(str) end
 	end
 	return s
 end

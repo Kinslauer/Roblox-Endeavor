@@ -12,6 +12,9 @@ local Armor = require(Shared:WaitForChild("Armor"))
 local Config = require(Shared:WaitForChild("Config"))
 local Cybernetics = require(Shared:WaitForChild("Cybernetics"))
 local Items = require(Shared:WaitForChild("Items"))
+local Attachments = require(Shared:WaitForChild("Attachments"))
+local Weapons = require(Shared:WaitForChild("Weapons"))
+local HttpService = game:GetService("HttpService")
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local Skills = require(Shared:WaitForChild("Skills"))
 
@@ -160,9 +163,32 @@ end
 
 local function buildInventory(invPanel)
 	local lastInventory, lastEquipped, lastArmor, lastCyber = {}, "Fists", {}, {}
+	local builds = {} -- server/Bench.lua: one JSON player attribute
+	local function readBuilds()
+		local ok, decoded = pcall(HttpService.JSONDecode, HttpService, player:GetAttribute("Builds") or "{}")
+		builds = if ok and type(decoded) == "table" then decoded else {}
+	end
+	local function atBench()
+		return player:GetAttribute("Zone") == Config.Bench.Zone
+	end
 
 	local function render()
 		clear(invPanel)
+		-- the workbench (hideout only): the held gun's slots, with Strip buttons
+		local heldDef = Weapons.Defs[lastEquipped]
+		if atBench() and Weapons.IsGun(heldDef) then
+			local build = builds[lastEquipped] or {}
+			local eff = Attachments.Apply(heldDef, build)
+			local g = eff.Gun or {}
+			addRow(invPanel, ("-- Workbench: %s  (mag %d, spread %.1f/%.1f, kick %.1f) --"):format(heldDef.Name, g.Magazine or 0, g.Spread and g.Spread.Hip or 0, g.Spread and g.Spread.ADS or 0, g.Recoil and g.Recoil.Pitch or 0), if next(build) then { { text = "Frame", color = Color3.fromRGB(120, 70, 70), fn = function() Remotes.Bench:FireServer("StripAll", lastEquipped) end } } else {}, Color3.fromRGB(255, 170, 230))
+			for _, slot in Attachments.Slots do
+				local partId = build[slot]
+				local part = partId and Attachments.Parts[partId]
+				addRow(invPanel, ("   %s: %s"):format(slot, part and part.Name or "-"), if part then { { text = "Strip", color = Color3.fromRGB(120, 70, 70), fn = function() Remotes.Bench:FireServer("Strip", lastEquipped, slot) end } } else {})
+			end
+		elseif atBench() then
+			addRow(invPanel, "-- Workbench: hold a gun to work on it --", {}, Color3.fromRGB(255, 170, 230))
+		end
 		local ids = {}
 		for id in lastInventory do
 			table.insert(ids, id)
@@ -185,6 +211,8 @@ local function buildInventory(invPanel)
 				table.insert(buttons, { text = if worn then "Remove" else "Wear", color = if worn then Color3.fromRGB(120, 70, 70) else nil, fn = function()
 					if worn then Remotes.Unequip:FireServer(def.Slot) else Remotes.EquipItem:FireServer(id) end
 				end })
+			elseif def.Type == "Part" and atBench() and Attachments.Fits(id, heldDef) then
+				table.insert(buttons, { text = "Fit", color = Color3.fromRGB(140, 60, 120), fn = function() Remotes.Bench:FireServer("Fit", lastEquipped, id) end })
 			end
 			local suffix = if def.Slot then (" [%s]"):format(def.Slot) else ""
 			addRow(invPanel, ("%s x%d%s"):format(def.Name, lastInventory[id], suffix), buttons)
@@ -202,6 +230,12 @@ local function buildInventory(invPanel)
 		lastInventory, lastEquipped, lastArmor, lastCyber = inv, equipped, armor, cyber
 		render()
 	end)
+	player:GetAttributeChangedSignal("Builds"):Connect(function()
+		readBuilds()
+		render()
+	end)
+	player:GetAttributeChangedSignal("Zone"):Connect(render)
+	readBuilds()
 end
 
 local function buildLoadout(loadoutPanel)

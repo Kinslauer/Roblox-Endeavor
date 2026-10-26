@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Bench = require(script.Parent.Bench)
 local Combat = require(script.Parent.Combat)
 local Creator = require(script.Parent.Creator)
 local Rig = require(script.Parent.Rig)
@@ -57,6 +58,7 @@ function Lifecycle.Spawn(player)
 	Combat.SyncAmmo(char) -- ammo counter for a gun loadout (and registers the body with Combat)
 	Wallet.Sync(player)
 	Supply.Sync(player) -- shipment attributes for the HUD
+	Bench.Publish(player) -- weapon builds for the client's recoil and bench panel
 	local profile0 = PlayerData.Get(player)
 	player:SetAttribute("Faction", profile0 and profile0.Faction or nil)
 	Stats.Apply(player, true)

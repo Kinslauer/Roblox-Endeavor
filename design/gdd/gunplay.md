@@ -75,6 +75,57 @@ Weapons.ArcRifle.Gun:  Magazine 18, Reload 1.7, Spread { Hip 3.2, ADS 0.25 }, Re
 5. The same shot on the Head does `Zones.Head` × the body damage and fires `Headshot`.
 6. Five hip shots at the same aim do not all land on the same point.
 
-## 4. Later
+## 4. The weapon bench — strip it to the frame, build it back (Phase 3, build order 4)
+
+Owner's ask: *in-depth weapon breakdown and rebuild — strip a pistol to the frame, swap slides and barrels, lights,
+lasers, optics*. Tarkov's modding is the reference behaviour: a gun is a frame plus parts, and the parts are what you
+loot, trade and lose. Ours, in Conduit terms:
+
+**Slots** (`Attachments.Slots`): Barrel · Action (slide on a sidearm, bolt carrier on a rifle) · Optic · Muzzle · Rail
+(light / laser) · Magazine. A **build** is `{ [slot] = partId }` per weapon id, kept in the profile (`Builds`); the
+fitted parts live there, not in the inventory, and strip back out into it. `Attachments.Apply(def, build)` folds the
+parts into the weapon definition — one effective spec that the server shoots with (spread, recoil, magazine, reload,
+settle time, damage, reach) and the client kicks the camera with. No client-side guesswork, no second source of truth.
+
+**Parts** (`Attachments.Parts`; every one is also an item, Type "Part", so it drops, stashes, ships and donates):
+
+| Part | Slot | Fits | What it does |
+|---|---|---|---|
+| Long Barrel | Barrel | any gun | spread ×0.8, recoil ×1.1, +30 reach |
+| Compensated Barrel | Barrel | any gun | recoil ×0.8 (craftable) |
+| Match Slide | Action | sidearms | recovers 1.3× faster, sights settle in 0.7× the time |
+| Light Bolt Carrier | Action | rifles | recovers 1.25× faster, reload −0.3 s |
+| Dot Sight | Optic | any gun | aimed spread ×0.6, settle ×0.8 |
+| 4x Scope | Optic | rifles | aimed spread ×0.35, hip spread ×1.4, settle ×1.5 |
+| Suppressor | Muzzle | any gun | recoil ×0.85, damage ×0.92, quiet |
+| Muzzle Brake | Muzzle | any gun | recoil ×0.7, hip spread ×1.15 |
+| Tactical Light | Rail | any gun | a torch on the gun (craftable) |
+| Laser Sight | Rail | any gun | hip spread ×0.7, a visible beam |
+| Extended Magazine | Magazine | any gun | +6 rounds, reload +0.2 s (craftable) |
+
+**The bench** (`server/Bench.lua`, `Remotes.Bench`): only answers inside the hideout (`Config.Bench.Zone`). Fit a part
+into the held gun (a taken slot hands the old part back), strip one slot, or strip the whole gun to the frame. Fitting
+a bigger magazine gives no free rounds; fitting a smaller one clamps what is loaded. The inventory panel (Tab) grows a
+**Workbench** section in the hideout: the held gun's effective numbers, one row per slot with Strip, a Frame button,
+and a Fit button on every part in your inventory that goes on that gun. Parts that show — the torch and the laser —
+are drawn on the weapon in both third and first person; the rest is felt, not seen.
+
+**Regional parts** (the loot tables): the city's supply crates carry the common ones (Dot Sight, Extended Magazine);
+Raiders carry lights and lasers; Brutes carry barrels; the Range's Gunners carry sidearm parts (Dot Sight, Brake, Match
+Slide); Drones carry rifle optics (4x Scope, Light Bolt); war recruits very rarely drop a Suppressor or Long Barrel.
+Three parts are craftable from scrap and wire (Tactical Light, Extended Magazine, Compensated Barrel) so the bench is
+never a dead end for a new player. Attachments and cybernetics are usable in either world — a build made at the
+hideout rides into the war with the gun, and comes home with it.
+
+### Acceptance (smoke: 8 checks)
+1. Fitting a magazine raises `MaxAmmo` with no free rounds; stripping it clamps `Ammo`.
+2. A rifle-only part refuses a sidearm.
+3. An optic changes the aimed spread the server shoots with (`Combat.WeaponDefOf`).
+4. Fitting into a taken slot returns the old part; strip-all clears the build and returns everything.
+5. Nothing works outside the hideout.
+
+## 5. Later
 Stamina-driven ADS sway; per-gun ADS speed; ammo as inventory + ammo types vs armour; the no-counter "check magazine"
-rule once the Range is its own place; leaning.
+rule once the Range is its own place; leaning. Bench: part durability / jams, part-specific models on the weapon
+(barrel lengths, scope glass), a real bench prop you stand at rather than the whole room, builds that stay with a
+stashed or shipped weapon as an object (today a build is per weapon *type*).

@@ -552,6 +552,31 @@ do
 		War.Leave(player); run(0.3)
 		check("after the forfeit you leave with nothing extra in the stash", player:GetAttribute("Zone") == "Hideout" and data.Stash.Medkit == nil)
 	end
+	-- The weapon bench (design/gdd/gunplay.md §4, build order 4): fit / strip parts at the hideout only
+	do
+		local Bench = M.mockEnv.__require(SSS.Server.Bench)
+		local Gear = M.mockEnv.__require(SSS.Server.Gear)
+		local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+		local Attachments = M.mockEnv.__require(RS.Shared.Attachments)
+		local meB = player.Character
+		if Inventory.Count(player, "ArcPistol") == 0 then Inventory.Add(player, "ArcPistol", 1) end
+		for _, id in { "ExtMag", "DotSight", "Scope4x", "Suppressor", "Brake" } do Inventory.Add(player, id, 1) end
+		Gear.EquipWeapon(player, "ArcPistol"); run(0.3)
+		local mags, ammo0 = Inventory.Count(player, "ExtMag"), meB:GetAttribute("Ammo")
+		check("fitting a magazine at the bench grows the gun's magazine (no free rounds)", Bench.Fit(player, "ArcPistol", "ExtMag") and data.Builds.ArcPistol.Magazine == "ExtMag" and Inventory.Count(player, "ExtMag") == mags - 1 and meB:GetAttribute("MaxAmmo") == 15 and meB:GetAttribute("Ammo") == math.min(ammo0, 15) and tostring(player:GetAttribute("Builds")):find("ExtMag") ~= nil)
+		check("a rifle-only part does not fit a sidearm", Bench.Fit(player, "ArcPistol", "Scope4x") == false and Inventory.Count(player, "Scope4x") == 1 and data.Builds.ArcPistol.Optic == nil)
+		Bench.Fit(player, "ArcPistol", "DotSight")
+		local eff = Combat.WeaponDefOf(meB, "ArcPistol")
+		check("an optic tightens the aimed spread the server shoots with", math.abs(eff.Gun.Spread.ADS - 0.5 * 0.6) < 0.001 and eff.Gun.Spread.Hip == 2.4)
+		Bench.Fit(player, "ArcPistol", "Suppressor")
+		check("fitting into a taken slot hands the old part back", Bench.Fit(player, "ArcPistol", "Brake") and data.Builds.ArcPistol.Muzzle == "Brake" and Inventory.Count(player, "Suppressor") == 1 and Inventory.Count(player, "Brake") == 0)
+		check("stripping a slot returns the part and clamps the magazine", Bench.Strip(player, "ArcPistol", "Magazine") and Inventory.Count(player, "ExtMag") == mags and meB:GetAttribute("MaxAmmo") == 9 and meB:GetAttribute("Ammo") == 9)
+		check("stripping to the frame clears the build", Bench.StripAll(player, "ArcPistol") and data.Builds.ArcPistol == nil and Inventory.Count(player, "DotSight") == 1 and Inventory.Count(player, "Brake") == 1 and (tostring(player:GetAttribute("Builds")) == "{}" or tostring(player:GetAttribute("Builds")) == "[]"))
+		check("the bench describes every slot", #Attachments.Describe(nil) == #Attachments.Slots)
+		Hideout.Leave(player); run(0.2)
+		check("no bench work outside the hideout", Bench.Fit(player, "ArcPistol", "ExtMag") == false and data.Builds.ArcPistol == nil)
+		Hideout.Enter(player, { Quiet = true }); run(0.2)
+	end
 	-- back to the city for the rest of the scenario
 	Hideout.Leave(player); run(0.2)
 	Combat.ClearProtection(player.Character)

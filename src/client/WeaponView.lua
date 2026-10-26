@@ -10,6 +10,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Presentation = require(Shared:WaitForChild("Presentation"))
+local Attachments = require(Shared:WaitForChild("Attachments"))
+local HttpService = game:GetService("HttpService")
 local W = Presentation.Weapons
 
 local WeaponView = {}
@@ -185,6 +187,54 @@ local function clear(char)
 	current[char] = nil
 end
 
+-- The bench's parts, as far as they show: a torch (TacLight) and a laser (LaserSight) on the
+-- handle, driven by the owner's Builds attribute (server/Bench.lua). Stat changes are invisible here.
+local function buildOf(char, weaponId)
+	local owner = Players:GetPlayerFromCharacter(char)
+	local raw = owner and owner:GetAttribute("Builds")
+	if not raw then
+		return nil
+	end
+	local ok, builds = pcall(HttpService.JSONDecode, HttpService, raw)
+	return ok and type(builds) == "table" and builds[weaponId] or nil
+end
+
+local function addPartViews(char, weaponId, model, handle)
+	WeaponView.AddPartViews(handle, buildOf(char, weaponId))
+end
+
+-- Also used by ViewModel for the first-person gun. `build` = { [slot] = partId } or nil.
+function WeaponView.AddPartViews(handle, build)
+	if not (build and handle) then
+		return
+	end
+	local eff = Attachments.Apply({ Attacks = { { Ranged = true } }, Gun = {} }, build)
+	if eff.Light then
+		local torch = Instance.new("SpotLight")
+		torch.Name = "TacLight"
+		torch.Face = Enum.NormalId.Front
+		torch.Angle, torch.Range, torch.Brightness = 40, eff.Light, 3
+		torch.Color = Color3.fromRGB(255, 245, 220)
+		torch.Parent = handle
+	end
+	if eff.Laser then
+		local a0 = Instance.new("Attachment")
+		a0.CFrame = CFrame.new(0.15, 0.5, -0.3)
+		a0.Parent = handle
+		local a1 = Instance.new("Attachment")
+		a1.CFrame = CFrame.new(0.15, 0.5, -60)
+		a1.Parent = handle
+		local beam = Instance.new("Beam")
+		beam.Name = "LaserSight"
+		beam.Attachment0, beam.Attachment1 = a0, a1
+		beam.Width0, beam.Width1 = 0.03, 0.03
+		beam.Color = ColorSequence.new(Color3.fromRGB(255, 40, 40))
+		beam.Transparency = NumberSequence.new(0.2)
+		beam.LightEmission, beam.FaceCamera = 1, true
+		beam.Parent = handle
+	end
+end
+
 local function build(char, weaponId)
 	local spec = W[weaponId]
 	clear(char)
@@ -237,9 +287,20 @@ local function build(char, weaponId)
 	weld.Parent = handle
 	model.Parent = char
 	current[char] = weaponId
+	addPartViews(char, weaponId, model, handle)
 end
 
 local function watch(char)
+	local owner = Players:GetPlayerFromCharacter(char)
+	if owner then
+		owner:GetAttributeChangedSignal("Builds"):Connect(function()
+			if char.Parent and current[char] then
+				local id = current[char]
+				current[char] = nil
+				task.spawn(build, char, id) -- parts changed: redraw the gun
+			end
+		end)
+	end
 	local function refresh()
 		local id = char:GetAttribute("Weapon")
 		if id ~= current[char] then

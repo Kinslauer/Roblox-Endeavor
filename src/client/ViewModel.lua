@@ -28,6 +28,8 @@ ViewModel.Visible = false
 
 local model, handle, sightLocal -- current rig; sightLocal = Sight CFrame in handle space
 local builtFor -- weapon id the rig was built for
+local builtBuilds -- the Builds attribute the rig's parts were drawn from (server/Bench.lua)
+local HttpService = game:GetService("HttpService")
 local adsAlpha = 0 -- 0 hip .. 1 sights
 local recoil = 0 -- current kick (studs back / degrees up), decays
 local swayCF = CFrame.identity
@@ -95,6 +97,11 @@ local function build(weaponId)
 	wm.Parent = model
 	handle = wh
 	sightLocal = sight.CFrame
+	do -- the bench's visible parts (torch, laser) on the first-person gun too
+		local ok, builds = pcall(HttpService.JSONDecode, HttpService, player:GetAttribute("Builds") or "{}")
+		WeaponView.AddPartViews(wh, ok and type(builds) == "table" and builds[weaponId] or nil)
+		builtBuilds = player:GetAttribute("Builds")
+	end
 	-- Right arm: forearm + hand behind the grip, in handle space (grip is upright at the origin,
 	-- barrel runs -Z). Colours follow the character's skin so it reads as "your" arm.
 	local skin = skinColor()
@@ -136,7 +143,7 @@ local function step(dt)
 		adsAlpha = 0
 		return
 	end
-	if builtFor ~= weaponId or not model or model.Parent ~= camera then
+	if builtFor ~= weaponId or not model or model.Parent ~= camera or builtBuilds ~= player:GetAttribute("Builds") then
 		build(weaponId)
 		if not model then
 			return
