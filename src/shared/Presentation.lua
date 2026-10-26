@@ -36,17 +36,31 @@ Presentation.Weapons = {
 
 -- ---------------------------------------------------------------------------------------------
 -- Swings: per weapon Family (Weapons.Defs[id].Family), per label (combo index 1..n, "Heavy", or a
--- skill name). AnimationId "" = procedural Motor6D tween. Pose values are the procedural wind-back
--- in degrees for the right shoulder: { pitch, yaw, roll } at the peak of the windup.
+-- skill name). AnimationId "" = procedural pose timeline. Pose = right shoulder { pitch, yaw, roll }
+-- in degrees at the peak of the windup, Swing = where the arm lands at impact (sign convention in
+-- the note above Weapons: +pitch forward, roll across the body). Two-handed weapons add PoseL /
+-- SwingL for the left arm; without them the left arm mirrors the right (yaw/roll flipped), which
+-- only reads right when both hands stay near the centre line.
 -- ---------------------------------------------------------------------------------------------
 Presentation.Swings = {
-	Default = {
-		Light = { AnimationId = "", Pose = { -110, 0, 35 }, Swing = { 20, -20, -40 } },
-		Heavy = { AnimationId = "", Pose = { -175, 0, 8 }, Swing = { 45, -10, -20 } }, -- overhead wind-up, chop down
+	Default = { -- one-handed club / blade / baton: diagonal slash from behind the shoulder to across the body
+		Light = { AnimationId = "", Pose = { -70, 0, 40 }, Swing = { 75, 0, -55 } },
+		Heavy = { AnimationId = "", Pose = { 165, 0, 10 }, Swing = { 40, 0, -15 } }, -- overhead wind-up, chop down
 	},
 	Families = {
-		Fists = { Light = { AnimationId = "", Pose = { -80, 0, 20 }, Swing = { 10, -30, -10 } }, Heavy = { AnimationId = "", Pose = { -130, 0, 40 }, Swing = { 20, -40, -20 } } },
-		Blunt = {}, Blade = {}, Baton = {}, Spear = { Light = { AnimationId = "", Pose = { -60, 0, 10 }, Swing = { 40, 0, -10 } } }, Hammer = {},
+		Fists = { Light = { AnimationId = "", Pose = { -25, 0, 15 }, Swing = { 85, 0, -20 } }, Heavy = { AnimationId = "", Pose = { -60, 0, 35 }, Swing = { 90, 0, -30 } } },
+		Blunt = {}, Blade = {}, Baton = {},
+		-- Spear: light = thrust (both hands pull the shaft in to the chest, then drive it straight out);
+		-- heavy = sweeping slash from the right.
+		Spear = {
+			Light = { AnimationId = "", Pose = { 70, 0, -35 }, PoseL = { 80, 0, 45 }, Swing = { 92, 0, -8 }, SwingL = { 96, 0, 10 }, Lean = { 12, -18 } }, -- measured: hands drive 0.8-1.0 studs forward
+			Heavy = { AnimationId = "", Pose = { 80, 0, 65 }, PoseL = { 85, 0, 85 }, Swing = { 80, 0, -75 }, SwingL = { 85, 0, 5 }, Lean = { 6, -8 } },
+		},
+		-- Hammer: light = horizontal swipe right-to-left; heavy = overhead slam.
+		Hammer = {
+			Light = { AnimationId = "", Pose = { 75, 0, 55 }, PoseL = { 80, 0, 85 }, Swing = { 70, 0, -75 }, SwingL = { 75, 0, 0 }, Lean = { 6, -8 } },
+			Heavy = { AnimationId = "", Pose = { 165, 0, -10 }, PoseL = { 165, 0, 10 }, Swing = { 35, 0, -20 }, SwingL = { 40, 0, 20 }, Lean = { 10, -20 } },
+		},
 		-- Sidearm: the arm comes up to the firing line and stays there (HoldAfter seconds since the
 		-- last shot) before lowering; the heavy is a braced two-handed shot.
 		Sidearm = { -- +90 = arm level, pointing forward (see the sign note above Weapons)
@@ -55,6 +69,7 @@ Presentation.Swings = {
 		},
 	},
 	HoldLower = 0.3, -- seconds to lower a held arm once HoldAfter runs out
+	DefaultLean = { 6, -10 }, -- torso pitch (degrees; + = back at the wind-up, - = forward at impact) when an entry has no Lean
 	-- Flick cue: a glow that ramps during the windup and peaks Config.Flicker.Window before impact.
 	Cue = { Color = Color3.fromRGB(255, 60, 60), ZoneColor = Color3.fromRGB(255, 200, 80), MaxBrightness = 6, MaxRange = 10 },
 	HeavyColor = Color3.fromRGB(255, 170, 60),

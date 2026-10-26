@@ -76,6 +76,13 @@ local function mirror(pose)
 	return { pose[1], -pose[2], -pose[3] }
 end
 
+-- The torso joint, for the lean that sells thrusts and slams (R15 "Waist": UpperTorso <- LowerTorso).
+local function waistOf(char)
+	local upper = char:FindFirstChild("UpperTorso")
+	local m = upper and upper:FindFirstChild("Waist")
+	return if isAnimJoint(m) then m else nil
+end
+
 local function weaponSlot(char)
 	return Presentation.Weapons[char:GetAttribute("Weapon") or ""]
 end
@@ -200,7 +207,10 @@ local function cancel(char)
 		if s.pose.left and s.pose.left.Parent then
 			arms.Left = { from = s.pose.left.Transform }
 		end
-		s.pose = { motor = s.pose.motor, left = s.pose.left, t0 = os.clock(), from = true, arms = arms }
+		if s.pose.waist and s.pose.waist.Parent then
+			arms.Waist = { from = s.pose.lastLean or IDENTITY } -- lean is relative to the Animator's pose
+		end
+		s.pose = { motor = s.pose.motor, left = s.pose.left, waist = s.pose.waist, t0 = os.clock(), from = true, arms = arms }
 	else
 		s.pose = nil
 	end
@@ -289,10 +299,16 @@ local function onSwing(char, info)
 			local left = if slot and slot.TwoHanded then shoulderOf(char, "Left") else nil
 			local arms = { Right = { start = motor.Transform, wind = anglesOf(entry.Pose), swing = anglesOf(entry.Swing) } }
 			if left then
-				arms.Left = { start = left.Transform, wind = anglesOf(mirror(entry.Pose)), swing = anglesOf(mirror(entry.Swing)) }
+				arms.Left = { start = left.Transform, wind = anglesOf(entry.PoseL or mirror(entry.Pose)), swing = anglesOf(entry.SwingL or mirror(entry.Swing)) }
+			end
+			-- torso lean: + = back (wind-up), - = forward (impact); degrees from entry.Lean or P.DefaultLean
+			local waist = waistOf(char)
+			local lean = entry.Lean or P.DefaultLean
+			if waist and lean then
+				arms.Waist = { start = IDENTITY, wind = CFrame.Angles(math.rad(lean[1]), 0, 0), swing = CFrame.Angles(math.rad(lean[2]), 0, 0) }
 			end
 			s.pose = {
-				motor = motor, left = left, t0 = os.clock(), windup = math.max(windup, MIN_SEGMENT), active = math.max(active, MIN_SEGMENT),
+				motor = motor, left = left, waist = waist, t0 = os.clock(), windup = math.max(windup, MIN_SEGMENT), active = math.max(active, MIN_SEGMENT),
 				finish = math.max(finish, windup + active + MIN_SEGMENT), arms = arms,
 				holdUntil = if entry.HoldAfter then os.clock() + math.max(finish, windup + active) + entry.HoldAfter else nil,
 			}
@@ -338,6 +354,14 @@ local function step()
 				elseif not idle then
 					joint.Transform = rest -- hold the weapon stance between swings
 				end
+			end
+		end
+		-- torso lean rides the same timeline; rest is the Animator's own pose (identity offset)
+		if pose and pose.waist and pose.arms.Waist and pose.waist.Parent then
+			local lean = poseTransform(pose, pose.arms.Waist, now, IDENTITY)
+			if lean then
+				pose.lastLean = lean
+				pose.waist.Transform = pose.waist.Transform * lean
 			end
 		end
 	end
