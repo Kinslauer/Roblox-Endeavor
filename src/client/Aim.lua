@@ -11,6 +11,7 @@ local UserInputService = game:GetService("UserInputService")
 local GameSettings = UserSettings():GetService("UserGameSettings")
 
 local Presentation = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Presentation"))
+local Config = require(ReplicatedStorage.Shared:WaitForChild("Config"))
 local Hud = require(script.Parent.Hud)
 local CameraShake = require(script.Parent.CameraShake)
 local TweenService = game:GetService("TweenService")
@@ -92,17 +93,61 @@ local function setFov(fov)
 	end
 end
 
+-- Sprint reads as a small FOV push (Config.Sprint.FovBoost) on whatever the base FOV is.
+local function baseFov()
+	local fov = if Aim.ADS then A.ADS.Fov elseif Aim.FirstPerson then A.FirstPersonFov else A.ADS.NormalFov
+	local char = player.Character
+	if char and char:GetAttribute("Sprinting") and not Aim.ADS then
+		fov += Config.Sprint.FovBoost
+	end
+	return fov
+end
+
+-- Remember the third-person zoom when we lock to first person and put it back on the way out
+-- (Roblox otherwise returns you to a default distance). The restore pins Min/Max zoom to the saved
+-- distance for one frame, then releases them.
+local savedZoom, zoomLimits
+local function currentZoom()
+	local camera, char = workspace.CurrentCamera, player.Character
+	local head = char and char:FindFirstChild("Head")
+	if camera and head then
+		return (camera.CFrame.Position - head.Position).Magnitude
+	end
+	return nil
+end
+
+local function restoreZoom()
+	if not savedZoom then
+		return
+	end
+	local zoom = savedZoom
+	savedZoom = nil
+	zoomLimits = zoomLimits or { player.CameraMinZoomDistance, player.CameraMaxZoomDistance }
+	player.CameraMinZoomDistance, player.CameraMaxZoomDistance = zoom, zoom
+	task.delay(0.1, function()
+		player.CameraMinZoomDistance, player.CameraMaxZoomDistance = zoomLimits[1], zoomLimits[2]
+	end)
+end
+
 local function applyCameraMode()
 	local first = Aim.FirstPerson or (Aim.ADS and A.ADS.FirstPerson)
+	local wasFirst = player.CameraMode == Enum.CameraMode.LockFirstPerson
+	if first and not wasFirst then
+		local z = currentZoom()
+		if z and z > 1.5 then
+			savedZoom = z
+		end
+	end
 	player.CameraMode = if first then Enum.CameraMode.LockFirstPerson else Enum.CameraMode.Classic
+	if not first and wasFirst then
+		restoreZoom()
+	end
 end
 
 function Aim.SetFirstPerson(on)
 	Aim.FirstPerson = on == true
 	applyCameraMode()
-	if not Aim.ADS then
-		setFov(if Aim.FirstPerson then A.FirstPersonFov else A.ADS.NormalFov)
-	end
+	setFov(baseFov())
 	apply()
 end
 
@@ -114,7 +159,7 @@ function Aim.SetADS(on)
 		return
 	end
 	Aim.ADS = on
-	setFov(if on then A.ADS.Fov elseif Aim.FirstPerson then A.FirstPersonFov else A.ADS.NormalFov)
+	setFov(baseFov())
 	applyCameraMode()
 	apply()
 end
@@ -128,9 +173,18 @@ function Aim.Set(on)
 end
 
 function Aim.Init()
-	player.CharacterAdded:Connect(function()
+	local function watchSprint(char)
+		char:GetAttributeChangedSignal("Sprinting"):Connect(function()
+			setFov(baseFov())
+		end)
+	end
+	player.CharacterAdded:Connect(function(char)
 		task.defer(apply)
+		watchSprint(char)
 	end)
+	if player.Character then
+		watchSprint(player.Character)
+	end
 	-- the server forces first person in shooter zones through a player attribute
 	local forcedOn = false
 	local function forced()

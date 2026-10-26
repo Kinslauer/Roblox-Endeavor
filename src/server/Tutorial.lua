@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
+local Lore = require(ReplicatedStorage.Shared.Lore)
 local Remotes = require(Shared.Remotes)
 local Skills = require(Shared.Skills)
 local Combat = require(script.Parent.Combat)
@@ -152,6 +153,7 @@ end
 local STEPS = {
 	{
 		Title = "Wake up",
+		Lore = "WakeUp",
 		Text = "Use WASD to walk to the glowing console.",
 		Setup = function(ctx) highlight(ctx, ctx.console) end,
 		Done = function(ctx)
@@ -187,6 +189,7 @@ local STEPS = {
 	},
 	{
 		Title = "Attack",
+		Lore = "FirstSwing",
 		Text = function(ctx) return ("Left-click to strike the dummy: chain 4 hits (%d/4). Your weapon decides the combo."):format(math.min(4, count(ctx, "dummyHit"))) end,
 		Setup = function(ctx) highlight(ctx, ctx.dummy) end,
 		Done = function(ctx) return count(ctx, "dummyHit") >= 4 end,
@@ -199,6 +202,7 @@ local STEPS = {
 	},
 	{
 		Title = "Flicker",
+		Lore = "Flicker",
 		Text = function(ctx)
 			local level = ctx.player.Character and ctx.player.Character:GetAttribute("Flicker") or 0
 			return ("Tap E just as you swing so the flick lands WITH the hit. Three flicked hits in a row = BLACK FLASH. Chain: %d/3"):format(level)
@@ -278,6 +282,9 @@ local function run(ctx)
 			end
 			if step.Setup then
 				step.Setup(ctx)
+			end
+			if step.Lore then
+				Remotes.Announce:FireClient(ctx.player, Lore.Get(step.Lore), "Lore")
 			end
 			ctx.lastSent = nil
 		end

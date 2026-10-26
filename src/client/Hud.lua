@@ -127,12 +127,15 @@ end
 -- ===== Sections =====
 
 local function buildAnnouncements()
+	local Lore = require(ReplicatedStorage.Shared:WaitForChild("Lore"))
 	local KIND_COLORS = {
 		Emergence = Color3.fromRGB(255, 90, 90), Event = Color3.fromRGB(255, 200, 60),
-		Kill = Color3.fromRGB(230, 230, 230), Info = Color3.fromRGB(120, 220, 255),
+		Kill = Color3.fromRGB(230, 230, 230), Info = Color3.fromRGB(120, 220, 255), Lore = Lore.Color,
 	}
 	Remotes.Announce.OnClientEvent:Connect(function(text, kind)
-		Hud.Banner(text, KIND_COLORS[kind])
+		-- lore lines sit longer and read as a voice, not a notification
+		banner.Font = if kind == "Lore" then Enum.Font.SourceSansItalic else Enum.Font.GothamMedium
+		Hud.Banner(text, KIND_COLORS[kind], if kind == "Lore" then Lore.Seconds else nil)
 	end)
 end
 
@@ -300,10 +303,43 @@ local function buildTutorial()
 		tutorialStep.Text = ("%d/%d"):format(index, total)
 		tutorialTitle.Text, tutorialText.Text = title, text
 	end)
+	-- Waiting screen: once you are ready (tutorial done or skipped) the prologue still has to run
+	-- down for everyone; show that as a countdown instead of leaving you to idle in the room.
+	local waitScreen = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.45, Visible = false, ZIndex = 9 })
+	local waitTitle = label({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.new(0, 0, 0.42, 0), TextSize = 30, Font = Enum.Font.GothamBlack, Text = "AWAITING EMERGENCE", TextColor3 = Color3.fromRGB(255, 90, 90), ZIndex = 10, Parent = waitScreen })
+	local waitText = label({ Size = UDim2.new(1, 0, 0, 30), Position = UDim2.new(0, 0, 0.42, 44), TextSize = 18, Text = "", ZIndex = 10, Parent = waitScreen })
+	local waiting = false
+	local function waitLoop()
+		while waiting do
+			local at = workspace:GetAttribute("EmergenceAt")
+			if at then
+				local left = math.max(0, at - workspace:GetServerTimeNow())
+				waitText.Text = if left > 0 then ("The city wakes in %d s. Everyone is ready."):format(math.ceil(left)) else "The city is waking..."
+			else
+				waitText.Text = "You are ready. Waiting for the others to finish..."
+			end
+			task.wait(0.25)
+		end
+	end
 	Remotes.PhaseChanged.OnClientEvent:Connect(function(phase)
-		if phase == "Open" then
+		if phase == "Ready" then
+			waitScreen.Visible = true
+			if not waiting then
+				waiting = true
+				task.spawn(waitLoop)
+			end
+		elseif phase == "Open" then
 			tutorialPanel.Visible = false
+			waiting = false
+			TweenService:Create(waitScreen, TweenInfo.new(1.2), { BackgroundTransparency = 1 }):Play()
+			task.delay(1.3, function()
+				waitScreen.Visible = false
+				waitScreen.BackgroundTransparency = 0.45
+			end)
 		elseif phase == "Emerging" then
+			waitTitle.Text, waitText.Text = "EMERGENCE", ""
+			waitScreen.Visible = true
+			TweenService:Create(waitScreen, TweenInfo.new(Config.EmergenceCinematic), { BackgroundTransparency = 0 }):Play()
 			local cc = make("ColorCorrectionEffect", {}, Lighting)
 			TweenService:Create(cc, TweenInfo.new(Config.EmergenceCinematic), { Brightness = -0.4, Saturation = -1 }):Play()
 			task.delay(Config.EmergenceCinematic + 1, function()

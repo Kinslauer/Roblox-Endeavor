@@ -13,13 +13,16 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local District = require(Shared.District)
 local Enemies = require(Shared.Enemies)
+local Lore = require(Shared.Lore)
 local Items = require(Shared.Items)
 local Presentation = require(Shared.Presentation)
+local Remotes = require(Shared.Remotes)
 local Combat = require(script.Parent.Combat)
 local Loot = require(script.Parent.Loot)
 local Quests = require(script.Parent.Quests)
 local Rig = require(script.Parent.Rig)
 local Stats = require(script.Parent.Stats)
+local PlayerData = require(script.Parent.PlayerData)
 
 local AI = Enemies.AI
 local rng = Random.new()
@@ -197,6 +200,13 @@ end
 local function onDeath(model, root, typeName, def)
 	local _, killer = Combat.GetKiller(model)
 	if killer then
+		local profile = PlayerData.Get(killer)
+		if profile and not model:GetAttribute("Target") then -- range targets do not count
+			profile.Kills = (profile.Kills or 0) + 1
+			if profile.Kills == 1 then
+				Remotes.Announce:FireClient(killer, Lore.Get("FirstKill"), "Lore")
+			end
+		end
 		Stats.AddXp(killer, def.Xp)
 		Quests.Progress(killer, "kill", def.QuestTag or typeName, 1)
 		Quests.Progress(killer, "kill", typeName, 1)

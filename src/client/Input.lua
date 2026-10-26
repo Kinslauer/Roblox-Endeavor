@@ -1,6 +1,6 @@
 -- Input: keys -> intent remotes. The client only asks; the server decides (ADR-0001).
 -- Layout (README "Controls"): LMB attack, RMB heavy (melee) / aim down sights (ranged), MMB or G
--- special (the heavy, any weapon), F block/parry, Q dodge, E flick, Z feint, R/Y/V skills,
+-- special (the heavy, any weapon), LeftShift sprint, F block/parry, Q dodge, E flick, Z feint, R/Y/V skills,
 -- J attributes, Tab inventory, L loadout. X is the server-side ProximityPrompt key.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -75,6 +75,8 @@ function Input.Init()
 			Remotes.Heavy:FireServer(aimArg())
 		elseif key == Enum.KeyCode.F then
 			Remotes.Block:FireServer(true)
+		elseif key == Enum.KeyCode.LeftShift then
+			Remotes.Sprint:FireServer(true)
 		elseif key == Enum.KeyCode.E then
 			Remotes.Flicker:FireServer() -- tap just before your swing connects
 		elseif key == Enum.KeyCode.Z then
@@ -93,6 +95,8 @@ function Input.Init()
 	UserInputService.InputEnded:Connect(function(input)
 		if input.KeyCode == Enum.KeyCode.F then
 			Remotes.Block:FireServer(false)
+		elseif input.KeyCode == Enum.KeyCode.LeftShift then
+			Remotes.Sprint:FireServer(false)
 		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 			Aim.SetADS(false)
 		end

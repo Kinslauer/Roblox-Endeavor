@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Appearance = require(ReplicatedStorage.Shared.Appearance)
+local Lore = require(ReplicatedStorage.Shared.Lore)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local PlayerData = require(script.Parent.PlayerData)
 local Rig = require(script.Parent.Rig)
@@ -37,6 +38,7 @@ function Creator.Run(player)
 	end
 	pending[player] = true
 	Remotes.OpenCreator:FireClient(player, data.Appearance)
+	Remotes.Announce:FireClient(player, Lore.Get("Creator"), "Lore")
 	local deadline = os.clock() + TIMEOUT
 	while pending[player] and player.Parent and os.clock() < deadline do
 		task.wait(0.25)

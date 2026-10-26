@@ -628,6 +628,28 @@ function Combat.Heavy(player, aim)
 	Combat.Swing(char, weapon.Heavy, mods)
 end
 
+-- Sprint (Config.Sprint): a held intent. The regen loop applies the speed and drains stamina.
+function Combat.SetSprint(player, on)
+	local char = player.Character
+	if not char or type(on) ~= "boolean" then
+		return
+	end
+	local s = st(char)
+	s.sprint = on and (char:GetAttribute("Stamina") or 0) > Config.Sprint.MinStamina
+	char:SetAttribute("Sprinting", s.sprint)
+end
+
+local function applySpeed(char, s, d)
+	local hum = getHum(char)
+	if not hum or not d.WalkSpeed or not Players:GetPlayerFromCharacter(char) then
+		return -- enemies drive their own speed (NPCs); only player bodies sprint
+	end
+	local want = d.WalkSpeed * (if s.sprint then Config.Sprint.Mult else 1)
+	if math.abs(hum.WalkSpeed - want) > 0.01 then
+		hum.WalkSpeed = want
+	end
+end
+
 function Combat.SetBlock(player, down)
 	local char = player.Character
 	if not char or type(down) ~= "boolean" then
@@ -673,6 +695,7 @@ function Combat.Init()
 	Remotes.Flicker.OnServerEvent:Connect(RateLimit.Wrap("Flicker", L.Flicker, Combat.Flicker))
 	Remotes.Block.OnServerEvent:Connect(RateLimit.Wrap("Block", L.Block, Combat.SetBlock))
 	Remotes.Dodge.OnServerEvent:Connect(RateLimit.Wrap("Dodge", L.Dodge, Combat.Dodge))
+	Remotes.Sprint.OnServerEvent:Connect(RateLimit.Wrap("Sprint", L.Sprint, Combat.SetSprint))
 
 	local accumulator = 0
 	RunService.Heartbeat:Connect(function(dt)
@@ -692,8 +715,18 @@ function Combat.Init()
 				if char:GetAttribute("Zone") and t > s.zoneUntil then
 					char:SetAttribute("Zone", false)
 				end
+				if s.sprint then
+					if s.block or (char:GetAttribute("Stamina") or 0) <= Config.Sprint.MinStamina then
+						s.sprint = false
+						char:SetAttribute("Sprinting", false)
+					else
+						Combat.AddStamina(char, -Config.Sprint.StaminaPerSecond * step)
+						s.lastSpend = t
+					end
+				end
+				applySpeed(char, s, d)
 				local maxStamina = char:GetAttribute("MaxStamina")
-				if maxStamina and not s.block and t - s.lastSpend > C.StaminaRegenDelay then
+				if maxStamina and not s.block and not s.sprint and t - s.lastSpend > C.StaminaRegenDelay then
 					Combat.AddStamina(char, C.StaminaRegenPerSecond * step)
 				end
 				if (char:GetAttribute("Posture") or 0) > 0 and t - s.lastPostureHit > C.PostureRegenDelay then

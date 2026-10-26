@@ -9,6 +9,7 @@ Config.Dev = {
 	Enabled = true,
 	PrologueSeconds = 15, -- only used when Config.Tutorial.Enabled = false
 	ArmoryPoints = 10, -- attribute points the arena instructor hands out per use
+	PrologueMinSeconds = 8, -- Dev: the floor on the wait after everyone is ready (release uses Config.PrologueMinSeconds)
 	ArenaOffset = Vector3.new(0, 0, 820), -- the arena sits south of District 1, outside its wall
 	SpawnInArena = false, -- true = the arena's pads are also CitySpawns (spawn there for armory testing)
 }
@@ -48,6 +49,15 @@ Config.Range = {
 	WaveRing = 44, -- studs from the arena centre where a wave spawns
 	WaveRewardScrap = 10,
 	EntryProtection = 4, -- seconds of ForceField after travelling
+}
+
+-- Sprint: hold the key to run. Drains stamina; blocking cancels it; attacks still work (the swing
+-- stops you anyway).
+Config.Sprint = {
+	Mult = 1.45, -- walk speed multiplier
+	StaminaPerSecond = 8,
+	MinStamina = 6, -- sprint ends below this
+	FovBoost = 6, -- client: extra field of view while running
 }
 
 Config.RespawnDelay = 5
@@ -100,7 +110,7 @@ Config.Flicker = {
 Config.RateLimit = {
 	Burst = 2,
 	Attack = 6, Heavy = 4, Feint = 6, Flicker = 8, Block = 10, Dodge = 4, UseSkill = 6,
-	SetSkill = 4, Allocate = 10, UseItem = 4, EquipItem = 4, Unequip = 4, Craft = 4, TutorialSkip = 1, SetAppearance = 10,
+	SetSkill = 4, Allocate = 10, UseItem = 4, EquipItem = 4, Unequip = 4, Craft = 4, TutorialSkip = 1, SetAppearance = 10, Sprint = 6,
 }
 
 -- World events (server/Events.lua)

@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
+local Lore = require(Shared.Lore)
 local Remotes = require(Shared.Remotes)
 local Combat = require(script.Parent.Combat)
 local Gear = require(script.Parent.Gear)
@@ -150,6 +151,7 @@ local function target(lane, dist)
 	root.Color = Color3.fromRGB(230, 90, 90)
 	model:PivotTo(CFrame.lookAt(pos + Vector3.new(0, 2.5, 0), pos + Vector3.new(0, 2.5, 10)))
 	model:SetAttribute("Distance", dist)
+	model:SetAttribute("Target", true) -- not a kill: no XP/quest/lore credit beyond the score
 	model.Parent = folder
 	local up = model:GetPivot()
 	local down = up * CFrame.new(0, -1.5, -1) * CFrame.Angles(math.rad(-80), 0, 0)
@@ -259,6 +261,11 @@ function Range.Enter(player)
 	player:SetAttribute("ForceFirstPerson", true)
 	char:PivotTo(CFrame.lookAt(firingLine + Vector3.new(0, 4, 8), firingLine + Vector3.new(0, 4, -20)))
 	Combat.Protect(char, R.EntryProtection)
+	local data = PlayerData.Get(player)
+	if data and not data.RiftSeen then
+		data.RiftSeen = true
+		Remotes.Announce:FireClient(player, Lore.Get("FirstRift"), "Lore")
+	end
 	announce(player, "The Range. Ranged weapons only. Right mouse: sights. X at the Rift to go back.")
 	return true
 end

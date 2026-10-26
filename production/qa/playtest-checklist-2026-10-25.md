@@ -6,7 +6,7 @@ use Rojo instead, `git pull` in your clone first or Rojo will overwrite Studio w
 
 Keys: **LMB** attack · **RMB** heavy · **E** flick · **F** block/parry · **Q**+dir dodge · **G** feint ·
 **R/Y/V** skills · **J** stats · **Tab** inventory · **L** loadout · **LeftControl** toggle aim stance ·
-**X** use consoles/loot · **hold LeftAlt** to free the mouse for buttons (the creator and HUD panels free it on their own). Skip the tutorial with its Skip button if you have seen it.
+**LeftShift** sprint · **C** first person · **X** use consoles/loot · **hold LeftAlt** to free the mouse for buttons (the creator and HUD panels free it on their own). Skip the tutorial with its Skip button if you have seen it.
 
 ## 1. Combat feel (epic `combat-feel`, stories 003–005)
 - [ ] Swing: the arm winds back, the hand glows and the glow snaps to red right before impact — is the flick cue readable at the moment you should press E?
@@ -43,3 +43,11 @@ Keys: **LMB** attack · **RMB** heavy · **E** flick · **F** block/parry · **Q
 - [ ] The arena is south of the wall (0, 2, 820) — jump over / walk around to reach the armory. If you'd rather spawn there for testing, set `Config.Dev.SpawnInArena = true`.
 
 Write what felt wrong in one line each; I'll turn them into tuning stories.
+
+## 7. Round 2 (Phase 2) — added 2026-10-25 evening
+- [ ] Creator → Skip: you should see "AWAITING EMERGENCE" with a countdown (or "waiting for others"), then "EMERGENCE" fading to black, then the city. No idle time in the room.
+- [ ] LeftShift sprints (faster, stamina drains, slight FOV push); blocking cancels it.
+- [ ] C: first person; C again returns to the exact zoom you had.
+- [ ] Lore lines (italic, lavender) at: creator, wake-up, first swing, flicker step, first kill, first Rift.
+- [ ] Rift in Relay Plaza → the Range: rifle sights, targets fall and score, Wave Console, Rift back. Melee refused inside.
+- [ ] Spear thrust / slash, hammer swipe / slam, torso lean: do hits read now?

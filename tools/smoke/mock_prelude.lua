@@ -203,6 +203,7 @@ function methods.Raycast(self, origin, direction, params)
 	if not best then return nil end
 	return { Instance = best, Position = origin + dir * bestT, Distance = bestT, Normal = -dir, Material = Enum.Material.Plastic }
 end
+function methods.GetServerTimeNow() return now end
 function methods.IsStudio() return true end
 function methods.IsServer() return true end
 function methods.IsClient() return false end

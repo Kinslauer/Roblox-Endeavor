@@ -20,6 +20,7 @@ local TEMPLATE = {
 	BornAt = 0,
 	Awakened = false,
 	TutorialDone = false,
+	RiftSeen = false,
 	Appearance = Appearance.Default(), -- catalog indices, see shared/Appearance.lua
 	AppearanceSet = false, -- true once the character creator was confirmed
 	Equipped = "Fists",

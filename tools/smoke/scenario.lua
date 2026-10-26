@@ -56,6 +56,12 @@ local function lastTutorial() local last for _, e in M.FireLog do if e[1] == "Tu
 local function step() local e = lastTutorial(); return e and e[3], e and e[5] end
 
 check("tutorial starts at step 1", step() == 1)
+do -- Tutorial v2 lore: the creator and the first tutorial step each speak one line
+	local Lore = M.mockEnv.__require(RS.Shared.Lore)
+	local seen = {}
+	for _, e in M.FireLog do if e[1] == "Announce" and e[4] == "Lore" then seen[e[3]] = true end end -- FireClient log: {name, "client", text, kind}
+	check("lore lines at the creator and wake-up beats", seen[Lore.Get("Creator")] == true and seen[Lore.Get("WakeUp")] == true)
+end
 
 -- 1 move
 root().CFrame = M.CF.new(plot.Console.Position + M.V3.new(2, 0, 0)); run(1)
@@ -143,7 +149,13 @@ check("step 14 after skill", step() == 14)
 
 -- finale: world should open after min prologue time since all players ready
 local openedAt = nil
+do
+	local readySeen = false
+	for _, e in M.FireLog do if e[1] == "PhaseChanged" and e[3] == "Ready" then readySeen = true end end
+	check("ready players get the waiting screen signal", readySeen)
+end
 check("world opens after tutorial", run(60, function() return workspace_:GetAttribute("Phase") == "Open" end))
+check("emergence time was published for the countdown", workspace_:GetAttribute("EmergenceAt") ~= nil)
 run(8)
 local pos = root().CFrame.Position
 check("player teleported into the arena", math.abs(pos.Y - 6.9) < 3 or pos.Y < 100)
@@ -259,6 +271,19 @@ do
 	Remotes.EquipItem:FireServer("PipeClub"); run(0.3)
 	me.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4))
 	run(0.5)
+end
+-- sprint: shift speeds the body up and drains stamina; releasing restores both
+do
+	as(player)
+	local me = player.Character
+	local Gear = M.mockEnv.__require(SSS.Server.Gear)
+	local base = Gear.OfChar(me).WalkSpeed
+	local st0 = me:GetAttribute("Stamina")
+	Remotes.Sprint:FireServer(true); run(1.0)
+	check("sprint multiplies walk speed", math.abs(me.Humanoid.WalkSpeed - base * 1.45) < 0.05 and me:GetAttribute("Sprinting") == true)
+	check("sprint drains stamina", me:GetAttribute("Stamina") < st0)
+	Remotes.Sprint:FireServer(false); run(0.3)
+	check("sprint off restores walk speed", math.abs(me.Humanoid.WalkSpeed - base) < 0.05 and me:GetAttribute("Sprinting") == false)
 end
 -- rate limit: a burst of 40 Attack remotes is cut to the configured budget
 do

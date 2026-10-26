@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
+local Lore = require(ReplicatedStorage.Shared.Lore)
 local Remotes = require(Shared.Remotes)
 local PlayerData = require(script.Parent.PlayerData)
 
@@ -93,8 +94,11 @@ function WorldPhase.CheckReady()
 			return
 		end
 	end
-	local remaining = startedAt + Config.PrologueMinSeconds - os.clock()
+	local minSeconds = if Config.Dev.Enabled then (Config.Dev.PrologueMinSeconds or Config.PrologueMinSeconds) else Config.PrologueMinSeconds
+	local remaining = startedAt + minSeconds - os.clock()
 	if remaining > 0 then
+		-- everyone is ready: tell the clients when the city wakes so they can show a countdown
+		workspace:SetAttribute("EmergenceAt", workspace:GetServerTimeNow() + remaining)
 		task.delay(remaining, WorldPhase.CheckReady)
 		return
 	end
@@ -103,6 +107,9 @@ end
 
 function WorldPhase.MarkReady(player)
 	ready[player] = true
+	if phase ~= Config.Phases.Open then
+		Remotes.PhaseChanged:FireClient(player, "Ready") -- client: waiting screen until Emerging
+	end
 	WorldPhase.CheckReady()
 end
 
@@ -128,8 +135,9 @@ function WorldPhase.Emerge()
 		return
 	end
 	emerging = true
+	workspace:SetAttribute("EmergenceAt", workspace:GetServerTimeNow())
 	Remotes.PhaseChanged:FireAllClients("Emerging")
-	Remotes.Announce:FireAllClients("The walls fall away. You were never alone.", "Emergence")
+	Remotes.Announce:FireAllClients(Lore.Get("Emergence"), "Emergence")
 	task.wait(Config.EmergenceCinematic)
 
 	phase = Config.Phases.Open
