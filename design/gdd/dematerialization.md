@@ -86,7 +86,7 @@ hour — so paying attention to the world across cycles is how a conduit learns 
 - **Smoke**: a fragment spawns on a cycle its rule allows and not otherwise; reading it adds to Knowledge and unlocks
   ARCHIVE; a chained fragment stays absent until its precondition is read; a cycle line is drawn from the pool.
 
-## 6. The home computer: why knowledge carries (owner, 17:53; table 18:02)
+## 6. The home computer: why knowledge carries (owner, 17:53; table 18:02; acquiring it 18:03)
 "Yes it carries. Conduits have their consciousness uploaded to their home computer; that's why it's so vital they
 acquire one early. That is also how they mix and match cybernetics."
 
@@ -115,12 +115,27 @@ acquire one early. That is also how they mix and match cybernetics."
   - Optional feel, for the owner: ripping in hurts — a short channel at the table and the body comes out of it at
     reduced health (`Config.Cyber.RipSeconds`, `RipHealthCost`).
   (`production/epics/hideout-computer` story 009.)
-- **"Acquire one early"**: see the open question below — today every conduit has a hideout and a computer from the
-  start.
+- **The computer is acquired, and life is hard until it is** (owner, 18:03: "it should be hard before they build or
+  find a computer"). A fresh conduit has a hideout with an empty desk where the computer goes; no Computer console, no
+  apps. Two ways to get one:
+  - **Find it**: a working machine (`Items.Defs.HomeComputer`) is rare loot — on rival conduits, in breached interiors,
+    at anomaly spots on some cycles, or salvaged whole from a terminal prop (`destruction.md` §4.2) with luck.
+  - **Build it**: a basic recipe from salvage (e.g. Battery, Glass, Wire, SheetMetal; tuning later). No knowledge
+    needed — otherwise the first step would need the thing it unlocks.
+  Using it in the hideout **installs and uploads**: the Computer console appears, contacts already met light up their
+  apps, and from that moment the conduit is backed up (`profile.Computer = true`).
+- **What a death costs before the upload.** Two kinds of persistence, split by the fiction:
+
+  | Kept by | What | Before a computer | After |
+  |---|---|---|---|
+  | **The hideout** (physical) | Money, Stash, Faction, Shipment, Hubs (routes you've unlocked), the ripping table | kept | kept |
+  | **The computer** (the mind) | Knowledge, Contacts met, Board, House | **lost** — they were in the body's head | kept |
+
+  So a fresh conduit's first deaths cost every fragment read and every contact met. The fastest way to stop losing
+  them is the computer. (Assumption, say the word: money and the stash are physical and survive either way; if the
+  early game should be harsher, they move to the right-hand column.)
+- **Existing profiles** when this ships: anyone who has met a contact or ordered for the house already counts as
+  having a computer (`Computer = true` on load), so no one loses what they have.
 
 ## 7. Open questions
-- **Is the computer something you acquire?** Today the hideout and its computer exist from the first emergence; the
-  apps unlock through contacts. The owner's line suggests the computer itself is earned early (found, bought, built
-  from salvage, or given by a first contact), and that a conduit who dies *before* getting one has nothing backed up —
-  no knowledge, no contacts, nothing on the computer carries. That's a strong early-game hook; it changes the first
-  hour (what a fresh conduit's death costs), so it needs the owner's word before it's built.
+- The ripping table's name, and whether ripping in hurts (§6).

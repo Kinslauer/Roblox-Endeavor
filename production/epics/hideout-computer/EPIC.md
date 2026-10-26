@@ -21,7 +21,8 @@ unannounced and drop intel that puts contracts on the board. Every enemy now dro
 | 007 | Everything drops: `NPCs.packCarry` at spawn (weapon + kit armour + one roll), dropped in full at death; held weapons removed from roll tables; kill credit tagged before damage | Logic | Implemented — live: grunt carried PipeClub + ration + scrap, all on the ground |
 | 008 | Owner playtest: find the broker without being told; does a lead feel like a choice; are rival crews a surprise or a nuisance; does "everything drops" make corpses worth checking | Feel | Pending |
 | 009 | The ripping table (`dematerialization.md` §6): schematic as knowledge (`RipTable` fragment), knowledge-gated recipe (`Recipes[id].Needs`), kit -> installed in the hideout for its owner (persists), cybernetic fit / swap / strip only at the table; field equips refused with a line; existing fits kept | Logic + HUD + Content | Not started (after 010 and destruction 002 / 011) |
-| 010 | Knowledge on the computer: `profile.Knowledge` in PERSIST, the ARCHIVE app (with destruction epic story 011) | Data | Not started |
+| 010 | Knowledge on the computer: `profile.Knowledge`, the ARCHIVE app (with destruction epic story 011) | Data | Not started |
+| 011 | Acquire the computer (`dematerialization.md` §6): empty desk until installed; `HomeComputer` item found (rare loot, rivals, breached interiors, anomaly spots) or built (salvage recipe); install = upload (`profile.Computer`); PERSIST split into hideout-kept (Money, Stash, Faction, Shipment, Hubs, table) and computer-kept (Knowledge, Contacts, Board, House, only once uploaded); existing profiles grandfathered | Logic + Content | Not started |
 
 ## Acceptance criteria
 1. The computer shows three locked apps; meeting each contact unlocks its app with the contact's line.

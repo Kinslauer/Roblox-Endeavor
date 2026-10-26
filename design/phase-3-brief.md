@@ -142,3 +142,7 @@ furnishings are shown only to their owner (the hideout room is shared geometry f
 - Cybernetics (owner, 18:02): "cybernetics are 'ripped in', and need a specific table for doing so. It can be crafted
   after acquiring the knowledge and building it in your hideout." → schematic as knowledge, knowledge-gated recipe,
   table installed in the hideout, cybernetic changes only there (dematerialization.md §6; hideout-computer story 009).
+- The computer is acquired (owner, 18:03): "it should be hard before they build or find a computer." → found as rare
+  loot or built from salvage, installed in the hideout; before the upload, knowledge / contacts / board / house die
+  with the body (money, stash, side, hubs stay with the hideout — assumption). hideout-computer story 011.
+
