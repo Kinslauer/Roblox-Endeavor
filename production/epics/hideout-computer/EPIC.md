@@ -20,6 +20,8 @@ unannounced and drop intel that puts contracts on the board. Every enemy now dro
 | 006 | Client: `Hud` Terminal panel (three apps, Take / Drop / Order / Buy / Close), raid line under the wallet; `HouseView.lua` draws owned furnishings in the hideout | HUD | Implemented — live: panel rows + buttons, HouseView 2 parts for the rug |
 | 007 | Everything drops: `NPCs.packCarry` at spawn (weapon + kit armour + one roll), dropped in full at death; held weapons removed from roll tables; kill credit tagged before damage | Logic | Implemented — live: grunt carried PipeClub + ration + scrap, all on the ground |
 | 008 | Owner playtest: find the broker without being told; does a lead feel like a choice; are rival crews a surprise or a nuisance; does "everything drops" make corpses worth checking | Feel | Pending |
+| 009 | Cybernetics fitted at the computer (`dematerialization.md` §6): cybernetic fit / swap / strip only in the hideout (like `Bench.Zone`); a CYBER section in the terminal panel; field equips refused with a line; armour and weapons unchanged | Logic + HUD | Not started |
+| 010 | Knowledge on the computer: `profile.Knowledge` in PERSIST, the ARCHIVE app (with destruction epic story 011) | Data | Not started |
 
 ## Acceptance criteria
 1. The computer shows three locked apps; meeting each contact unlocks its app with the contact's line.

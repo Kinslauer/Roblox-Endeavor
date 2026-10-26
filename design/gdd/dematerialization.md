@@ -86,7 +86,25 @@ hour — so paying attention to the world across cycles is how a conduit learns 
 - **Smoke**: a fragment spawns on a cycle its rule allows and not otherwise; reading it adds to Knowledge and unlocks
   ARCHIVE; a chained fragment stays absent until its precondition is read; a cycle line is drawn from the pool.
 
-## 6. Open questions
-- Does **knowledge survive permadeath**? Everything else the body carried is wiped. If knowledge survives, it's the
-  one thing that carries across lives (a meta-progression toward escape); if not, every new conduit starts the mystery
-  from nothing.
+## 6. The home computer: why knowledge carries (owner, 17:53)
+"Yes it carries. Conduits have their consciousness uploaded to their home computer; that's why it's so vital they
+acquire one early. That is also how they mix and match cybernetics."
+
+- **The computer is the conduit's backup.** A conduit's mind lives on the computer in their hideout, not in the body
+  they wear. A body can die for good (permadeath wipes what it carried); what's on the computer comes back in the
+  next one. This is the fiction behind what already persists across permadeath (`PlayerData` PERSIST: money, stash,
+  side, shipment, hubs, contacts met, board, house) and it now covers **Knowledge** too (`profile.Knowledge` joins
+  PERSIST; ARCHIVE survives every death).
+- **Cybernetics are fitted at the computer.** Because the mind is uploaded, a conduit can re-wire the body it comes back
+  into: cybernetics are mixed and matched at the computer in the hideout (fit, swap, strip), not in the field. Today
+  `Gear.EquipGear` fits a cybernetic anywhere; this moves cybernetic changes behind the hideout zone like the weapon
+  bench (`Bench.Zone`). Armour and weapons still change anywhere. (`production/epics/hideout-computer` story 009.)
+- **"Acquire one early"**: see the open question below — today every conduit has a hideout and a computer from the
+  start.
+
+## 7. Open questions
+- **Is the computer something you acquire?** Today the hideout and its computer exist from the first emergence; the
+  apps unlock through contacts. The owner's line suggests the computer itself is earned early (found, bought, built
+  from salvage, or given by a first contact), and that a conduit who dies *before* getting one has nothing backed up —
+  no knowledge, no contacts, nothing on the computer carries. That's a strong early-game hook; it changes the first
+  hour (what a fresh conduit's death costs), so it needs the owner's word before it's built.

@@ -135,4 +135,8 @@ furnishings are shown only to their owner (the hideout room is shared geometry f
   raids with what you have as conduits, and there is always more loot on the war world."
 - The cycle carries clues (owner, 17:48: "yes yes this"): contact lines that change each cycle, fragments that only
   appear on some cycles at anomaly spots, and the ARCHIVE app for what you've read. → dematerialization.md §5.
+- Knowledge survives permadeath (owner, 17:53): "Conduits have their consciousness uploaded to their home computer;
+  that's why it's so vital they acquire one early. That is also how they mix and match cybernetics." → what's on the
+  computer persists (Knowledge joins PERSIST); cybernetics are fitted at the computer. Open: is the computer acquired
+  rather than given? (dematerialization.md §7)
 
