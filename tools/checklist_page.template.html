@@ -1,0 +1,237 @@
+<title>Conduit Playtest</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style id="page-style">
+/* Layout: one reading column; a sticky progress bar; each test round a block of tickable checks with a note per check. */
+:root {
+  --bg: #e9edf1; --panel: #f8fafb; --ink: #18212b; --muted: #5a6676; --line: #cfd6de;
+  --accent: #1c7f9e; --accent-soft: #d4e9f0; --done: #2f7d55; --done-soft: #dcefe4; --kbd: #dde3ea;
+  --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10151b; --panel: #171e26; --ink: #e2e8ef; --muted: #8f9cad; --line: #283240;
+  --accent: #4fc0dd; --accent-soft: #15313b; --done: #6cc792; --done-soft: #16301f; --kbd: #222b37; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #10151b; --panel: #171e26; --ink: #e2e8ef; --muted: #8f9cad; --line: #283240;
+  --accent: #4fc0dd; --accent-soft: #15313b; --done: #6cc792; --done-soft: #16301f; --kbd: #222b37; color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 860px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+header h1 { font-family: var(--display); font-weight: 700; font-size: 34px; letter-spacing: 0.01em; margin: 0 0 6px; text-wrap: balance; }
+header .sub { color: var(--muted); margin: 0 0 16px; max-width: 68ch; }
+code { font-family: var(--mono); font-size: 0.88em; background: var(--kbd); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.keys { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 0 22px; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
+.keys li { display: flex; align-items: baseline; gap: 6px; }
+kbd { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--ink); background: var(--kbd); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0 6px; white-space: nowrap; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line); margin-bottom: 18px; display: grid; gap: 8px; }
+.bar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; justify-content: space-between; }
+.count { font-family: var(--display); font-weight: 600; font-size: 17px; font-variant-numeric: tabular-nums; }
+.count small { font-family: var(--body); font-weight: 400; font-size: 13px; color: var(--muted); margin-left: 6px; }
+.meter { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: var(--done); transition: width .25s ease; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg button { font: 500 13px var(--body); color: var(--muted); background: transparent; border: 0; padding: 5px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); }
+.status { font-size: 12px; color: var(--muted); min-height: 1em; }
+.status[data-kind="warn"] { color: #b4572a; }
+section.round { margin-bottom: 14px; }
+.round > button.head { width: 100%; display: flex; align-items: baseline; gap: 10px; text-align: left; background: transparent; border: 0; padding: 8px 0; cursor: pointer; color: var(--ink); }
+.round .no { font-family: var(--mono); font-size: 12px; color: var(--muted); min-width: 2.2em; font-variant-numeric: tabular-nums; }
+.round h2 { font-family: var(--display); font-weight: 600; font-size: 18px; margin: 0; flex: 1; min-width: 0; text-wrap: balance; }
+.round .tally { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.round .tally[data-full="true"] { color: var(--done); }
+.round .chev { color: var(--muted); font-size: 12px; transition: transform .15s; }
+.round[data-collapsed="true"] .chev { transform: rotate(-90deg); }
+.round[data-collapsed="true"] .body { display: none; }
+.round .note-text { color: var(--muted); font-size: 13.5px; margin: 0 0 8px 2.9em; max-width: 68ch; }
+ul.items { list-style: none; margin: 0; padding: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+ul.items > li + li { border-top: 1px solid var(--line); }
+.item { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; padding: 11px 12px; align-items: start; }
+.item input[type="checkbox"] { width: 19px; height: 19px; margin: 2px 0 0; accent-color: var(--done); cursor: pointer; }
+.item label { cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
+.item[data-done="true"] label { color: var(--muted); }
+.item[data-done="true"] { background: var(--done-soft); }
+ul.items > li:first-child .item { border-radius: 10px 10px 0 0; }
+ul.items > li:last-child .item { border-radius: 0 0 10px 10px; }
+ul.items > li:only-child .item { border-radius: 10px; }
+.note-btn { font: 500 12px var(--body); color: var(--accent); background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 2px 8px; cursor: pointer; white-space: nowrap; }
+.note-btn:hover { border-color: var(--line); }
+.note-area { grid-column: 2 / 4; }
+.note-area textarea { width: 100%; min-height: 64px; resize: vertical; font: 14px/1.45 var(--body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.note-area textarea:focus, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.empty { color: var(--muted); font-size: 14px; padding: 10px 2px; }
+@media (max-width: 520px) { header h1 { font-size: 28px; } .item { grid-template-columns: auto 1fr; } .note-btn { grid-column: 2; justify-self: start; padding-left: 0; } .note-area { grid-column: 1 / 3; } }
+@media (prefers-reduced-motion: reduce) { .meter i, .round .chev { transition: none; } }
+</style>
+<div id="app" class="wrap"></div>
+<script type="application/json" id="checklist-data">/*__DATA__*/</script>
+<script type="application/json" id="checklist-state">/*__STATE__*/</script>
+<script id="checklist-app">
+(function () {
+  "use strict";
+  var DATA = JSON.parse(document.getElementById("checklist-data").textContent);
+  var STATE = JSON.parse(document.getElementById("checklist-state").textContent);
+  STATE.checked = STATE.checked || {};
+  STATE.notes = STATE.notes || {};
+  var ui = { filter: "all", collapsed: {}, openNote: null };
+  var artifact = null, writable = true, dirty = false, timer = null, saving = false;
+  var app = document.getElementById("app");
+  var RESET = /*__RESET__*/""; // the publish skeleton's reset, so a self-publish matches what the tool writes
+
+  function store(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+  function recall(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+
+  function total() { var n = 0; DATA.sections.forEach(function (s) { n += s.items.length; }); return n; }
+  function doneCount(items) { var n = 0; items.forEach(function (it) { if (STATE.checked[it.id]) n++; }); return n; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  function setStatus(text, kind) {
+    var el = document.getElementById("save-status");
+    if (el) { el.textContent = text; el.dataset.kind = kind || ""; }
+  }
+
+  // The whole document, regenerated from DATA + STATE (the page republishes itself; never the live DOM).
+  function documentHtml() {
+    var head = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
+      '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">';
+    var close = "</" + "script>";
+    var json = function (o) { return JSON.stringify(o).replace(/<\//g, "<\\/"); };
+    var content = "<title>" + esc(document.title) + "</title>" +
+      '<meta name="claude:viewport-fit-sides" content="cover">' + head +
+      '<style id="page-style">' + document.getElementById("page-style").textContent + "</style>" +
+      '<div id="app" class="wrap"></div>' +
+      '<script type="application/json" id="checklist-data">' + json(DATA) + close +
+      '<script type="application/json" id="checklist-state">' + json(STATE) + close +
+      '<script id="checklist-app">' + document.getElementById("checklist-app").textContent + close;
+    return "<!doctype html><html><head><meta charset=utf8><meta name=viewport content=\"width=device-width,initial-scale=1,viewport-fit=cover\"><style>" +
+      RESET + "</style></head><body>" + content + "</body></html>";
+  }
+
+  function schedule(delay) {
+    dirty = true;
+    if (!artifact || !writable) { setStatus(artifact ? "View only: your ticks stay on this screen" : "Not saved in this view", "warn"); return; }
+    setStatus("Saving…");
+    clearTimeout(timer);
+    timer = setTimeout(save, delay == null ? 1200 : delay);
+  }
+
+  function save() {
+    if (!artifact || !writable || saving) return;
+    saving = true;
+    artifact.publish(documentHtml()).then(function () {
+      dirty = false; saving = false; setStatus("Saved");
+    }, function (err) {
+      saving = false;
+      var code = err && err.code;
+      if (code === "not_granted" || code === "not_writer") { writable = false; setStatus("View only: your ticks stay on this screen", "warn"); }
+      else if (code === "conflict") { setStatus("Someone else saved first; reloading to their version", "warn"); }
+      else { setStatus("Couldn't save. Your last tick will retry with the next one.", "warn"); }
+    });
+  }
+
+  function render() {
+    var all = total(), done = 0;
+    DATA.sections.forEach(function (s) { done += doneCount(s.items); });
+    var h = [];
+    h.push("<header><h1>" + esc(DATA.title.replace(/^Owner playtest checklist\s*[—-]\s*/i, "Conduit Playtest · ")) + "</h1>");
+    h.push('<p class="sub">' + DATA.intro + "</p>");
+    h.push('<ul class="keys" aria-label="Controls">');
+    DATA.keys.forEach(function (k) { h.push("<li><kbd>" + esc(k.k) + "</kbd><span>" + esc(k.v) + "</span></li>"); });
+    h.push("</ul></header>");
+    h.push('<div class="bar"><div class="bar-row"><div class="count">' + done + " / " + all + "<small>checks done</small></div>");
+    h.push('<div class="seg" role="group" aria-label="Show">');
+    [["all", "All"], ["open", "Open"], ["done", "Done"]].forEach(function (f) {
+      h.push('<button type="button" data-filter="' + f[0] + '" aria-pressed="' + (ui.filter === f[0]) + '">' + f[1] + "</button>");
+    });
+    h.push('</div></div><div class="meter" aria-hidden="true"><i style="width:' + (all ? (done / all * 100).toFixed(1) : 0) + '%"></i></div>');
+    h.push('<div class="status" id="save-status" aria-live="polite"></div></div>');
+    var shown = 0;
+    DATA.sections.forEach(function (s) {
+      var items = s.items.filter(function (it) {
+        var d = !!STATE.checked[it.id];
+        return ui.filter === "all" || (ui.filter === "done" ? d : !d);
+      });
+      if (!items.length) return;
+      shown++;
+      var d = doneCount(s.items), collapsed = !!ui.collapsed[s.n];
+      h.push('<section class="round" data-collapsed="' + collapsed + '" id="round-' + s.n + '">');
+      h.push('<button type="button" class="head" data-toggle="' + s.n + '" aria-expanded="' + !collapsed + '"><span class="no">' + String(s.n).padStart(2, "0") + '</span><h2>' + s.title + '</h2><span class="tally" data-full="' + (d === s.items.length) + '">' + d + "/" + s.items.length + '</span><span class="chev" aria-hidden="true">▼</span></button>');
+      h.push('<div class="body">');
+      s.notes.forEach(function (n) { h.push('<p class="note-text">' + n + "</p>"); });
+      h.push('<ul class="items">');
+      items.forEach(function (it) {
+        var dn = !!STATE.checked[it.id], note = STATE.notes[it.id] || "", open = ui.openNote === it.id || note !== "";
+        h.push('<li><div class="item" data-done="' + dn + '">');
+        h.push('<input type="checkbox" id="c-' + it.id + '" data-check="' + it.id + '"' + (dn ? " checked" : "") + ">");
+        h.push('<label for="c-' + it.id + '">' + it.html + "</label>");
+        h.push('<button type="button" class="note-btn" data-note="' + it.id + '">' + (note ? "Note ✓" : "Add note") + "</button>");
+        if (open) h.push('<div class="note-area"><textarea id="n-' + it.id + '" data-notefor="' + it.id + '" placeholder="What did you see? Numbers, what felt off, what to change."></textarea></div>');
+        h.push("</div></li>");
+      });
+      h.push("</ul></div></section>");
+    });
+    if (!shown) h.push('<p class="empty">' + (ui.filter === "done" ? "Nothing ticked yet. Tick a check once you've seen it in Studio." : "Everything is ticked.") + "</p>");
+    app.innerHTML = h.join("");
+    app.querySelectorAll("textarea[data-notefor]").forEach(function (t) { t.value = STATE.notes[t.dataset.notefor] || ""; });
+    if (dirty && artifact && writable) setStatus(saving ? "Saving…" : "Saving…");
+  }
+
+  app.addEventListener("change", function (e) {
+    var id = e.target.dataset && e.target.dataset.check;
+    if (!id) return;
+    if (e.target.checked) STATE.checked[id] = true; else delete STATE.checked[id];
+    var y = window.scrollY;
+    render();
+    window.scrollTo(0, y);
+    schedule();
+  });
+  app.addEventListener("click", function (e) {
+    var t = e.target.closest && e.target.closest("[data-filter],[data-toggle],[data-note]");
+    if (!t) return;
+    if (t.dataset.filter) { ui.filter = t.dataset.filter; store("conduit-checklist-filter", ui.filter); render(); }
+    else if (t.dataset.toggle) { var n = t.dataset.toggle; ui.collapsed[n] = !ui.collapsed[n]; store("conduit-checklist-collapsed", ui.collapsed); var y = window.scrollY; render(); window.scrollTo(0, y); }
+    else if (t.dataset.note) {
+      ui.openNote = t.dataset.note; var y2 = window.scrollY; render(); window.scrollTo(0, y2);
+      var ta = document.getElementById("n-" + t.dataset.note); if (ta) ta.focus();
+    }
+  });
+  var noteTimer = null;
+  app.addEventListener("input", function (e) {
+    var id = e.target.dataset && e.target.dataset.notefor;
+    if (!id) return;
+    var v = e.target.value;
+    if (v.trim()) STATE.notes[id] = v; else delete STATE.notes[id];
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(function () { schedule(0); }, 1500);
+    dirty = true;
+    setStatus(artifact && writable ? "Saving…" : "Not saved in this view", artifact && writable ? "" : "warn");
+  });
+
+  function start(data) {
+    data = data || {};
+    ui.filter = (data.ui && data.ui.filter) || recall("conduit-checklist-filter") || "all";
+    ui.collapsed = (data.ui && data.ui.collapsed) || recall("conduit-checklist-collapsed") || {};
+    ui.openNote = (data.ui && data.ui.openNote) || null;
+    if (data.dirty && data.state) { STATE = data.state; dirty = true; } // a tick made while the last save was landing
+    render();
+    if (data.scroll) window.scrollTo(0, data.scroll);
+    if (dirty) schedule(200);
+  }
+  var hot = window.claude && window.claude.hot;
+  if (hot && hot.snapshot) hot.snapshot(function () { return { ui: ui, scroll: window.scrollY, state: STATE, dirty: dirty }; });
+  if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
+
+  var use = window.claude && window.claude.use ? window.claude.use("artifact") : Promise.resolve(null);
+  Promise.resolve(use).then(function (a) {
+    artifact = a;
+    if (!a) setStatus("Ticks aren't saved in this view", "warn");
+    else if (dirty) schedule(200);
+  }, function () { setStatus("Ticks aren't saved in this view", "warn"); });
+})();
+</script>
