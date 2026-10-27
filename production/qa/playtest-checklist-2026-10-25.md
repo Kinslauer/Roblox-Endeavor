@@ -10,61 +10,69 @@ Keys: **LMB** attack · **RMB** heavy · **E** flick · **F** block/parry · **Q
 
 ## 1. Combat feel (epic `combat-feel`, stories 003–005)
 - [ ] Swing: the arm winds back, the hand glows and the glow snaps to red right before impact — is the flick cue readable at the moment you should press E?
-- [ ] Hit: sparks + a tiny camera punch; heavy hits shake more. Too much / too little?
+  - Note: the cue needs more frames to be more readable
+- [x] Hit: sparks + a tiny camera punch; heavy hits shake more. Too much / too little?
 - [ ] Parry: white ring + white flash; guard break: orange shards. Can you tell them apart without reading the word?
+  - Note: the block needs an animation. when you hit f your character visually does nothing despite entering the blocking phase.
 - [ ] Weapons sit in the right hand and point the right way (club, blade, baton, spear, sledge, pistol — take all from the arena Weapons Rack).
-- [ ] Sounds: swing / hit / parry / guard-break / dodge are audible and not grating (placeholders).
+  - Note: they dont animate quite correctly, sitting in hand awkwardly. they shouldpright and swung traditionally.
+- [x] Sounds: swing / hit / parry / guard-break / dodge are audible and not grating (placeholders).
 
 ## 2. Aiming (epic `fair-arrival`, Aim)
-- [ ] The body turns to where the camera looks while standing still; the camera sits over the right shoulder; the mouse is locked to the centre.
-- [ ] LeftControl toggles back to the classic camera and the reticle disappears.
+- [x] The body turns to where the camera looks while standing still; the camera sits over the right shoulder; the mouse is locked to the centre.
+- [x] LeftControl toggles back to the classic camera and the reticle disappears.
 - [ ] Swings and the arc pistol go where the reticle points.
+  - Note: it could be a bit closer to the origin and beam points where you aim.
 
 ## 3. Enemy v2 (epic `enemy-v2`, story 003)
-- [ ] Find an ambush (walk the streets; a banner announces them). Grunt: can you parry it by reading its windup? Dodge through it?
-- [ ] Brute: slow overhead; you can't stagger it mid-swing (hyperarmor). Does the fight feel fair?
-- [ ] Gunner: keeps 18–30 studs away and shoots; closing on it should feel possible.
-- [ ] Damage tuning: how many Grunt hits kill you at 100 HP? Note the number.
+- [x] Find an ambush (walk the streets; a banner announces them). Grunt: can you parry it by reading its windup? Dodge through it?
+- [x] Brute: slow overhead; you can't stagger it mid-swing (hyperarmor). Does the fight feel fair?
+- [x] Gunner: keeps 18–30 studs away and shoots; closing on it should feel possible.
+- [x] Damage tuning: how many Grunt hits kill you at 100 HP? Note the number.
 
 ## 4. HUD v2 (epic `hud-v2`, story 003)
-- [ ] Bars read HEALTH / STAMINA / POSTURE / CHARGE with numbers; the Roblox health bar is gone.
-- [ ] Numbers float over whatever you hit; red "-N" over you when you are hit; BLOCKED / PARRIED / GUARD BREAK / DODGED words.
-- [ ] Reticle blinks when a hit lands; the screen edges flash red when you take damage. Blinding or fine?
-- [ ] Land a Black Flash (3 flicked hits in a row): the number over the victim should turn red with "!".
+- [x] Bars read HEALTH / STAMINA / POSTURE / CHARGE with numbers; the Roblox health bar is gone.
+  - Note: remove the roblox nametags and healthbars on enemies as well.
+- [x] Numbers float over whatever you hit; red "-N" over you when you are hit; BLOCKED / PARRIED / GUARD BREAK / DODGED words.
+- [x] Reticle blinks when a hit lands; the screen edges flash red when you take damage. Blinding or fine?
+- [x] Land a Black Flash (3 flicked hits in a row): the number over the victim should turn red with "!".
 
 ## 5. Fair arrival
-- [ ] After Emergence you have a glowing ForceField for 8 s; it drops the moment you attack.
-- [ ] Supply drops / ambushes land on streets, never in the plaza or outside the wall.
+- [x] After Emergence you have a glowing ForceField for 8 s; it drops the moment you attack.
+- [x] Supply drops / ambushes land on streets, never in the plaza or outside the wall.
 
 ## 6. District 1 (epic `district-blockout`, story 004)
-- [ ] From your spawn pad, can you see the Relay Plaza beacon and find it?
-- [ ] Walk the ring: the "SAFE ZONE · Relay Plaza" label and banner appear; nothing can hit you inside, you can't hit out.
-- [ ] Silhouettes and cover: enough corners to fight around? Too many lamps (frame rate)?
-- [ ] The arena is south of the wall (0, 2, 820) — jump over / walk around to reach the armory. If you'd rather spawn there for testing, set `Config.Dev.SpawnInArena = true`.
+- [x] From your spawn pad, can you see the Relay Plaza beacon and find it?
+- [x] Walk the ring: the "SAFE ZONE · Relay Plaza" label and banner appear; nothing can hit you inside, you can't hit out.
+- [x] Silhouettes and cover: enough corners to fight around? Too many lamps (frame rate)?
+- [x] The arena is south of the wall (0, 2, 820) — jump over / walk around to reach the armory. If you'd rather spawn there for testing, set `Config.Dev.SpawnInArena = true`.
 
 Write what felt wrong in one line each; I'll turn them into tuning stories.
 
 ## 7. Round 2 (Phase 2) — added 2026-10-25 evening
-- [ ] Creator → Skip: you should see "AWAITING EMERGENCE" with a countdown (or "waiting for others"), then "EMERGENCE" fading to black, then the city. No idle time in the room.
-- [ ] LeftShift sprints (faster, stamina drains, slight FOV push); blocking cancels it.
-- [ ] C: first person; C again returns to the exact zoom you had.
-- [ ] Lore lines (italic, lavender) at: creator, wake-up, first swing, flicker step, first kill, first Rift.
-- [ ] Rift in Relay Plaza → the Range: rifle sights, targets fall and score, Wave Console, Rift back. Melee refused inside.
+- [x] Creator → Skip: you should see "AWAITING EMERGENCE" with a countdown (or "waiting for others"), then "EMERGENCE" fading to black, then the city. No idle time in the room.
+- [x] LeftShift sprints (faster, stamina drains, slight FOV push); blocking cancels it.
+- [x] C: first person; C again returns to the exact zoom you had.
+- [x] Lore lines (italic, lavender) at: creator, wake-up, first swing, flicker step, first kill, first Rift.
+- [x] Rift in Relay Plaza → the Range: rifle sights, targets fall and score, Wave Console, Rift back. Melee refused inside.
 - [ ] Spear thrust / slash, hammer swipe / slam, torso lean: do hits read now?
+  - Note: no. there is no st up or wind up or endlag or follow through, the hits all just look lifeless except for the slam, all that needs is fx and endlag.
 
 ## 8. Round 3 — District 2 + Drone, added 2026-10-26
-- [ ] From Relay Plaza walk the street just north of the plaza east: a magenta arch in the wall with "→ District 2". The gate street has lamps and kerbs; nothing blocks it.
-- [ ] District 2 (Ferrite Court): rust/brown buildings, orange-red neon, warm lamps, more rubble. Does it read as a different place at a glance?
-- [ ] Its plaza shows "SAFE ZONE · Ferrite Court" and refuses damage like Relay Plaza.
+- [x] From Relay Plaza walk the street just north of the plaza east: a magenta arch in the wall with "→ District 2". The gate street has lamps and kerbs; nothing blocks it.
+- [x] District 2 (Ferrite Court): rust/brown buildings, orange-red neon, warm lamps, more rubble. Does it read as a different place at a glance?
+- [x] Its plaza shows "SAFE ZONE · Ferrite Court" and refuses damage like Relay Plaza.
 - [ ] Ambushes in D2 are bigger (3–5) with more Brutes. Fair, or too much?
-- [ ] Spawn test: die in the city (permadeath wipe) → you wake in District 1. Rejoin alive → District 2.
-- [ ] Range: Wave Console, wave 2 → 2 Gunners + 2 Drones. Drones hover ~9 studs up and circle you, flipping direction; their eye glows red before a shot. Can you hit them with the rifle? Does a hit visibly knock them off their line?
-- [ ] Drone spoils land on the ground under where it died.
+  - Note: fair, just make them spread around you
+- [x] Spawn test: die in the city (permadeath wipe) → you wake in District 1. Rejoin alive → District 2.
+- [x] Range: Wave Console, wave 2 → 2 Gunners + 2 Drones. Drones hover ~9 studs up and circle you, flipping direction; their eye glows red before a shot. Can you hit them with the rifle? Does a hit visibly knock them off their line?
+- [x] Drone spoils land on the ground under where it died.
 - [ ] Launcher: light, light (stagger), then **heavy** on a Grunt → it flies up ("LAUNCHED"), hits while it is airborne pop it ("AIR x2…") and hurt more; it lands stunned. Does the rhythm read? Too floaty / too short?
+  - Note: i couldnt get this to work.
 - [ ] Enemy Step: dodge (Q) while a Grunt is in the air next to you → you hop up and get stamina back ("ENEMY STEP").
-- [ ] Gunplay (Range): ammo counter bottom right (18 / 18 rifle). Shots kick the camera up and drift right then left — can you learn to pull against it? R reloads; an empty click reloads on its own.
-- [ ] Hip fire while moving scatters; stop and hold RMB and the cone tightens after a beat. Sprinting drops the sights.
-- [ ] Headshots on Gunners/Targets read "HEADSHOT" and hit twice as hard. Does the rifle still feel fair at 100 studs?
+- [x] Gunplay (Range): ammo counter bottom right (18 / 18 rifle). Shots kick the camera up and drift right then left — can you learn to pull against it? R reloads; an empty click reloads on its own.
+- [x] Hip fire while moving scatters; stop and hold RMB and the cone tightens after a beat. Sprinting drops the sights.
+- [x] Headshots on Gunners/Targets read "HEADSHOT" and hit twice as hard. Does the rifle still feel fair at 100 studs?
 
 ## 9. Round 4 — the hideout (Phase 3, build order 1), added 2026-10-26
 - [ ] Find the station: south edge of each district, street line 2 (west of the plaza column), green "STATION · EXTRACT" sign. Hold X for 4 s. Try it right after hitting someone: it should refuse.
