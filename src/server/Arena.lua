@@ -223,7 +223,15 @@ local function buildArmory()
 	end
 	console(spots[1], "Weapons Rack", "Take all weapons", CYAN, function(player) giveAll(player, Weapons.Defs, "Fists") end)
 	console(spots[2], "Armor Rack", "Take all armor", CYAN, function(player) giveAll(player, Armor.Pieces) end)
-	console(spots[3], "Cybernetics Bay", "Take all implants", MAGENTA, function(player) giveAll(player, Cybernetics.Pieces) end)
+	console(spots[3], "Cybernetics Bay", "Take all implants", MAGENTA, function(player)
+		for id, piece in Cybernetics.Pieces do -- two of each arm and leg piece: one per side
+			local want = #Cybernetics.SlotsFor(piece)
+			local have = Inventory.Count(player, id)
+			if have < want then
+				Inventory.Add(player, id, want - have)
+			end
+		end
+	end)
 	console(spots[4], "Supplies", "Take materials + meds", CYAN, function(player)
 		Inventory.Add(player, "Scrap", 10)
 		Inventory.Add(player, "Wire", 10)

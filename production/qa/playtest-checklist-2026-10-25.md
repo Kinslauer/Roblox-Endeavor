@@ -183,3 +183,13 @@ To see one without waiting an hour, run this in the Studio command bar during Pl
 - [ ] Throw it at a crate or a terminal: the prop takes the hit.
 - [ ] Ranged weapons: the special is now on the middle mouse button only (G is grab). Missing it?
 
+
+## 23. Round 16 — the whole body is rippable, added 2026-10-27
+- [ ] Arena → Cybernetics Bay: you get every implant (two of each arm and leg piece). Tab → Loadout lists eight slots (Eyes, Ears, Nose, Core, Left/Right arm, Left/Right leg), each "flesh" until filled, and "Body: 0% metal".
+- [ ] At the Autonet: an arm or leg piece shows Rip in L and Rip in R. Put a Servo Arm in each arm (two rips, two thirds of your health). The inventory row says "in you (left arm, right arm)". Can you see the metal on both arms and the lit seam at each elbow? Does a second player see it too?
+- [ ] Eyes, ears, nose and core each show something small on your head or chest. Is it readable, or too small to notice?
+- [ ] Audio Pickup in your ears: get a raider to walk around behind you or behind a wall. A pip on the ring around the screen centre points at it. Does it stop when the raider stands still or you look at it? Is it useful or just noise?
+- [ ] Chem Sniffer in your nose: drops and fragments within ~45 studs get a green dot through walls. Blood Tracer: hurt a raider below half health and it gets a red dot too.
+- [ ] Strider legs: faster walk. Piston legs: noticeably higher jump. One of each still works.
+- [ ] With a Servo Arm in: the crate and barrel chunks you couldn't pick up before (Medium) now come up with G. With two Servo Arms, the biggest pieces too.
+- [ ] Fill all eight slots: "Body: 100% metal". How does it look, and does it feel like it was worth eight trips to the table?

@@ -1242,9 +1242,9 @@ do
 		local hum = me.Humanoid
 		hum.MaxHealth = 100; hum.Health = 100
 		Inventory.Add(player, "ReflexOptic", 1); Inventory.Add(player, "TargetingLens", 1)
-		data.Cyber.Optic = nil
+		data.Cyber.Eyes = nil
 		Inventory.Equip(player, "ReflexOptic")
-		check("a cybernetic can't be put in from the inventory in the field", data.Cyber.Optic == nil)
+		check("a cybernetic can't be put in from the inventory in the field", data.Cyber.Eyes == nil)
 		Hideout.Enter(player, { Quiet = true }); run(0.3)
 		me:PivotTo(M.CF.new(Autonet.Position))
 		data.Autonet = false
@@ -1261,17 +1261,17 @@ do
 		check("rip in: the cost is paid up front and the body is held for the channel", player:GetAttribute("AtAutonet") == true and Autonet.Rip(player, "In", "ReflexOptic")
 			and math.abs(hum.Health - (100 - 100 * C.RipHealthCost)) < 0.5 and me:GetAttribute("Ripping") == C.RipSeconds and me.HumanoidRootPart.Anchored == true)
 		run(C.RipSeconds + 0.3)
-		check("then it's in you", data.Cyber.Optic == "ReflexOptic" and me.HumanoidRootPart.Anchored == false and me:GetAttribute("Ripping") == nil)
+		check("then it's in you", data.Cyber.Eyes == "ReflexOptic" and me.HumanoidRootPart.Anchored == false and me:GetAttribute("Ripping") == nil)
 		hum.Health = 100
 		Autonet.Rip(player, "In", "TargetingLens")
 		check("a swap is two rips: twice the cost", math.abs(hum.Health - (100 - 200 * C.RipHealthCost)) < 0.5)
 		run(2 * C.RipSeconds + 0.3)
-		check("and twice the time, then the new piece is in", data.Cyber.Optic == "TargetingLens")
+		check("and twice the time, then the new piece is in", data.Cyber.Eyes == "TargetingLens")
 		hum.Health = 10
-		Autonet.Rip(player, "Out", "Optic")
+		Autonet.Rip(player, "Out", "Eyes")
 		check("the Autonet never kills: 1 HP at worst", hum.Health >= 1 and hum.Health <= 1.01)
 		run(C.RipSeconds + 0.3)
-		check("rip out empties the slot", data.Cyber.Optic == nil)
+		check("rip out empties the slot", data.Cyber.Eyes == nil)
 		me:PivotTo(M.CF.new(Autonet.Position + M.V3.new(40, 0, 0))); run(0.8)
 		check("step away and you're off the table: no rips", player:GetAttribute("AtAutonet") == nil and Autonet.Rip(player, "In", "ReflexOptic") == false)
 		local PD = PlayerData
@@ -1280,6 +1280,49 @@ do
 		check("the Autonet stays with the hideout through a permadeath", data.Autonet == true)
 		hum.Health = hum.MaxHealth
 		Hideout.Leave(player); run(0.3)
+	end
+	-- the whole body is rippable (owner 2026-10-27): eight slots, arms and legs paired, every slot does something
+	do
+		local Gear = M.mockEnv.__require(SSS.Server.Gear)
+		local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+		local PlayerData = M.mockEnv.__require(SSS.Server.PlayerData)
+		local Cyb = M.mockEnv.__require(RS.Shared.Cybernetics)
+		local data = PlayerData.Get(player)
+		table.clear(data.Cyber)
+		check("eight cybernetic slots: eyes, ears, nose, core, both arms, both legs", #Cyb.Slots == 8)
+		local kinds = {}
+		for _, piece in Cyb.Pieces do kinds[piece.Slot] = true end
+		local every = true
+		for _, slot in Cyb.Slots do every = every and kinds[Cyb.KindOf[slot]] == true end
+		check("every slot has at least one piece that fits it", every)
+		Inventory.Add(player, "ServoArm", 1)
+		local first = Gear.EquipGear(player, "ServoArm")
+		local second = Gear.EquipGear(player, "ServoArm")
+		check("an arm goes in the first free arm, and one copy can't fill both arms", first and data.Cyber.LeftArm == "ServoArm" and not second and data.Cyber.RightArm == nil)
+		Inventory.Add(player, "ServoArm", 1)
+		check("a second copy goes in the other arm", Gear.EquipGear(player, "ServoArm") and data.Cyber.RightArm == "ServoArm")
+		check("two lifting arms: heavy debris", Gear.Get(player).Lift == 2)
+		Inventory.Remove(player, "ServoArm", 1); Gear.Validate(player)
+		check("lose a copy and only one arm keeps it", data.Cyber.LeftArm == "ServoArm" and data.Cyber.RightArm == nil and Gear.Get(player).Lift == 1)
+		Inventory.Add(player, "StriderLeg", 1); Inventory.Add(player, "PistonLeg", 1)
+		local walk0 = Gear.Get(player).WalkSpeed
+		Gear.EquipGear(player, "PistonLeg", "RightLeg"); Gear.EquipGear(player, "StriderLeg")
+		local d = Gear.Get(player)
+		check("legs: a side can be named; strider is faster, piston jumps higher and dodges longer",
+			data.Cyber.RightLeg == "PistonLeg" and data.Cyber.LeftLeg == "StriderLeg" and d.WalkSpeed > walk0 and d.JumpMult > 1 and d.DodgeIFrames > Gear.Default().DodgeIFrames - 0.05)
+		check("a piece won't go in a slot of another kind", not Gear.EquipGear(player, "StriderLeg", "LeftArm"))
+		for _, id in { "AudioPickup", "BloodTracer", "ReflexOptic", "PlatedCore" } do Inventory.Add(player, id, 1); Gear.EquipGear(player, id) end
+		Inventory.Add(player, "ServoArm", 1); Gear.EquipGear(player, "ServoArm")
+		d = Gear.Get(player)
+		check(("ears hear (%d studs), the nose smells (%d) and tracks blood"):format(d.Hearing, d.Scent), d.Hearing > 0 and d.Scent > 0 and d.Track == true
+			and player:GetAttribute("Hearing") == d.Hearing and player:GetAttribute("Scent") == d.Scent and player:GetAttribute("Track") == true)
+		check(("all eight in: the body is all metal (%d%%)"):format(d.Conversion * 100), d.Conversion == 1)
+		local me = player.Character
+		check("every implant is on the body for every client to draw", me:GetAttribute("Cyber_Nose") == "BloodTracer" and me:GetAttribute("Cyber_RightLeg") == "PistonLeg")
+		local old = { Cyber = { Optic = "ReflexOptic", Arm = "ServoArm", Core = "NeuralCore" }, Contacts = {}, House = {} }
+		PlayerData.Migrate(old)
+		check("old saves move over: Optic -> Eyes, Arm -> Right arm, Core stays", old.Cyber.Eyes == "ReflexOptic" and old.Cyber.RightArm == "ServoArm" and old.Cyber.Core == "NeuralCore" and old.Cyber.Optic == nil and old.Cyber.Arm == nil)
+		table.clear(data.Cyber); Gear.Recompute(player)
 	end
 	-- destruction story 001 (destruction.md §4.1–4.4): props break by break type, become salvage, and come back
 	do
@@ -1389,6 +1432,27 @@ do
 		local cap = GR.Classes.Light.Speed * (1 + GR.ChargeSpeed) * (1 + GR.SpeedPerStrength * 100)
 		check("an absurd aim from the client changes nothing: speed comes from the server", f ~= nil and f.Speed <= cap and f.Vel.Y < GR.Classes.Light.Speed)
 		run(2.2)
+		-- a servo arm lifts what flesh can't (shared/Cybernetics.lua Lift; Config.Destruction.Grab ArmsNeeded)
+		local Gear = M.mockEnv.__require(SSS.Server.Gear)
+		local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+		local PD = M.mockEnv.__require(SSS.Server.PlayerData)
+		local mediums = 0
+		for _, c in Destruction.Chunks() do
+			local w = c[1]:GetAttribute("Weight")
+			if c[1].Parent and not c[1]:GetAttribute("Held") and not Grab.Flights()[c[1]] then
+				if w == "Medium" then mediums += 1; c[1].CFrame = M.CF.new(901, 3, 898) else c[1].CFrame = M.CF.new(1400, 3, 1400) end
+			end
+		end
+		me:SetAttribute("Stamina", 100)
+		Remotes.Grab:FireServer("Grab"); run(GR.GrabSeconds + 0.1)
+		local flesh = Grab.Holding(player) == nil
+		Inventory.Add(player, "ServoArm", 1); Gear.EquipGear(player, "ServoArm")
+		run(0.4)
+		Remotes.Grab:FireServer("Grab"); run(GR.GrabSeconds + 0.1)
+		local held = Grab.Holding(player)
+		check(("flesh can't lift a medium chunk; a servo arm can (%d mediums)"):format(mediums), mediums >= 1 and flesh and held ~= nil and held:GetAttribute("Weight") == "Medium")
+		Remotes.Grab:FireServer("Throw", M.V3.new(0, 0, -1)); run(2.2)
+		table.clear(PD.Get(player).Cyber); Gear.Recompute(player)
 		NPCs.Remove(grunt)
 		sign:Destroy(); crate:Destroy()
 	end

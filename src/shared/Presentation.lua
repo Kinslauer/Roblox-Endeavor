@@ -330,4 +330,81 @@ Presentation.Cycle = {
 	Shake = 0.15, -- camera trauma added each second of the drain
 }
 
+-- Visible implants (client/Implants.lua; shared/Cybernetics.lua). Every client draws the metal on every body
+-- from its Cyber_<slot> attributes (server/Gear.lua). Two layers per slot:
+--   Shell - for limbs: a copy of the body part itself, a hair larger, in metal (covers clothing)
+--   Bits  - small parts placed on a body part: { Part, Offset (fraction of that part's size), Size (studs),
+--           Neon (accent colour) }
+-- ART: give a piece a Mesh = { MeshId, TextureId, Scale, Offset } and it is drawn as that mesh on the slot's
+-- first part instead of the placeholder (Higgsfield / Studio-generated meshes drop in here). Arm and leg pieces
+-- can add MeshLeft for the left side; otherwise both sides use Mesh.
+Presentation.Implants = {
+	Metal = { Color = Color3.fromRGB(118, 116, 110), Material = Enum.Material.Metal, Grow = 1.04 },
+	Slots = {
+		Eyes = { Bits = {
+			{ Part = "Head", Offset = Vector3.new(-0.17, 0.1, -0.5), Size = Vector3.new(0.2, 0.1, 0.06), Neon = true },
+			{ Part = "Head", Offset = Vector3.new(0.17, 0.1, -0.5), Size = Vector3.new(0.2, 0.1, 0.06), Neon = true },
+		} },
+		Ears = { Bits = {
+			{ Part = "Head", Offset = Vector3.new(-0.52, 0.02, 0), Size = Vector3.new(0.1, 0.35, 0.3) },
+			{ Part = "Head", Offset = Vector3.new(0.52, 0.02, 0), Size = Vector3.new(0.1, 0.35, 0.3) },
+			{ Part = "Head", Offset = Vector3.new(-0.56, 0.02, 0), Size = Vector3.new(0.04, 0.12, 0.12), Neon = true },
+			{ Part = "Head", Offset = Vector3.new(0.56, 0.02, 0), Size = Vector3.new(0.04, 0.12, 0.12), Neon = true },
+		} },
+		Nose = { Bits = {
+			{ Part = "Head", Offset = Vector3.new(0, -0.08, -0.53), Size = Vector3.new(0.16, 0.24, 0.12) },
+			{ Part = "Head", Offset = Vector3.new(0, -0.2, -0.57), Size = Vector3.new(0.1, 0.04, 0.04), Neon = true },
+		} },
+		Core = { Bits = {
+			{ Part = "UpperTorso", Offset = Vector3.new(0, 0.05, -0.5), Size = Vector3.new(0.9, 0.8, 0.12) },
+			{ Part = "UpperTorso", Offset = Vector3.new(0, 0.05, -0.56), Size = Vector3.new(0.22, 0.22, 0.05), Neon = true },
+		} },
+		LeftArm = { Shell = { "LeftUpperArm", "LeftLowerArm", "LeftHand" }, Bits = {
+			{ Part = "LeftLowerArm", Offset = Vector3.new(0, 0.45, 0), Size = Vector3.new(1.1, 0.08, 1.1), Neon = true },
+		} },
+		RightArm = { Shell = { "RightUpperArm", "RightLowerArm", "RightHand" }, Bits = {
+			{ Part = "RightLowerArm", Offset = Vector3.new(0, 0.45, 0), Size = Vector3.new(1.1, 0.08, 1.1), Neon = true },
+		} },
+		LeftLeg = { Shell = { "LeftUpperLeg", "LeftLowerLeg", "LeftFoot" }, Bits = {
+			{ Part = "LeftLowerLeg", Offset = Vector3.new(0, 0.45, 0), Size = Vector3.new(1.1, 0.08, 1.1), Neon = true },
+		} },
+		RightLeg = { Shell = { "RightUpperLeg", "RightLowerLeg", "RightFoot" }, Bits = {
+			{ Part = "RightLowerLeg", Offset = Vector3.new(0, 0.45, 0), Size = Vector3.new(1.1, 0.08, 1.1), Neon = true },
+		} },
+	},
+	-- per piece: the accent (seams, lenses) and, later, its mesh
+	Pieces = {
+		ReflexOptic = { Accent = Color3.fromRGB(255, 170, 60) },
+		TargetingLens = { Accent = Color3.fromRGB(255, 60, 60) },
+		AudioPickup = { Accent = Color3.fromRGB(90, 220, 200) },
+		EchoArray = { Accent = Color3.fromRGB(120, 160, 255) },
+		ChemSniffer = { Accent = Color3.fromRGB(170, 230, 80) },
+		BloodTracer = { Accent = Color3.fromRGB(200, 30, 40) },
+		NeuralCore = { Accent = Color3.fromRGB(140, 120, 255) },
+		OverclockCore = { Accent = Color3.fromRGB(255, 90, 30) },
+		PlatedCore = { Accent = Color3.fromRGB(200, 200, 190) },
+		ServoArm = { Accent = Color3.fromRGB(255, 190, 90) },
+		ArcGauntlet = { Accent = Color3.fromRGB(80, 200, 255) },
+		StriderLeg = { Accent = Color3.fromRGB(120, 255, 170) },
+		PistonLeg = { Accent = Color3.fromRGB(255, 220, 120) },
+	},
+	DefaultAccent = Color3.fromRGB(80, 200, 255),
+}
+
+-- What ears and noses pick up (client/Senses.lua). Hearing: a pip on a ring around the screen centre points at
+-- each moving body inside your Hearing radius that you can't see (off screen or behind a wall). Scent: a soft
+-- marker on loot and fragments inside your Scent radius, and with Track, on wounded bodies too.
+Presentation.Senses = {
+	Tick = 0.15,
+	MoveSpeed = 6, -- studs/s: slower than this makes no sound
+	RingScale = 0.16, -- ring radius, share of the smaller screen side
+	PipSize = UDim2.fromOffset(18, 6),
+	HearColor = Color3.fromRGB(235, 225, 200),
+	ScentTick = 0.5,
+	ScentColor = Color3.fromRGB(170, 230, 80),
+	BloodColor = Color3.fromRGB(200, 30, 40),
+	WoundedBelow = 0.5, -- health share
+	MarkerSize = UDim2.fromOffset(10, 10),
+}
+
 return Presentation

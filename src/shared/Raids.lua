@@ -111,6 +111,8 @@ Raids.Market = {
 	{ Id = "LongBarrel", Price = 95 },
 	{ Id = "ReflexOptic", Price = 120 },
 	{ Id = "ServoArm", Price = 150 },
+	{ Id = "StriderLeg", Price = 140 },
+	{ Id = "AudioPickup", Price = 110 },
 	{ Id = "ArcRifle", Price = 260 },
 	{ Id = "Intel", Price = 50 },
 }

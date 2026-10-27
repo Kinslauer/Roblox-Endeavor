@@ -59,6 +59,7 @@ local function place(id, def, position)
 	pickup.CFrame = CFrame.new(base + Vector3.new(0, 0.6, 0)) * CFrame.Angles(0, math.rad(37), math.rad(8))
 	pickup:SetAttribute("FragmentId", id)
 	pickup:SetAttribute("Needs", needsList(def))
+	CollectionService:AddTag(pickup, "Scent") -- a cybernetic nose finds it (client/Senses.lua)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ObjectText, prompt.ActionText, prompt.HoldDuration = def.Name, "Pick up", 0.6
 	prompt.MaxActivationDistance, prompt.RequiresLineOfSight = 8, false

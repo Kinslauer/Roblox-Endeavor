@@ -34,7 +34,8 @@ State goes to the client as one table (`TerminalChanged`) and re-pushes on every
 **HOUSE** furnishings (`Raids.House`: rug, floor lamp, shelf, fern, poster, couch) are stored in the profile and
 published as a JSON attribute; the **client** draws them in the hideout room for their owner only (`HouseView.lua`),
 since the room is shared geometry for now. **MARKET** (`Raids.Market`) sells what the enclave's trader does not:
-Suppressor, 4x Scope, Light Bolt, Long Barrel, Reflex Optic, Servo Arm, Arc Rifle, and Intel itself at 50.
+Suppressor, 4x Scope, Light Bolt, Long Barrel, Reflex Optic, Servo Arm, Strider Leg, Audio Pickup, Arc Rifle, and Intel
+itself at 50.
 
 ## 3. Raids (`shared/Raids.lua`, `server/Raids.lua`)
 A **contract** is a template: a name, the broker's one-line text, a chain of **steps**, a reward. Step kinds:

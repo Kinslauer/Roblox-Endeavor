@@ -19,6 +19,8 @@ function Stats.Apply(player, fill)
 	hum.MaxHealth = d.MaxHealth
 	hum.Health = if fill then d.MaxHealth else math.min(hum.Health, d.MaxHealth)
 	hum.WalkSpeed = d.WalkSpeed
+	hum.JumpPower = S.BaseJumpPower * d.JumpMult -- piston legs (shared/Cybernetics.lua)
+	hum.JumpHeight = S.BaseJumpHeight * d.JumpMult
 
 	char:SetAttribute("MaxStamina", d.MaxStamina)
 	char:SetAttribute("MaxPosture", d.MaxPosture)

@@ -233,12 +233,18 @@ local function buildInventory(invPanel)
 					if held then Remotes.Unequip:FireServer("Weapon") else Remotes.EquipItem:FireServer(id) end
 				end })
 			elseif def.Type == "Cybernetic" then
-				-- ripped in or out at your Autonet only (server/Autonet.lua)
-				local fitted = lastCyber[def.Slot] == id
+				-- ripped in or out at your Autonet only (server/Autonet.lua); arms and legs pick a side
 				if player:GetAttribute("AtAutonet") then
-					table.insert(buttons, { text = if fitted then "Rip out" else "Rip in", color = Color3.fromRGB(150, 50, 50), fn = function()
-						if fitted then Remotes.Autonet:FireServer("Out", def.Slot) else Remotes.Autonet:FireServer("In", id) end
-					end })
+					local slots = Cybernetics.SlotsFor(Cybernetics.Pieces[id])
+					local paired = #slots > 1
+					for _, slot in slots do
+						local short = if paired then " " .. string.sub(Cybernetics.Label[slot], 1, 1) else ""
+						if lastCyber[slot] == id then
+							table.insert(buttons, { text = "Rip out" .. short, color = Color3.fromRGB(120, 40, 40), fn = function() Remotes.Autonet:FireServer("Out", slot) end })
+						elseif Cybernetics.Fitted(lastCyber, id) < (lastInventory[id] or 0) then
+							table.insert(buttons, { text = "Rip in" .. short, color = Color3.fromRGB(150, 50, 50), fn = function() Remotes.Autonet:FireServer("In", id, slot) end })
+						end
+					end
 				end
 			elseif def.Type == "Armor" then
 				local worn = lastArmor[def.Slot] == id
@@ -249,8 +255,16 @@ local function buildInventory(invPanel)
 				table.insert(buttons, { text = "Fit", color = Color3.fromRGB(140, 60, 120), fn = function() Remotes.Bench:FireServer("Fit", lastEquipped, id) end })
 			end
 			local suffix = if def.Slot then (" [%s]"):format(def.Slot) else ""
-			if def.Type == "Cybernetic" and lastCyber[def.Slot] == id then
-				suffix ..= " - in you"
+			if def.Type == "Cybernetic" then
+				local where = {}
+				for _, slot in Cybernetics.Slots do
+					if lastCyber[slot] == id then
+						table.insert(where, string.lower(Cybernetics.Label[slot]))
+					end
+				end
+				if #where > 0 then
+					suffix ..= " - in you (" .. table.concat(where, ", ") .. ")"
+				end
 			end
 			addRow(invPanel, ("%s x%d%s"):format(def.Name, lastInventory[id], suffix), buttons)
 		end
@@ -397,9 +411,26 @@ local function buildLoadout(loadoutPanel)
 			local id = loadout.Armor[slot]
 			addRow(loadoutPanel, ("%s: %s"):format(slot, if id then Items.Defs[id].Name else "-"), {})
 		end
+		addRow(loadoutPanel, ("-- Body: %d%% metal --"):format(math.floor((loadout.Conversion or 0) * 100 + 0.5)), {})
 		for _, slot in Cybernetics.Slots do
 			local id = loadout.Cyber[slot]
-			addRow(loadoutPanel, ("%s implant: %s"):format(slot, if id then Items.Defs[id].Name else "-"), {})
+			addRow(loadoutPanel, ("%s: %s"):format(Cybernetics.Label[slot], if id then Items.Defs[id].Name else "flesh"), {})
+		end
+		local senses = {}
+		if (loadout.Hearing or 0) > 0 then
+			table.insert(senses, ("hear %d studs"):format(loadout.Hearing))
+		end
+		if (loadout.Scent or 0) > 0 then
+			table.insert(senses, ("smell %d studs%s"):format(loadout.Scent, if loadout.Track then " + blood" else ""))
+		end
+		if (loadout.Lift or 0) > 0 then
+			table.insert(senses, ("lift %s"):format(if loadout.Lift >= 2 then "heavy" else "medium"))
+		end
+		if (loadout.JumpMult or 1) > 1 then
+			table.insert(senses, ("jump x%.2f"):format(loadout.JumpMult))
+		end
+		if #senses > 0 then
+			addRow(loadoutPanel, "Implants: " .. table.concat(senses, "  |  "), {})
 		end
 		addRow(loadoutPanel, ("Flick window x%.2f  |  Black Flash x%.1f"):format(loadout.FlickerRate, Config.Flicker.BlackFlashMult + loadout.FlashBonus), {})
 		addRow(loadoutPanel, ("Resist  Phys %d%%  Arc %d%%  |  Weight %d  |  Posture %d"):format(

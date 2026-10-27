@@ -121,7 +121,8 @@ acquire one early. That is also how they mix and match cybernetics."
   3. **Build it**: crafting gives a kit; using it in the hideout installs **the Autonet** for that conduit (stored with
      the hideout, `profile.House`-style, so it persists across deaths like the rest of the hideout). Shown and usable
      only by its owner while the hideout is shared geometry.
-  4. **Rip in**: at the Autonet, fit, swap or strip cybernetics in the three slots (Optic / Arm / Core). Nowhere else: a
+  4. **Rip in**: at the Autonet, fit, swap or strip cybernetics in any of the body's eight slots (eyes, ears, nose, core,
+     both arms, both legs — `design/gdd/cybernetics.md`, owner 2026-10-27). Nowhere else: a
      conduit without an Autonet can carry cybernetics but can't put them in.
   - Today `Gear.EquipGear` fits a cybernetic anywhere; this moves it behind the Autonet. Cybernetics already fitted when
     the change ships stay fitted. Armour and weapons still change anywhere. A permadeath loses the cybernetics that
@@ -139,6 +140,7 @@ acquire one early. That is also how they mix and match cybernetics."
   (`AtAutonet`, cleared when you step away); the inventory's cybernetic rows then show Rip in / Rip out. Each rip
   costs health up front, anchors the body for the channel, whites the screen edges and shakes the camera; a swap is
   two rips. `Inventory.Equip` and `Remotes.Unequip` refuse cybernetics everywhere; war shipments no longer put them in.
+  **Full body (2026-10-27)**: eight slots, arm and leg pieces pick a side (Rip in L / R); see `cybernetics.md`.
 - **The computer is acquired, and life is hard until it is** (owner, 18:03: "it should be hard before they build or
   find a computer"). A fresh conduit has a hideout with an empty desk where the computer goes; no Computer console, no
   apps. Two ways to get one:

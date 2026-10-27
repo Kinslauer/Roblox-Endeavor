@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Appearance = require(ReplicatedStorage.Shared.Appearance)
+local Cybernetics = require(ReplicatedStorage.Shared.Cybernetics)
 local ProfileService = require(script.Parent.ProfileService)
 
 -- NOTE: ProfileService:Reconcile() re-adds any missing key from this template, so anything a
@@ -127,12 +128,23 @@ function PlayerData.Load(player)
 	if not profile.Data.Created then
 		newCharacter(profile.Data)
 	end
+	PlayerData.Migrate(profile.Data)
+	return profile.Data
+end
+
+-- Older saves, brought up to date on load.
+function PlayerData.Migrate(d)
 	-- the computer became something you acquire (2026-10-26): anyone who was already using theirs keeps it
-	local d = profile.Data
 	if not d.Computer and (next(d.Contacts or {}) ~= nil or next(d.House or {}) ~= nil) then
 		d.Computer = true
 	end
-	return profile.Data
+	-- the whole body became rippable (2026-10-27): Optic -> Eyes, Arm -> RightArm; Core stays Core
+	for old, new in Cybernetics.Renamed do
+		if d.Cyber and d.Cyber[old] then
+			d.Cyber[new] = d.Cyber[new] or d.Cyber[old]
+			d.Cyber[old] = nil
+		end
+	end
 end
 
 function PlayerData.Get(player)

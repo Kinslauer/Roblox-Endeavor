@@ -74,8 +74,9 @@ function Autonet.Use(player)
 	announce(player, "On the Autonet. Rip cybernetics in or out from your inventory (Tab). Each rip hurts.")
 end
 
--- action "In" itemId | "Out" slot
-function Autonet.Rip(player, action, arg)
+-- action "In" itemId [slot] | "Out" slot. A paired piece (arm, leg) can name its side; otherwise it goes in
+-- the first empty slot of its kind.
+function Autonet.Rip(player, action, arg, side)
 	local data = PlayerData.Get(player)
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -93,10 +94,11 @@ function Autonet.Rip(player, action, arg)
 	local rips, slot, itemId
 	if action == "In" then
 		local piece = type(arg) == "string" and Cybernetics.Pieces[arg]
-		if not (piece and (data.Inventory[arg] or 0) > 0) or data.Cyber[piece.Slot] == arg then
+		slot = piece and Gear.CyberSlot(data, arg, side)
+		if not slot then
 			return false
 		end
-		slot, itemId = piece.Slot, arg
+		itemId = arg
 		rips = if data.Cyber[slot] then 2 else 1 -- a swap: out, then in
 	elseif action == "Out" then
 		if type(arg) ~= "string" or not data.Cyber[arg] then
@@ -141,8 +143,8 @@ function Autonet.Rip(player, action, arg)
 			return
 		end
 		if action == "In" then
-			Gear.EquipGear(player, itemId)
-			announce(player, ("Ripped in: %s."):format(Cybernetics.Pieces[itemId].Name))
+			Gear.EquipGear(player, itemId, slot)
+			announce(player, ("Ripped in: %s (%s)."):format(Cybernetics.Pieces[itemId].Name, Cybernetics.Label[slot]))
 		else
 			local was = data.Cyber[slot]
 			Gear.Unequip(player, slot)

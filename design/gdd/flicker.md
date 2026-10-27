@@ -124,7 +124,7 @@ Output: 6.0 down to 3.16 charge per press.
 
 | Variable | Type | Range | Lives in |
 |---|---|---|---|
-| `Cybernetics.FlickerRate` | number | Reflex Optic 0.15 (Optic); Neural Core 0.25 or Overclock Core 0.15 (Core) → Σ 0-0.40 | `Cybernetics.Pieces` |
+| `Cybernetics.FlickerRate` | number | Reflex Optic 0.15 (Eyes); Neural Core 0.25 or Overclock Core 0.15 (Core) → Σ 0-0.40 | `Cybernetics.Pieces` |
 | `Intelligence` | int | 0-50 (effective, incl. armor bonuses) | profile `Stats` + `Armor.Pieces[*].Stats` |
 | `RatePerIntelligence` | number | 0.01 | `Config.Flicker` |
 

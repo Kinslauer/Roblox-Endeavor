@@ -81,6 +81,7 @@ Items.LootTables = {
 		{ "RebarBlade", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 }, { "ScrapSpear", 0.12, 1, 1 }, { "Sledge", 0.06, 1, 1 }, { "ArcPistol", 0.05, 1, 1 },
 		{ "PlatedHelm", 0.1, 1, 1 }, { "RiotPlate", 0.06, 1, 1 }, { "ArcHood", 0.08, 1, 1 }, { "ConduitHarness", 0.04, 1, 1 }, { "ServoGreaves", 0.07, 1, 1 },
 		{ "ReflexOptic", 0.06, 1, 1 }, { "TargetingLens", 0.05, 1, 1 }, { "ServoArm", 0.05, 1, 1 }, { "ArcGauntlet", 0.04, 1, 1 }, { "NeuralCore", 0.04, 1, 1 }, { "OverclockCore", 0.02, 1, 1 },
+		{ "AudioPickup", 0.05, 1, 1 }, { "ChemSniffer", 0.05, 1, 1 }, { "StriderLeg", 0.04, 1, 1 }, -- the whole body is rippable
 		{ "DotSight", 0.05, 1, 1 }, { "ExtMag", 0.05, 1, 1 }, -- city parts: the common ones
 		{ "ArcCell", 0.6, 2, 5 }, { "Battery", 0.35, 1, 2 }, { "Glass", 0.4, 1, 3 }, { "SheetMetal", 0.3, 1, 2 }, { "Pipe", 0.3, 1, 2 }, { "Powder", 0.1, 1, 2 },
 		{ "HomeComputer", 0.02, 1, 1 },
@@ -90,12 +91,14 @@ Items.LootTables = {
 		{ "ScavHelm", 0.08, 1, 1 }, { "ScrapVest", 0.08, 1, 1 }, { "ScrapGreaves", 0.08, 1, 1 },
 		{ "TacLight", 0.04, 1, 1 }, { "LaserSight", 0.02, 1, 1 },
 		{ "Pipe", 0.25, 1, 1 }, { "Glass", 0.15, 1, 2 },
+		{ "ChemSniffer", 0.03, 1, 1 }, -- scavengers follow their noses
 	},
 	Brute = {
 		{ "Scrap", 1, 2, 5 }, { "Cloth", 0.5, 1, 2 }, { "Ration", 0.4, 1, 1 },
 		{ "PlatedHelm", 0.06, 1, 1 }, { "RiotPlate", 0.06, 1, 1 }, { "PlatedGreaves", 0.06, 1, 1 },
 		{ "CompBarrel", 0.05, 1, 1 }, { "LongBarrel", 0.04, 1, 1 },
 		{ "SheetMetal", 0.5, 1, 3 }, { "Pipe", 0.3, 1, 2 },
+		{ "PlatedCore", 0.04, 1, 1 }, { "PistonLeg", 0.04, 1, 1 },
 	},
 	Gunner = {
 		{ "Scrap", 0.9, 1, 3 }, { "Wire", 0.8, 2, 4 }, { "Cloth", 0.4, 1, 2 },
@@ -112,6 +115,7 @@ Items.LootTables = {
 	Warmonger = { -- the open world's elite: cybernetics and the good parts
 		{ "Scrap", 1, 6, 12 }, { "Wire", 1, 4, 8 }, { "Medkit", 0.6, 1, 2 },
 		{ "NeuralCore", 0.2, 1, 1 }, { "OverclockCore", 0.1, 1, 1 }, { "ConduitHarness", 0.2, 1, 1 }, { "ArcPistol", 0.3, 1, 1 },
+		{ "BloodTracer", 0.15, 1, 1 }, { "EchoArray", 0.12, 1, 1 }, { "PistonLeg", 0.15, 1, 1 }, { "ServoArm", 0.12, 1, 1 },
 		{ "LongBarrel", 0.3, 1, 1 }, { "Suppressor", 0.25, 1, 1 }, { "MatchSlide", 0.2, 1, 1 },
 		{ "Battery", 0.6, 1, 3 }, { "Powder", 0.4, 1, 3 }, { "SheetMetal", 0.5, 2, 4 },
 		{ "HomeComputer", 0.1, 1, 1 },
@@ -130,7 +134,7 @@ Items.LootTables = {
 	SalvageStreetlight = { { "Battery", 0.5, 1, 1 }, { "Glass", 0.8, 1, 2 }, { "Pipe", 0.7, 1, 2 } },
 	Drone = { -- machine parts: wire and scrap, a rare optic
 		{ "Wire", 1, 2, 5 }, { "Scrap", 0.8, 1, 3 },
-		{ "ReflexOptic", 0.04, 1, 1 }, { "TargetingLens", 0.03, 1, 1 },
+		{ "ReflexOptic", 0.04, 1, 1 }, { "TargetingLens", 0.03, 1, 1 }, { "AudioPickup", 0.05, 1, 1 }, { "EchoArray", 0.02, 1, 1 },
 		{ "Scope4x", 0.04, 1, 1 }, { "LightBolt", 0.03, 1, 1 }, -- drones carry the rifle optics
 		{ "Battery", 0.7, 1, 2 }, { "Glass", 0.3, 1, 1 },
 	},

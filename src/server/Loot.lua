@@ -1,5 +1,6 @@
 -- Anything lootable in the world: player remains, NPC drops, supply crates.
 -- Holding the prompt takes time, so stealing from a fresh kill is a risk.
+local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -22,6 +23,7 @@ function Loot.Spawn(cframe, bundle, opts)
 	part.Anchored = false
 	part.CFrame = cframe
 	part:SetAttribute("Label", opts.Label or "Remains")
+	CollectionService:AddTag(part, "Scent") -- a cybernetic nose finds it (client/Senses.lua)
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ObjectText = opts.Label or "Remains"

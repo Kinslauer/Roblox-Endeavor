@@ -157,8 +157,9 @@ Config.Destruction = {
 		LightVolume = 8, MediumVolume = 40, -- chunk volume (studs^3) up to which it is Light / Medium; above, Heavy
 		Classes = {
 			Light = { Grabbable = true, Speed = 75, Lift = 6, Damage = 12, Posture = 10, Knockback = 18, Stamina = 10 },
-			Medium = { Grabbable = false, Speed = 55, Lift = 9, Damage = 22, Posture = 20, Knockback = 30, Stamina = 18 }, -- story 004
-			Heavy = { Grabbable = false, Speed = 35, Lift = 10, Damage = 40, Posture = 40, Knockback = 45, Stamina = 30 }, -- story 004
+			-- ArmsNeeded: cybernetic arms with Lift that let you pick this class up anyway (shared/Cybernetics.lua)
+			Medium = { Grabbable = false, ArmsNeeded = 1, Speed = 55, Lift = 9, Damage = 22, Posture = 20, Knockback = 30, Stamina = 18 }, -- story 004
+			Heavy = { Grabbable = false, ArmsNeeded = 2, Speed = 35, Lift = 10, Damage = 40, Posture = 40, Knockback = 45, Stamina = 30 }, -- story 004
 		},
 	},
 }
@@ -265,6 +266,8 @@ Config.Stats = {
 	BaseStamina = 100,
 	StaminaPerWillpower = 4,
 	BaseWalkSpeed = 15,
+	BaseJumpPower = 50, -- x Gear JumpMult (piston legs); both set so either humanoid jump mode works
+	BaseJumpHeight = 7.2,
 	WalkSpeedPerAgility = 0.1,
 	DamagePerStrength = 0.03,
 	PostureDamagePerStrength = 0.02,

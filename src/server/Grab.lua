@@ -4,7 +4,8 @@
 -- a look direction. The charge is timed on the server, the speed comes from the formula (never from the
 -- client), and the flight is flown here, frame by frame, with its own hit detection: the first body it meets
 -- past MinFlight takes a normal combat hit (block, parry, dodge and knockback all apply), a prop takes a
--- Thrown hit. Light chunks: one hand, you can still block.
+-- Thrown hit. Light chunks: one hand, you can still block. Medium and Heavy need cybernetic arms with Lift
+-- (one and two; shared/Cybernetics.lua ServoArm).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -46,9 +47,13 @@ function Grab.Grab(player)
 		return false
 	end
 	local best, bestD
+	local arms = Gear.Get(player).Lift or 0
+	local function canLift(K)
+		return K ~= nil and (K.Grabbable or (K.ArmsNeeded ~= nil and arms >= K.ArmsNeeded))
+	end
 	for _, c in Destruction.Chunks() do
 		local chunk = c[1]
-		if chunk.Parent and not chunk:GetAttribute("Held") and not flights[chunk] and G.Classes[classOf(chunk)] and G.Classes[classOf(chunk)].Grabbable then
+		if chunk.Parent and not chunk:GetAttribute("Held") and not flights[chunk] and canLift(G.Classes[classOf(chunk)]) then
 			local d = (chunk.Position - root.Position).Magnitude
 			if d <= G.Range and (not bestD or d < bestD) then
 				best, bestD = chunk, d
