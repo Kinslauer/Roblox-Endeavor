@@ -584,6 +584,9 @@ local function applyDamage(attacker, victim, amount, opts)
 	if ap and vp and not WorldPhase.IsOpen() then
 		return "none" -- no PvP during the prologue (they should never meet anyway)
 	end
+	if victim:GetAttribute("DevGod") then
+		return "none" -- Studio dev panel god mode (server/DevPanel.lua)
+	end
 	if victim:FindFirstChildOfClass("ForceField") then
 		return "none" -- spawn protection (Config.SpawnProtectionSeconds); ends early when they attack
 	end
@@ -626,6 +629,7 @@ local function applyDamage(attacker, victim, amount, opts)
 	local direction = if away.Magnitude > 0.1 then away.Unit else Vector3.zero
 	-- read "open" and "airborne" before this hit's own stun lands
 	local wasOpen = Combat.IsOpen(victim)
+	local stunnedBefore = vs.stunned -- when the last stagger ended (this hit's own stun lands below)
 	local juggled = t < (vs.juggledUntil or 0)
 	if juggled then
 		amount *= Config.Momentum.AirDamageMult -- helpless in the air
@@ -677,7 +681,7 @@ local function applyDamage(attacker, victim, amount, opts)
 	if result ~= "blocked" and vhum.Health > 0 then
 		if juggled then
 			pop(victim, vs, t) -- keep it up there
-		elseif opts.Launches and wasOpen and launchable(victim) then
+		elseif opts.Launches and (wasOpen or t < stunnedBefore + Config.Momentum.LaunchGrace) and launchable(victim) then
 			launch(attacker, victim, vs, t, direction) -- a heavy on an open enemy sends it up
 		end
 	end
@@ -983,6 +987,7 @@ function Combat.SetBlock(player, down)
 		return
 	end
 	local s = st(char)
+	s.blockHeld = down -- a held intent: the regen loop raises the guard the moment you're free again
 	if down then
 		if Combat.CanAct(char) and not s.block and os.clock() >= s.busyUntil then
 			s.block, s.blockStart = true, os.clock()
@@ -1093,6 +1098,12 @@ function Combat.Init()
 					end
 				end
 				applySpeed(char, s, d)
+				-- F still held after a swing, a stagger or a guard break: the guard comes back up on its own.
+				-- Only a fresh press parries (blockStart is set outside the window).
+				if s.blockHeld and not s.block and t >= s.busyUntil and Combat.CanAct(char) and Players:GetPlayerFromCharacter(char) then
+					s.block, s.blockStart = true, t - C.ParryWindow - 1
+					char:SetAttribute("Blocking", true)
+				end
 				local maxStamina = char:GetAttribute("MaxStamina")
 				if maxStamina and not s.block and not s.sprint and t - s.lastSpend > C.StaminaRegenDelay then
 					Combat.AddStamina(char, C.StaminaRegenPerSecond * step)

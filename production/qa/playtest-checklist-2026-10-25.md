@@ -6,7 +6,7 @@ use Rojo instead, `git pull` in your clone first or Rojo will overwrite Studio w
 
 Keys: **LMB** attack · **RMB** heavy · **E** flick · **F** block/parry · **Q**+dir dodge · **Z** feint · **G** grab / hold-and-release throw ·
 **T/Y/V** skills · **R** reload · **J** stats · **Tab** inventory · **L** loadout · **LeftControl** toggle aim stance ·
-**LeftShift** sprint · **C** first person · **X** use consoles/loot · **hold LeftAlt** to free the mouse for buttons (the creator and HUD panels free it on their own). Skip the tutorial with its Skip button if you have seen it.
+**LeftShift** sprint · **C** first person · **X** use consoles/loot · **P** dev panel (Studio only) · **hold LeftAlt** to free the mouse for buttons (the creator and HUD panels free it on their own). Skip the tutorial with its Skip button if you have seen it.
 
 ## 1. Combat feel (epic `combat-feel`, stories 003–005)
 - [ ] Swing: the arm winds back, the hand glows and the glow snaps to red right before impact — is the flick cue readable at the moment you should press E?
@@ -204,3 +204,18 @@ To see one without waiting an hour, run this in the Studio command bar during Pl
 - [ ] Fill all eight slots: "Body: 100% metal". How does it look, and does it feel like it was worth eight trips to the table?
 - [ ] At 100% metal a lore line plays at the table. Then type in chat, something like "lol I'm sooooo done!!" It should come out as "I AM SO DONE." in grey-blue, and the bubble over your head should look cold and terminal-like. **Check the bubble's words too**: if the bubble still shows your normal text, note it (that's the part I couldn't confirm without Studio).
 - [ ] Rip one piece back out: a line says your voice comes back, and chat is normal again.
+
+
+## 24. Round 17 — your notes, fixed, added 2026-10-28
+Start here. The **dev panel** (press **P**, or the DEV button top right; Studio only) gets you anywhere without fighting the road first: teleports (both plazas, three points on the road, the Dealer, Verdant Reach, the arena, the hideout), every weapon, every implant, materials and cells, money, "Unlock computer, contacts, Autonet", heal, god mode, kill nearby enemies, and a cycle in 70 s.
+- [ ] Block (F): your arms come up into a guard for your weapon (fists in front of the face, a weapon held up across the body, the spear's haft out in front, the sledge's haft held like a bar), and you sink a little. A blocked hit jolts you; a parry throws the arms out and back. Can another player read your guard?
+- [ ] Hold F through your own swing: the guard comes up by itself the moment the swing ends (it used to need a second press). A guard that comes up on its own never parries; only a fresh press does.
+- [ ] Swings: each one now winds up and holds for a beat, strikes, carries on past the hit (follow-through), holds there (endlag) and only then settles. Wind-ups and endlag are longer on every weapon (club light 0.28 s to the hit, 0.7 s total), and damage went up about 15% to match. Do hits feel alive now? Too slow?
+- [ ] Weapons sit upright in the fist (square to the forearm), not hanging down the arm. At rest a club points forward and up; on an overhead wind-up it lies back over your shoulder. Does each one swing the way you'd swing it? Take all from the dev panel.
+- [ ] The flick cue: the glow never flips in the first frames any more, and when it turns red it swells and shrinks into the hit. The tutorial now says to tap E on the red glow, not at the same time as clicking. Readable?
+- [ ] Getting hit: a staggered body snaps back and twists away, then recovers. Hit a raider and watch.
+- [ ] Sledge heavy (the slam): a shockwave ring races out across the ground, cracks are left behind, and the camera shakes if you're close. The recovery after it is longer.
+- [ ] Groups take turns: only one melee enemy winds up at you at a time; the rest hold a ring a few studs out, circling and spreading apart, and step in when it's their turn. Ambushes also arrive from all sides now. Can you get down the road? (Dev panel → Road: start.)
+- [ ] The launcher: light, light, then heavy on a Grunt sends it up now (the lights' stagger used to end before any heavy could land).
+- [ ] Enemies and contacts: no Roblox name tag or health bar over them, only our small plate.
+- [ ] Arc pistol: the bolt starts at the muzzle and lands on whatever the reticle is on (it used to come from the hand and aim from your head along the camera, so it missed a little over the shoulder). With a laser sight fitted, the laser ends on the reticle too.

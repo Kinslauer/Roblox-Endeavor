@@ -196,6 +196,37 @@ local function onOwnSwing(char, info)
 end
 
 -- The stance is actually steering the camera/body right now (on, and no menu wants the mouse).
+-- What the reticle is on: the first thing the camera's centre ray meets (not your own body), or a point far
+-- down it. Shots aim from the head at this point, so they land where the reticle is even though the
+-- camera sits over the shoulder (owner s2-3: "beam points where you aim").
+function Aim.Point(range)
+	local camera = workspace.CurrentCamera
+	if not camera then
+		return nil
+	end
+	range = range or 400
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { player.Character, camera }
+	local from, look = camera.CFrame.Position, camera.CFrame.LookVector
+	local hit = workspace:Raycast(from, look * range, params)
+	return if hit then hit.Position else from + look * range
+end
+
+-- The laser sight (a bench part, client/WeaponView.lua) on your own gun ends on the aim point.
+local function aimLaser()
+	local char = player.Character
+	local weapon = char and char:FindFirstChild("WeaponView") -- client/WeaponView.lua MODEL_NAME
+	local handle = weapon and weapon:FindFirstChild("Handle")
+	local beam = handle and handle:FindFirstChild("LaserSight")
+	if beam and beam.Attachment1 then
+		local point = Aim.Point(120)
+		if point then
+			beam.Attachment1.WorldPosition = point
+		end
+	end
+end
+
 function Aim.Active()
 	return Aim.Enabled and not Hud.MenuOpen() and not UserInputService:IsKeyDown(A.FreeCursorKey)
 end
@@ -342,6 +373,7 @@ function Aim.Init()
 	RunService.Heartbeat:Connect(faceCamera)
 	RunService:BindToRenderStep("ConduitRecoil", Enum.RenderPriority.Camera.Value + 1, applyRecoil) -- before Aim / ViewModel read the camera
 	RunService:BindToRenderStep("ConduitAim", Enum.RenderPriority.Camera.Value + 2, lockMouse)
+	RunService:BindToRenderStep("ConduitLaser", Enum.RenderPriority.Camera.Value + 3, aimLaser)
 	CombatFX.On("Swing", onOwnSwing)
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if processed then

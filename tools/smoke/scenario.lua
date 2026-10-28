@@ -104,7 +104,7 @@ check("step 8 after heavy", step() == 8)
 local flashSeen = false
 for _ = 1, 8 do
 	run(0.5)
-	Remotes.Flicker:FireServer(); Remotes.Attack:FireServer(); run(0.4)
+	Remotes.Attack:FireServer(); run(0.1); Remotes.Flicker:FireServer(); run(0.5) -- on the red glow, inside the wind-up
 	for _, e in M.FireLog do if e[3] == "BlackFlash" then flashSeen = true end end
 	if step() == 9 then break end
 end
@@ -702,7 +702,54 @@ do
 		me:SetAttribute("Stamina", 100)
 		Remotes.Heavy:FireServer(); run(Weapons.Defs.PipeClub.Heavy.Windup + 0.15)
 		check("heavy on a standing enemy only staggers", g3:GetAttribute("Juggled") == false)
+		-- light, light, heavy (owner s8-8): the lights' stagger has ended by the time a heavy lands; LaunchGrace keeps it open
 		g3:Destroy()
+		run(Config.Combat.HeavyCooldown + 0.3)
+		me:SetAttribute("Stamina", 100)
+		me:PivotTo(M.CF.lookAt(M.V3.new(200, 5, 200), M.V3.new(200, 5, 190)))
+		g3 = NPCs.Spawn("Grunt", M.V3.new(200, 5, 194))
+		s3 = Combat.State(g3)
+		local w = Weapons.Defs.PipeClub.Heavy.Windup
+		s3.stunned = M.setNow() + w - 0.2 -- staggered, and the stagger ends a moment before the heavy lands
+		Remotes.Heavy:FireServer(); run(w + 0.15)
+		check("light, light, heavy: a stagger that just ended still launches", g3:GetAttribute("Juggled") == true)
+		g3:Destroy()
+		run(1.5)
+	end
+	-- the guard (owner s1-3 / s9-1): F held through your own swing goes up the moment you're free; a re-raise never parries
+	do
+		local Weapons = M.mockEnv.__require(RS.Shared.Weapons)
+		me:SetAttribute("Stamina", 100)
+		Remotes.Attack:FireServer(); run(0.05)
+		Remotes.Block:FireServer(true); run(0.1)
+		check("F during your own swing doesn't cancel it", me:GetAttribute("Blocking") ~= true)
+		run(Weapons.Defs.PipeClub.Attacks[1].End + 0.3)
+		local cs = Combat.State(me)
+		check("...but the guard comes up once the swing is over, while F is held", me:GetAttribute("Blocking") == true and M.setNow() - cs.blockStart > Config.Combat.ParryWindow)
+		Remotes.Block:FireServer(false); run(0.1)
+		check("letting go of F drops it", me:GetAttribute("Blocking") == false)
+	end
+	-- taking turns (owner s9-1 / s8-4): a group doesn't all swing at once; the ones waiting hold a ring around you
+	do
+		me:SetAttribute("DevGod", true)
+		local p0 = me.HumanoidRootPart.Position
+		local gs = {}
+		for i = 1, 3 do
+			local a = i * 2.1
+			gs[i] = NPCs.Spawn("Grunt", p0 + M.V3.new(math.cos(a) * 5, 0, math.sin(a) * 5))
+		end
+		local most, held = 0, false
+		for _ = 1, 40 do
+			run(0.1)
+			most = math.max(most, NPCs.Swinging(me))
+			for _, g in gs do
+				if g:GetAttribute("AIState") == "Hold" then held = true end
+			end
+		end
+		check(("only one melee enemy swings at you at a time (most at once: %d); the rest hold back"):format(most), most <= 1 and held)
+		for _, g in gs do g:Destroy() end
+		me:SetAttribute("DevGod", nil)
+		run(0.5)
 	end
 	me:PivotTo(M.CF.lookAt(M.V3.new(120, 5, 0), M.V3.new(120, 5, -4)))
 	data.SkillSlots["2"], data.SkillSlots["3"] = nil, nil

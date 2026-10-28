@@ -223,8 +223,11 @@ local function onBolt(char, hitPos)
 	if not from or typeof(hitPos) ~= "Vector3" then
 		return
 	end
+	-- from the gun's muzzle when there is one (owner s2-3: "closer to the origin"), else the hand
 	local hand = char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm") or from
-	local origin = hand.Position
+	local view = char:FindFirstChild("WeaponView")
+	local muzzleAt = view and view:FindFirstChild("Muzzle", true)
+	local origin = if muzzleAt and muzzleAt:IsA("BasePart") then muzzleAt.Position else hand.Position
 	local length = (hitPos - origin).Magnitude
 	local beam = neonPart(Enum.PartType.Block, Vector3.new(0.2, 0.2, length), spec.Color, CFrame.lookAt(origin, hitPos) * CFrame.new(0, 0, -length / 2))
 	CombatFX.Spawn(beam, spec.Flash)

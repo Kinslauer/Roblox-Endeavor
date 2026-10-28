@@ -44,6 +44,8 @@ local function attach(model)
 			return
 		end
 		hum.NameDisplayDistance = 0 -- ours instead (local only)
+		hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None -- and no Roblox health bar either (owner s4-1)
+		hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 		local kind = kindOf(model)
 		local gui = Instance.new("BillboardGui")
 		gui.Name = "Nameplate"

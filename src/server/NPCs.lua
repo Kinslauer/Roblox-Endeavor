@@ -33,6 +33,56 @@ local rng = Random.new()
 local NPCs = {}
 NPCs.Tag = "Combatant" -- CollectionService tag the client uses to find non-player fighters
 
+-- Taking turns (owner playtest s9-1: "everytime i swing i get hit"; s8-4 "make them spread around you").
+-- Only AI.MeleeAttackers melee bodies may be winding up or striking at one target at a time; the rest hold
+-- a ring around it (AI.HoldGap outside their reach), spread apart, circling, and step in when the slot
+-- frees. Gunners and drones keep their distance and don't take slots.
+local claims = setmetatable({}, { __mode = "k" }) -- target -> { [attacker] = claim ends }
+
+local function othersSwinging(target, attacker, now)
+	local c, n = claims[target], 0
+	for m, untilT in c or {} do
+		if untilT <= now or not m.Parent then
+			c[m] = nil
+		elseif m ~= attacker then
+			n += 1
+		end
+	end
+	return n
+end
+
+local function claimSwing(target, attacker, now, seconds)
+	if othersSwinging(target, attacker, now) >= AI.MeleeAttackers then
+		return false
+	end
+	claims[target] = claims[target] or {}
+	claims[target][attacker] = now + seconds
+	return true
+end
+
+function NPCs.Swinging(target)
+	return othersSwinging(target, nil, os.clock())
+end
+
+-- Where a waiting body stands: on the ring at its current bearing, drifting `side`, pushed away from any
+-- other body standing close by so a group fans out around you instead of stacking in front.
+local function holdSpot(model, root, troot, radius, side)
+	local rel = (root.Position - troot.Position) * Vector3.new(1, 0, 1)
+	local a = if rel.Magnitude > 0.1 then math.atan2(rel.Z, rel.X) else rng:NextNumber(0, math.pi * 2)
+	for _, other in CollectionService:GetTagged(NPCs.Tag) do
+		local oroot = other ~= model and other:FindFirstChild("HumanoidRootPart")
+		if oroot and (oroot.Position - root.Position).Magnitude < AI.Spread then
+			local orel = (oroot.Position - troot.Position) * Vector3.new(1, 0, 1)
+			if orel.Magnitude > 0.1 then
+				local diff = (a - math.atan2(orel.Z, orel.X) + math.pi) % (2 * math.pi) - math.pi
+				a += if diff >= 0 then AI.SpreadPush else -AI.SpreadPush
+			end
+		end
+	end
+	a += side * AI.CircleSpeed * AI.Tick
+	return troot.Position + Vector3.new(math.cos(a) * radius, 0, math.sin(a) * radius)
+end
+
 -- ===== Rigs =====
 
 -- Kept for the tutorial / arena dummies: a static capsule with a Humanoid.
@@ -93,7 +143,9 @@ local function buildEnemyRig(typeName, def, opts)
 			end
 		end
 	end
-	hum.HealthDisplayDistance = 60
+	-- no Roblox name or health bar over enemies (owner s4-1); client/Nameplates draws ours
+	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 	if def.MaxPosture then -- read by Combat.State on first contact
 		model:SetAttribute("MaxPosture", def.MaxPosture)
 		model:SetAttribute("Posture", 0)
@@ -146,7 +198,9 @@ local function buildDroneRig(typeName, def)
 	local hum = Instance.new("Humanoid")
 	hum.MaxHealth, hum.Health = def.Health, def.Health
 	hum.DisplayName = def.Name or typeName
-	hum.HealthDisplayDistance = 60
+	-- no Roblox name or health bar over enemies (owner s4-1); client/Nameplates draws ours
+	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 	hum.PlatformStand = true -- the constraints fly the body; the Humanoid is health + a target
 	hum.Parent = model
 	model.PrimaryPart = root
@@ -425,6 +479,7 @@ function NPCs.Spawn(typeName, position, opts)
 	local nextDashAt = 0
 	local nextBarkAt = 0
 	local hadTarget = false
+	local side = if rng:NextNumber() < 0.5 then -1 else 1 -- which way it circles while it waits its turn
 	local idleSince = os.clock()
 	local state = "Idle"
 
@@ -602,18 +657,32 @@ function NPCs.Spawn(typeName, position, opts)
 							nextAttackAt = math.min(nextAttackAt, os.clock() + 0.1) -- the heavy follows the step
 						end)
 					else
+						local A = def.Attack
+						local holdRadius = def.Range + AI.HoldGap
+						local hold = false
 						if dist <= def.Range * 0.85 then
-							nav.stop()
-							setMoving(false)
-							if canAttack then
+							if canAttack and claimSwing(target, model, now, A.Windup + A.Active + AI.SwingGap) then
 								state = "Attack"
+								nav.stop()
+								setMoving(false)
 								attack(target)
+							elseif canAttack then
+								hold = true -- someone else is swinging: back out to the ring
 							else
+								nav.stop()
+								setMoving(false)
 								model:PivotTo(flatLook(root, troot.Position)) -- track the target through recovery
 							end
+						elseif dist <= holdRadius + 3 and othersSwinging(target, model, now) >= AI.MeleeAttackers then
+							hold = true -- don't crowd in while it isn't your turn
 						else
 							state = "Chase"
 							nav.moveTo(troot.Position)
+							setMoving(true)
+						end
+						if hold then
+							state = "Hold"
+							nav.moveTo(holdSpot(model, root, troot, holdRadius, side))
 							setMoving(true)
 						end
 					end
@@ -706,6 +775,7 @@ function NPCs.SpawnAmbush(center, size)
 	size = size or rng:NextInteger(A.GroupSize[1], A.GroupSize[2])
 	local spawned, brutes = {}, 0
 	local radius = A.Ring
+	local offset = rng:NextNumber(0, math.pi * 2)
 	for _ = 1, size do
 		-- pick a variant
 		local total = 0
@@ -726,8 +796,9 @@ function NPCs.SpawnAmbush(center, size)
 		end
 		-- find a spot
 		local spot
+		local base = offset + (#spawned + 1) * (math.pi * 2 / size) + rng:NextNumber(-0.3, 0.3) -- spread around the target
 		for try = 1, A.PlacementTries do
-			local angle = rng:NextNumber(0, math.pi * 2)
+			local angle = if try == 1 then base else rng:NextNumber(0, math.pi * 2)
 			local r = radius * (0.8 + 0.2 * rng:NextNumber())
 			spot = NPCs.FindGround(center + Vector3.new(math.cos(angle) * r, 0, math.sin(angle) * r))
 			if spot then

@@ -18,18 +18,23 @@ Presentation.Weapons = {
 	-- Idle stances (design/references/magoi-look-and-feel.md: "idle is low and ready"): one-handed weapons
 	-- hang low and a little forward, the off hand half-raised; fists keep a loose guard.
 	Fists = { ModelName = "", Build = nil, Stance = { Right = { 45, 0, -30 }, Left = { 50, 0, 30 } } }, -- nothing in hand: a loose guard
-	PipeClub = { ModelName = "", Build = "Club", Length = 3.4, Color = Color3.fromRGB(110, 110, 115), Grip = CFrame.identity, Stance = { Right = { 18, 0, -12 }, Left = { 30, 0, 25 } } },
-	RebarBlade = { ModelName = "", Build = "Blade", Length = 3.6, Color = Color3.fromRGB(150, 120, 100), Accent = Color3.fromRGB(190, 185, 170), Grip = CFrame.identity, Stance = { Right = { 22, 0, -15 }, Left = { 30, 0, 25 } } },
-	ShockBaton = { ModelName = "", Build = "Baton", Length = 2.8, Color = Color3.fromRGB(40, 40, 50), Accent = Color3.fromRGB(90, 200, 255), Grip = CFrame.identity, Stance = { Right = { 25, 0, -18 }, Left = { 35, 0, 28 } } },
-	ScrapSpear = { ModelName = "", Build = "Spear", Length = 6.5, Color = Color3.fromRGB(120, 95, 70), Accent = Color3.fromRGB(170, 170, 175), Grip = CFrame.new(0, 2.2, 0), -- held a third of the way down
+	PipeClub = { ModelName = "", Build = "Club", Length = 3.4, Color = Color3.fromRGB(110, 110, 115), Stance = { Right = { 18, 0, -12 }, Left = { 30, 0, 25 } } },
+	RebarBlade = { ModelName = "", Build = "Blade", Length = 3.6, Color = Color3.fromRGB(150, 120, 100), Accent = Color3.fromRGB(190, 185, 170), Stance = { Right = { 22, 0, -15 }, Left = { 30, 0, 25 } } },
+	ShockBaton = { ModelName = "", Build = "Baton", Length = 2.8, Color = Color3.fromRGB(40, 40, 50), Accent = Color3.fromRGB(90, 200, 255), Stance = { Right = { 25, 0, -18 }, Left = { 35, 0, 28 } } },
+	ScrapSpear = { ModelName = "", Build = "Spear", Length = 6.5, Color = Color3.fromRGB(120, 95, 70), Accent = Color3.fromRGB(170, 170, 175), Grip = CFrame.Angles(math.rad(110), 0, 0) * CFrame.new(0, 2.2, 0), -- held a third of the way down (MeleeGrip, shifted)
 		TwoHanded = true, Stance = { Right = { 30, 0, -40 }, Left = { 45, 0, 40 } } }, -- measured: hands at (0.44, -0.4, -1.0) / (-0.17, 0, -1.3) from the root
-	Sledge = { ModelName = "", Build = "Hammer", Length = 3.8, Color = Color3.fromRGB(80, 80, 85), Accent = Color3.fromRGB(60, 60, 65), Grip = CFrame.identity,
+	Sledge = { ModelName = "", Build = "Hammer", Length = 3.8, Color = Color3.fromRGB(80, 80, 85), Accent = Color3.fromRGB(60, 60, 65),
 		TwoHanded = true, Stance = { Right = { 25, 0, -45 }, Left = { 35, 0, 50 } } },
 	ArcPistol = { ModelName = "", Build = "Pistol", Length = 1.3, Color = Color3.fromRGB(50, 55, 65), Accent = Color3.fromRGB(120, 200, 255), Grip = CFrame.Angles(math.rad(-90), 0, 0) }, -- barrel runs down the arm line, so it points where the arm points
 	ArcRifle = { ModelName = "", Build = "Rifle", Length = 3.2, Color = Color3.fromRGB(44, 48, 58), Accent = Color3.fromRGB(120, 200, 255), Grip = CFrame.Angles(math.rad(-90), 0, 0),
 		TwoHanded = true, Stance = { Right = { 70, 0, -20 }, Left = { 85, 0, 45 } }, -- low ready: muzzle forward-down, left hand on the fore-end
 		Sights = { Height = 0.2, Width = 0.08, NotchWidth = 0.16, Rear = 0.5, Front = -2.4, Color = Color3.fromRGB(18, 18, 22), Dot = Color3.fromRGB(120, 255, 120) } },
 	HandOffset = Vector3.new(0, -0.3, 0), -- where the fist closes, relative to the hand part's centre
+	-- How a melee weapon sits in the fist when its entry has no Grip (owner s1-4: "sitting in hand awkwardly.
+	-- they should be upright and swung traditionally"): the shaft comes out of the top of the fist, square to
+	-- the forearm and tilted 20 degrees up, instead of hanging on down the arm line. Hanging at the side it
+	-- points forward and up; raised overhead it lies back over the shoulder; at the strike it leads the arm.
+	MeleeGrip = CFrame.Angles(math.rad(110), 0, 0),
 	-- TwoHanded: the left arm follows the swing (yaw/roll mirrored) and both arms hold the Stance at
 	-- rest. Stance = { Right = {pitch,yaw,roll}, Left = {...} } shoulder degrees applied while idle;
 	-- a weapon without one hangs at the side. StanceBlend = seconds to ease in/out.
@@ -114,7 +119,9 @@ Presentation.Swings = {
 			[1] = { Keys = { { Phase = "Wind", R = { 75, 0, 55 }, L = { 80, 0, 85 }, Lean = 6, Twist = 35 }, { Phase = "Mid", Frac = 0.5, R = { 78, 0, -10 }, L = { 82, 0, 30 }, Twist = 0 }, { Phase = "Strike", R = { 70, 0, -75 }, L = { 75, 0, 0 }, Lean = -8, Twist = -35 } }, Trail = 0.2, Dust = 0.5 },
 			[2] = { Keys = { { Phase = "Wind", R = { 165, 0, -10 }, L = { 165, 0, 10 }, Lean = 12, Dip = -0.15 }, { Phase = "Strike", R = { 35, 0, -20 }, L = { 40, 0, 20 }, Lean = -20, Dip = 0.45 } }, Trail = 0.22, Dust = 1 },
 			Light = { Keys = { { Phase = "Wind", R = { 75, 0, 55 }, L = { 80, 0, 85 }, Twist = 35 }, { Phase = "Strike", R = { 70, 0, -75 }, L = { 75, 0, 0 }, Lean = -8, Twist = -35 } }, Trail = 0.2 },
-			Heavy = { Keys = { { Phase = "Wind", R = { 175, 0, -10 }, L = { 175, 0, 10 }, Lean = 16, Dip = -0.2 }, { Phase = "Mid", Frac = 0.6, R = { 110, 0, -15 }, L = { 112, 0, 15 } }, { Phase = "Strike", R = { 30, 0, -22 }, L = { 35, 0, 22 }, Lean = -24, Dip = 0.6 } }, Trail = 0.28, Dust = 1.6 },
+			Heavy = { Keys = { { Phase = "Wind", R = { 175, 0, -10 }, L = { 175, 0, 10 }, Lean = 16, Dip = -0.2 }, { Phase = "Mid", Frac = 0.6, R = { 110, 0, -15 }, L = { 112, 0, 15 } }, { Phase = "Strike", R = { 30, 0, -22 }, L = { 35, 0, 22 }, Lean = -24, Dip = 0.6 } }, Trail = 0.28, Dust = 1.6,
+				-- the slam (owner s7-6: "all that needs is fx and endlag"): a shockwave on the ground and a shake nearby
+				Slam = { Radius = 16, Life = 0.45, Color = Color3.fromRGB(205, 185, 150), Cracks = 7, Shake = 0.7, ShakeRange = 35 } },
 		},
 		-- Sidearm: the arm comes up to the firing line and stays there (HoldAfter seconds since the
 		-- last shot) before lowering; the heavy is a braced two-handed shot.
@@ -131,7 +138,35 @@ Presentation.Swings = {
 	HoldLower = 0.3, -- seconds to lower a held arm once HoldAfter runs out
 	DefaultLean = { 6, -10 }, -- torso pitch (degrees; + = back at the wind-up, - = forward at impact) when a legacy entry has no Lean
 	-- Flick cue: a glow that ramps during the windup and peaks Config.Flicker.Window before impact.
-	Cue = { Color = Color3.fromRGB(255, 60, 60), ZoneColor = Color3.fromRGB(255, 200, 80), MaxBrightness = 6, MaxRange = 10 },
+	-- MinLead: on a short wind-up the flip waits until this share of it has passed (owner s1-1: "the cue needs
+	-- more frames"); PopSize: the orb swells to this and shrinks to the impact when it flips.
+	Cue = { Color = Color3.fromRGB(255, 60, 60), ZoneColor = Color3.fromRGB(255, 200, 80), MaxBrightness = 6, MaxRange = 10, MinLead = 0.45, PopSize = 1.9 },
+	-- The shape of every swing (owner s7-6: "no start up or wind up or endlag or follow through"):
+	--   WindReach     share of the wind-up spent reaching the wind pose; the rest of it is held (anticipation)
+	--   FollowThrough how far past the strike the swing carries (share of the wind -> strike arc)
+	--   MinRecovery   seconds the follow-through, endlag hold and settle take at the least (enemy swings
+	--                 with almost no End still read); a quarter goes to the follow-through, then a hold to 60%
+	WindReach = 0.6, FollowThrough = 0.22, MinRecovery = 0.32,
+	-- Flinch: a staggered body snaps back (Lean, + = back) and twists away over Snap of the stagger, then
+	-- recovers; the stagger's length is clamped to Min..Max seconds for the picture
+	Flinch = { Lean = 16, Twist = 14, Dip = 0.25, Snap = 0.2, Min = 0.22, Max = 0.55 },
+	-- The guard (F): per weapon Family, shoulder poses { pitch, yaw, roll } (sign note above Weapons), Lean
+	-- (waist pitch, - = forward), Twist, Dip (studs down). false = no guard pose (guns). A blocked hit jolts
+	-- the body down Jolt studs over JoltTime; a parry throws the arms to Deflect and back over DeflectTime.
+	Guard = {
+		Raise = 0.08, Lower = 0.15, Lean = -6, Dip = 0.2, Jolt = 0.3, JoltTime = 0.16, DeflectTime = 0.24,
+		Deflect = { Right = { 150, 0, -10 }, Left = { 140, 0, 15 } },
+		Families = {
+			Default = { Right = { 95, 0, -55 }, Left = { 80, 0, 45 }, Twist = 10 },
+			Fists = { Right = { 105, 0, -45 }, Left = { 105, 0, 45 }, Lean = -8 }, -- both fists up in front of the face
+			Blunt = { Right = { 95, 0, -55 }, Left = { 80, 0, 45 }, Twist = 10 }, -- weapon up across the body, off hand braced
+			Blade = { Right = { 95, 0, -60 }, Left = { 80, 0, 45 }, Twist = 12 },
+			Baton = { Right = { 95, 0, -55 }, Left = { 80, 0, 45 }, Twist = 10 },
+			Spear = { Right = { 55, 0, -35 }, Left = { 80, 0, 40 }, Twist = -10 }, -- the haft out in front
+			Hammer = { Right = { 95, 0, -50 }, Left = { 95, 0, 50 }, Lean = -4, Dip = 0.3 }, -- the haft held up as a bar
+			Sidearm = false, Rifle = false,
+		},
+	},
 	HeavyColor = Color3.fromRGB(255, 170, 60),
 	LightColor = Color3.fromRGB(230, 230, 255),
 	TweenStyle = Enum.EasingStyle.Quad,

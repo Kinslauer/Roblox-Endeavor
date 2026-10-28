@@ -27,6 +27,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Presentation = require(Shared:WaitForChild("Presentation"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local Weapons = require(Shared:WaitForChild("Weapons"))
+local CameraShake = require(script.Parent.CameraShake)
 local CombatFX = require(script.Parent.CombatFX)
 local WeaponView = require(script.Parent.WeaponView)
 local WorldFX = require(script.Parent.WorldFX)
@@ -201,18 +202,29 @@ local function channel(keys, timing, start, rest, value)
 			strike = key
 		end
 	end
-	push(timing.windup, wind or {}, Enum.EasingStyle.Sine)
+	-- wind-up: reach the wind pose early and hold it (the anticipation you read), then strike
+	push(timing.windup * (P.WindReach or 0.6), wind or {}, Enum.EasingStyle.Quad)
+	local windCf = prev
+	table.insert(points, { t = timing.windup, cf = windCf, style = Enum.EasingStyle.Linear })
 	for _, key in keys do
 		if key.Phase == "Mid" then
 			push(timing.windup + math.clamp(key.Frac or 0.5, 0.05, 0.95) * timing.active, key, Enum.EasingStyle.Quart)
 		end
 	end
-	push(timing.windup + timing.active, strike or wind or {}, Enum.EasingStyle.Quart)
+	local strikeT = timing.windup + timing.active
+	push(strikeT, strike or wind or {}, Enum.EasingStyle.Quart)
 	if timing.holdRel then -- held at the strike (guns): then lowered over HoldLower
 		table.insert(points, { t = timing.holdRel, cf = prev, style = Enum.EasingStyle.Linear })
 		table.insert(points, { t = timing.holdRel + (P.HoldLower or 0.3), cf = rest, style = Enum.EasingStyle.Sine })
 	else
-		table.insert(points, { t = timing.finish, cf = rest, style = Enum.EasingStyle.Sine })
+		-- follow-through: the swing carries on past the strike (FollowThrough of the wind -> strike arc),
+		-- holds there (the endlag you punish), then settles back to the stance
+		local strikeCf = prev
+		local follow = strikeCf * IDENTITY:Lerp(windCf:Inverse() * strikeCf, P.FollowThrough or 0.2)
+		local rec = math.max(timing.finish - strikeT, P.MinRecovery or 0.3)
+		table.insert(points, { t = strikeT + rec * 0.25, cf = follow, style = Enum.EasingStyle.Quad })
+		table.insert(points, { t = strikeT + rec * 0.6, cf = follow, style = Enum.EasingStyle.Linear })
+		table.insert(points, { t = strikeT + rec, cf = rest, style = Enum.EasingStyle.Sine })
 	end
 	return points
 end
@@ -341,7 +353,9 @@ local function onSwing(char, info)
 		rate *= F.ZoneWindowMult
 	end
 	local window = F.Window * rate
-	local peakAt = math.max(windup - window, 0)
+	-- the cue flips when the window opens - but never in the first frames of a short wind-up. Flipping
+	-- later than the window opens is safe: from the flip to the impact you are always inside it.
+	local peakAt = math.max(windup - window, windup * (P.Cue.MinLead or 0.45))
 	local cueColor = if char:GetAttribute("Zone") then P.Cue.ZoneColor else P.Cue.Color
 	local baseColor = if isHeavy then P.HeavyColor else P.LightColor
 
@@ -357,6 +371,8 @@ local function onSwing(char, info)
 				return
 			end
 			orb.Color, light.Color = cueColor, cueColor
+			orb.Size = CUE_PART_SIZE * (P.Cue.PopSize or 1.8) -- a pop you can't miss, shrinking to impact
+			tweenTo(s, orb, { Size = CUE_PART_SIZE * 1.15 }, math.max(windup - peakAt, MIN_SEGMENT), Enum.EasingStyle.Quad)
 			tweenTo(s, orb, { Transparency = 0 }, MIN_SEGMENT)
 			tweenTo(s, light, { Brightness = P.Cue.MaxBrightness, Range = P.Cue.MaxRange }, MIN_SEGMENT)
 		end)
@@ -439,11 +455,21 @@ local function onSwing(char, info)
 					end
 				end)
 			end
-			if (entry.Dust or 0) > 0 then
+			if (entry.Dust or 0) > 0 or entry.Slam then
 				task.delay(windup + active * 0.8, function()
 					local root0 = s.token == token and char:FindFirstChild("HumanoidRootPart")
 					if root0 then
-						WorldFX.Dust(root0.Position - Vector3.new(0, 2.6, 0) + root0.CFrame.LookVector * 2, entry.Dust)
+						local ground = root0.Position - Vector3.new(0, 2.6, 0) + root0.CFrame.LookVector * 3
+						if (entry.Dust or 0) > 0 then
+							WorldFX.Dust(ground, entry.Dust)
+						end
+						if entry.Slam then
+							WorldFX.Shockwave(ground, entry.Slam)
+							local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+							if me and (me.Position - ground).Magnitude < (entry.Slam.ShakeRange or 30) then
+								CameraShake.Add(entry.Slam.Shake or 0.6)
+							end
+						end
 					end
 				end)
 			end
@@ -500,6 +526,41 @@ local function settleDip(s, now)
 	return CFrame.new(0, -st.depth * k, 0)
 end
 
+-- The guard (owner playtest s1-3 / s9-1: "when you hit f your character visually does nothing"). While the
+-- server says Blocking, the arms come up into the weapon family's guard (Presentation.Swings.Guard), the
+-- body leans in and sinks a little; a blocked hit jolts it, a parry throws the arms out (Deflect).
+local function guardOf(char)
+	local G = P.Guard
+	local def = Weapons.Defs[char:GetAttribute("Weapon") or ""] or Weapons.Defs.Fists
+	local spec = G.Families[def.Family]
+	if spec == nil then
+		spec = G.Families.Default
+	end
+	return spec or nil -- false = this family has no guard pose (guns)
+end
+
+local function guardArm(spec, side, s, now)
+	local G = P.Guard
+	local base = anglesOf(spec[side])
+	local since = s.deflectAt and now - s.deflectAt
+	if since and since < G.DeflectTime then
+		local k = math.sin(since / G.DeflectTime * math.pi) -- out and back
+		local out = (spec.Deflect and spec.Deflect[side]) or G.Deflect[side]
+		return base:Lerp(anglesOf(out), k)
+	end
+	return base
+end
+
+local function guardBody(spec, s, g, now)
+	local G = P.Guard
+	local dip = (spec.Dip or G.Dip) * g
+	local since = s.joltAt and now - s.joltAt
+	if since and since < G.JoltTime then
+		dip += G.Jolt * math.sin(since / G.JoltTime * math.pi)
+	end
+	return CFrame.Angles(math.rad((spec.Lean or G.Lean) * g), math.rad((spec.Twist or 0) * g), 0), CFrame.new(0, -dip, 0)
+end
+
 -- Drives every live pose and the weapon stances. Stepped runs after the Animator has written this
 -- frame's Transforms, so what we write wins for the arms we touch.
 local function step()
@@ -514,6 +575,18 @@ local function step()
 			s.pose = nil
 			pose = nil
 		end
+		-- the guard blends in and out on the server's Blocking flag
+		local dt = realNow - (s.lastStep or realNow)
+		s.lastStep = realNow
+		local guard = guardOf(char)
+		local wantGuard = if guard and char:GetAttribute("Blocking") == true then 1 else 0
+		s.guard = s.guard or 0
+		if s.guard < wantGuard then
+			s.guard = math.min(1, s.guard + dt / P.Guard.Raise)
+		elseif s.guard > wantGuard then
+			s.guard = math.max(0, s.guard - dt / P.Guard.Lower)
+		end
+		local g = if guard and s.guard > 0 then ease(s.guard, Enum.EasingStyle.Quad) else 0
 		-- hitstop: sample the timeline at the frozen instant, then shift it by the time we held
 		local now = realNow
 		if s.freeze then
@@ -538,6 +611,8 @@ local function step()
 				end
 				if transform then
 					joint.Transform = transform
+				elseif g > 0 and guard[side] then
+					joint.Transform = rest:Lerp(guardArm(guard, side, s, realNow), g)
 				elseif not idle then
 					joint.Transform = rest -- hold the weapon stance between swings
 				end
@@ -556,6 +631,32 @@ local function step()
 			if dip then
 				pose.lastDip = dip
 				pose.root.Transform = pose.root.Transform * dip
+			end
+		end
+		if g > 0 and not (pose and pose.arms.Waist) then
+			local lean, dip = guardBody(guard, s, g, realNow)
+			local waist, root = waistOf(char), rootJointOf(char)
+			if waist then
+				waist.Transform = waist.Transform * lean
+			end
+			if root then
+				root.Transform = root.Transform * dip
+			end
+		end
+		if s.flinch then
+			local fl, F2 = s.flinch, P.Flinch
+			local a = (realNow - fl.t0) / fl.dur
+			if a >= 1 then
+				s.flinch = nil
+			else
+				local k = if a < F2.Snap then a / F2.Snap else 1 - (a - F2.Snap) / (1 - F2.Snap) -- snap back, recover slowly
+				local waist, root = waistOf(char), rootJointOf(char)
+				if waist then
+					waist.Transform = waist.Transform * CFrame.Angles(math.rad(F2.Lean * k), math.rad(F2.Twist * fl.side * k), 0)
+				end
+				if root then
+					root.Transform = root.Transform * CFrame.new(0, -F2.Dip * k, 0)
+				end
 			end
 		end
 		if s.settle then
@@ -593,8 +694,25 @@ end
 function SwingAnimator.Init()
 	CombatFX.On("Swing", onSwing)
 	CombatFX.On("Feint", cancel)
-	CombatFX.On("Stun", cancel)
+	CombatFX.On("Stun", function(char, duration)
+		cancel(char)
+		-- the hit lands on the body: a flinch back and away over the stagger (Presentation.Swings.Flinch)
+		if typeof(char) == "Instance" then
+			local F2 = P.Flinch
+			stateOf(char).flinch = { t0 = os.clock(), dur = math.clamp(tonumber(duration) or 0.3, F2.Min, F2.Max), side = if math.random() < 0.5 then -1 else 1 }
+		end
+	end)
 	CombatFX.On("Dodge", cancel)
+	CombatFX.On("Parry", function(char)
+		if typeof(char) == "Instance" then
+			stateOf(char).deflectAt = os.clock()
+		end
+	end)
+	CombatFX.On("Block", function(char)
+		if typeof(char) == "Instance" then
+			stateOf(char).joltAt = os.clock()
+		end
+	end)
 	RunService.Stepped:Connect(step)
 	-- stances need a state entry before any swing happens
 	local CollectionService = game:GetService("CollectionService")

@@ -134,6 +134,7 @@ Builders.Pistol = function(spec)
 	weldTo(handle, body, CFrame.new(0, 0.5, -spec.Length / 2 + 0.3))
 	local emitter = part({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.25, 0.3, 0.3), Color = spec.Accent or spec.Color, Material = Enum.Material.Neon })
 	weldTo(handle, emitter, CFrame.new(0, 0.5, -spec.Length + 0.3) * CFrame.Angles(0, math.rad(90), 0))
+	emitter.Name = "Muzzle" -- the bolt starts here (client/Impacts.lua onBolt)
 	local light = Instance.new("PointLight")
 	light.Color, light.Brightness, light.Range = emitter.Color, 1, 4
 	light.Parent = emitter
@@ -156,6 +157,7 @@ Builders.Rifle = function(spec)
 	weldTo(handle, stock, CFrame.new(0, 0.35, 0.9))
 	local emitter = part({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.2, 0.3, 0.3), Color = spec.Accent or spec.Color, Material = Enum.Material.Neon })
 	weldTo(handle, emitter, CFrame.new(0, 0.6, -spec.Length + 0.1) * CFrame.Angles(0, math.rad(90), 0))
+	emitter.Name = "Muzzle" -- the bolt starts here (client/Impacts.lua onBolt)
 	local light = Instance.new("PointLight")
 	light.Color, light.Brightness, light.Range = emitter.Color, 1, 5
 	light.Parent = emitter
@@ -280,7 +282,9 @@ local function build(char, weaponId)
 	model.Name = MODEL_NAME
 	model.PrimaryPart = handle
 	-- Place the Handle so its top sits in the fist (keeping the builder's roll), then weld it on.
-	local gripOffset = CFrame.new(W.HandOffset) * (spec.Grip or CFrame.identity) * CFrame.new(0, -(gripHalf or 0), 0)
+	local melee = spec.Build ~= "Pistol" and spec.Build ~= "Rifle"
+	local grip = spec.Grip or (melee and W.MeleeGrip) or CFrame.identity -- melee: square to the forearm (Presentation.Weapons.MeleeGrip)
+	local gripOffset = CFrame.new(W.HandOffset) * grip * CFrame.new(0, -(gripHalf or 0), 0)
 	model:PivotTo(hand.CFrame * gripOffset * handle.CFrame.Rotation)
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0, weld.Part1 = hand, handle

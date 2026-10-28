@@ -156,6 +156,13 @@ Enemies.AI = {
 	StuckSeconds = 1.5, -- no progress for this long -> recompute (and jump)
 	AgentRadius = 2.5,
 	AgentHeight = 5.5,
+	-- taking turns (server/NPCs.lua claimSwing / holdSpot)
+	MeleeAttackers = 1, -- melee bodies allowed to wind up / strike at one target at once
+	SwingGap = 0.3, -- seconds after a strike before the next body may start its wind-up
+	HoldGap = 5, -- studs outside its reach a waiting body holds
+	CircleSpeed = 0.5, -- radians/s a waiting body drifts around you
+	Spread = 7, -- studs: waiting bodies closer than this push apart
+	SpreadPush = 0.25, -- radians per tick they push
 }
 
 return Enemies

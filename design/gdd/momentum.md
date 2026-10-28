@@ -55,6 +55,9 @@ AirPopExtend = 0.3, MaxJuggleHits = 4, LandStun = 0.45, EnemyStepRange = 9, Enem
 ```
 
 ### 2.5 Launcher, juggle, Enemy Step (implemented 2026-10-26)
+- 2026-10-28 (owner s8-8 "i couldnt get this to work"): light, light, heavy could never launch, because the lights'
+  stagger (0.35 s) ends before any heavy can land. `Config.Momentum.LaunchGrace = 0.6`: a heavy still launches an
+  enemy whose stagger ended that recently.
 - **Launch**: a melee heavy (`mods.label == "Heavy"`, not `Ranged`) that lands on an **open** enemy — `Combat.IsOpen`
   read *before* the hit's own stun: stunned right now, or posture-broken within `GrabStunWindow` — sets
   `juggledUntil = now + LaunchAirTime`, stuns it for `LaunchAirTime + LandStun`, gives the root `(0, LaunchVelocity, 0) +

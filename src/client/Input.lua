@@ -42,7 +42,14 @@ end
 -- validates the direction against the body's facing; Config.Combat.AimCone).
 local function aimArg()
 	local camera = workspace.CurrentCamera
-	return if rangedEquipped() and camera then camera.CFrame.LookVector else nil
+	if not (rangedEquipped() and camera) then
+		return nil
+	end
+	-- from the head (where the server fires from) to what the reticle is on
+	local head = player.Character and player.Character:FindFirstChild("Head")
+	local point = Aim.Point()
+	local dir = head and point and point - head.Position
+	return if dir and dir.Magnitude > 2 then dir.Unit else camera.CFrame.LookVector
 end
 
 local function dodge()

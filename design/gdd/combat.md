@@ -99,7 +99,12 @@ along the vector, which is what makes the first-person sight picture truthful.
 9. `Hit` FX when result is `hit`. `Combat.Resolved` fires for every non-`none` result.
 
 ### Block and parry — `Combat.SetBlock` (531-546)
-- Block starts only if `CanAct`, not already blocking and `t >= busyUntil` (no buffer). `blockStart` is stamped then; `Blocking` attribute replicates.
+- Block starts only if `CanAct`, not already blocking and `t >= busyUntil`. `blockStart` is stamped then; `Blocking` attribute replicates.
+- F is a held intent (2026-10-28, owner s9-1 "defense isnt capable enough"): `blockHeld` stays true while F is down, and the
+  regen loop raises the guard by itself the moment you're free again (after your own swing, a stagger or a guard break).
+  A guard raised that way never parries (`blockStart` is set outside the window); only a fresh press does.
+- The guard shows: `client/SwingAnimator.lua` blends the weapon family's guard pose in on `Blocking`
+  (`Presentation.Swings.Guard`), jolts it on a blocked hit and throws the arms out on a parry.
 - Parry = a facing, blockable hit landing within `ParryWindow` of `blockStart`. Holding block past the window is a normal block.
 - Block is dropped by Attack, Heavy, Dodge, skill use, Stun, and key release.
 - Stamina does **not** regenerate while blocking (`Combat.lua:596`); blocking has no per-hit stamina cost — posture is the block resource.

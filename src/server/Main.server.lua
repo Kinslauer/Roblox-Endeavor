@@ -29,6 +29,7 @@ local Grab = require(Server.Grab)
 local Tutorial = require(Server.Tutorial)
 local Creator = require(Server.Creator)
 local Lifecycle = require(Server.Lifecycle)
+local DevPanel = require(Server.DevPanel)
 
 -- World geometry must exist before WorldPhase.Init so the CitySpawn pads are found. A bug in a
 -- generator must never stop the game from starting, so each is isolated.
@@ -91,3 +92,4 @@ Grab.Init()
 Tutorial.Init()
 Creator.Init()
 Lifecycle.Init()
+DevPanel.Init() -- Studio only: teleports and gives for testing (client/DevPanel.lua)

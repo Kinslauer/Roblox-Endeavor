@@ -155,6 +155,15 @@ death, a windup telegraph readable at combat range, hit and death sounds.
 
 ---
 
+## Taking turns (2026-10-28)
+
+Owner playtest s9-1: "everytime i swing i get hit"; s8-4: "make them spread around you".
+- Only `Enemies.AI.MeleeAttackers` (1) melee bodies may be winding up or striking at one target at a time
+  (`NPCs` claimSwing). A claim lasts the swing's `Windup + Active + SwingGap`.
+- The rest hold a ring `HoldGap` studs outside their reach (AIState "Hold"). They circle (`CircleSpeed`), push
+  apart when closer than `Spread`, and step in when the slot frees. Gunners and drones don't take slots.
+- Ambushes place their members evenly around the target, with some jitter, so they arrive from all sides.
+
 ## Planned (Enemy v2)
 
 > **IMPLEMENTED 2026-10-25** in `src/shared/Enemies.lua` + `src/server/NPCs.lua` (see `production/epics/enemy-v2/`). Numbers below are the shipped starting values; the text was written as the proposal. It is the design target for

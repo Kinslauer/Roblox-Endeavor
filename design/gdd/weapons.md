@@ -67,54 +67,60 @@ Arc dot → cone: 0.0 = 180°, 0.2 = 157°, 0.3 = 145°, 0.6 = 106°, 0.7 = 91°
 
 ### Combo tables (all numbers raw, before stat scaling)
 
+Timing pass 2026-10-28 (owner playtest s7-6: "there is no start up or wind up or endlag or follow through"):
+wind-ups are long enough to read and to flick in (weapon lights 0.24 s or more), every swing has endlag
+(`End − Windup − Active`), and damage went up about 15% so kill times hold. The animation reaches the wind
+pose at 60% of the wind-up and holds it, strikes, carries past the strike and holds there before settling
+(`Presentation.Swings` WindReach / FollowThrough / MinRecovery; client/SwingAnimator.lua).
+
 **Fists** — `Family Fists`, `ComboReset 0.7`, `ComboCooldown 0.35`, no ChargeBonus. Always available; the fallback weapon.
 | Attack | Dmg | Post | Windup | Active | End | Range | Arc | Stamina | Extra |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 6 | 3 | 0.10 | 0.12 | 0.30 | 6 | 0.3 | 5 | — |
-| 2 | 6 | 3 | 0.10 | 0.12 | 0.30 | 6 | 0.3 | 5 | — |
-| 3 | 6 | 3 | 0.10 | 0.12 | 0.34 | 6 | 0.3 | 5 | — |
-| 4 | 9 | 6 | 0.14 | 0.14 | 0.55 | 6 | 0.3 | 7 | Knockback 30 |
-| Heavy | 12 | 8 | 0.30 | 0.15 | 0.80 | 6 | 0.3 | 14 | Knockback 35 |
+| 1 | 7 | 3 | 0.18 | 0.12 | 0.44 | 6 | 0.3 | 6 | — |
+| 2 | 7 | 3 | 0.18 | 0.12 | 0.44 | 6 | 0.3 | 6 | — |
+| 3 | 7 | 3 | 0.18 | 0.12 | 0.48 | 6 | 0.3 | 6 | — |
+| 4 | 10 | 6 | 0.24 | 0.14 | 0.70 | 6 | 0.3 | 8 | Knockback 30 |
+| Heavy | 14 | 8 | 0.42 | 0.15 | 1.00 | 6 | 0.3 | 14 | Knockback 35 |
 
 **Pipe Club** — `Family Blunt`, `ComboReset 0.7`, `ComboCooldown 0.45`. Starting weapon.
 | Attack | Dmg | Post | Windup | Active | End | Range | Arc | Stamina | Extra |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 12 | 5 | 0.16 | 0.14 | 0.50 | 7 | 0.3 | 9 | — |
-| 2 | 12 | 5 | 0.16 | 0.14 | 0.50 | 7 | 0.3 | 9 | — |
-| 3 | 18 | 10 | 0.22 | 0.16 | 0.70 | 7 | 0.3 | 12 | Knockback 35 |
-| Heavy | 26 | 14 | 0.40 | 0.16 | 1.00 | 7.5 | 0.3 | 20 | Knockback 45 |
+| 1 | 14 | 5 | 0.28 | 0.14 | 0.70 | 7 | 0.3 | 10 | — |
+| 2 | 14 | 5 | 0.28 | 0.14 | 0.70 | 7 | 0.3 | 10 | — |
+| 3 | 21 | 10 | 0.36 | 0.16 | 0.95 | 7 | 0.3 | 14 | Knockback 35 |
+| Heavy | 30 | 14 | 0.52 | 0.16 | 1.25 | 7.5 | 0.3 | 20 | Knockback 45 |
 
 **Rebar Blade** — `Family Blade`, `ComboReset 0.7`, `ComboCooldown 0.45`. Recipe: 6 Scrap + 1 Cloth.
 | Attack | Dmg | Post | Windup | Active | End | Range | Arc | Stamina | Extra |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 11 | 4 | 0.12 | 0.14 | 0.40 | 8 | 0.3 | 8 | — |
-| 2 | 11 | 4 | 0.12 | 0.14 | 0.40 | 8 | 0.3 | 8 | — |
-| 3 | 13 | 5 | 0.14 | 0.14 | 0.45 | 9 | **0.2** | 9 | wide sweep |
-| 4 | 17 | 9 | 0.20 | 0.16 | 0.70 | 9 | 0.3 | 12 | Knockback 30 |
-| Heavy | 24 | 12 | 0.35 | 0.18 | 0.95 | 8.5 | **0.0** | 20 | 180° spin, no knockback |
+| 1 | 13 | 4 | 0.24 | 0.14 | 0.60 | 8 | 0.3 | 9 | — |
+| 2 | 13 | 4 | 0.24 | 0.14 | 0.60 | 8 | 0.3 | 9 | — |
+| 3 | 15 | 5 | 0.26 | 0.14 | 0.66 | 9 | **0.2** | 11 | wide sweep |
+| 4 | 20 | 9 | 0.34 | 0.16 | 0.95 | 9 | 0.3 | 14 | Knockback 30 |
+| Heavy | 28 | 12 | 0.48 | 0.18 | 1.15 | 8.5 | **0.0** | 20 | 180° spin, no knockback |
 
 **Shock Baton** — `Family Baton`, `ComboReset 0.7`, `ComboCooldown 0.4`, **ChargeBonus 6**. All hits `Type Arc`. Recipe: 1 Pipe Club + 3 Wire + 2 Scrap.
 | Attack | Dmg | Post | Windup | Active | End | Range | Arc | Stamina | Extra |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 10 | 4 | 0.12 | 0.12 | 0.40 | 7 | 0.3 | 8 | Arc |
-| 2 | 10 | 4 | 0.12 | 0.12 | 0.40 | 7 | 0.3 | 8 | Arc |
-| 3 | 16 | 10 | 0.18 | 0.14 | 0.65 | 7 | 0.3 | 11 | Arc, Knockback 25, **Stun 0.6** |
-| Heavy | 22 | 12 | 0.35 | 0.16 | 0.90 | 7 | 0.3 | 18 | Arc, **Stun 0.7**, no knockback |
+| 1 | 12 | 4 | 0.24 | 0.12 | 0.60 | 7 | 0.3 | 9 | Arc |
+| 2 | 12 | 4 | 0.24 | 0.12 | 0.60 | 7 | 0.3 | 9 | Arc |
+| 3 | 18 | 10 | 0.32 | 0.14 | 0.90 | 7 | 0.3 | 12 | Arc, Knockback 25, **Stun 0.6** |
+| Heavy | 25 | 12 | 0.48 | 0.16 | 1.10 | 7 | 0.3 | 18 | Arc, **Stun 0.7**, no knockback |
 
 **Scrap Spear** — `Family Spear`, `ComboReset 0.8`, `ComboCooldown 0.45`. Recipe: 5 Scrap + 2 Cloth.
 | Attack | Dmg | Post | Windup | Active | End | Range | Arc | Stamina | Extra |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 8 | 3 | 0.14 | 0.12 | 0.40 | 11 | 0.6 | 6 | thrust |
-| 2 | 8 | 3 | 0.14 | 0.12 | 0.40 | 11 | 0.6 | 6 | thrust |
-| 3 | 12 | 6 | 0.18 | 0.14 | 0.55 | 12 | 0.6 | 9 | Knockback 25 |
-| Heavy | 20 | 10 | 0.35 | 0.16 | 0.90 | 13 | 0.7 | 18 | Knockback 30 |
+| 1 | 10 | 3 | 0.26 | 0.12 | 0.62 | 11 | 0.6 | 8 | thrust |
+| 2 | 10 | 3 | 0.26 | 0.12 | 0.62 | 11 | 0.6 | 8 | thrust |
+| 3 | 14 | 6 | 0.32 | 0.14 | 0.80 | 12 | 0.6 | 10 | Knockback 25 |
+| Heavy | 23 | 10 | 0.48 | 0.16 | 1.15 | 13 | 0.7 | 18 | Knockback 30 |
 
 **Sledge** — `Family Hammer`, `ComboReset 0.9`, `ComboCooldown 0.7`. Recipe: 12 Scrap + 1 Wire.
 | Attack | Dmg | Post | Windup | Active | End | Range | Arc | Stamina | Extra |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 24 | 12 | 0.30 | 0.16 | 0.75 | 8 | 0.3 | 16 | Knockback 40 |
-| 2 | 24 | 12 | 0.30 | 0.16 | 0.85 | 8 | 0.3 | 16 | Knockback 40 |
-| Heavy | 44 | 28 | 0.60 | 0.20 | 1.40 | 9 | 0.3 | 30 | **Hyperarmor**, Knockback 60 |
+| 1 | 28 | 12 | 0.42 | 0.16 | 1.00 | 8 | 0.3 | 18 | Knockback 40 |
+| 2 | 28 | 12 | 0.44 | 0.16 | 1.10 | 8 | 0.3 | 18 | Knockback 40 |
+| Heavy | 50 | 28 | 0.62 | 0.20 | 1.70 | 9 | 0.3 | 30 | **Hyperarmor**, Knockback 60 |
 
 **Arc Pistol** — `Family Sidearm`, `ComboReset 0.5`, `ComboCooldown 0.3`, **ChargeBonus 3**. All hits `Type Arc`, `Ranged`. Recipe: 6 Scrap + 5 Wire.
 | Attack | Dmg | Post | Windup | Active | End | Range | Stamina | Extra |

@@ -34,8 +34,8 @@ local function build(id, def)
 	end
 	local hum = model:FindFirstChildOfClass("Humanoid")
 	hum.DisplayName = def.Name
-	hum.HealthDisplayDistance = 0
-	hum.NameDisplayDistance = 40
+	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None -- client/Nameplates draws the name
+	hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 	local root = model.HumanoidRootPart
 	model:PivotTo(CFrame.new(def.Position + Vector3.new(0, District.GroundTop + 3.5, 0)))
 	root.Anchored = true -- stands where they stand

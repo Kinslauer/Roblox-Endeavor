@@ -205,7 +205,7 @@ local STEPS = {
 		Lore = "Flicker",
 		Text = function(ctx)
 			local level = ctx.player.Character and ctx.player.Character:GetAttribute("Flicker") or 0
-			return ("Tap E just as you swing so the flick lands WITH the hit. Three flicked hits in a row = BLACK FLASH. Chain: %d/3"):format(level)
+			return ("Swing, and watch your hand: when the glow turns red, tap E so the flick lands WITH the hit. Three flicked hits in a row = BLACK FLASH. Chain: %d/3"):format(level)
 		end,
 		Setup = function(ctx)
 			highlight(ctx, ctx.dummy)

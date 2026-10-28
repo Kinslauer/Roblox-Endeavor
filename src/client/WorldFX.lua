@@ -60,6 +60,42 @@ function WorldFX.Dust(position, scale)
 	Debris:AddItem(part, 1)
 end
 
+-- Shockwave: the ground answering a slam (Presentation.Swings ... Heavy.Slam). A flat ring that races out
+-- to `spec.Radius` and fades over `spec.Life`, plus a few dark cracks radiating from the point of impact.
+function WorldFX.Shockwave(position, spec)
+	if typeof(position) ~= "Vector3" or type(spec) ~= "table" then
+		return
+	end
+	local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if me and (me.Position - position).Magnitude > DUST_RANGE then
+		return
+	end
+	local function flat(size, color, material)
+		local p = Instance.new("Part")
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+		p.Size, p.Color, p.Material = size, color, material
+		p.Parent = workspace
+		return p
+	end
+	local life = spec.Life or 0.45
+	local ring = flat(Vector3.new(0.15, 2, 2), spec.Color or Color3.fromRGB(205, 185, 150), Enum.Material.Neon)
+	ring.Shape = Enum.PartType.Cylinder
+	ring.Transparency = 0.25
+	ring.CFrame = CFrame.new(position + Vector3.new(0, 0.1, 0)) * CFrame.Angles(0, 0, math.rad(90)) -- axis up: a disc on the ground
+	local d = (spec.Radius or 16) * 2
+	TweenService:Create(ring, TweenInfo.new(life, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = Vector3.new(0.05, d, d), Transparency = 1 }):Play()
+	Debris:AddItem(ring, life + 0.05)
+	for i = 1, spec.Cracks or 0 do
+		local a = (i / spec.Cracks) * math.pi * 2 + math.random() * 0.5
+		local len = (spec.Radius or 16) * (0.25 + math.random() * 0.25)
+		local crack = flat(Vector3.new(0.35, 0.06, len), Color3.fromRGB(35, 30, 26), Enum.Material.Slate)
+		crack.CFrame = CFrame.new(position + Vector3.new(0, 0.05, 0)) * CFrame.Angles(0, a, 0) * CFrame.new(0, 0, -len / 2)
+		TweenService:Create(crack, TweenInfo.new(1.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 1.2), { Transparency = 1 }):Play()
+		Debris:AddItem(crack, 3)
+	end
+	WorldFX.Dust(position, 1.2)
+end
+
 local function myPosition()
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
