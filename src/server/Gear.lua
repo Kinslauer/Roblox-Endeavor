@@ -155,6 +155,8 @@ function Gear.Push(player)
 		player:SetAttribute("Hearing", d.Hearing)
 		player:SetAttribute("Scent", d.Scent)
 		player:SetAttribute("Track", d.Track)
+		-- all metal: no longer speaks the way it did (client/Speech.lua, shared/Voice.lua)
+		player:SetAttribute("Machine", d.Conversion >= 1)
 		Remotes.LoadoutChanged:FireClient(player, {
 			Stats = d.Stats, Tags = d.Tags, Resist = d.Resist, MaxPosture = d.MaxPosture, WeightScore = d.WeightScore,
 			FlickerRate = d.FlickerRate, FlashBonus = d.FlashBonus, ParryWindow = d.ParryWindow, JumpMult = d.JumpMult,

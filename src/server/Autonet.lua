@@ -17,6 +17,7 @@ local SC = require(Shared.Clues)
 local Combat = require(script.Parent.Combat)
 local Gear = require(script.Parent.Gear)
 local Inventory = require(script.Parent.Inventory)
+local Lore = require(Shared.Lore)
 local PlayerData = require(script.Parent.PlayerData)
 local RateLimit = require(script.Parent.RateLimit)
 
@@ -142,6 +143,7 @@ function Autonet.Rip(player, action, arg, side)
 			announce(player, "The rip was cut short. Nothing changed - except how you feel.")
 			return
 		end
+		local wasMachine = Gear.Get(player).Conversion >= 1
 		if action == "In" then
 			Gear.EquipGear(player, itemId, slot)
 			announce(player, ("Ripped in: %s (%s)."):format(Cybernetics.Pieces[itemId].Name, Cybernetics.Label[slot]))
@@ -149,6 +151,15 @@ function Autonet.Rip(player, action, arg, side)
 			local was = data.Cyber[slot]
 			Gear.Unequip(player, slot)
 			announce(player, ("Ripped out: %s."):format(was and Cybernetics.Pieces[was] and Cybernetics.Pieces[was].Name or slot))
+		end
+		-- the last flesh goes, and the voice goes with it (shared/Voice.lua; cybernetics.md §6)
+		local isMachine = Gear.Get(player).Conversion >= 1
+		if isMachine and not wasMachine then
+			task.delay(1.5, function()
+				announce(player, Lore.Get("FullConversion"), "Lore")
+			end)
+		elseif wasMachine and not isMachine then
+			announce(player, "Flesh again, somewhere. Your voice comes back rough, but it is yours.")
 		end
 		Inventory.Push(player)
 	end)

@@ -2,8 +2,8 @@
 
 > **Status**: Implemented (Studio push + owner playtest pending)
 > **Author**: Claude, from the owner's direction 2026-10-27
-> **Last Updated**: 2026-10-27
-> **Last Verified**: 2026-10-27 against `src/shared/Cybernetics.lua`, `src/server/Gear.lua`, `src/server/Autonet.lua`, `src/client/Implants.lua`, `src/client/Senses.lua`
+> **Last Updated**: 2026-10-28
+> **Last Verified**: 2026-10-27 against `src/shared/Cybernetics.lua`, `src/server/Gear.lua`, `src/server/Autonet.lua`, `src/client/Implants.lua`, `src/client/Senses.lua`, `src/shared/Voice.lua`, `src/client/Speech.lua`
 > **Implements Pillar**: 2 — builds you assemble; conduits are "just stronger and more modified" (owner, 2026-10-26)
 
 ## Summary
@@ -99,9 +99,27 @@ so the radius is the only gate.
   exposed actuators and brass fasteners, not fantasy armour. The prompts are in
   `design/art/cybernetics-asset-prompts.md`.
 
-## 6. Open questions
+## 6. Full conversion: the voice goes
 
-- Does being 100% metal do anything on its own (a full-conversion perk or a cost), or is it only the sum of its
-  parts? Today it is the sum.
+Owner, 2026-10-28, on what 100% metal does by itself: "you lose your humanity, you no longer speak the way you did."
+
+- With all eight slots metal, the server flags the player (`Machine`, `Gear.Push`).
+- Every client, the player's own included, renders that player's chat through `Voice.Machine`:
+  - all capitals, and every sentence ends in a full stop (no ! or ?, no ~, an ellipsis is one stop)
+  - contractions spelled out: DON'T becomes DO NOT, I'M becomes I AM
+  - no laughter (lol, lmao, haha), no emoticons, no emoji, no stretched words (sooooo becomes SO)
+  - a message that was nothing but laughter comes out as "..."
+- The name and text go a cold grey-blue in the chat window, and the bubble turns terminal-style (`Presentation.Voice`).
+- The moment the last flesh goes, a lore line plays at the Autonet (`Lore.FullConversion`).
+- Rip any one piece back out and the voice comes back, with a line saying so. Conversion is a choice you can undo
+  at the table, like every other rip.
+- Display only: the words were already filtered by Roblox; this only reshapes them. It needs the TextChatService
+  chat (the default for new places).
+- There is no stat cost. Losing your voice is the cost.
+
+## 7. Open questions
+
 - Should enemies carry cybernetics (a warmonger with a servo arm you can rip off its body)? `Implants` already draws
   on Combatants that carry `Cyber_*` attributes.
+- Should anyone react to a fully converted conduit (contacts greeting it differently, say)? Today only its own
+  voice changes.

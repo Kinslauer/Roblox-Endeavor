@@ -201,3 +201,5 @@ To see one without waiting an hour, run this in the Studio command bar during Pl
 - [ ] Strider legs: faster walk. Piston legs: noticeably higher jump. One of each still works.
 - [ ] With a Servo Arm in: the crate and barrel chunks you couldn't pick up before (Medium) now come up with G. With two Servo Arms, the biggest pieces too.
 - [ ] Fill all eight slots: "Body: 100% metal". How does it look, and does it feel like it was worth eight trips to the table?
+- [ ] At 100% metal a lore line plays at the table. Then type in chat, something like "lol I'm sooooo done!!" It should come out as "I AM SO DONE." in grey-blue, and the bubble over your head should look cold and terminal-like. **Check the bubble's words too**: if the bubble still shows your normal text, note it (that's the part I couldn't confirm without Studio).
+- [ ] Rip one piece back out: a line says your voice comes back, and chat is normal again.

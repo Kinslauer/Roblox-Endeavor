@@ -1317,12 +1317,19 @@ do
 		check(("ears hear (%d studs), the nose smells (%d) and tracks blood"):format(d.Hearing, d.Scent), d.Hearing > 0 and d.Scent > 0 and d.Track == true
 			and player:GetAttribute("Hearing") == d.Hearing and player:GetAttribute("Scent") == d.Scent and player:GetAttribute("Track") == true)
 		check(("all eight in: the body is all metal (%d%%)"):format(d.Conversion * 100), d.Conversion == 1)
+		check("all metal: the conduit no longer speaks the way it did (Machine flag)", player:GetAttribute("Machine") == true)
+		local Voice = M.mockEnv.__require(RS.Shared.Voice)
+		check("the machine voice: flat capitals, contractions spelled out, no laughter, one full stop",
+			Voice.Machine("I&apos;m sooooo done!!! haha") == "I AM SO DONE." and Voice.Machine("don't touch my loot :)") == "DO NOT TOUCH MY LOOT."
+			and Voice.Machine("wait what?! lmao") == "WAIT WHAT." and Voice.Machine("lol") == Voice.Silent)
+		check("the machine voice leaves escapes and numbers alone", Voice.Machine("&lt;3 it costs 3.5k...") == "&lt;3 IT COSTS 3.5K.")
 		local me = player.Character
 		check("every implant is on the body for every client to draw", me:GetAttribute("Cyber_Nose") == "BloodTracer" and me:GetAttribute("Cyber_RightLeg") == "PistonLeg")
 		local old = { Cyber = { Optic = "ReflexOptic", Arm = "ServoArm", Core = "NeuralCore" }, Contacts = {}, House = {} }
 		PlayerData.Migrate(old)
 		check("old saves move over: Optic -> Eyes, Arm -> Right arm, Core stays", old.Cyber.Eyes == "ReflexOptic" and old.Cyber.RightArm == "ServoArm" and old.Cyber.Core == "NeuralCore" and old.Cyber.Optic == nil and old.Cyber.Arm == nil)
 		table.clear(data.Cyber); Gear.Recompute(player)
+		check("flesh again: the voice comes back", player:GetAttribute("Machine") == false)
 	end
 	-- destruction story 001 (destruction.md §4.1–4.4): props break by break type, become salvage, and come back
 	do

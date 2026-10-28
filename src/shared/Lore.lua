@@ -17,6 +17,7 @@ Lore.Lines = {
 	Upload = "The machine wakes and takes you in. Die now and you come back knowing what you knew.",
 	FirstContact = "Nobody out here gives their name. They give you a line on your screen, and that is trust.",
 	FirstRaid = "A contract is a story someone else started. You find out how it ends.",
+	FullConversion = "The last of the flesh goes into the tray. You try to say so, and what comes out is not your voice anymore.",
 }
 
 Lore.Seconds = 7 -- how long a lore banner stays up

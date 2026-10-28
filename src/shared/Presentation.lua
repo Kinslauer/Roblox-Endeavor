@@ -394,6 +394,16 @@ Presentation.Implants = {
 -- What ears and noses pick up (client/Senses.lua). Hearing: a pip on a ring around the screen centre points at
 -- each moving body inside your Hearing radius that you can't see (off screen or behind a wall). Scent: a soft
 -- marker on loot and fragments inside your Scent radius, and with Track, on wounded bodies too.
+-- The machine voice (client/Speech.lua, shared/Voice.lua): how a fully converted conduit's chat looks, in the
+-- chat window and in the bubble over its head. The words themselves are flattened by Voice.Machine.
+Presentation.Voice = {
+	NameColor = "#8FA3AD", -- the speaker's name in the chat window (rich text hex)
+	TextColor = "#C9D6DC",
+	BubbleText = Color3.fromRGB(200, 220, 228),
+	BubbleBackground = Color3.fromRGB(24, 30, 34),
+	BubbleFont = Enum.Font.Code,
+}
+
 Presentation.Senses = {
 	Tick = 0.15,
 	MoveSpeed = 6, -- studs/s: slower than this makes no sound
