@@ -370,27 +370,42 @@ Presentation.Cycle = {
 --   Shell - for limbs: a copy of the body part itself, a hair larger, in metal (covers clothing)
 --   Bits  - small parts placed on a body part: { Part, Offset (fraction of that part's size), Size (studs),
 --           Neon (accent colour) }
--- ART: give a piece a Mesh = { MeshId, TextureId, Scale, Offset } and it is drawn as that mesh on the slot's
--- first part instead of the placeholder (Higgsfield / Studio-generated meshes drop in here). Arm and leg pieces
--- can add MeshLeft for the left side; otherwise both sides use Mesh.
+-- ART: a model named after the piece under ReplicatedStorage.Assets.Implants (e.g. Assets.Implants.ServoArm,
+-- made with Studio's mesh generator) replaces the placeholder:
+--   limbs - the flesh limb is hidden and the model takes its place. A model split into parts whose names
+--           match Segments (upper arm / forearm / hand, thigh / shin / foot) puts each part on its own body
+--           part, so it bends at the elbow and knee; a single-piece model is stretched over the whole limb and
+--           rides the upper part. Left limbs use the same model turned 180 degrees.
+--   head and chest - the model is fitted into each box in the slot's Fit: { Part, Offset and Size (fractions
+--           of that part's size), Turn (degrees about Y, for the mirrored ear) }. Grow pads the fit.
+-- The older Mesh = { MeshId, TextureId, Scale, Offset } (and MeshLeft) on a piece still works when no model is
+-- there.
 Presentation.Implants = {
 	Metal = { Color = Color3.fromRGB(118, 116, 110), Material = Enum.Material.Metal, Grow = 1.04 },
+	Art = { Folder = "Implants", Grow = 1.06, Segments = {
+		-- a model part's name (lowercased, letters only) containing the key goes on that limb part (1 upper,
+		-- 2 lower, 3 hand or foot)
+		upperarm = 1, forearm = 2, lowerarm = 2, hand = 3, thigh = 1, upperleg = 1, shin = 2, lowerleg = 2, foot = 3,
+	} },
 	Slots = {
-		Eyes = { Bits = {
+		Eyes = { Fit = { { Part = "Head", Offset = Vector3.new(0, 0.1, -0.5), Size = Vector3.new(0.9, 0.24, 0.25) } }, Bits = {
 			{ Part = "Head", Offset = Vector3.new(-0.17, 0.1, -0.5), Size = Vector3.new(0.2, 0.1, 0.06), Neon = true },
 			{ Part = "Head", Offset = Vector3.new(0.17, 0.1, -0.5), Size = Vector3.new(0.2, 0.1, 0.06), Neon = true },
 		} },
-		Ears = { Bits = {
+		Ears = { Fit = {
+			{ Part = "Head", Offset = Vector3.new(0.52, 0.02, 0), Size = Vector3.new(0.16, 0.42, 0.4) },
+			{ Part = "Head", Offset = Vector3.new(-0.52, 0.02, 0), Size = Vector3.new(0.16, 0.42, 0.4), Turn = 180 },
+		}, Bits = {
 			{ Part = "Head", Offset = Vector3.new(-0.52, 0.02, 0), Size = Vector3.new(0.1, 0.35, 0.3) },
 			{ Part = "Head", Offset = Vector3.new(0.52, 0.02, 0), Size = Vector3.new(0.1, 0.35, 0.3) },
 			{ Part = "Head", Offset = Vector3.new(-0.56, 0.02, 0), Size = Vector3.new(0.04, 0.12, 0.12), Neon = true },
 			{ Part = "Head", Offset = Vector3.new(0.56, 0.02, 0), Size = Vector3.new(0.04, 0.12, 0.12), Neon = true },
 		} },
-		Nose = { Bits = {
+		Nose = { Fit = { { Part = "Head", Offset = Vector3.new(0, -0.1, -0.54), Size = Vector3.new(0.24, 0.32, 0.2) } }, Bits = {
 			{ Part = "Head", Offset = Vector3.new(0, -0.08, -0.53), Size = Vector3.new(0.16, 0.24, 0.12) },
 			{ Part = "Head", Offset = Vector3.new(0, -0.2, -0.57), Size = Vector3.new(0.1, 0.04, 0.04), Neon = true },
 		} },
-		Core = { Bits = {
+		Core = { Fit = { { Part = "UpperTorso", Offset = Vector3.new(0, 0.05, -0.5), Size = Vector3.new(0.85, 0.8, 0.26) } }, Bits = {
 			{ Part = "UpperTorso", Offset = Vector3.new(0, 0.05, -0.5), Size = Vector3.new(0.9, 0.8, 0.12) },
 			{ Part = "UpperTorso", Offset = Vector3.new(0, 0.05, -0.56), Size = Vector3.new(0.22, 0.22, 0.05), Neon = true },
 		} },

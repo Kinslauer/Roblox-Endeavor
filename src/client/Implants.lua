@@ -2,7 +2,8 @@
 -- body shows on that body, for everyone: the server sets Cyber_<slot> = itemId on each character
 -- (server/Gear.lua Gear.Push) and every client draws it here, locally. Limbs get a metal shell (a copy of the
 -- body part a hair larger, so it covers clothing) plus a lit seam; eyes, ears, nose and core get small parts
--- on the head and chest. All of it is placeholder art until a piece has a Mesh in Presentation.Implants.
+-- on the head and chest. That is the placeholder; a piece with a generated model in ReplicatedStorage.Assets.
+-- Implants is drawn as that model instead (Presentation.Implants ART).
 -- Nothing here collides, has mass or can be hit by a ray.
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -92,11 +93,144 @@ local function mesh(bodyPart, art)
 	return part
 end
 
+-- Generated art: ReplicatedStorage.Assets.Implants[itemId], a Model or a single MeshPart.
+local function artFor(itemId)
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local folder = assets and assets:FindFirstChild(P.Art.Folder)
+	local a = folder and folder:FindFirstChild(itemId)
+	if a and (a:IsA("Model") or a:IsA("BasePart")) then
+		return a
+	end
+	return nil
+end
+
+local function partsOf(inst)
+	local out = {}
+	if inst:IsA("BasePart") then
+		table.insert(out, inst)
+	end
+	for _, d in inst:GetDescendants() do
+		if d:IsA("BasePart") then
+			table.insert(out, d)
+		end
+	end
+	return out
+end
+
+-- Which limb part (1 upper, 2 lower, 3 hand/foot) a model part belongs on, from its name.
+local function segmentOf(name)
+	local key = string.gsub(string.lower(name), "[^%a]", "")
+	local best, bestLen = nil, 0
+	for k, i in P.Art.Segments do
+		if string.find(key, k, 1, true) and #k > bestLen then
+			best, bestLen = i, #k
+		end
+	end
+	return best
+end
+
+-- Fit a clone's parts into a box (cf at the box centre, size in studs). One part is simply resized; several
+-- are scaled together (the smallest ratio, so nothing pokes out) and centred.
+local function fitInto(clone, cf, size)
+	local parts = partsOf(clone)
+	if #parts == 1 then
+		parts[1].Size = size
+		parts[1].CFrame = cf
+	elseif #parts > 1 then
+		local model = clone
+		if not model:IsA("Model") then
+			model = Instance.new("Model")
+			clone.Parent = model
+		end
+		local _, extent = model:GetBoundingBox()
+		local r = math.min(size.X / extent.X, size.Y / extent.Y, size.Z / extent.Z)
+		pcall(function()
+			model:ScaleTo(model:GetScale() * r)
+		end)
+		model:PivotTo(cf * (model:GetPivot():Inverse() * model:GetBoundingBox()):Inverse())
+	end
+	return parts
+end
+
+-- Places a clone of the art on a body. Returns the parts to weld (each with the body part it rides) and the
+-- flesh parts to hide.
+local function placeArt(model, slot, spec, asset)
+	local grow = P.Art.Grow
+	local out, hide = {}, {}
+	local left = string.sub(slot, 1, 4) == "Left"
+	if spec.Shell then
+		local limb = {}
+		for i, name in spec.Shell do
+			local bp = model:FindFirstChild(name)
+			if not (bp and bp:IsA("BasePart")) then
+				return nil
+			end
+			limb[i] = bp
+		end
+		local turn = if left then CFrame.Angles(0, math.pi, 0) else CFrame.identity
+		local clone = asset:Clone()
+		local parts = partsOf(clone)
+		local bySeg, all = {}, true
+		for _, part in parts do
+			local seg = segmentOf(part.Name)
+			if seg and not bySeg[seg] then
+				bySeg[seg] = part
+			else
+				all = false
+			end
+		end
+		if all and bySeg[1] and bySeg[2] and bySeg[3] then
+			for i, part in bySeg do
+				part.Size = limb[i].Size * grow
+				part.CFrame = limb[i].CFrame * turn
+				table.insert(out, { part, limb[i] })
+			end
+		else
+			-- one piece over the whole limb, riding the upper part
+			local up = limb[1]
+			local h, w, d = 0, 0, 0
+			for _, bp in limb do
+				h += bp.Size.Y
+				w = math.max(w, bp.Size.X)
+				d = math.max(d, bp.Size.Z)
+			end
+			local cf = up.CFrame * CFrame.new(0, up.Size.Y / 2 - h / 2, 0) * turn
+			for _, part in fitInto(clone, cf, Vector3.new(w, h, d) * grow) do
+				table.insert(out, { part, up })
+			end
+		end
+		for _, bp in limb do
+			table.insert(hide, bp)
+		end
+		return out, hide
+	end
+	for _, f in spec.Fit or {} do
+		local bp = model:FindFirstChild(f.Part)
+		if bp and bp:IsA("BasePart") then
+			local cf = bp.CFrame * CFrame.new(scaled(f.Offset, bp.Size)) * CFrame.Angles(0, math.rad(f.Turn or 0), 0)
+			for _, part in fitInto(asset:Clone(), cf, scaled(f.Size, bp.Size) * grow) do
+				table.insert(out, { part, bp })
+			end
+		end
+	end
+	return out, hide
+end
+
 local function clear(model, slot)
 	local d = drawn[model] and drawn[model][slot]
 	if d then
 		for _, part in d.parts do
 			part:Destroy()
+		end
+		for bp, t in d.hidden or {} do
+			if bp.Parent then
+				bp.Transparency = t
+				for _, deco in bp:GetChildren() do
+					if deco:IsA("Decal") then
+						deco.Transparency = 0
+					end
+				end
+			end
 		end
 		drawn[model][slot] = nil
 	end
@@ -121,8 +255,33 @@ local function draw(model, slot)
 		part.Parent = model
 		table.insert(parts, part)
 	end
+	local hidden = nil
+	local asset = artFor(itemId)
+	local placed, hide
+	if asset then
+		placed, hide = placeArt(model, slot, spec, asset)
+	end
 	local art = (string.sub(slot, 1, 4) == "Left" and look.MeshLeft) or look.Mesh -- a left-hand version, if there is one
-	if art and type(art.MeshId) == "string" and art.MeshId ~= "" then
+	if placed and #placed > 0 then
+		for _, pair in placed do
+			local part, onto = pair[1], pair[2]
+			inert(part)
+			part.Name = "ImplantArt"
+			weld(onto, part)
+			part.Parent = model
+			table.insert(parts, part)
+		end
+		hidden = {}
+		for _, bp in hide do
+			hidden[bp] = bp.Transparency
+			bp.Transparency = 1
+			for _, deco in bp:GetChildren() do
+				if deco:IsA("Decal") then
+					deco.Transparency = 1
+				end
+			end
+		end
+	elseif art and type(art.MeshId) == "string" and art.MeshId ~= "" then
 		local first = (spec.Shell and spec.Shell[1]) or (spec.Bits and spec.Bits[1] and spec.Bits[1].Part)
 		local onto = first and model:FindFirstChild(first)
 		if onto then
@@ -144,7 +303,7 @@ local function draw(model, slot)
 		end
 	end
 	drawn[model] = drawn[model] or {}
-	drawn[model][slot] = { itemId = itemId, parts = parts }
+	drawn[model][slot] = { itemId = itemId, parts = parts, hidden = hidden }
 end
 
 local function unwatch(model)
