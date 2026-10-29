@@ -88,6 +88,7 @@ brief names). "Owning GDD" is a file under `design/gdd/`.
 | 59 | Visible implants | `client/Implants.lua`, `Cyber_<slot>` character attributes, `Presentation.Implants` (art drop-in) | Presentation | Phase 3+ | Implemented (placeholder art) | `design/gdd/cybernetics.md` §5 | Whatever is ripped into a body shows on it for everyone: metal shells on limbs, lit bits on head and chest; meshes replace them when the art lands. |
 | 60 | Machine voice (full conversion) | `shared/Voice.lua`, `client/Speech.lua`, `Machine` player attribute, `Lore.FullConversion`, `Presentation.Voice` | Presentation | Phase 3+ | Implemented (Studio check pending: bubble text) | `design/gdd/cybernetics.md` §6 | All metal and you lose your humanity: your chat comes out flat, in capitals, with no laughter, and the bubble turns cold. Rip a piece out and the voice comes back. |
 | 61 | Dev panel (Studio only) | `server/DevPanel.lua`, `client/DevPanel.lua`, `Remotes.Dev`, `DevGod` attribute | Tools | Phase 3+ | Implemented | — | P in Studio: teleports along the road and to every region, gives, unlocks, heal, god mode, clear enemies, force a cycle. Does nothing in a live server. |
+| 62 | Effects quality | `client/Quality.lua`, `Presentation.Quality` | Presentation | Phase 3+ | Implemented | — | High / Medium / Low from the Roblox graphics setting and the measured frame rate; scales particles, shards, slam cracks, after-images, the effect cap, district bloom and how many world lamps cast light. Presentation only. |
 
 ---
 

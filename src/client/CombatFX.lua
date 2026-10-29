@@ -9,6 +9,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Presentation = require(Shared:WaitForChild("Presentation"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local Hud = require(script.Parent.Hud)
+local Quality = require(script.Parent.Quality)
 
 local player = Players.LocalPlayer
 
@@ -38,7 +39,7 @@ end
 
 function CombatFX.Spawn(part, lifetime)
 	local folder = CombatFX.Folder()
-	if #folder:GetChildren() >= Presentation.Impacts.MaxInstances then
+	if #folder:GetChildren() >= Presentation.Impacts.MaxInstances * Quality.Scale("Instances") then
 		part:Destroy()
 		return nil
 	end

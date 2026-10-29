@@ -6,6 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Remotes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Remotes"))
 local Hud = require(script.Parent.Hud)
+local Quality = require(script.Parent.Quality)
 
 local DevPanel = {}
 
@@ -25,6 +26,10 @@ local SECTIONS = {
 	} },
 	{ "Do", {
 		{ "Heal", "Heal" }, { "God mode on/off", "God" }, { "Kill enemies nearby", "Clear" }, { "Cycle in 70 s", "Cycle" },
+	} },
+	{ "Effects quality (this screen only)", {
+		{ "Auto (graphics setting + frame rate)", "Quality", "Auto" }, { "High", "Quality", "High" },
+		{ "Medium", "Quality", "Medium" }, { "Low", "Quality", "Low" },
 	} },
 }
 
@@ -92,7 +97,11 @@ local function build()
 			button.Text = "  " .. b[1]
 			button.AutoButtonColor = true
 			button.Activated:Connect(function()
-				Remotes.Dev:FireServer(b[2], b[3])
+				if b[2] == "Quality" then -- client-side: nothing to ask the server
+					Hud.Banner(("Effects quality: %s%s"):format(Quality.Force(b[3]), if b[3] == "Auto" then " (auto)" else ""), nil, 2)
+				else
+					Remotes.Dev:FireServer(b[2], b[3])
+				end
 			end)
 			row(button)
 		end

@@ -17,6 +17,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local CombatFX = require(script.Parent.CombatFX)
 local CameraShake = require(script.Parent.CameraShake)
+local Quality = require(script.Parent.Quality)
 
 local WorldFX = {}
 
@@ -56,7 +57,7 @@ function WorldFX.Dust(position, scale)
 	e.LightInfluence = 1
 	e.Parent = part
 	part.Parent = workspace
-	e:Emit(math.clamp(math.floor(10 * scale + 0.5), 4, 30))
+	e:Emit(Quality.Count("Particles", math.clamp(math.floor(10 * scale + 0.5), 4, 30), 2))
 	Debris:AddItem(part, 1)
 end
 
@@ -85,8 +86,9 @@ function WorldFX.Shockwave(position, spec)
 	local d = (spec.Radius or 16) * 2
 	TweenService:Create(ring, TweenInfo.new(life, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = Vector3.new(0.05, d, d), Transparency = 1 }):Play()
 	Debris:AddItem(ring, life + 0.05)
-	for i = 1, spec.Cracks or 0 do
-		local a = (i / spec.Cracks) * math.pi * 2 + math.random() * 0.5
+	local cracks = Quality.Count("Cracks", spec.Cracks or 0)
+	for i = 1, cracks do
+		local a = (i / cracks) * math.pi * 2 + math.random() * 0.5
 		local len = (spec.Radius or 16) * (0.25 + math.random() * 0.25)
 		local crack = flat(Vector3.new(0.35, 0.06, len), Color3.fromRGB(35, 30, 26), Enum.Material.Slate)
 		crack.CFrame = CFrame.new(position + Vector3.new(0, 0.05, 0)) * CFrame.Angles(0, a, 0) * CFrame.new(0, 0, -len / 2)
@@ -205,6 +207,7 @@ local function stopCycleFX()
 		end
 	end
 	table.clear(cycle.lights)
+	Quality.Reapply() -- lamps the quality level keeps dark stay dark
 	if cycle.hum then
 		cycle.hum:Destroy()
 		cycle.hum = nil

@@ -15,6 +15,7 @@ local Presentation = require(Shared:WaitForChild("Presentation"))
 local CameraShake = require(script.Parent.CameraShake)
 local SwingAnimator = require(script.Parent.SwingAnimator)
 local CombatFX = require(script.Parent.CombatFX)
+local Quality = require(script.Parent.Quality)
 local Hud = require(script.Parent.Hud)
 
 local player = Players.LocalPlayer
@@ -70,7 +71,7 @@ local function sparks(position, spec)
 	emitter.Enabled = false
 	emitter.Parent = anchor
 	if CombatFX.Spawn(anchor, spec.Life + 0.1) then
-		emitter:Emit(spec.Count)
+		emitter:Emit(Quality.Count("Particles", spec.Count, 3))
 	end
 end
 
@@ -92,7 +93,7 @@ local function shards(position, spec)
 	if not spec then
 		return
 	end
-	for _ = 1, spec.Count do
+	for _ = 1, Quality.Count("Shards", spec.Count, 4) do
 		local shard = neonPart(Enum.PartType.Block, Vector3.new(spec.Size, spec.Size * 0.4, spec.Size * 0.6), spec.Color, CFrame.new(position) * CFrame.Angles(math.random() * 6, math.random() * 6, 0))
 		shard.Anchored = false
 		shard.Massless = true
@@ -106,7 +107,7 @@ end
 
 -- Frozen translucent copy of the character's visible parts that fades out (dodge after-image).
 local function ghost(char, seconds, color)
-	if typeof(char) ~= "Instance" or not seconds or seconds <= 0 then
+	if typeof(char) ~= "Instance" or not seconds or seconds <= 0 or Quality.Scale("Ghost") <= 0 then
 		return
 	end
 	local folder = CombatFX.Folder()
@@ -114,7 +115,7 @@ local function ghost(char, seconds, color)
 	for _, part in char:GetChildren() do
 		if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and part.Transparency < 1 then
 			count += 1
-			if #folder:GetChildren() + count > I.MaxInstances then
+			if #folder:GetChildren() + count > I.MaxInstances * Quality.Scale("Instances") then
 				break
 			end
 			local copy = Instance.new("Part")

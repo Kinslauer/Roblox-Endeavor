@@ -219,3 +219,4 @@ Start here. The **dev panel** (press **P**, or the DEV button top right; Studio 
 - [ ] The launcher: light, light, then heavy on a Grunt sends it up now (the lights' stagger used to end before any heavy could land).
 - [ ] Enemies and contacts: no Roblox name tag or health bar over them, only our small plate.
 - [ ] Arc pistol: the bolt starts at the muzzle and lands on whatever the reticle is on (it used to come from the hand and aim from your head along the camera, so it missed a little over the shoulder). With a laser sight fitted, the laser ends on the reticle too.
+- [ ] Effects quality: dev panel → "Effects quality" → Low. A third of the street lamps still cast light (the rest keep their neon heads), bloom is off, and dust, sparks and shards are thinner. Does the city still look like itself at Low? Back to Auto: it follows your Roblox graphics setting, and steps itself down if your frame rate stays under 45 (then under 30).

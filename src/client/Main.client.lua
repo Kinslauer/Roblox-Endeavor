@@ -3,6 +3,7 @@
 -- then the CombatEvent dispatcher, then the modules that register handlers on it, then Aim,
 -- the first-person ViewModel (reads Aim), then input.
 local Hud = require(script.Parent.Hud)
+local Quality = require(script.Parent.Quality)
 local CombatFX = require(script.Parent.CombatFX)
 local CameraShake = require(script.Parent.CameraShake)
 local Impacts = require(script.Parent.Impacts)
@@ -24,6 +25,7 @@ local ViewModel = require(script.Parent.ViewModel)
 local Input = require(script.Parent.Input)
 
 Hud.Init()
+Quality.Init() -- effects scaled to this machine (before anything spawns effects)
 CombatFX.Init()
 CameraShake.Init()
 Impacts.Init()

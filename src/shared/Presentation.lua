@@ -429,6 +429,23 @@ Presentation.Implants = {
 -- What ears and noses pick up (client/Senses.lua). Hearing: a pip on a ring around the screen centre points at
 -- each moving body inside your Hearing radius that you can't see (off screen or behind a wall). Scent: a soft
 -- marker on loot and fragments inside your Scent radius, and with Track, on wounded bodies too.
+-- Effects scaled to the machine (client/Quality.lua). Level = the lower of the player's Roblox graphics
+-- setting (when manual: 1..LowAtOrBelow Low, ..MediumAtOrBelow Medium, above High) and what the frame rate
+-- holds: below Floor[level] fps for DownAfter seconds in a row steps down; UpMargin over the next level's
+-- floor for UpAfter seconds steps back up. Tiers: multipliers each effect reads with Quality.Scale(key).
+--   Particles dust / spark counts   Shards guard-break shards   Cracks slam cracks   Ghost dodge after-image
+--   Bloom district bloom intensity (0 = off)   Lights share of world lamps that cast light   Instances effect cap
+Presentation.Quality = {
+	Setting = { LowAtOrBelow = 3, MediumAtOrBelow = 6 },
+	Fps = { Floor = { High = 45, Medium = 30 }, DownAfter = 4, UpAfter = 12, UpMargin = 10 },
+	LightFolders = { "District", "Regions" },
+	Tiers = {
+		High = { Particles = 1, Shards = 1, Cracks = 1, Ghost = 1, Bloom = 1, Lights = 1, Instances = 1 },
+		Medium = { Particles = 0.6, Shards = 0.6, Cracks = 0.5, Ghost = 1, Bloom = 0.6, Lights = 0.67, Instances = 0.7 },
+		Low = { Particles = 0.35, Shards = 0.35, Cracks = 0, Ghost = 0, Bloom = 0, Lights = 0.34, Instances = 0.45 },
+	},
+}
+
 -- The machine voice (client/Speech.lua, shared/Voice.lua): how a fully converted conduit's chat looks, in the
 -- chat window and in the bubble over its head. The words themselves are flattened by Voice.Machine.
 Presentation.Voice = {
