@@ -546,6 +546,34 @@ local function land(victim, vs)
 	end
 end
 
+-- Launcher hold (Config.Momentum.LaunchHold): a melee heavy started on an open enemy in front of you keeps
+-- it staggered until the heavy lands, so its next swing can't cancel the launcher (owner s24: light, light,
+-- heavy kept getting interrupted - the grunt's 0.6 s swing beat the heavy's wind-up).
+local function holdForLauncher(char, spec, t)
+	local M = Config.Momentum
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not (M.LaunchHold and root) then
+		return
+	end
+	local params = OverlapParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { char }
+	local look, held = root.CFrame.LookVector, {}
+	for _, part in workspace:GetPartBoundsInRadius(root.Position, spec.Range + M.LaunchHoldReach, params) do
+		local model = part:FindFirstAncestorOfClass("Model")
+		local vroot = model and not held[model] and model:FindFirstChild("HumanoidRootPart")
+		if vroot and getHum(model) and launchable(model) then
+			held[model] = true
+			local vs = st(model)
+			local open = t < vs.stunned + M.LaunchGrace or (vs.brokenAt ~= nil and t - vs.brokenAt < M.GrabStunWindow)
+			local flat = Vector3.new(vroot.Position.X - root.Position.X, 0, vroot.Position.Z - root.Position.Z)
+			if open and (flat.Magnitude < 3.5 or look:Dot(flat.Unit) >= spec.Arc) then
+				Combat.Stun(model, spec.Windup + spec.Active)
+			end
+		end
+	end
+end
+
 local function launch(attacker, victim, vs, t, direction)
 	local M = Config.Momentum
 	local root = victim:FindFirstChild("HumanoidRootPart")
@@ -678,11 +706,20 @@ local function applyDamage(attacker, victim, amount, opts)
 			knockback(victim, direction, opts.Knockback)
 		end
 	end
+	local launchOk = opts.Launches and (wasOpen or (opts.StartedAt or t) < stunnedBefore + Config.Momentum.LaunchGrace) and launchable(victim)
 	if result ~= "blocked" and vhum.Health > 0 then
 		if juggled then
 			pop(victim, vs, t) -- keep it up there
-		elseif opts.Launches and (wasOpen or t < stunnedBefore + Config.Momentum.LaunchGrace) and launchable(victim) then
+		elseif launchOk then
 			launch(attacker, victim, vs, t, direction) -- a heavy on an open enemy sends it up
+		end
+	elseif result ~= "blocked" and launchOk and not juggled then
+		-- the launcher killed it: no juggle, but the body still goes up (owner s24 - on a grunt, light, light,
+		-- heavy is lethal, and a kill that just drops looked like the launcher never fired)
+		local root = victim:FindFirstChild("HumanoidRootPart")
+		if root then
+			root.AssemblyLinearVelocity = Vector3.new(0, Config.Momentum.LaunchVelocity, 0) + direction * Config.Momentum.LaunchDrift
+			fx("Launch", victim, attacker)
 		end
 	end
 	if result == "hit" and amount > 0.5 then
@@ -725,7 +762,8 @@ local function pulse(char, spec, mods, seen)
 	end
 	local opts = { Posture = posture, Type = spec.Type, Knockback = spec.Knockback, Stun = spec.Stun, Unblockable = mods.unblockable, GuardBreak = mods.guardBreak,
 		Staggers = mods.label == "Heavy", -- heavies always break enemy poise
-		Launches = mods.label == "Heavy" and not spec.Ranged and not spec.NoLaunch } -- ...and launch an open enemy (Config.Momentum)
+		Launches = mods.label == "Heavy" and not spec.Ranged and not spec.NoLaunch, -- ...and launch an open enemy (Config.Momentum)
+		StartedAt = mods.startedAt } -- when the swing began: the launcher judges "open" from the press, not the impact
 
 	-- zone: the body part a ranged shot landed on (Config.Gunplay.Zones multiplier; a headshot staggers)
 	local function strike(model, zone)
@@ -842,6 +880,7 @@ end
 function Combat.Swing(char, spec, mods)
 	mods = mods or {}
 	local s, t0 = st(char), os.clock()
+	mods.startedAt = mods.startedAt or t0
 	local token = s.token
 	s.busyUntil = t0 + spec.End
 	s.windupUntil = t0 + spec.Windup
@@ -952,6 +991,9 @@ function Combat.Heavy(player, aim)
 	char:SetAttribute("Blocking", false)
 	-- Heavies are criticals: they crush blocks (extra posture damage).
 	local mods = { chargeBonus = weapon.ChargeBonus, label = "Heavy", postureMult = C.CriticalPostureMult, aim = if weapon.Heavy.Ranged then sanitizeAim(char, aim) else nil, gun = gun }
+	if not weapon.Heavy.Ranged and not weapon.Heavy.NoLaunch then
+		holdForLauncher(char, weapon.Heavy, t)
+	end
 	Combat.Swing(char, weapon.Heavy, mods)
 end
 

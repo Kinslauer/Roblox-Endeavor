@@ -58,6 +58,15 @@ AirPopExtend = 0.3, MaxJuggleHits = 4, LandStun = 0.45, EnemyStepRange = 9, Enem
 - 2026-10-28 (owner s8-8 "i couldnt get this to work"): light, light, heavy could never launch, because the lights'
   stagger (0.35 s) ends before any heavy can land. `Config.Momentum.LaunchGrace = 0.6`: a heavy still launches an
   enemy whose stagger ended that recently.
+- 2026-10-29 (owner s24 "i still cant seem to do this"): the slower windups of 2026-10-28 ate that grace (Pipe Club
+  light, light, heavy cleared it by 0.01 s; the Sledge never could), and a grunt's 0.6 s swing beat the heavy's
+  wind-up and cancelled it. Three changes:
+  - the grace is judged from when you **press** the heavy (`opts.StartedAt`), not when it lands;
+  - **launcher hold** (`LaunchHold`): starting a melee heavy on an open enemy in front of you keeps it staggered
+    until the heavy lands (`Combat holdForLauncher`), so it can't swing through your launcher;
+  - a launcher that **kills** still throws the body up (on a 70 hp grunt, light, light, heavy is lethal).
+  What stays: one light doesn't stagger a grunt (Poise 2), so a grunt already swinging trades with your first light.
+  Open the combo on an opening - its recovery after a swing, a parry, or a flick.
 - **Launch**: a melee heavy (`mods.label == "Heavy"`, not `Ranged`) that lands on an **open** enemy — `Combat.IsOpen`
   read *before* the hit's own stun: stunned right now, or posture-broken within `GrabStunWindow` — sets
   `juggledUntil = now + LaunchAirTime`, stuns it for `LaunchAirTime + LandStun`, gives the root `(0, LaunchVelocity, 0) +

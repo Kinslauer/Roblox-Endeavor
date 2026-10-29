@@ -715,6 +715,44 @@ do
 		check("light, light, heavy: a stagger that just ended still launches", g3:GetAttribute("Juggled") == true)
 		g3:Destroy()
 		run(1.5)
+		-- the real combo at human speed (owner s24: "i still cant seem to do this"): light, light, heavy with a
+		-- beat of reaction between presses, no stun faked; poise 2 means only the second light staggers
+		for _, wid in { "PipeClub", "Sledge", "RebarBlade" } do
+			local def = Weapons.Defs[wid]
+			Remotes.EquipItem:FireServer(wid); run(Config.Combat.HeavyCooldown + 0.3)
+			me:SetAttribute("Stamina", 100)
+			me:SetAttribute("DevGod", true) -- the grunt's swings can't cancel ours: this measures the timing alone
+			me:PivotTo(M.CF.lookAt(M.V3.new(200, 5, 200), M.V3.new(200, 5, 190)))
+			local g4 = NPCs.Spawn("Grunt", M.V3.new(200, 5, 195))
+			g4.Humanoid.MaxHealth = 400; g4.Humanoid.Health = 400 -- survives the heavy, so the juggle is what's checked
+			local react = 0.15
+			Remotes.Attack:FireServer(); run(def.Attacks[1].End + react)
+			Remotes.Attack:FireServer(); run(def.Attacks[2].End + react)
+			Remotes.Heavy:FireServer(); run(def.Heavy.Windup + 0.15)
+			check(("light, light, heavy at human speed launches (%s)"):format(wid), g4:GetAttribute("Juggled") == true)
+			me:SetAttribute("DevGod", nil)
+			g4:Destroy()
+			run(1.5)
+		end
+		-- ...and when that heavy kills (a plain 70 hp grunt), the body still goes up
+		do
+			local def = Weapons.Defs.PipeClub
+			Remotes.EquipItem:FireServer("PipeClub"); run(Config.Combat.HeavyCooldown + 0.3)
+			me:SetAttribute("Stamina", 100)
+			me:SetAttribute("DevGod", true)
+			me:PivotTo(M.CF.lookAt(M.V3.new(200, 5, 200), M.V3.new(200, 5, 190)))
+			local g5 = NPCs.Spawn("Grunt", M.V3.new(200, 5, 195))
+			local mark = #M.FireLog
+			Remotes.Attack:FireServer(); run(def.Attacks[1].End + 0.15)
+			Remotes.Attack:FireServer(); run(def.Attacks[2].End + 0.15)
+			Remotes.Heavy:FireServer(); run(def.Heavy.Windup + 0.05)
+			local up = false
+			for i = mark + 1, #M.FireLog do local e = M.FireLog[i]; if e[1] == "CombatEvent" and e[3] == "Launch" and e[4] == g5 then up = true end end
+			check("a launcher that kills still throws the body up", g5.Humanoid.Health <= 0 and up)
+			me:SetAttribute("DevGod", nil)
+			if g5.Parent then g5:Destroy() end
+			run(1.5)
+		end
 	end
 	-- the guard (owner s1-3 / s9-1): F held through your own swing goes up the moment you're free; a re-raise never parries
 	do

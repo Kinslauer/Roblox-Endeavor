@@ -210,8 +210,11 @@ Config.Momentum = {
 	LaunchVelocity = 70, -- studs/s up (~12 studs of height, ~0.7 s of hang)
 	LaunchDrift = 8, -- studs/s away from the attacker
 	LaunchAirTime = 0.8, -- seconds the target counts as Juggled after a launch
-	LaunchGrace = 0.6, -- a heavy still launches this long after the target's stagger ended (light, light, heavy:
-	-- the light stagger ends before any heavy can land, owner playtest s8-8 "i couldnt get this to work")
+	LaunchGrace = 0.6, -- a heavy launches if you *start* it while the target is staggered or up to this long
+	-- after its stagger ended (light, light, heavy: the light stagger ends before any heavy can land, owner
+	-- playtests s8-8 and s24 "i still cant seem to do this"; judged from the press since the slower windups)
+	LaunchHold = true, -- starting that heavy keeps the open target staggered until it lands (Combat holdForLauncher)
+	LaunchHoldReach = 1, -- studs past the heavy's range a target can be and still be held
 	AirDamageMult = 1.35, -- damage multiplier against a Juggled target
 	AirPopVelocity = 32, -- upward studs/s each hit gives a Juggled target
 	AirPopExtend = 0.3, -- seconds each pop adds to the juggle
