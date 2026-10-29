@@ -3,7 +3,9 @@
 -- server/Gear.lua Gear.Push) and every client, this one included, renders that player's chat through
 -- Voice.Machine - flat capitals, no laughter, no feeling - with a cold name colour and a terminal-style bubble.
 -- Rip one piece back out and the voice comes back. Display only: the words were already filtered by Roblox,
--- this only reshapes them. Needs the TextChatService chat (the default); legacy chat is left alone.
+-- this only reshapes them. Rides TextChatService's callbacks; Roblox retired legacy chat (April 2025) and
+-- moves experiences over by itself, and ChatVersion is deprecated, so the hooks go in whatever it says - under
+-- legacy chat they simply never fire (owner s24: "chat version is deprecated").
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
@@ -26,9 +28,11 @@ local function isMachine(message)
 end
 
 function Speech.Init()
-	if TextChatService.ChatVersion ~= Enum.ChatVersion.TextChatService then
-		warn("[Speech] legacy chat: the machine voice needs TextChatService")
-		return
+	local ok, version = pcall(function()
+		return TextChatService.ChatVersion
+	end)
+	if ok and version ~= Enum.ChatVersion.TextChatService then
+		warn("[Speech] this place still reports legacy chat; the machine voice shows once Roblox moves it to TextChatService")
 	end
 	TextChatService.OnIncomingMessage = function(message)
 		-- only the delivered (filtered, escaped) text; the local "Sending" echo is raw and gets replaced anyway
