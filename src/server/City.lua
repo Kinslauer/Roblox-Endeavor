@@ -138,6 +138,33 @@ end
 
 local STREET_PROPS = { "Streetlight", "StreetSign", "Crate", "Barrel", "FencePanel", "VendingMachine", "Terminal", "CarWreck", "Slab" }
 
+-- The four corner quadrants between districts: unnamed outskirts of low ruins, wrecks and
+-- rubble so the city reads as one continuous place instead of four islands.
+local OUTSKIRTS = { Color = Color3.fromRGB(52, 50, 56), Neon = Color3.fromRGB(120, 120, 140), Height = { 6, 16 }, Collapse = 0.6 }
+local function buildOutskirts()
+	local inner, outer = 150, 620 -- stay clear of the Pit/armory and the district squares
+	for _, sx in { -1, 1 } do
+		for _, sz in { -1, 1 } do
+			for i = 1, 14 do
+				local x = sx * rng:NextNumber(inner, outer)
+				local z = sz * rng:NextNumber(inner, outer)
+				-- skip anything that lands inside a district square
+				if not City.DistrictAt(Vector3.new(x, 0, z)) then
+					tower(OUTSKIRTS, x, z, rng:NextNumber(14, 26))
+					local propId = STREET_PROPS[rng:NextInteger(1, #STREET_PROPS)]
+					Destruction.SpawnProp(propId, CFrame.new(x + rng:NextNumber(-20, 20), GROUND_TOP, z + rng:NextNumber(-20, 20)) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0))
+				end
+			end
+			-- a wrecked road between the quadrant's two districts
+			for k = 1, 6 do
+				local along = rng:NextNumber(inner, outer)
+				Destruction.SpawnProp(if k % 2 == 0 then "CarWreck" else "Slab", CFrame.new(sx * along, GROUND_TOP, sz * rng:NextNumber(90, 130)) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0))
+				Destruction.SpawnProp(if k % 2 == 0 then "Barrel" else "Streetlight", CFrame.new(sx * rng:NextNumber(90, 130), GROUND_TOP, sz * along))
+			end
+		end
+	end
+end
+
 local function buildDistrict(district)
 	local c, size, blocks = district.Center, district.Size, district.Blocks
 	local pitch = size / blocks
@@ -221,6 +248,7 @@ function City.Init()
 	for _, district in City.Districts do
 		buildDistrict(district)
 	end
+	buildOutskirts()
 
 	-- district banners (1 Hz; cheap)
 	task.spawn(function()

@@ -1,6 +1,6 @@
 # Destruction & Salvage
 
-Status: **Stories 1-7 and 10 implemented** (`src/server/Destruction.lua`, `src/shared/Props.lua`, `src/server/Gore.lua`); 8-9 pending. Catching (section 4.5 stretch goal) is in: timed grab press. · Worlds: **Conduit (Universe 1) and War World** · Owner: solo
+Status: **Stories 1-8 and 10 implemented** (`src/server/Destruction.lua`, `src/shared/Props.lua`, `src/server/Gore.lua`); 9 (war world) pending. Story 8 = `tools/smoke/stress.lua` (budgets under load in the mock; Roblox frame rate still needs a real 20-player test). Catching (section 4.5 stretch goal) is in: timed grab press. · Worlds: **Conduit (Universe 1) and War World** · Owner: solo
 
 ## 1. Overview
 

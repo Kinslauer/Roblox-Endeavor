@@ -134,14 +134,28 @@ local function spawnChunk(chunkDef, cframe, impulse)
 			table.remove(chunks, i)
 		end
 	end)
-	-- budget: past the cap, the oldest settled chunks go first
-	if #chunks > D.LooseChunkCap then
+	-- budget: past the cap, the oldest settled chunk goes first; failing that, the oldest
+	-- chunk nobody is holding or throwing. The cap must hold even if nothing ever settles.
+	while #chunks > D.LooseChunkCap do
+		local victim
 		for _, e in chunks do
 			if e.settledAt and not e.heldBy then
-				removeChunk(e)
+				victim = e
 				break
 			end
 		end
+		if not victim then
+			for _, e in chunks do
+				if not e.heldBy and not e.inFlight then
+					victim = e
+					break
+				end
+			end
+		end
+		if not victim then
+			break
+		end
+		removeChunk(victim)
 	end
 	return p, entry
 end
@@ -165,6 +179,14 @@ local function salvage(def, cframe)
 	if remains then
 		CollectionService:AddTag(remains, "Salvage")
 		remains.Parent = folder
+		-- salvage nobody picks up is capped too, oldest first
+		local all = CollectionService:GetTagged("Salvage")
+		while #all > D.SalvageCap do
+			local oldest = table.remove(all, 1)
+			if oldest and oldest.Parent then
+				oldest:Destroy()
+			end
+		end
 	end
 end
 

@@ -1,7 +1,8 @@
 import os, sys
 here = os.path.dirname(os.path.abspath(__file__))
 root = os.path.join(here, "..", "..", "src")
-scenario = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scenario.lua')).read()
+scenario_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(here, 'scenario.lua')
+scenario = open(scenario_path).read()
 def lua_str(s):
     n = 2
     while ("]" + "=" * n + "]") in s: n += 1
@@ -24,4 +25,5 @@ print("local M = (function()\n" + prelude + "\nend)()")
 print("local TREE_SHARED = {\n" + mods("shared") + "\n}")
 print("local TREE_SERVER = {\n" + mods("server") + "\n}")
 print("local TREE_CLIENT = {\n" + mods("client") + "\n}")
+print("local ARGS_OUT = " + repr(sys.argv[2]) if len(sys.argv) > 2 else "")
 print(scenario)

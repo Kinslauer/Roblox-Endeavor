@@ -35,7 +35,7 @@ every player has finished or skipped (and 30s have passed) the world opens early
 `Config.Tutorial.Enabled = false` restores the short timed prologue.
 
 ## The city, raids and devouring
-- **City** (`src/server/City.lua`): four generated districts around the Pit - Transit Hub (low danger), Corp Plaza and
+- **City** (`src/server/City.lua`, map: `docs/maps/conduit_map.png`): four generated districts around the Pit, with ruined outskirts filling the corners between them - Transit Hub (low danger), Corp Plaza and
   The Sprawl (medium), Blackout Zone (high). Ruined towers with ledges, rubble, neon signage, a pylon per district for
   navigation, refilling loot caches, and a banner when you cross into a district. Replace any district with hand-built
   art later; the generator is only there so the world exists now.
