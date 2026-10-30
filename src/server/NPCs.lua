@@ -14,6 +14,19 @@ local Stats = require(script.Parent.Stats)
 local NPCs = {}
 NPCs.Killed = Instance.new("BindableEvent") -- (typeName, model, killerPlayer?)
 
+-- Breaches and explosions are loud: idle NPCs within `radius` walk over to look.
+function NPCs.Alert(position, radius)
+	for _, model in workspace:GetDescendants() do
+		if model:IsA("Model") and model:GetAttribute("NPC") then
+			local root = model:FindFirstChild("HumanoidRootPart")
+			if root and (root.Position - position).Magnitude <= radius then
+				model:SetAttribute("Investigate", position)
+				model:SetAttribute("InvestigateUntil", os.clock() + 15)
+			end
+		end
+	end
+end
+
 -- Telegraph: seconds of red flash before the hit lands (dodge/parry window).
 -- Moves: optional list of special attacks { Name, Chance, Telegraph, Damage, Posture, Radius?, Knockback, Stun?, Unblockable? }
 NPCs.Types = {
@@ -195,6 +208,13 @@ function NPCs.Spawn(typeName, position, opts)
 					end
 				elseif dist > def.Range * 0.8 then
 					hum:MoveTo(troot.Position)
+				end
+			else
+				local spot = model:GetAttribute("Investigate")
+				if spot and os.clock() < (model:GetAttribute("InvestigateUntil") or 0) and (spot - root.Position).Magnitude > 6 then
+					hum:MoveTo(spot)
+				elseif spot then
+					model:SetAttribute("Investigate", nil)
 				end
 			end
 			task.wait(0.2)

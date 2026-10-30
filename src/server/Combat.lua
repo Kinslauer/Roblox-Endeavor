@@ -19,6 +19,7 @@ local C, F = Config.Combat, Config.Flicker
 local BUFFER = 0.08 -- input buffer: an attack may start this early before the last one ends
 
 local Combat = {}
+Combat.World = nil -- set by Destruction: { Swing, Bolt, ImprovisedHit }
 Combat.Resolved = Instance.new("BindableEvent") -- (attackerChar, victimChar, result)
 Combat.Used = Instance.new("BindableEvent") -- (abilityName, player)
 
@@ -440,6 +441,8 @@ local function pulse(char, spec, mods, seen)
 		local model = result and result.Instance:FindFirstAncestorOfClass("Model")
 		if model and getHum(model) then
 			strike(model)
+		elseif result and Combat.World then
+			Combat.World.Bolt(char, result.Instance, damage, mods.weapon)
 		end
 		return
 	end
@@ -457,6 +460,9 @@ local function pulse(char, spec, mods, seen)
 				end
 			end
 		end
+	end
+	if Combat.World then
+		Combat.World.Swing(char, origin, look, spec, damage, mods.weapon, mods.label == "Heavy", seen)
 	end
 end
 
@@ -486,25 +492,55 @@ function Combat.Swing(char, spec, mods)
 end
 
 local function weaponOf(player)
-	local data = PlayerData.Get(player)
-	return data and (Weapons.Defs[data.Equipped] or Weapons.Defs.Fists)
+	local data, char = PlayerData.Get(player), player.Character
+	if char and char:GetAttribute("Improvised") then
+		return Weapons.Defs.PipeClub, true -- a pipe or sign plate swung like a club
+	end
+	return data and (Weapons.Defs[data.Equipped] or Weapons.Defs.Fists), false
+end
+
+-- Two-handed loads (Medium/Heavy chunks) stop you swinging and blocking.
+local function handsFull(char)
+	local class = char:GetAttribute("HoldClass")
+	return class == "Medium" or class == "Heavy"
+end
+
+-- Cell-fed weapons spend ammo per shot; returns false (and tells the player) when dry.
+local function spendAmmo(player, weapon)
+	if not weapon.Ammo then
+		return true
+	end
+	local Inventory = require(script.Parent.Inventory)
+	if Inventory.Count(player, weapon.Ammo) <= 0 then
+		Remotes.Announce:FireClient(player, "Out of " .. weapon.Ammo .. "s. Craft more from Batteries and Wire.", "Info")
+		return false
+	end
+	return Inventory.Remove(player, weapon.Ammo, 1)
 end
 
 function Combat.Attack(player)
-	local char, weapon = player.Character, weaponOf(player)
-	if not (char and weapon and Combat.CanAct(char)) then
+	local char = player.Character
+	local weapon, improvised = weaponOf(player)
+	if not (char and weapon and Combat.CanAct(char)) or handsFull(char) then
 		return
 	end
 	local s, t = st(char), os.clock()
 	local combo = if s.comboWeapon == weapon and t <= s.comboExpires then s.combo % #weapon.Attacks + 1 else 1
 	local spec = weapon.Attacks[combo]
-	if not Combat.SpendStamina(char, spec.Stamina) then
+	if not Combat.SpendStamina(char, spec.Stamina) or not spendAmmo(player, weapon) then
 		return
 	end
 	s.block = false
 	char:SetAttribute("Blocking", false)
 	s.combo, s.comboWeapon = combo, weapon
-	local mods = { chargeBonus = weapon.ChargeBonus, label = combo }
+	local mods = { chargeBonus = weapon.ChargeBonus, label = combo, weapon = weapon }
+	if improvised then
+		mods.onHit = function(result)
+			if (result == "hit" or result == "blocked" or result == "guardbreak") and Combat.World then
+				Combat.World.ImprovisedHit(player)
+			end
+		end
+	end
 	Combat.Swing(char, spec, mods)
 	if combo == #weapon.Attacks then -- end of the chain: recovery
 		s.busyUntil += weapon.ComboCooldown
@@ -514,18 +550,18 @@ end
 
 function Combat.Heavy(player)
 	local char, weapon = player.Character, weaponOf(player)
-	if not (char and weapon and Combat.CanAct(char)) then
+	if not (char and weapon and Combat.CanAct(char)) or handsFull(char) then
 		return
 	end
 	local s, t = st(char), os.clock()
-	if t - s.lastHeavy < C.HeavyCooldown or not Combat.SpendStamina(char, weapon.Heavy.Stamina) then
+	if t - s.lastHeavy < C.HeavyCooldown or not Combat.SpendStamina(char, weapon.Heavy.Stamina) or not spendAmmo(player, weapon) then
 		return
 	end
 	s.lastHeavy, s.block, s.combo = t, false, 0
 	Combat.Used:Fire("Heavy", player)
 	char:SetAttribute("Blocking", false)
 	-- Heavies are criticals: they crush blocks (extra posture damage).
-	local mods = { chargeBonus = weapon.ChargeBonus, label = "Heavy", postureMult = C.CriticalPostureMult }
+	local mods = { chargeBonus = weapon.ChargeBonus, label = "Heavy", postureMult = C.CriticalPostureMult, weapon = weapon }
 	Combat.Swing(char, weapon.Heavy, mods)
 end
 
@@ -536,7 +572,7 @@ function Combat.SetBlock(player, down)
 	end
 	local s = st(char)
 	if down then
-		if Combat.CanAct(char) and not s.block and os.clock() >= s.busyUntil then
+		if Combat.CanAct(char) and not s.block and os.clock() >= s.busyUntil and not handsFull(char) then
 			local t = os.clock()
 			s.block = true
 			-- Tapping block repeatedly must not re-arm the parry window every press.

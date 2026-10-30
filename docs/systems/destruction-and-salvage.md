@@ -1,6 +1,6 @@
 # Destruction & Salvage
 
-Status: **Designed, not implemented** · Worlds: **Conduit (Universe 1) and War World** · Owner: solo
+Status: **Stories 1-7 implemented** (`src/server/Destruction.lua`, `src/shared/Props.lua`); 8-10 pending · Worlds: **Conduit (Universe 1) and War World** · Owner: solo
 
 ## 1. Overview
 

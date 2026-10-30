@@ -41,7 +41,9 @@ local CHECK = {
 	end,
 	instance = function(v) return typeof(v) == "Instance" end,
 }
+CHECK.number = function(v) return type(v) == "number" and v == v and math.abs(v) < 1e6 end
 CHECK["string?"] = function(v) return v == nil or CHECK.string(v) end
+CHECK["vector?"] = function(v) return v == nil or CHECK.vector(v) end
 CHECK["int?"] = function(v) return v == nil or CHECK.int(v) end
 
 -- spec: { rate = per-second refill, burst = bucket size, args = { "string", "int?", ... } }

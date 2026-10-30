@@ -12,6 +12,7 @@ local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Remotes = require(Shared.Remotes)
+local Destruction = require(script.Parent.Destruction)
 local Loot = require(script.Parent.Loot)
 local Quests = require(script.Parent.Quests)
 
@@ -24,13 +25,13 @@ local rng = Random.new(1337) -- fixed seed: the city is the same every server
 -- Center, size (studs), block grid, tower height range, palette, cache count, danger label.
 City.Districts = {
 	{ Name = "Transit Hub", Center = Vector3.new(0, 0, -420), Size = 420, Blocks = 4, Height = { 14, 40 }, Caches = 8, Danger = "Low",
-		Color = Color3.fromRGB(60, 64, 78), Neon = Color3.fromRGB(0, 220, 255), Collapse = 0.25 },
+		Color = Color3.fromRGB(60, 64, 78), Neon = Color3.fromRGB(0, 220, 255), Collapse = 0.25, Lockup = "Weak" },
 	{ Name = "Corp Plaza", Center = Vector3.new(420, 0, 0), Size = 420, Blocks = 3, Height = { 40, 110 }, Caches = 6, Danger = "Medium",
-		Color = Color3.fromRGB(70, 72, 90), Neon = Color3.fromRGB(255, 50, 160), Collapse = 0.15 },
+		Color = Color3.fromRGB(70, 72, 90), Neon = Color3.fromRGB(255, 50, 160), Collapse = 0.15, Lockup = "Reinforced", Sealed = true },
 	{ Name = "The Sprawl", Center = Vector3.new(-420, 0, 0), Size = 420, Blocks = 6, Height = { 8, 22 }, Caches = 12, Danger = "Medium",
-		Color = Color3.fromRGB(78, 66, 56), Neon = Color3.fromRGB(255, 170, 40), Collapse = 0.4 },
+		Color = Color3.fromRGB(78, 66, 56), Neon = Color3.fromRGB(255, 170, 40), Collapse = 0.4, Lockup = "Standard" },
 	{ Name = "Blackout Zone", Center = Vector3.new(0, 0, 420), Size = 420, Blocks = 4, Height = { 20, 70 }, Caches = 6, Danger = "High",
-		Color = Color3.fromRGB(30, 30, 38), Neon = Color3.fromRGB(255, 30, 30), Collapse = 0.5, Raid = true },
+		Color = Color3.fromRGB(30, 30, 38), Neon = Color3.fromRGB(255, 30, 30), Collapse = 0.5, Raid = true, Lockup = "Reinforced" },
 }
 
 local folder
@@ -66,6 +67,12 @@ local function tower(district, x, z, footprint)
 		light.Color, light.Range, light.Brightness = district.Neon, 30, 1.2
 		light.Parent = strip
 	end
+	if not collapsed then
+		-- window panes on the street face: cheap, breakable, drop glass
+		for k = 1, math.min(3, math.floor(h / 10)) do
+			Destruction.SpawnProp("WindowPane", CFrame.new(x + (k - 2) * 8, GROUND_TOP + 4 + (k - 1) * 3, z - footprint / 2 - 0.3))
+		end
+	end
 	if h > 24 and rng:NextNumber() < 0.5 then
 		-- a walkable ledge partway up for verticality
 		part({ Name = "Ledge", Size = Vector3.new(footprint + 6, 1, 4), Position = Vector3.new(x, GROUND_TOP + h * 0.5, z + footprint / 2 + 2), Color = district.Color, Material = Enum.Material.Metal })
@@ -91,6 +98,46 @@ local function cache(district, position)
 	end
 end
 
+-- A locked building: a box with a breach door of the district's tier and a vault cache inside.
+local function lockup(district, position, tier)
+	local w, h, dpth = 24, 12, 24
+	local c = position
+	part({ Name = "LockupFloor", Size = Vector3.new(w, 1, dpth), Position = c + Vector3.new(0, GROUND_TOP + 0.5, 0), Color = district.Color, Material = Enum.Material.Concrete })
+	part({ Name = "LockupRoof", Size = Vector3.new(w, 1, dpth), Position = c + Vector3.new(0, GROUND_TOP + h, 0), Color = district.Color, Material = Enum.Material.Concrete })
+	part({ Name = "LockupWall", Size = Vector3.new(w, h, 1), Position = c + Vector3.new(0, GROUND_TOP + h / 2, dpth / 2), Color = district.Color, Material = Enum.Material.Concrete })
+	part({ Name = "LockupWall", Size = Vector3.new(1, h, dpth), Position = c + Vector3.new(w / 2, GROUND_TOP + h / 2, 0), Color = district.Color, Material = Enum.Material.Concrete })
+	part({ Name = "LockupWall", Size = Vector3.new(1, h, dpth), Position = c + Vector3.new(-w / 2, GROUND_TOP + h / 2, 0), Color = district.Color, Material = Enum.Material.Concrete })
+	-- front wall with an opening filled by the breach door
+	local doorW, doorH = 8, 9
+	part({ Name = "LockupWall", Size = Vector3.new((w - doorW) / 2, h, 1), Position = c + Vector3.new(-(doorW / 2 + (w - doorW) / 4), GROUND_TOP + h / 2, -dpth / 2), Color = district.Color, Material = Enum.Material.Concrete })
+	part({ Name = "LockupWall", Size = Vector3.new((w - doorW) / 2, h, 1), Position = c + Vector3.new(doorW / 2 + (w - doorW) / 4, GROUND_TOP + h / 2, -dpth / 2), Color = district.Color, Material = Enum.Material.Concrete })
+	part({ Name = "LockupWall", Size = Vector3.new(doorW, h - doorH, 1), Position = c + Vector3.new(0, GROUND_TOP + doorH + (h - doorH) / 2, -dpth / 2), Color = district.Color, Material = Enum.Material.Concrete })
+	local breach = Destruction.SpawnBreach(tier, CFrame.new(c + Vector3.new(0, GROUND_TOP + doorH / 2, -dpth / 2)), Vector3.new(doorW, doorH, 1))
+	local sign = part({ Size = Vector3.new(doorW, 1, 0.3), Position = c + Vector3.new(0, GROUND_TOP + doorH + 1, -dpth / 2 - 0.6), Material = Enum.Material.Neon, Color = district.Neon, CanCollide = false })
+	sign:SetAttribute("Label", breach:GetAttribute("Label"))
+	-- the prize: a vault cache and a supply cache, refilling like any cache
+	local function vault(pos, tableName)
+		local crate = Loot.Spawn(CFrame.new(pos), Items.Roll(tableName), { Label = "Vault Cache", Action = "Open", Hold = 2.5, Lifetime = 1e9, Size = Vector3.new(3.5, 3.5, 3.5), Color = Color3.fromRGB(120, 100, 40) })
+		if crate then
+			crate.Anchored = true
+			crate.Parent = folder
+			CollectionService:AddTag(crate, "Cache")
+			crate.Destroying:Connect(function()
+				task.delay(Config.City.CacheRespawn * 2, function()
+					if folder.Parent then
+						vault(pos, tableName)
+					end
+				end)
+			end)
+		end
+	end
+	vault(c + Vector3.new(-5, GROUND_TOP + 2.8, 6), "Vault")
+	vault(c + Vector3.new(5, GROUND_TOP + 2.8, 6), "Supply")
+	return breach
+end
+
+local STREET_PROPS = { "Streetlight", "StreetSign", "Crate", "Barrel", "FencePanel", "VendingMachine", "Terminal", "CarWreck", "Slab" }
+
 local function buildDistrict(district)
 	local c, size, blocks = district.Center, district.Size, district.Blocks
 	local pitch = size / blocks
@@ -107,7 +154,20 @@ local function buildDistrict(district)
 			end
 			tower(district, x, z, footprint)
 			table.insert(spots, Vector3.new(x + footprint / 2 + 3, GROUND_TOP + 1.5, z + footprint / 2 + 3))
+			-- street furniture on the block corners: every one of these is breakable salvage
+			local corner = Vector3.new(x - footprint / 2 - 4, GROUND_TOP, z - footprint / 2 - 4)
+			Destruction.SpawnProp("Streetlight", CFrame.new(corner))
+			for k = 1, 2 do
+				local propId = STREET_PROPS[rng:NextInteger(1, #STREET_PROPS)]
+				local pos = Vector3.new(x + rng:NextNumber(-pitch / 2 + 4, pitch / 2 - 4), GROUND_TOP, z + footprint / 2 + 4 + k * 4)
+				Destruction.SpawnProp(propId, CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0))
+			end
 		end
+	end
+	-- locked buildings at the district edge (tier by danger); Corp Plaza also keeps a Sealed one
+	lockup(district, Vector3.new(c.X - size / 2 + 20, 0, c.Z + size / 2 - 20), district.Lockup or "Weak")
+	if district.Sealed then
+		lockup(district, Vector3.new(c.X + size / 2 - 20, 0, c.Z + size / 2 - 20), "Sealed")
 	end
 	for _ = 1, math.min(district.Caches, #spots) do
 		local idx = rng:NextInteger(1, #spots)

@@ -13,6 +13,7 @@ V3.__index = function(t, k)
 end
 function V3.new(x, y, z) return setmetatable({X = x or 0, Y = y or 0, Z = z or 0}, V3) end
 V3.zero = V3.new(0,0,0)
+V3.yAxis = V3.new(0,1,0)
 local function isV3(v) return getmetatable(v) == V3 end
 V3.__add = function(a, b) return V3.new(a.X+b.X, a.Y+b.Y, a.Z+b.Z) end
 V3.__sub = function(a, b) return V3.new(a.X-b.X, a.Y-b.Y, a.Z-b.Z) end
@@ -110,7 +111,7 @@ end
 
 -------------------------------------------------- instances
 local EVENTS = { Changed=1, Triggered=1, Died=1, HealthChanged=1, Touched=1, AncestryChanged=1, OnServerEvent=1, OnClientEvent=1,
-	PlayerAdded=1, PlayerRemoving=1, CharacterAdded=1, Event=1, Heartbeat=1, RenderStepped=1, Destroying=1, Activated=1, InputBegan=1, InputEnded=1 }
+	PlayerAdded=1, PlayerRemoving=1, CharacterAdded=1, CharacterRemoving=1, Event=1, Heartbeat=1, RenderStepped=1, Destroying=1, Activated=1, InputBegan=1, InputEnded=1 }
 local Instance, new = {}, nil
 local methods = {}
 local Inst = {}
@@ -163,12 +164,27 @@ function methods.Play(self) end
 function methods.Kick(self, msg) print("!! KICKED: " .. tostring(msg)) end
 function methods.Reconcile() end
 function methods.GetPartBoundsInRadius(self, origin, radius, params)
-	local out, excluded = {}, (params and params.FilterDescendantsInstances) or {}
+	local out, list = {}, (params and params.FilterDescendantsInstances) or {}
+	local include = params and params.FilterType == "RaycastFilterType.Include"
 	for _, d in descendants(self, {}) do
 		if d:IsA("BasePart") and d.Position and (d.Position - origin).Magnitude <= radius then
-			local skip = false
-			for _, ex in excluded do if d == ex or d:IsDescendantOf(ex) then skip = true end end
-			if not skip then table.insert(out, d) end
+			local listed = false
+			for _, ex in list do if d == ex or d:IsDescendantOf(ex) then listed = true end end
+			if include == listed then table.insert(out, d) end
+		end
+	end
+	return out
+end
+function methods.GetPartBoundsInBox(self, cf, size, params)
+	local out, list = {}, (params and params.FilterDescendantsInstances) or {}
+	for _, d in descendants(self, {}) do
+		if d:IsA("BasePart") and d.Position then
+			local o = d.Position - cf.Position
+			if math.abs(o.X) <= size.X/2 and math.abs(o.Y) <= size.Y/2 and math.abs(o.Z) <= size.Z/2 then
+				local listed = false
+				for _, ex in list do if d == ex or d:IsDescendantOf(ex) then listed = true end end
+				if not listed then table.insert(out, d) end
+			end
 		end
 	end
 	return out

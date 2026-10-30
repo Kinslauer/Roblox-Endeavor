@@ -8,6 +8,7 @@ local Gear = require(script.Parent.Gear)
 local Net = require(script.Parent.Net)
 
 local Inventory = {}
+Inventory.Thrower = nil -- set by Destruction: { Grenade(player, dir) -> bool, Charge(player) -> bool }
 Inventory.Added = Instance.new("BindableEvent") -- (player, itemId, count)
 Inventory.Crafted = Instance.new("BindableEvent") -- (player, itemId, count)
 
@@ -52,11 +53,21 @@ function Inventory.AddAll(player, bundle)
 	end
 end
 
-function Inventory.Use(player, itemId)
+function Inventory.Use(player, itemId, direction)
 	local def = type(itemId) == "string" and Items.Defs[itemId]
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if not (def and def.Type == "Consumable" and hum and hum.Health > 0) then
+		return
+	end
+	if def.Throwable or def.Plantable then
+		if Inventory.Count(player, itemId) <= 0 or not Inventory.Thrower then
+			return
+		end
+		local used = if def.Throwable then Inventory.Thrower.Grenade(player, direction) else Inventory.Thrower.Charge(player)
+		if used then
+			Inventory.Remove(player, itemId, 1)
+		end
 		return
 	end
 	if not Inventory.Remove(player, itemId, 1) then
@@ -100,7 +111,7 @@ function Inventory.Craft(player, recipeId)
 end
 
 function Inventory.Init()
-	Net.On("UseItem", { rate = 3, burst = 4, args = { "string" } }, Inventory.Use)
+	Net.On("UseItem", { rate = 3, burst = 4, args = { "string", "vector?" } }, Inventory.Use)
 	Net.On("EquipItem", { rate = 4, burst = 8, args = { "string" } }, Inventory.Equip)
 	Net.On("Craft", { rate = 3, burst = 4, args = { "string" } }, Inventory.Craft)
 end

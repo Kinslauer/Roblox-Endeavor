@@ -8,6 +8,7 @@ Config.Phases = { Prologue = "Prologue", Open = "Open" }
 Config.Dev = {
 	Enabled = true,
 	PrologueSeconds = 15, -- only used when Config.Tutorial.Enabled = false
+	CycleSeconds = 600, -- faster dematerialization while testing
 	ArmoryPoints = 10, -- attribute points the arena instructor hands out per use
 }
 
@@ -59,6 +60,26 @@ Config.Devour = {
 	XpPerLevel = 20,
 	HealFraction = 0.3,
 	NpcXp = 15,
+}
+
+Config.Destruction = {
+	GrabRange = 8,
+	GrabTime = 0.2,
+	MaxChargeTime = 0.8, -- throw charge saturates here
+	MinFlight = 3, -- studs a thrown chunk must travel before it can hit (no spam-drop damage)
+	FlightTime = 4, -- seconds a throw stays "live"
+	LooseChunkCap = 150, -- past this the oldest settled chunks freeze, then fade
+	SettleTime = 3,
+	ChunkLifetime = 180,
+	Explosion = {
+		Grenade = { Radius = 14, Damage = 55, World = 120, Fuse = 2.5, Speed = 70 },
+		Charge = { Radius = 10, Damage = 40, World = 400, Fuse = 4, PlantRange = 7 },
+		Barrel = { Radius = 11, Damage = 45, World = 100 },
+	},
+	NoiseRadius = 120, -- NPCs this close investigate a breach or explosion
+	CycleSeconds = 3600, -- dematerialization: everything broken returns to intact
+	CycleWarning = 60,
+	GoreLevel = "Moderate", -- "Moderate" | "Restricted" (see design doc section 9); only Moderate is built
 }
 
 Config.SpawnProtection = 8 -- seconds of invulnerability after spawning into the open world

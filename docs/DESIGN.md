@@ -31,6 +31,7 @@ Scavenge -> craft/upgrade -> take quests -> fight (NPCs, players, events) -> get
 | Raids (`Raids`) | Blackout Gate -> sealed arena -> 4 waves -> Warden boss -> vault with a guaranteed implant. Scales with party size. Permadeath applies. |
 | Devour | Consume remains for xp/charge/heal instead of looting them (Cursed Gear's devour). |
 | Helmetcam | First-person with visible body (TTK-style), toggled with P. |
+| Destruction & salvage | Breakable props -> salvage + grabbable chunks; grab/throw with parry deflect; shared explosions; tiered breach points on locked buildings; hourly dematerialization. Stories 1-7 of the design doc; 8 (stress test) and 9-10 (war world, gore) remain. |
 
 ## Roadmap
 **Immediately after friend testing**

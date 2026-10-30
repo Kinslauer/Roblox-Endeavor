@@ -16,6 +16,10 @@ local Remotes = require(Shared:WaitForChild("Remotes"))
 local Skills = require(Shared:WaitForChild("Skills"))
 
 local player = Players.LocalPlayer
+
+local function cameraDirection()
+	return workspace.CurrentCamera.CFrame.LookVector
+end
 local gui = Instance.new("ScreenGui")
 gui.Name, gui.ResetOnSpawn = "ConduitHUD", false
 gui.Parent = player:WaitForChild("PlayerGui")
@@ -137,7 +141,7 @@ local function renderInventory()
 	for _, id in ids do
 		local def, buttons = Items.Defs[id], {}
 		if def.Type == "Consumable" then
-			table.insert(buttons, { text = "Use", fn = function() Remotes.UseItem:FireServer(id) end })
+			table.insert(buttons, { text = if def.Throwable then "Throw" elseif def.Plantable then "Plant" else "Use", fn = function() Remotes.UseItem:FireServer(id, cameraDirection()) end })
 		elseif def.Type == "Weapon" then
 			local held = lastEquipped == id
 			table.insert(buttons, { text = if held then "Unequip" else "Equip", color = if held then Color3.fromRGB(120, 70, 70) else nil, fn = function()
@@ -262,6 +266,109 @@ Remotes.Raid.OnClientEvent:Connect(function(info)
 		raidLabel.Text = "RAID CLEARED\nclaim the vault"
 	else
 		raidLabel.Text = ("%s\nwave %d/%d  -  %d left"):format(if info.Boss then "THE WARDEN" else "BLACKOUT RAID", info.Wave, info.Waves, info.Remaining)
+	end
+end)
+
+-- ===== Grab / throw (G hold-to-charge, H drop) and world effects =====
+local CollectionService = game:GetService("CollectionService")
+local holdLabel = label({ Size = UDim2.fromOffset(360, 40), Position = UDim2.new(0.5, -180, 1, -120), TextSize = 14, TextColor3 = Color3.fromRGB(255, 220, 120), Text = "" })
+local chargeStart = nil
+local function nearestGrabbable()
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return nil
+	end
+	local best, bestDist = nil, Config.Destruction.GrabRange
+	for _, part in CollectionService:GetTagged("Grabbable") do
+		if part:IsA("BasePart") and part.Parent then
+			local dist = (part.Position - root.Position).Magnitude
+			if dist < bestDist then
+				best, bestDist = part, dist
+			end
+		end
+	end
+	return best
+end
+RunService.Heartbeat:Connect(function()
+	local char = player.Character
+	local holding = char and char:GetAttribute("Holding")
+	if holding then
+		local charge = if chargeStart then math.clamp((os.clock() - chargeStart) / Config.Destruction.MaxChargeTime, 0, 1) else 0
+		holdLabel.Text = ("Holding %s (%s)  -  G throw%s  -  H drop"):format(holding, char:GetAttribute("HoldClass") or "", if chargeStart then (("  [%d%%]"):format(charge * 100)) else " (hold to charge)")
+	else
+		holdLabel.Text = if nearestGrabbable() then "G grab" else ""
+	end
+end)
+
+local worldDebris = 0
+local function debris(position, color, count, size)
+	for _ = 1, count do
+		if worldDebris >= 300 then
+			break
+		end
+		worldDebris += 1
+		local p = make("Part", { Size = Vector3.new(size, size, size), Color = color, Material = Enum.Material.Concrete, CanCollide = false, CanQuery = false,
+			Position = position + Vector3.new(math.random() - 0.5, math.random(), math.random() - 0.5) * 2 }, workspace)
+		p.AssemblyLinearVelocity = Vector3.new(math.random() - 0.5, math.random() * 0.8 + 0.2, math.random() - 0.5) * 25
+		task.delay(1.5, function()
+			worldDebris -= 1
+			p:Destroy()
+		end)
+	end
+end
+
+local function explosionFx(origin, radius)
+	local sphere = make("Part", { Shape = Enum.PartType.Ball, Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(255, 160, 60), Size = Vector3.new(2, 2, 2), Position = origin, Transparency = 0.1 }, workspace)
+	TweenService:Create(sphere, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = Vector3.new(radius * 2, radius * 2, radius * 2), Transparency = 1 }):Play()
+	Debris:AddItem(sphere, 0.4)
+	debris(origin, Color3.fromRGB(60, 50, 40), 14, 0.6)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local dist = root and (root.Position - origin).Magnitude or math.huge
+	if dist < radius * 3 then
+		local cam = workspace.CurrentCamera
+		local strength = (1 - math.clamp(dist / (radius * 3), 0, 1)) * 1.2
+		task.spawn(function()
+			for i = 1, 8 do
+				local falloff = strength * (1 - i / 8)
+				cam.CFrame = cam.CFrame * CFrame.Angles((math.random() - 0.5) * 0.04 * falloff, (math.random() - 0.5) * 0.04 * falloff, 0)
+				RunService.RenderStepped:Wait()
+			end
+		end)
+	end
+end
+
+local dematerializing = false
+Remotes.World.OnClientEvent:Connect(function(kind, a, b)
+	if kind == "Explosion" then
+		explosionFx(a, b)
+	elseif kind == "Break" then
+		debris(a, Color3.fromRGB(90, 90, 100), 8, 0.5)
+	elseif kind == "PropHit" then
+		debris(a, Color3.fromRGB(120, 120, 130), 2, 0.3)
+	elseif kind == "Breach" then
+		debris(a, Color3.fromRGB(60, 60, 70), 16, 0.7)
+	elseif kind == "BreachResist" then
+		debris(a, Color3.fromRGB(255, 220, 120), 3, 0.2)
+	elseif kind == "Fuse" and typeof(a) == "Instance" then
+		make("PointLight", { Color = Color3.fromRGB(255, 80, 40), Range = 8, Brightness = 2 }, a)
+	elseif kind == "DematerializeWarning" then
+		dematerializing = true
+		task.delay(a, function()
+			dematerializing = false
+		end)
+	end
+end)
+-- while the warning runs, broken-world debris flickers so no one is caught inside a resealing wall
+RunService.Heartbeat:Connect(function()
+	if not dematerializing then
+		return
+	end
+	local on = math.floor(os.clock() * 6) % 2 == 0
+	for _, part in CollectionService:GetTagged("Grabbable") do
+		if part:IsA("BasePart") then
+			part.LocalTransparencyModifier = if on then 0 else 0.6
+		end
 	end
 end)
 
@@ -474,6 +581,18 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		Remotes.Feint:FireServer()
 	elseif key == Enum.KeyCode.P then
 		setHelmetcam(not helmetcam)
+	elseif key == Enum.KeyCode.G then
+		local char = player.Character
+		if char and char:GetAttribute("Holding") then
+			chargeStart = os.clock()
+		else
+			local target = nearestGrabbable()
+			if target then
+				Remotes.Grab:FireServer(target)
+			end
+		end
+	elseif key == Enum.KeyCode.H then
+		Remotes.Drop:FireServer()
 	elseif key == Enum.KeyCode.Q then
 		local char = player.Character
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -491,5 +610,9 @@ end)
 UserInputService.InputEnded:Connect(function(input)
 	if input.KeyCode == Enum.KeyCode.F then
 		Remotes.Block:FireServer(false)
+	elseif input.KeyCode == Enum.KeyCode.G and chargeStart then
+		local charge = math.clamp((os.clock() - chargeStart) / Config.Destruction.MaxChargeTime, 0, 1)
+		chargeStart = nil
+		Remotes.Throw:FireServer(cameraDirection(), charge)
 	end
 end)

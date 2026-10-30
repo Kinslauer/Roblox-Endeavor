@@ -18,7 +18,7 @@ Enable *Game Settings > Security > Enable Studio Access to API Services* to test
 ## Controls (Cursed Gear layout)
 `LMB` attack (your weapon's combo) · `RMB` heavy/critical · `F` block (tap just before a hit to parry) · `Q` dodge ·
 **`E` flicker** · `Z` feint (cancel a swing's windup) · `R` / `Y` / `V` skill slots 1-3 · `X` interact (loot, armory) ·
-`Tab` inventory/crafting/equip · `L` loadout · `J` attributes · `M` devour remains · `P` helmetcam (first person, body visible).
+`Tab` inventory/crafting/equip · `L` loadout · `J` attributes · `M` devour remains · `P` helmetcam (first person, body visible) · `G` grab debris / hold to charge a throw · `H` drop.
 
 ## Flickering cursed energy (Black Flash)
 Tap `E` just *before* your swing connects (within ~0.28s). A well-timed flick boosts that hit (x1.25) and starts a chain;
@@ -49,6 +49,29 @@ every player has finished or skipped (and 30s have passed) the world opens early
   looting and destroys the loot, so it is a choice and a risk.
 - **Spawn protection**: 8s of invulnerability after spawning into the open world or extracting from a raid.
 - **Net** (`src/server/Net.lua`): every client->server remote is rate-limited and type-checked before any system sees it.
+
+## Destruction & salvage
+Built from [docs/systems/destruction-and-salvage.md](docs/systems/destruction-and-salvage.md), stories 1-7.
+- **Props** (`src/shared/Props.lua`, `src/server/Destruction.lua`): streetlights, signs, crates, barrels, fences, vending
+  machines, terminals, car wrecks, slabs and window panes are placed through the city. Each has health and per-type
+  resistances; weapon families map to Blunt / Blade / Arc (sledge heavies count as Sledge). Breaking one spawns
+  salvage remains (hold `X`) and grabbable chunks. Volatile barrels explode when broken by Arc or Explosive.
+- **Grab and throw**: `G` picks up the nearest chunk within 8 studs; hold `G` to charge, release to throw at the camera
+  aim. Light chunks are one-handed (pipes and sign plates double as improvised clubs that wear out); Medium chunks stop
+  you blocking and slow you; Heavy ones need Strength 15. Throws run through the normal combat path (block, dodge,
+  stun, knockback) and a **parry deflects a thrown chunk back at the thrower**. Speed and damage come from the server
+  formula, never the client.
+- **Explosions**: one shared `Destruction.Explode` with distance falloff and line-of-sight for people and world.
+  **Pipe Grenade** (throwable) and **Breaching Charge** (plants on the nearest breach point) are crafted from salvage.
+- **Breach points**: each district has a locked building with a door tier - Weak (blunt/thrown), Standard (sledge
+  heavies), Reinforced (explosive only); Corp Plaza also has a Sealed vault that nothing opens yet. Inside: a Vault
+  cache with the best loot (implants, charges, gear). Breaching is loud: nearby NPCs come to look.
+- **Salvage materials and recipes**: Glass, Sheet Metal, Pipe, Battery, Powder, Sign Plating; Arc Cells (the Arc Pistol
+  is now cell-fed), Pipe Grenade, Breaching Charge, Sign Plating (now part of Riot Plate).
+- **Dematerialization**: every hour (10 min in Dev) the city warns for 60s, then every broken prop, door and loose
+  chunk returns to intact. Doors won't reseal on someone standing in them. Taken salvage stays yours.
+- **Budgets**: loose chunks cap at 150 (oldest settled ones go first), settle after 3s at rest, and fade after 3 min;
+  client debris caps at 300. `Config.Destruction` holds every knob. `GoreLevel` exists but only Moderate is built.
 
 ## Test arena
 With `Config.Dev.Enabled = true` (default for now) the prologue is 15s and the world opens into a generated neon arena:

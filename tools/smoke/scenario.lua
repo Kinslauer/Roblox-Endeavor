@@ -247,6 +247,110 @@ local home = player.Character.HumanoidRootPart.Position
 check("extracted back to the city after the raid", math.abs(home.X) < 700 and math.abs(home.Z) < 700)
 check("raid folder cleaned up", enemies ~= nil and #enemies:GetChildren() == 0)
 
+
+-- ===== Destruction & salvage =====
+local Destruction = M.mockEnv.__require(SSS.Server.Destruction)
+local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+local dfolder = workspace_:FindFirstChild("Destruction")
+local propCount = 0
+for _, m in dfolder:GetChildren() do if m:GetAttribute("Prop") then propCount += 1 end end
+check("props placed in the city", propCount >= 100)
+local breachCount = 0
+for _, m in dfolder:GetChildren() do if m:GetAttribute("Tier") then breachCount += 1 end end
+check("breach points placed", breachCount >= 5)
+
+-- give the tester a sledge and stand at a streetlight
+as(player)
+Inventory.Add(player, "Sledge", 1); Remotes.EquipItem:FireServer("Sledge"); run(0.3)
+local lamp
+for _, m in dfolder:GetChildren() do if m:GetAttribute("Prop") == "Streetlight" then lamp = m break end end
+check("found a streetlight", lamp ~= nil)
+local lampPos = lamp.PrimaryPart.Position
+local pc = player.Character
+pc.HumanoidRootPart.CFrame = M.CF.lookAt(lampPos + M.V3.new(0, 2, 5), M.V3.new(lampPos.X, lampPos.Y + 2, lampPos.Z))
+run(1)
+for _ = 1, 6 do Remotes.Attack:FireServer(); run(0.9) end
+check("streetlight broke under blunt hits", lamp.Parent == nil)
+local salvageFound, chunkFound = nil, nil
+for _, d in dfolder:GetChildren() do
+	if d:GetAttribute("Label") == "Salvage" then salvageFound = d end
+	if d:GetAttribute("Chunk") and d:GetAttribute("Improvised") then chunkFound = d end
+end
+check("salvage remains dropped", salvageFound ~= nil)
+check("grabbable pipe chunk spawned", chunkFound ~= nil)
+
+-- grab the pipe, it becomes an improvised club
+chunkFound.CFrame = M.CF.new(pc.HumanoidRootPart.Position + M.V3.new(2, 0, 0)); run(0.2)
+Remotes.Grab:FireServer(chunkFound); run(0.5)
+check("holding the pipe", pc:GetAttribute("Holding") == "Pipe" and pc:GetAttribute("Improvised") == true)
+
+-- throw it at the rival (positioned in front, out of spawn protection)
+local rc = p2.Character
+rc.HumanoidRootPart.CFrame = M.CF.lookAt(pc.HumanoidRootPart.Position + pc.HumanoidRootPart.CFrame.LookVector * 10, pc.HumanoidRootPart.Position)
+run(9)
+local rivalHp = rc.Humanoid.Health
+Remotes.Throw:FireServer(pc.HumanoidRootPart.CFrame.LookVector, 1); run(0.1)
+-- the mock has no physics: move the chunk along its velocity by hand
+for _ = 1, 20 do chunkFound.CFrame = M.CF.new(chunkFound.Position + chunkFound.AssemblyLinearVelocity * (1/30)); run(1/30) end
+check("thrown pipe hit the rival through the combat path", rc.Humanoid.Health < rivalHp and pc:GetAttribute("Holding") == nil)
+
+-- parry deflect: rival blocks right before a second throw lands
+local plank
+for _, d in dfolder:GetChildren() do if d:GetAttribute("Chunk") and not d:GetAttribute("Improvised") then plank = d break end end
+if plank then
+	plank.CFrame = M.CF.new(pc.HumanoidRootPart.Position + M.V3.new(2, 0, 0)); run(0.2)
+	Remotes.Grab:FireServer(plank); run(0.5)
+	local hpBefore = rc.Humanoid.Health
+	as(p2); Remotes.Block:FireServer(true); as(player)
+	Remotes.Throw:FireServer(pc.HumanoidRootPart.CFrame.LookVector, 0.5); run(0.05)
+	for _ = 1, 8 do plank.CFrame = M.CF.new(plank.Position + plank.AssemblyLinearVelocity * (1/30)); run(1/30) end
+	local deflected = false
+	for _, e in M.FireLog do if e[1] == "World" and e[3] == "Deflect" then deflected = true end end
+	check("a parry deflects a thrown chunk", deflected and rc.Humanoid.Health == hpBefore)
+	as(p2); Remotes.Block:FireServer(false); as(player)
+else
+	check("a parry deflects a thrown chunk (no plank found)", false)
+end
+
+-- breaching: a Reinforced door ignores the sledge but opens to a charge
+local reinforced
+for _, m in dfolder:GetChildren() do if m:GetAttribute("Tier") == "Reinforced" then reinforced = m break end end
+local door = reinforced and reinforced:FindFirstChild("Door")
+check("found a reinforced breach", door ~= nil)
+pc.HumanoidRootPart.CFrame = M.CF.lookAt(door.Position + M.V3.new(0, 0, -5), M.V3.new(door.Position.X, door.Position.Y, door.Position.Z)); run(0.5)
+for _ = 1, 4 do Remotes.Heavy:FireServer(); run(1.4) end
+check("reinforced door shrugs off the sledge", door.Parent ~= nil)
+Inventory.Add(player, "BreachingCharge", 1)
+Remotes.UseItem:FireServer("BreachingCharge"); run(0.5)
+check("charge planted", Inventory.Count(player, "BreachingCharge") == 0)
+run(4.5)
+check("reinforced door breached by the charge", door.Parent == nil)
+local investigating = false
+for _, m in workspace_:GetDescendants() do if m:GetAttribute("Investigate") then investigating = true end end
+
+-- grenade: throw at the rival
+rc.HumanoidRootPart.CFrame = M.CF.new(pc.HumanoidRootPart.Position + M.V3.new(0, 0, 6)); run(0.2)
+Inventory.Add(player, "PipeGrenade", 1)
+local hpBeforeNade = rc.Humanoid.Health
+Remotes.UseItem:FireServer("PipeGrenade", M.V3.new(0, 0, 1)); run(3.2)
+check("pipe grenade exploded and hurt the rival", rc.Humanoid.Health < hpBeforeNade)
+
+-- arc pistol is cell-fed
+Inventory.Add(player, "ArcPistol", 1); Remotes.EquipItem:FireServer("ArcPistol"); run(1.5)
+local cellsBefore = Inventory.Count(player, "ArcCell")
+Remotes.Attack:FireServer(); run(0.6)
+check("arc pistol refuses to fire without cells", Inventory.Count(player, "ArcCell") == cellsBefore)
+Inventory.Add(player, "ArcCell", 3); run(0.6)
+Remotes.Attack:FireServer(); run(0.6)
+check("arc pistol spends a cell per shot", Inventory.Count(player, "ArcCell") == 2)
+
+-- dematerialization brings everything back
+Destruction.Reset(); run(1)
+check("rematerialize restores the streetlight and the door", lamp.Parent ~= nil and door.Parent ~= nil)
+local chunksLeft = 0
+for _, d in dfolder:GetChildren() do if d:GetAttribute("Chunk") then chunksLeft += 1 end end
+check("rematerialize clears loose chunks", chunksLeft == 0)
+
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

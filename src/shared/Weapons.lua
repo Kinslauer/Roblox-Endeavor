@@ -77,7 +77,7 @@ Weapons.Defs = {
 		Heavy = hit(44, 28, 0.60, 0.20, 1.40, 9, { Hyperarmor = true, Knockback = 60, Stamina = 30 }),
 	},
 	ArcPistol = {
-		Name = "Arc Pistol", Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.3, ChargeBonus = 3,
+		Name = "Arc Pistol", Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.3, ChargeBonus = 3, Ammo = "ArcCell",
 		Attacks = {
 			hit(9, 3, 0.08, 0.05, 0.42, 90, { Type = "Arc", Ranged = true, Stamina = 8 }),
 		},
