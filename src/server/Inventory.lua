@@ -3,9 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Items = require(Shared.Items)
 local Remotes = require(Shared.Remotes)
-local PlayerData = require(script.Parent.PlayerData)
+local PlayerData = require(script.Parent.Common.PlayerData)
 local Gear = require(script.Parent.Gear)
-local Net = require(script.Parent.Net)
+local Net = require(script.Parent.Common.Net)
 
 local Inventory = {}
 Inventory.Thrower = nil -- set by Destruction: { Grenade(player, dir) -> bool, Charge(player) -> bool }

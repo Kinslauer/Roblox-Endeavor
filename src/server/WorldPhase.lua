@@ -7,7 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
-local PlayerData = require(script.Parent.PlayerData)
+local PlayerData = require(script.Parent.Common.PlayerData)
 
 local WorldPhase = {}
 WorldPhase.Changed = Instance.new("BindableEvent")

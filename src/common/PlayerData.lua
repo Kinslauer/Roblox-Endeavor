@@ -24,6 +24,17 @@ local TEMPLATE = {
 	Cyber = {}, -- [slot] = itemId
 	SkillSlots = {}, -- ["1"] = skillId (string keys so the table stays a dictionary)
 	Inventory = {},
+	-- The war world (a separate place, same universe) reads and writes this part of the profile.
+	-- A conduit is not reset by the recruit dying; the recruit's gear is.
+	War = {
+		Faction = "", -- "Union" | "Pact", chosen on first deployment
+		Credits = 0, -- faction money; income scales with the faction's share of the scales
+		Locker = {}, -- [itemId] = { count = n, condition = 0-100 } gear owned for recruits
+		Loadout = {}, -- the next recruit's order: { Primary, Sidearm, Armor, Cyber, Attachments = {} }
+		Deployments = 0,
+		RecruitKills = 0,
+		RecruitDeaths = 0,
+	},
 }
 for _, name in Config.Stats.Names do
 	TEMPLATE.Stats[name] = 0
@@ -52,13 +63,17 @@ local function newCharacter(data)
 	data.Equipped = "PipeClub"
 end
 
+-- Permadeath wipes the conduit; the war-world account (faction, credits, locker) survives it,
+-- because a recruit is a thing the conduit owns, not the conduit itself.
 local function wipe(data)
+	local war = data.War
 	for key in data do
 		data[key] = nil
 	end
 	for key, value in TEMPLATE do
 		data[key] = deepCopy(value)
 	end
+	data.War = war or deepCopy(TEMPLATE.War)
 	newCharacter(data)
 end
 

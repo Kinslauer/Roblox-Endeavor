@@ -31,6 +31,7 @@ Scavenge -> craft/upgrade -> take quests -> fight (NPCs, players, events) -> get
 | Raids (`Raids`) | Blackout Gate -> sealed arena -> 4 waves -> Warden boss -> vault with a guaranteed implant. Scales with party size. Permadeath applies. |
 | Devour | Consume remains for xp/charge/heal instead of looting them (Cursed Gear's devour). |
 | Helmetcam | First-person with visible body (TTK-style), toggled with P. |
+| The Front (war world) | Separate place sharing the profile. Neural Net uplink; Union vs Pact; global ever-tipping scales; the moving hill; recruit app (shop/locker/order/repair); simulated firearms with parts and malfunctions; ballistics with zones and armor; staged structures, craters, artillery; recruits drop everything damaged. |
 | Destruction & salvage | Breakable props -> salvage + grabbable chunks; grab/throw with parry deflect; shared explosions; tiered breach points on locked buildings; hourly dematerialization. Stories 1-7 + 10 (Restricted gore) of the design doc, plus timed catches; 8 (stress test) and 9 (war world) remain. |
 
 ## Roadmap
@@ -45,7 +46,6 @@ Scavenge -> craft/upgrade -> take quests -> fight (NPCs, players, events) -> get
 
 **Then**
 - Hand-built district art replacing the generator; a proper Blackout interior for raids; more raid gates with different bosses.
-- Cold War-style war world: faction fronts, artillery, sector resets, no vehicles (see the destruction doc).
 - Destruction & salvage: breach points, destructible props, salvage crafting, grab-and-throw debris, explosions; war-world destruction at scale. See [systems/destruction-and-salvage.md](systems/destruction-and-salvage.md).
 - Deepwoken-style depth: talent tree and more skills gated by stat thresholds and armor sets, status effects (bleed, burn, shock), armor set bonuses, weapon-specific hit effects.
 - Conduit powers: multiple trees (arc, cinder, void...) with cooldown/charge costs.

@@ -81,6 +81,32 @@ server, cleared by dematerialization). `"Moderate"` keeps only a light distant s
 in the Roblox Creator Dashboard questionnaire** (Restricted = age-verified 18+ only, blocked in some regions, cannot be
 changed back - see the design doc, section 9); the code only makes the game match it.
 
+## The Front (war world)
+A second place built from `war.project.json` (`rojo build war.project.json -o build/Front.rbxlx`), sharing the conduit
+profile (same ProfileService store, same universe). Code lives in `src/war/` and `src/common/`.
+- **Tapping in**: use a Neural Net terminal in any district plaza (`X`). The uplink sequence plays, then you are
+  teleported to the Front controlling a recruit. **Set `Config.War.PlaceId`** after publishing the Front place;
+  Studio cannot teleport between places, so test the Front by opening `Front.rbxlx` directly.
+- **Recruit app** (`M` at a terminal, `N` anywhere in the city, `M` on the Front): credits, locker, shop (your faction's
+  gear only), repair, and the order for your next recruit. A conduit with nothing ordered deploys as a conscript with
+  the faction sidearm. Everything on a dead recruit stays on the battlefield for anyone to strip (`X`), with every part
+  damaged; repair costs credits.
+- **Factions and the scales**: Union vs Pact, assigned on first deployment (balanced). Tickets are global across every
+  server (DataStore) and decay, so the scales keep tipping forever; a faction's share sets its conduits' credit income.
+- **The hill**: one sector of the 3x3 front is hot. Presence earns tickets every 5s, kills inside earn more, holding the
+  majority for 60s captures it (+50) and moves it. It moves anyway after 7 minutes. Sectors it leaves rebuild.
+- **Weapons** (`src/shared/Firearms.lua`, `src/war/server/Guns.lua`): AKM, SKS, Mosin, Makarov (Pact); M16A1, M14,
+  M1911 (Union). Each is a mechanism: chamber, magazine, bolt, safety, selector, and five wearing parts (receiver,
+  barrel, bolt, magazine, stock). Worn parts jam, spread and kick more. Reloads are staged (eject, insert, rack) and
+  partial mags go back in the pouch. Bullets are simulated with velocity, drop, falloff and hit zones (head x2.5,
+  limbs x0.6); armor plates absorb damage by condition and penetration.
+- **Controls** (TTK/Tarkov): `LMB` fire · `RMB` aim · `R` reload · `T` rack / clear jam · `B` selector · `1`/`2` weapon ·
+  `G` frag · `H` field dressing · `Q`/`E` lean · `K` call artillery on your aim point (inside the hill, 2 min cooldown) ·
+  `M` recruit app. Always first person.
+- **Destruction**: structures have four stages (Intact -> Damaged -> Ruined -> Rubble) and only explosives damage them;
+  shells and grenades carve craters (terrain when present, scorch otherwise). Bodies persist up to the sector cap.
+- Test it without Roblox: `python3 tools/smoke/gen.py tools/smoke/war.lua > /tmp/hw.lua && luau /tmp/hw.lua`.
+
 ## Test arena
 With `Config.Dev.Enabled = true` (default for now) the prologue is 15s and the world opens into a generated neon arena:
 ring with 4 gates, pillars, cover, a center platform and 8 spawn pads. The **Test Armory** outside the south gate has free

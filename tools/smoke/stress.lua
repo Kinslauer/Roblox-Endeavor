@@ -6,6 +6,7 @@ local RS = game_:GetService("ReplicatedStorage")
 local SSS = game_:GetService("ServerScriptService")
 M.mkTree({ Shared = { class = "Folder", children = TREE_SHARED } }, RS)
 M.mkTree({ Server = { class = "Folder", children = TREE_SERVER } }, SSS)
+M.mkTree({ Common = { class = "Folder", children = TREE_COMMON } }, SSS.Server)
 local Players = game_:GetService("Players")
 M.task.spawn(function() M.loadSource(SSS.Server.Main)() end)
 local Remotes = RS.Remotes

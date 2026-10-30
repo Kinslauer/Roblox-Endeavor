@@ -10,8 +10,8 @@ local Cybernetics = require(Shared.Cybernetics)
 local Remotes = require(Shared.Remotes)
 local Skills = require(Shared.Skills)
 local Weapons = require(Shared.Weapons)
-local Net = require(script.Parent.Net)
-local PlayerData = require(script.Parent.PlayerData)
+local Net = require(script.Parent.Common.Net)
+local PlayerData = require(script.Parent.Common.PlayerData)
 
 local S, C, F = Config.Stats, Config.Combat, Config.Flicker
 

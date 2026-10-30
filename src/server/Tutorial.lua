@@ -14,9 +14,9 @@ local Skills = require(Shared.Skills)
 local Combat = require(script.Parent.Combat)
 local Inventory = require(script.Parent.Inventory)
 local Loot = require(script.Parent.Loot)
-local Net = require(script.Parent.Net)
+local Net = require(script.Parent.Common.Net)
 local NPCs = require(script.Parent.NPCs)
-local PlayerData = require(script.Parent.PlayerData)
+local PlayerData = require(script.Parent.Common.PlayerData)
 local WorldPhase = require(script.Parent.WorldPhase)
 
 local T = Config.Tutorial

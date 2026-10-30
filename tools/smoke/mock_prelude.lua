@@ -169,7 +169,7 @@ function methods.Clone(self)
 end
 function methods.TakeDamage(self, n) self.Health = math.max(0, self.Health - n) end
 function methods.MoveTo(self, p) end
-function methods.FireClient(self, p, ...) table.insert(FireLog, {self.Name, "client", ...}) end
+function methods.FireClient(self, p, ...) local e = {self.Name, "client", ...}; e.player = p; table.insert(FireLog, e) end
 function methods.FireAllClients(self, ...) table.insert(FireLog, {self.Name, "all", ...}) end
 function methods.FireServer(self, ...) sig(self, "OnServerEvent"):Fire(Instance.CurrentPlayer, ...) end
 function methods.Fire(self, ...) sig(self, "Event"):Fire(...) end
@@ -203,7 +203,33 @@ function methods.GetPartBoundsInBox(self, cf, size, params)
 	return out
 end
 function methods.GetPartBoundsInBox() return {} end
-function methods.Raycast() return nil end
+-- Raycast: only characters block (good enough for hit-scan and line-of-sight tests)
+function methods.Raycast(self, origin, dir, params)
+	local list = (params and params.FilterDescendantsInstances) or {}
+	local len = dir.Magnitude
+	if len < 1e-6 then return nil end
+	local u = dir / len
+	local best, bestT = nil, math.huge
+	for _, d in descendants(self, {}) do
+		if d.ClassName == "Part" and (d.Name == "HumanoidRootPart" or d.Name == "Torso" or d.Name == "Head") then
+			local model = d:FindFirstAncestorOfClass("Model")
+			if model and model:FindFirstChildOfClass("Humanoid") then
+				local skip = false
+				for _, ex in list do if d == ex or d:IsDescendantOf(ex) then skip = true end end
+				if not skip then
+					local rel = d.Position - origin
+					local t = rel:Dot(u)
+					if t > 0 and t < len and (rel - u * t).Magnitude <= 2.5 and t < bestT then best, bestT = d, t end
+				end
+			end
+		end
+	end
+	if best then return { Instance = best, Position = origin + u * bestT, Normal = V3.new(0, 1, 0), Distance = bestT } end
+	return nil
+end
+function methods.GetJoinData(self) return rawget(self, "_joinData") or {} end
+function methods.SetTeleportData(self, d) rawset(self, "_td", d) end
+function methods.TeleportAsync(self, placeId, players, options) table.insert(FireLog, { "Teleport", placeId, players, options }) end
 function methods.IsStudio() return true end
 function methods.IsServer() return true end
 function methods.IsClient() return false end
@@ -224,6 +250,9 @@ MT.__index = function(self, k)
 		if k == "CFrame" then return rawget(self, "_cf") elseif k == "Position" then return rawget(self, "_cf").Position end
 	elseif cls == "Humanoid" and k == "Health" then return rawget(self, "_Health") end
 	if k == "Parent" then return rawget(self, "_parent") end
+	if cls == "Folder" then -- a folder's children win over method names (a remote called "Fire")
+		for _, c in rawget(self, "_children") do if c.Name == k then return c end end
+	end
 	if methods[k] then return methods[k] end
 	if EVENTS[k] then return sig(self, k) end
 	for _, c in rawget(self, "_children") do if c.Name == k then return c end end

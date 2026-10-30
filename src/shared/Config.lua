@@ -93,6 +93,35 @@ Config.Gore = {
 	PoolLifetime = 90,
 }
 
+-- The Front: the war world, a separate place in the same universe. Conduits "tap in" from a
+-- Neural Net terminal and control a recruit there. The recruit's gear is the conduit's money.
+Config.War = {
+	PlaceId = 0, -- set after publishing the Front place; 0 = teleport disabled (Studio can't teleport anyway)
+	Factions = { "Union", "Pact" },
+	FactionColors = { Union = Color3.fromRGB(70, 110, 200), Pact = Color3.fromRGB(200, 60, 60) },
+	UplinkSeconds = 4, -- the neural-net dive animation before the teleport
+	StartingCredits = 1500,
+	-- The hill: one sector is hot at a time. Presence, kills and captures inside it earn tickets.
+	Hill = {
+		TicketsPerPlayerPer5s = 1,
+		TicketsPerKill = 3,
+		CaptureTickets = 50,
+		CaptureHoldSeconds = 60, -- majority held this long = captured, hill moves on
+		MoveAfterSeconds = 420, -- it moves anyway after this
+		SectorSize = 160,
+		Sectors = 3, -- the front is a Sectors x Sectors grid; the hill walks it forever
+	},
+	-- Credits: each faction's income per minute per deployed conduit scales with its share of the scales.
+	Income = { BasePerMinute = 60, ShareWeight = 1.5 }, -- income = Base * (0.5 + ShareWeight * (share - 0.5)) clamped
+	Scales = { StoreName = "WarScales_v1", Decay = 0.0005 }, -- global tickets, decayed each tick so the scales keep tipping
+	Death = { PartDamage = 40, ArmorDamage = 60 }, -- condition lost by parts/armor on a recruit's body (recoverable, damaged)
+	LootHold = 2,
+	RespawnSeconds = 8,
+	Artillery = { Cooldown = 120, Shells = 6, Radius = 16, Damage = 110, Spread = 25, Delay = 6 },
+	BodyCapPerSector = 60,
+	SectorRebuildSeconds = 240, -- an empty sector the hill has left rebuilds after this
+}
+
 Config.SpawnProtection = 8 -- seconds of invulnerability after spawning into the open world
 
 Config.RespawnDelay = 5

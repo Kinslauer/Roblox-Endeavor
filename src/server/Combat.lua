@@ -12,8 +12,8 @@ local Remotes = require(Shared.Remotes)
 local Weapons = require(Shared.Weapons)
 local Gear = require(script.Parent.Gear)
 local Stats = require(script.Parent.Stats)
-local Net = require(script.Parent.Net)
-local PlayerData = require(script.Parent.PlayerData)
+local Net = require(script.Parent.Common.Net)
+local PlayerData = require(script.Parent.Common.PlayerData)
 local WorldPhase = require(script.Parent.WorldPhase)
 
 local C, F = Config.Combat, Config.Flicker

@@ -4,8 +4,8 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Props = require(ReplicatedStorage.Shared.Props)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Gear = require(script.Parent.Gear)
-local Net = require(script.Parent.Net)
-local PlayerData = require(script.Parent.PlayerData)
+local Net = require(script.Parent.Common.Net)
+local PlayerData = require(script.Parent.Common.PlayerData)
 
 local S = Config.Stats
 local Stats = {}

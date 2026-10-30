@@ -11,6 +11,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Armor = require(Shared:WaitForChild("Armor"))
 local Cybernetics = require(Shared:WaitForChild("Cybernetics"))
 local Config = require(Shared:WaitForChild("Config"))
+local Firearms = require(Shared:WaitForChild("Firearms"))
 local Items = require(Shared:WaitForChild("Items"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local Skills = require(Shared:WaitForChild("Skills"))
@@ -497,6 +498,93 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
+-- ===== Neural Net uplink (tapping into the Front) =====
+local uplinkFrame = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Visible = false, ZIndex = 20 })
+local uplinkText = label({ Size = UDim2.fromScale(1, 1), Text = "", TextSize = 30, Font = Enum.Font.Code, TextColor3 = Color3.fromRGB(170, 90, 255), ZIndex = 21, Parent = uplinkFrame })
+Remotes.Uplink.OnClientEvent:Connect(function(phase, seconds, faction)
+	if phase == "Begin" then
+		uplinkFrame.Visible, uplinkFrame.BackgroundTransparency = true, 1
+		TweenService:Create(uplinkFrame, TweenInfo.new(seconds * 0.6), { BackgroundTransparency = 0 }):Play()
+		local cc = make("ColorCorrectionEffect", { Saturation = 0, Contrast = 0 }, Lighting)
+		TweenService:Create(cc, TweenInfo.new(seconds), { Saturation = -1, Contrast = 1.5, TintColor = Color3.fromRGB(200, 150, 255) }):Play()
+		local cam = workspace.CurrentCamera
+		local start = cam.CFrame
+		task.spawn(function()
+			local t0 = os.clock()
+			local lines = { "TAPPING INTO THE NEURAL NET", "handshake . . .", "locating a recruit . . .", ("%s FRONT  -  LINK ESTABLISHED"):format(string.upper(faction or "")) }
+			while os.clock() - t0 < seconds do
+				local f = (os.clock() - t0) / seconds
+				uplinkText.Text = lines[math.min(#lines, math.floor(f * #lines) + 1)] .. (if math.floor(os.clock() * 4) % 2 == 0 then "_" else "")
+				cam.CFrame = start * CFrame.new(0, 0, -f * 6) * CFrame.Angles((math.random() - 0.5) * 0.02 * f, (math.random() - 0.5) * 0.02 * f, 0)
+				RunService.RenderStepped:Wait()
+			end
+			cc:Destroy()
+		end)
+	elseif phase == "NoPlace" or phase == "Failed" then
+		uplinkText.Text = if phase == "NoPlace" then "FRONT OFFLINE  -  place not published" else "LINK LOST"
+		task.delay(2, function()
+			uplinkFrame.Visible = false
+		end)
+	end
+end)
+
+-- ===== Recruit app (M at a Neural Net terminal): order a loadout, buy, repair =====
+local app = panel(UDim2.fromOffset(520, 440), UDim2.new(0.5, -260, 0.5, -220))
+local snapshot
+local function renderApp()
+	clear(app)
+	if not snapshot then
+		return
+	end
+	local s = snapshot
+	addRow(app, ("RECRUIT APP  -  %s  -  %d credits  -  %d deployments, %d kills, %d deaths"):format(s.Faction, s.Credits, s.Deployments, s.Kills, s.Deaths), {}, Config.War.FactionColors[s.Faction])
+	local lo, atts = s.Loadout or {}, (s.Loadout or {}).Attachments or {}
+	addRow(app, ("NEXT ORDER  Primary: %s  Sidearm: %s  Armor: %s  Helmet: %s"):format(lo.Primary or "-", lo.Sidearm or "-", lo.Armor or "-", lo.Helmet or "-"), {})
+	addRow(app, ("Optic: %s  Muzzle: %s  Grip: %s"):format(atts.Optic or "-", atts.Muzzle or "-", atts.Grip or "-"), {})
+	addRow(app, "-- LOCKER --", {})
+	local ids = {}
+	for id in s.Locker do table.insert(ids, id) end
+	table.sort(ids)
+	local function order(changes, attChanges)
+		local o = { Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = table.clone(atts) }
+		for k, v in changes do o[k] = v end
+		for k, v in attChanges or {} do o.Attachments[k] = v end
+		Remotes.WarOrder:FireServer(o)
+	end
+	for _, id in ids do
+		local slot, item = s.Locker[id], s.Catalog[id] or { Kind = "?", Name = id }
+		local buttons = {}
+		if item.Kind == "Weapon" then
+			local pistol = item.Class == "Pistol"
+			table.insert(buttons, { text = if pistol then "Sidearm" else "Primary", fn = function() order({ [if pistol then "Sidearm" else "Primary"] = id }) end })
+		elseif item.Kind == "Attachment" then
+			table.insert(buttons, { text = "Mount", fn = function() order({}, { [item.Slot] = id }) end })
+		elseif item.Kind == "Armor" then
+			local helmet = Firearms.Armor[id] and Firearms.Armor[id].Head
+			table.insert(buttons, { text = "Wear", fn = function() order({ [if helmet then "Helmet" else "Armor"] = id }) end })
+		end
+		if slot.condition < 100 then
+			table.insert(buttons, { text = "Fix", color = Color3.fromRGB(120, 90, 40), fn = function() Remotes.WarRepair:FireServer(id) end })
+		end
+		addRow(app, ("%s x%d (%d%%)"):format(item.Name, slot.count, slot.condition), buttons, if slot.condition < 50 then Color3.fromRGB(255, 150, 120) else nil)
+	end
+	addRow(app, "-- SHOP --", {})
+	local cids = {}
+	for id, item in s.Catalog do if not item.Faction or item.Faction == s.Faction then table.insert(cids, id) end end
+	table.sort(cids, function(a, b) return s.Catalog[a].Price < s.Catalog[b].Price end)
+	for _, id in cids do
+		local item = s.Catalog[id]
+		addRow(app, ("%s - %d cr"):format(item.Name, item.Price), { { text = "Buy", color = Color3.fromRGB(50, 110, 70), fn = function() Remotes.WarBuy:FireServer(id) end } }, if item.Price > s.Credits then Color3.fromRGB(140, 140, 140) else nil)
+	end
+end
+Remotes.RecruitApp.OnClientEvent:Connect(function(snap, open)
+	snapshot = snap
+	if open then
+		app.Visible = true
+	end
+	renderApp()
+end)
+
 -- ===== Tutorial panel =====
 local tutorialPanel = make("Frame", { Size = UDim2.fromOffset(560, 112), Position = UDim2.new(0.5, -280, 0, 110), BackgroundColor3 = Color3.fromRGB(10, 14, 20), BackgroundTransparency = 0.15, Visible = false })
 make("UIStroke", { Color = Color3.fromRGB(0, 220, 255), Thickness = 1.5 }, tutorialPanel)
@@ -637,7 +725,7 @@ if player.Character then
 end
 
 local SKILL_KEYS = { [Enum.KeyCode.R] = 1, [Enum.KeyCode.Y] = 2, [Enum.KeyCode.V] = 3 }
-local TOGGLES = { [Enum.KeyCode.J] = statsPanel, [Enum.KeyCode.Tab] = invPanel, [Enum.KeyCode.L] = loadoutPanel }
+local TOGGLES = { [Enum.KeyCode.J] = statsPanel, [Enum.KeyCode.Tab] = invPanel, [Enum.KeyCode.L] = loadoutPanel, [Enum.KeyCode.N] = app }
 
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then

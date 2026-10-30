@@ -8,8 +8,8 @@ local Skills = require(Shared.Skills)
 local Weapons = require(Shared.Weapons)
 local Combat = require(script.Parent.Combat)
 local Gear = require(script.Parent.Gear)
-local Net = require(script.Parent.Net)
-local PlayerData = require(script.Parent.PlayerData)
+local Net = require(script.Parent.Common.Net)
+local PlayerData = require(script.Parent.Common.PlayerData)
 
 local SkillRunner = {}
 

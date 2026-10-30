@@ -3,6 +3,7 @@ local RS = game_:GetService("ReplicatedStorage")
 local SSS = game_:GetService("ServerScriptService")
 M.mkTree({ Shared = { class = "Folder", children = TREE_SHARED } }, RS)
 M.mkTree({ Server = { class = "Folder", children = TREE_SERVER } }, SSS)
+M.mkTree({ Common = { class = "Folder", children = TREE_COMMON } }, SSS.Server)
 local Players = game_:GetService("Players")
 M.task.spawn(function() M.loadSource(SSS.Server.Main)() end)
 local Remotes = RS.Remotes
@@ -373,8 +374,8 @@ Remotes.UseItem:FireServer("PipeGrenade", M.V3.new(0, 0, 1)); run(0.05)
 local nade = dfolder:FindFirstChild("PipeGrenade")
 check("grenade spawned", nade ~= nil)
 -- no physics in the mock: fly it by hand to the rival, then let the fuse run out
-for _ = 1, 3 do nade.CFrame = M.CF.new(nade.Position + nade.AssemblyLinearVelocity * (1/30)); run(1/30) end
-nade.AssemblyLinearVelocity = M.V3.zero; run(3)
+nade.CFrame = M.CF.new(pc.HumanoidRootPart.Position + M.V3.new(0, 0, 3)); nade.AssemblyLinearVelocity = M.V3.zero -- sits between the two, in sight of both
+run(3)
 check("pipe grenade exploded and hurt the rival", rc.Humanoid.Health < hpBeforeNade)
 check("your own grenade hurts you too", pc.Humanoid.Health < myHpBefore and pc.Humanoid.Health > 0)
 run(1)
