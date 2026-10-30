@@ -2,6 +2,7 @@
 import json, sys
 from PIL import Image, ImageDraw, ImageFont
 rows = json.load(open(sys.argv[1]))
+FRONT = len(sys.argv) > 3 and sys.argv[3] == "front"
 S = 0.9  # px per stud
 PAD = 60
 xs = [r["x"] for r in rows if abs(r["x"]) < 900]; zs = [r["z"] for r in rows if abs(r["z"]) < 900]
@@ -26,7 +27,20 @@ rows.sort(key=lambda r: (order.get(r["f"], 5), r["y"]))
 for r in rows:
     if abs(r["x"]) > 900 or abs(r["z"]) > 900: continue
     f, n = r["f"], r["n"]
-    if n in ("CityGround", "ArenaFloor"): continue
+    if n in ("CityGround", "ArenaFloor", "Ground"): continue
+    col = (r["r"], r["g"], r["b"])
+    if FRONT:
+        if n == "Trench" or n == "TrenchFloor": rect(r, (45, 38, 30))
+        elif n == "Sandbags": rect(r, (150, 135, 95))
+        elif n == "Berm": rect(r, (80, 70, 50))
+        elif n == "Wreck": rect(r, (70, 60, 55), (120, 100, 90))
+        elif n.startswith("Stage"): rect(r, col, (40, 30, 25))
+        elif r["m"] == "Structure": rect(r, col, (40, 30, 25))
+        elif n.endswith("Base"): rect(r, (90, 95, 90), (200, 200, 200))
+        elif n.endswith("Flag"): rect(r, col)
+        elif n == "HillMarker": d.ellipse([px(r["x"]-80, r["z"]-80), px(r["x"]+80, r["z"]+80)], outline=(255, 220, 80), width=3)
+        else: rect(r, col)
+        continue
     col = (r["r"], r["g"], r["b"])
     if r["neon"]:
         rect(r, col)
@@ -48,12 +62,13 @@ for r in rows:
 # labels
 try: font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22); small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
 except Exception: font = small = ImageFont.load_default()
-for name, (x, z) in {"TRANSIT HUB": (0, -420), "CORP PLAZA": (420, 0), "THE SPRAWL": (-420, 0), "BLACKOUT ZONE": (0, 420), "THE PIT (arena)": (0, 0), "Test Armory": (0, 132)}.items():
+labels = {"UNION BASE": (-310, 0), "PACT BASE": (310, 0), "THE FRONT": (0, -300)} if FRONT else {"TRANSIT HUB": (0, -420), "CORP PLAZA": (420, 0), "THE SPRAWL": (-420, 0), "BLACKOUT ZONE": (0, 420), "THE PIT (arena)": (0, 0), "Test Armory": (0, 132)}
+for name, (x, z) in labels.items():
     p = px(x, z); d.text((p[0] - 60, p[1] - 12), name, fill=(255, 255, 255), font=font if "Armory" not in name else small)
-legend = ["tower (lighter = taller)", "neon signage / pylon", "lockup + breach door: brown Weak, grey Standard, blue Reinforced, red Sealed", "tan = breakable props", "gold = loot caches", "red gate = Blackout raid gate"]
+legend = ["brown blocks = structures (4 stages)", "dark strips = trenches, tan = sandbags", "yellow ring = the hill (hot sector)", "grey = faction bases"] if FRONT else ["tower (lighter = taller)", "neon signage / pylon", "lockup + breach door: brown Weak, grey Standard, blue Reinforced, red Sealed", "tan = breakable props", "gold = loot caches", "red gate = Blackout raid gate"]
 y = 10
 for t in legend:
     d.text((10, y), t, fill=(220, 220, 220), font=small); y += 18
-d.text((10, H - 30), "Generated top-down map of the Conduit world (not a Studio screenshot). 1 px = %.1f studs" % (1 / S), fill=(160, 160, 160), font=small)
+d.text((10, H - 30), ("Generated top-down map of the Front (not a Studio screenshot). 1 px = %.1f studs" if FRONT else "Generated top-down map of the Conduit world (not a Studio screenshot). 1 px = %.1f studs") % (1 / S), fill=(160, 160, 160), font=small)
 img.save(sys.argv[2])
 print("wrote", sys.argv[2], W, H)

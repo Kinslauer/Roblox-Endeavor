@@ -151,21 +151,48 @@ local function buildSector(index)
 	local c = Battlefield.SectorCenter(index)
 	local s = H.SectorSize
 	sectors[index] = { Center = c, Structures = {}, Rebuilt = os.clock() }
-	-- 2-3 buildings
-	for k = 1, rng:NextInteger(2, 3) do
-		local off = Vector3.new(rng:NextNumber(-s * 0.3, s * 0.3), 0, rng:NextNumber(-s * 0.3, s * 0.3))
-		spawnStructure(index, c + off, rng:NextNumber(18, 28), rng:NextNumber(16, 24), rng:NextNumber(9, 13))
+	-- a village block: 5-7 buildings on a loose grid, so every sector has rooms to clear
+	local placed = {}
+	for _ = 1, rng:NextInteger(5, 7) do
+		local off
+		for _ = 1, 10 do
+			off = Vector3.new(rng:NextNumber(-s * 0.38, s * 0.38), 0, rng:NextNumber(-s * 0.38, s * 0.38))
+			local ok = true
+			for _, p in placed do
+				if (p - off).Magnitude < 34 then
+					ok = false
+					break
+				end
+			end
+			if ok then
+				break
+			end
+		end
+		table.insert(placed, off)
+		spawnStructure(index, c + off, rng:NextNumber(16, 26), rng:NextNumber(14, 22), rng:NextNumber(8, 13))
 	end
-	-- a trench line (sunken walkway with sandbag lips) across the sector
-	local z = c.Z + rng:NextNumber(-s * 0.35, s * 0.35)
-	part(folder, { Name = "Trench", Size = Vector3.new(s * 0.7, 4, 6), Position = Vector3.new(c.X, GROUND_TOP - 2, z), Color = MUD, Material = Enum.Material.Mud, CanCollide = false })
-	part(folder, { Name = "TrenchFloor", Size = Vector3.new(s * 0.7, 1, 6), Position = Vector3.new(c.X, GROUND_TOP - 3.5, z), Color = MUD, Material = Enum.Material.Mud })
-	for side = -1, 1, 2 do
-		part(folder, { Name = "Sandbags", Size = Vector3.new(s * 0.7, 2, 1.5), Position = Vector3.new(c.X, GROUND_TOP + 1, z + side * 3.8), Color = Color3.fromRGB(140, 125, 90), Material = Enum.Material.Fabric })
+	-- two trench lines (sunken walkways with sandbag lips), one each way
+	local function trench(center, length, horizontal)
+		local size = if horizontal then Vector3.new(length, 4, 6) else Vector3.new(6, 4, length)
+		part(folder, { Name = "Trench", Size = size, Position = center + Vector3.new(0, GROUND_TOP - 2, 0), Color = MUD, Material = Enum.Material.Mud, CanCollide = false })
+		part(folder, { Name = "TrenchFloor", Size = Vector3.new(size.X, 1, size.Z), Position = center + Vector3.new(0, GROUND_TOP - 3.5, 0), Color = MUD, Material = Enum.Material.Mud })
+		for side = -1, 1, 2 do
+			local lip = if horizontal then Vector3.new(0, 0, side * 3.8) else Vector3.new(side * 3.8, 0, 0)
+			part(folder, { Name = "Sandbags", Size = if horizontal then Vector3.new(length, 2, 1.5) else Vector3.new(1.5, 2, length), Position = center + lip + Vector3.new(0, GROUND_TOP + 1, 0), Color = Color3.fromRGB(140, 125, 90), Material = Enum.Material.Fabric })
+		end
 	end
-	-- scattered sandbag nests
-	for _ = 1, 4 do
-		part(folder, { Name = "Sandbags", Size = Vector3.new(6, 2, 1.5), Position = c + Vector3.new(rng:NextNumber(-s * 0.4, s * 0.4), GROUND_TOP + 1, rng:NextNumber(-s * 0.4, s * 0.4)), Color = Color3.fromRGB(140, 125, 90), Material = Enum.Material.Fabric, Orientation = Vector3.new(0, rng:NextNumber(0, 180), 0) })
+	trench(Vector3.new(c.X, 0, c.Z + rng:NextNumber(-s * 0.35, s * 0.35)), s * 0.7, true)
+	trench(Vector3.new(c.X + rng:NextNumber(-s * 0.35, s * 0.35), 0, c.Z), s * 0.5, false)
+	-- earth berms and sandbag nests: low cover between the buildings
+	for _ = 1, 5 do
+		part(folder, { Name = "Berm", Size = Vector3.new(rng:NextNumber(10, 18), 2.5, 4), Position = c + Vector3.new(rng:NextNumber(-s * 0.45, s * 0.45), GROUND_TOP + 1.2, rng:NextNumber(-s * 0.45, s * 0.45)), Color = MUD, Material = Enum.Material.Ground, Orientation = Vector3.new(0, rng:NextNumber(0, 180), 0) })
+	end
+	for _ = 1, 7 do
+		part(folder, { Name = "Sandbags", Size = Vector3.new(6, 2, 1.5), Position = c + Vector3.new(rng:NextNumber(-s * 0.45, s * 0.45), GROUND_TOP + 1, rng:NextNumber(-s * 0.45, s * 0.45)), Color = Color3.fromRGB(140, 125, 90), Material = Enum.Material.Fabric, Orientation = Vector3.new(0, rng:NextNumber(0, 180), 0) })
+	end
+	-- wrecks: a burnt-out truck or two per sector
+	for _ = 1, rng:NextInteger(1, 2) do
+		part(folder, { Name = "Wreck", Size = Vector3.new(7, 4, 14), Position = c + Vector3.new(rng:NextNumber(-s * 0.4, s * 0.4), GROUND_TOP + 2, rng:NextNumber(-s * 0.4, s * 0.4)), Color = Color3.fromRGB(50, 45, 40), Material = Enum.Material.CorrodedMetal, Orientation = Vector3.new(0, rng:NextNumber(0, 180), 0) })
 	end
 end
 
