@@ -64,6 +64,10 @@ Config.Devour = {
 
 Config.Destruction = {
 	GrabRange = 8,
+	CatchRange = 24, -- an in-flight chunk this close can be caught...
+	CatchWindow = 0.25, -- ...if it would hit within this long after you press grab
+	CatchStamina = 12,
+	CatchLockout = 0.5, -- a missed catch leaves you open; stops G-spam from being a free parry
 	GrabTime = 0.2,
 	MaxChargeTime = 0.8, -- throw charge saturates here
 	MinFlight = 3, -- studs a thrown chunk must travel before it can hit (no spam-drop damage)
@@ -79,7 +83,13 @@ Config.Destruction = {
 	NoiseRadius = 120, -- NPCs this close investigate a breach or explosion
 	CycleSeconds = 3600, -- dematerialization: everything broken returns to intact
 	CycleWarning = 60,
-	GoreLevel = "Moderate", -- "Moderate" | "Restricted" (see design doc section 9); only Moderate is built
+	GoreLevel = "Restricted", -- "Moderate" | "Restricted" (design doc section 9). The content label itself is set in the Creator Dashboard.
+}
+
+Config.Gore = {
+	BodyCap = 60, -- persistent corpses per server; oldest cleared first
+	PoolCap = 80, -- blood pools per client
+	PoolLifetime = 90,
 }
 
 Config.SpawnProtection = 8 -- seconds of invulnerability after spawning into the open world

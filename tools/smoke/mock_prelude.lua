@@ -2,6 +2,7 @@
 local G = _G
 local now, frame = 0, 0
 local task_
+local newInstance
 local sleepers, spawnedErrors = {}, {}
 
 -------------------------------------------------- math types
@@ -153,7 +154,19 @@ function methods.PivotTo(self, cf)
 	if root then root.CFrame = cf end
 	for _, c in self._children do if c:IsA("BasePart") and c ~= root then c.CFrame = cf end end
 end
-function methods.GetPivot(self) return self._pivot or mkcf(V3.zero) end
+function methods.GetPivot(self)
+	local root = self.PrimaryPart or self:FindFirstChild("HumanoidRootPart") or self:FindFirstChildWhichIsA("BasePart")
+	return (root and root.CFrame) or self._pivot or mkcf(V3.zero)
+end
+function methods.Clone(self)
+	local c = newInstance(self.ClassName); c.Name = self.Name
+	for k, v in pairs(self) do
+		if k ~= "_children" and k ~= "_parent" and k ~= "_sigs" and k ~= "_attrs" and k ~= "ClassName" and k ~= "Name" then rawset(c, k, v) end
+	end
+	for k, v in self._attrs do c._attrs[k] = v end
+	for _, ch in self._children do local cc = ch:Clone(); cc.Parent = c end
+	return c
+end
 function methods.TakeDamage(self, n) self.Health = math.max(0, self.Health - n) end
 function methods.MoveTo(self, p) end
 function methods.FireClient(self, p, ...) table.insert(FireLog, {self.Name, "client", ...}) end
@@ -236,7 +249,7 @@ MT.__newindex = function(self, k, v)
 	end
 	rawset(self, k, v)
 end
-local function newInstance(cls)
+newInstance = function(cls)
 	local i = setmetatable({ClassName = cls, Name = cls, _children = {}, _attrs = {}}, MT)
 	if DEFAULTS[cls] then DEFAULTS[cls](i) end
 	if cls == "Model" then rawset(i, "PrimaryPart", nil) end

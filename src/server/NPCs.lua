@@ -11,6 +11,7 @@ local Combat = require(script.Parent.Combat)
 local Loot = require(script.Parent.Loot)
 local Quests = require(script.Parent.Quests)
 local Stats = require(script.Parent.Stats)
+local Gore = require(script.Parent.Gore)
 
 local NPCs = {}
 NPCs.Killed = Instance.new("BindableEvent") -- (typeName, model, killerPlayer?)
@@ -113,6 +114,7 @@ function NPCs.Spawn(typeName, position, opts)
 	local alive = true
 	hum.Died:Connect(function()
 		alive = false
+		Gore.OnDied(model)
 		local _, killer = Combat.GetKiller(model)
 		if killer then
 			Stats.AddXp(killer, math.floor(def.Xp * scale + 0.5))

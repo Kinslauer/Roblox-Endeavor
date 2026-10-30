@@ -60,7 +60,8 @@ Built from [docs/systems/destruction-and-salvage.md](docs/systems/destruction-an
   aim. Light chunks are one-handed (pipes and sign plates double as improvised clubs that wear out); Medium chunks stop
   you blocking and slow you; Heavy ones need Strength 15. Throws run through the normal combat path (block, dodge,
   stun, knockback) and a **parry deflects a thrown chunk back at the thrower**. Speed and damage come from the server
-  formula, never the client.
+  formula, never the client. **Catching:** press `G` as an incoming chunk is about to hit (0.25s window) to take it out of
+  the air with no damage - it is yours to throw back. Pressing early costs stamina and leaves you open for 0.5s.
 - **Explosions**: one shared `Destruction.Explode` with distance falloff and line-of-sight for people and world.
   **Pipe Grenade** (throwable) and **Breaching Charge** (plants on the nearest breach point) are crafted from salvage.
 - **Breach points**: each district has a locked building with a door tier - Weak (blunt/thrown), Standard (sledge
@@ -71,7 +72,14 @@ Built from [docs/systems/destruction-and-salvage.md](docs/systems/destruction-an
 - **Dematerialization**: every hour (10 min in Dev) the city warns for 60s, then every broken prop, door and loose
   chunk returns to intact. Doors won't reseal on someone standing in them. Taken salvage stays yours.
 - **Budgets**: loose chunks cap at 150 (oldest settled ones go first), settle after 3s at rest, and fade after 3 min;
-  client debris caps at 300. `Config.Destruction` holds every knob. `GoreLevel` exists but only Moderate is built.
+  client debris caps at 300. `Config.Destruction` holds every knob.
+
+## Gore (Restricted)
+`Config.Destruction.GoreLevel = "Restricted"` (`src/server/Gore.lua`): blood spray and pooling on hits, dismemberment on
+explosive and heavy kills, and persistent corpses that settle, freeze into cover and stay for 5 minutes (capped at 60 per
+server, cleared by dematerialization). `"Moderate"` keeps only a light distant spray. **The content label itself is set
+in the Roblox Creator Dashboard questionnaire** (Restricted = age-verified 18+ only, blocked in some regions, cannot be
+changed back - see the design doc, section 9); the code only makes the game match it.
 
 ## Test arena
 With `Config.Dev.Enabled = true` (default for now) the prologue is 15s and the world opens into a generated neon arena:

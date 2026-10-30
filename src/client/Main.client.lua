@@ -20,6 +20,7 @@ local player = Players.LocalPlayer
 local function cameraDirection()
 	return workspace.CurrentCamera.CFrame.LookVector
 end
+
 local gui = Instance.new("ScreenGui")
 gui.Name, gui.ResetOnSpawn = "ConduitHUD", false
 gui.Parent = player:WaitForChild("PlayerGui")
@@ -39,6 +40,16 @@ local function label(props)
 	props.Font = props.Font or Enum.Font.GothamMedium
 	props.TextSize = props.TextSize or 16
 	return make("TextLabel", props, props.Parent)
+end
+
+local function flash(char, color)
+	if typeof(char) ~= "Instance" then
+		return
+	end
+	local h = make("Highlight", { FillColor = color, FillTransparency = 0.4, OutlineTransparency = 1 }, char)
+	task.delay(0.15, function()
+		h:Destroy()
+	end)
 end
 
 local function bar(y, color)
@@ -278,11 +289,13 @@ local function nearestGrabbable()
 	if not root then
 		return nil
 	end
-	local best, bestDist = nil, Config.Destruction.GrabRange
+	-- resting chunks within grab range; a chunk flying at you can be targeted from further out
+	local best, bestDist = nil, Config.Destruction.CatchRange
 	for _, part in CollectionService:GetTagged("Grabbable") do
 		if part:IsA("BasePart") and part.Parent then
 			local dist = (part.Position - root.Position).Magnitude
-			if dist < bestDist then
+			local flying = part.AssemblyLinearVelocity.Magnitude > 10
+			if dist < bestDist and (flying or dist <= Config.Destruction.GrabRange) then
 				best, bestDist = part, dist
 			end
 		end
@@ -302,7 +315,8 @@ RunService.Heartbeat:Connect(function(dt)
 		local charge = if chargeStart then math.clamp((os.clock() - chargeStart) / Config.Destruction.MaxChargeTime, 0, 1) else 0
 		holdLabel.Text = ("Holding %s (%s)  -  G throw%s  -  H drop"):format(holding, char:GetAttribute("HoldClass") or "", if chargeStart then (("  [%d%%]"):format(charge * 100)) else " (hold to charge)")
 	else
-		holdLabel.Text = if nearestGrabbable() then "G grab" else ""
+		local target = nearestGrabbable()
+		holdLabel.Text = if not target then "" elseif target.AssemblyLinearVelocity.Magnitude > 10 then "G CATCH (time it)" else "G grab"
 	end
 end)
 
@@ -344,9 +358,73 @@ local function explosionFx(origin, radius)
 	end
 end
 
+-- ===== Gore effects (what the server allows; see Config.Destruction.GoreLevel) =====
+local pools = {}
+local function bloodSpray(position, direction, heavy)
+	local count = if heavy then 10 else 4
+	for _ = 1, count do
+		if worldDebris >= 300 then
+			break
+		end
+		worldDebris += 1
+		local p = make("Part", { Size = Vector3.new(0.25, 0.25, 0.25), Color = Color3.fromRGB(120, 10, 15), Material = Enum.Material.SmoothPlastic, CanCollide = false, CanQuery = false,
+			Position = position + Vector3.new(0, 1, 0) }, workspace)
+		p.AssemblyLinearVelocity = (direction + Vector3.new(math.random() - 0.5, math.random() * 0.8, math.random() - 0.5)) * (if heavy then 22 else 12)
+		task.delay(0.8, function()
+			worldDebris -= 1
+			p:Destroy()
+		end)
+	end
+end
+local function bloodPool(position, size)
+	if #pools >= Config.Gore.PoolCap then
+		local oldest = table.remove(pools, 1)
+		if oldest then
+			oldest:Destroy()
+		end
+	end
+	local pool = make("Part", { Shape = Enum.PartType.Cylinder, Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.SmoothPlastic,
+		Color = Color3.fromRGB(90, 5, 10), Size = Vector3.new(0.05, 0.5, 0.5), CFrame = CFrame.new(position - Vector3.new(0, 2.3, 0)) * CFrame.Angles(0, 0, math.pi / 2), Transparency = 0.1 }, workspace)
+	TweenService:Create(pool, TweenInfo.new(2.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.new(0.05, size * 3, size * 3) }):Play()
+	table.insert(pools, pool)
+	Debris:AddItem(pool, Config.Gore.PoolLifetime)
+end
+
 local dematerializing = false
-Remotes.World.OnClientEvent:Connect(function(kind, a, b)
-	if kind == "Explosion" then
+Remotes.World.OnClientEvent:Connect(function(kind, a, b, c)
+	if kind == "Blood" then
+		bloodSpray(a, b, c)
+		if c then
+			bloodPool(a, 0.6)
+		end
+	elseif kind == "Dismember" then
+		bloodSpray(a, Vector3.yAxis, true)
+		bloodSpray(a, Vector3.yAxis, true)
+		bloodPool(a, 2)
+	elseif kind == "Pool" then
+		bloodPool(a, b)
+	elseif kind == "ClearGore" then
+		for _, pool in pools do
+			pool:Destroy()
+		end
+		table.clear(pools)
+	elseif kind == "CatchAttempt" then
+		if a == player.Character then
+			holdLabel.Text = "catch!"
+		end
+	elseif kind == "Catch" then
+		flash(a, Color3.fromRGB(255, 255, 255))
+		if a == player.Character then
+			bannerToken += 1
+			local token = bannerToken
+			banner.Text, banner.TextColor3, banner.TextTransparency = "CAUGHT", Color3.fromRGB(120, 255, 200), 0
+			task.delay(1, function()
+				if token == bannerToken then
+					banner.TextTransparency = 1
+				end
+			end)
+		end
+	elseif kind == "Explosion" then
 		explosionFx(a, b)
 	elseif kind == "Break" then
 		debris(a, Color3.fromRGB(90, 90, 100), 8, 0.5)
@@ -453,15 +531,6 @@ Remotes.PhaseChanged.OnClientEvent:Connect(function(phase)
 end)
 
 -- ===== Combat feedback & movement =====
-local function flash(char, color)
-	if typeof(char) ~= "Instance" then
-		return
-	end
-	local h = make("Highlight", { FillColor = color, FillTransparency = 0.4, OutlineTransparency = 1 }, char)
-	task.delay(0.15, function()
-		h:Destroy()
-	end)
-end
 
 local FLASH = {
 	Hit = Color3.fromRGB(255, 70, 70), Block = Color3.fromRGB(150, 150, 255), Parry = Color3.fromRGB(255, 255, 255), Devour = Color3.fromRGB(120, 0, 160),

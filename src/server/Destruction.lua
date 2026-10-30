@@ -19,6 +19,7 @@ local Loot = require(script.Parent.Loot)
 local Net = require(script.Parent.Net)
 local NPCs = require(script.Parent.NPCs)
 local Stats = require(script.Parent.Stats)
+local Gore = require(script.Parent.Gore)
 
 local D = Config.Destruction
 local Destruction = {}
@@ -30,6 +31,7 @@ local props = {} -- [model] = { def, id, intact = bool, cframe, health }
 local breaches = {} -- [model] = { tier, door, health, open }
 local chunks = {} -- ordered list of loose chunks { part, spawnedAt, settledAt }
 local held = {} -- [player] = { part, chunkDef, weld }
+local catchAttempt = {} -- [characterModel] = os.clock() of the last grab press at an incoming chunk
 local rng = Random.new()
 
 local function world(kind, ...)
@@ -489,12 +491,24 @@ function Destruction.Grab(player, part)
 	if typeof(part) ~= "Instance" or not part:IsA("BasePart") or not part:GetAttribute("Chunk") or not part.Parent then
 		return
 	end
-	if (part.Position - root.Position).Magnitude > D.GrabRange then
+	local entry = entryOf(part)
+	if not entry or entry.heldBy then
 		return
 	end
-	local entry = entryOf(part)
-	if not entry or entry.heldBy or entry.inFlight then
-		return -- catching a throw out of the air is a stretch goal, not a free counter
+	local dist = (part.Position - root.Position).Magnitude
+	if entry.inFlight then
+		-- Catch attempt: timing-based. The flight resolves it (see fly) if the chunk would hit
+		-- within CatchWindow of this press. Missing costs stamina and a lockout.
+		if dist > D.CatchRange or not Combat.CanAct(char) or not Combat.SpendStamina(char, D.CatchStamina) then
+			return
+		end
+		catchAttempt[char] = os.clock()
+		Combat.SetBusy(char, D.CatchLockout)
+		world("CatchAttempt", char)
+		return
+	end
+	if dist > D.GrabRange then
+		return
 	end
 	local w, class = weightOf(part)
 	if w.StrengthReq and Gear.Get(player).Stats.Strength < w.StrengthReq then
@@ -505,6 +519,13 @@ function Destruction.Grab(player, part)
 		return
 	end
 	Combat.SetBusy(char, D.GrabTime)
+	Destruction.Attach(player, part, entry, class, w)
+end
+
+-- Welds a chunk into a player's hands. Validation happens in Grab / the catch path.
+function Destruction.Attach(player, part, entry, class, w)
+	local char = player.Character
+	local root = char.HumanoidRootPart
 	entry.heldBy = player
 	entry.settledAt, entry.restAt = nil, nil
 	part.Anchored, part.CanCollide, part.Massless = false, false, true
@@ -607,6 +628,23 @@ local function fly(part, entry, thrower, w, speed)
 				end
 				if near and not seen[model] and getHum(model) and model ~= thrower then
 					seen[model] = true
+					-- a well-timed grab press catches it: no damage, and it is theirs now
+					local catcher = Players:GetPlayerFromCharacter(model)
+					local pressed = catchAttempt[model]
+					if catcher and pressed and os.clock() - pressed <= D.CatchWindow and not held[catcher] then
+						catchAttempt[model] = nil
+						live = false
+						entry.inFlight = false
+						part.AssemblyLinearVelocity = Vector3.zero
+						local wDef, class = weightOf(part)
+						if not (wDef.StrengthReq and Gear.Get(catcher).Stats.Strength < wDef.StrengthReq) then
+							Destruction.Attach(catcher, part, entry, class, wDef)
+							Combat.AddCharge(model, 10)
+							world("Catch", model, part)
+							Combat.Used:Fire("Catch", catcher)
+						end
+						break
+					end
 					local result, newThrower = hitCharacter(model)
 					if result == "deflected" then
 						thrower = newThrower
@@ -721,6 +759,7 @@ function Destruction.Reset()
 			end
 		end
 	end)
+	Gore.Clear()
 	world("Rematerialize")
 end
 

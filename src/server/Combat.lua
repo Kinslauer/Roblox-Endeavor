@@ -346,6 +346,7 @@ local function applyDamage(attacker, victim, amount, opts)
 	amount *= 1 - math.min(C.MaxResist, vd.Resist[if opts.Type == "Arc" then "Arc" else "Physical"] or 0)
 
 	vhum:TakeDamage(amount)
+	victim:SetAttribute("LastHitType", opts.Type or "Physical")
 	if attacker ~= victim then
 		tag(attacker, victim)
 	end
@@ -389,7 +390,7 @@ local function pulse(char, spec, mods, seen)
 	if overloaded then
 		damage += s.arcBonus
 	end
-	local opts = { Posture = posture, Type = spec.Type, Knockback = spec.Knockback, Stun = spec.Stun, Unblockable = mods.unblockable, GuardBreak = mods.guardBreak }
+	local opts = { Posture = posture, Type = if mods.hitType and spec.Type ~= "Arc" then mods.hitType else spec.Type, Knockback = spec.Knockback, Stun = spec.Stun, Unblockable = mods.unblockable, GuardBreak = mods.guardBreak }
 
 	local function strike(model)
 		seen[model] = true
@@ -572,7 +573,7 @@ function Combat.Heavy(player)
 	Combat.Used:Fire("Heavy", player)
 	char:SetAttribute("Blocking", false)
 	-- Heavies are criticals: they crush blocks (extra posture damage).
-	local mods = { chargeBonus = weapon.ChargeBonus, label = "Heavy", postureMult = C.CriticalPostureMult, weapon = weapon }
+	local mods = { chargeBonus = weapon.ChargeBonus, label = "Heavy", postureMult = C.CriticalPostureMult, weapon = weapon, hitType = "Heavy" }
 	Combat.Swing(char, weapon.Heavy, mods)
 end
 

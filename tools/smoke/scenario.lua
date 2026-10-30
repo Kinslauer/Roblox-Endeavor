@@ -312,6 +312,42 @@ else
 	check("a parry deflects a thrown chunk (no plank found)", false)
 end
 
+-- catch: rival presses G as the next throw arrives, and ends up holding it
+local post
+for _, d in dfolder:GetChildren() do if d:GetAttribute("Chunk") and not d:GetAttribute("Improvised") and d ~= plank then post = d break end end
+post = post or plank
+if post then
+	run(1)
+	post.CFrame = M.CF.new(pc.HumanoidRootPart.Position + M.V3.new(2, 0, 0)); run(0.3)
+	Remotes.Grab:FireServer(post); run(1.2)
+	check("holding a chunk to throw for the catch test", pc:GetAttribute("Holding") ~= nil)
+	local hpBeforeCatch = rc.Humanoid.Health
+	Remotes.Throw:FireServer(pc.HumanoidRootPart.CFrame.LookVector, 0); run(0.05)
+	-- fly it to just short of the rival, press G there, then let it arrive
+	local steps = 0
+	while (post.Position - rc.HumanoidRootPart.Position).Magnitude > 6 and steps < 30 do
+		post.CFrame = M.CF.new(post.Position + post.AssemblyLinearVelocity * (1/30)); run(1/30); steps += 1
+	end
+	as(p2); Remotes.Grab:FireServer(post); as(player)
+	for _ = 1, 4 do post.CFrame = M.CF.new(post.Position + post.AssemblyLinearVelocity * (1/30)); run(1/30) end
+	check("a timed grab catches the throw", rc:GetAttribute("Holding") ~= nil and rc.Humanoid.Health == hpBeforeCatch)
+	as(p2); Remotes.Drop:FireServer(); as(player); run(0.5)
+	-- a grab pressed far too early does not catch (lockout), and the chunk lands
+	local post2
+	for _, d in dfolder:GetChildren() do if d:GetAttribute("Chunk") and not d:GetAttribute("Improvised") and d ~= post then post2 = d break end end
+	if post2 then
+		run(1)
+		post2.CFrame = M.CF.new(pc.HumanoidRootPart.Position + M.V3.new(2, 0, 0)); run(0.3)
+		Remotes.Grab:FireServer(post2); run(1.2)
+		local hpEarly = rc.Humanoid.Health
+		Remotes.Throw:FireServer(pc.HumanoidRootPart.CFrame.LookVector, 0); run(0.05)
+		as(p2); Remotes.Grab:FireServer(post2); as(player) -- pressed immediately: far too early
+		run(0.4)
+		for _ = 1, 12 do post2.CFrame = M.CF.new(post2.Position + post2.AssemblyLinearVelocity * (1/30)); run(1/30) end
+		check("an early grab press does not catch", rc:GetAttribute("Holding") == nil and rc.Humanoid.Health < hpEarly)
+	end
+end
+
 -- breaching: a Reinforced door ignores the sledge but opens to a charge
 local reinforced
 for _, m in dfolder:GetChildren() do if m:GetAttribute("Tier") == "Reinforced" then reinforced = m break end end
@@ -358,6 +394,18 @@ check("rematerialize restores the streetlight and the door", lamp.Parent ~= nil 
 local chunksLeft = 0
 for _, d in dfolder:GetChildren() do if d:GetAttribute("Chunk") then chunksLeft += 1 end end
 check("rematerialize clears loose chunks", chunksLeft == 0)
+
+-- gore (Restricted): a kill leaves a persistent corpse that rematerialization clears
+local gore = workspace_:FindFirstChild("Gore")
+rc.Humanoid.Health = 0; run(0.5)
+local corpseCount = 0
+for _, c in gore:GetChildren() do if c.Name == "Corpse" then corpseCount += 1 end end
+check("restricted gore leaves a corpse behind", corpseCount >= 1)
+run(8)
+Destruction.Reset(); run(0.5)
+corpseCount = 0
+for _, c in gore:GetChildren() do if c.Name == "Corpse" then corpseCount += 1 end end
+check("rematerialize clears corpses", corpseCount == 0)
 
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)

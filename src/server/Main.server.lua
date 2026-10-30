@@ -4,6 +4,7 @@ local Arena = require(Server.Arena)
 local City = require(Server.City)
 local Raids = require(Server.Raids)
 local Destruction = require(Server.Destruction)
+local Gore = require(Server.Gore)
 local Gear = require(Server.Gear)
 local Net = require(Server.Net)
 local WorldPhase = require(Server.WorldPhase)
@@ -18,6 +19,7 @@ local Lifecycle = require(Server.Lifecycle)
 
 -- Must run before WorldPhase.Init so its CitySpawn pads are found. A bug in the test arena
 -- must never stop the game from starting, so it is isolated.
+Gore.Init()
 Destruction.Init() -- before City, which places props and breach points
 City.Init()
 local ok, err = pcall(Arena.Init)
