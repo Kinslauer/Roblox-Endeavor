@@ -102,7 +102,7 @@ function NPCs.Spawn(typeName, position, opts)
 		alive = false
 		local _, killer = Combat.GetKiller(model)
 		if killer then
-			Stats.AddXp(killer, def.Xp * scale)
+			Stats.AddXp(killer, math.floor(def.Xp * scale + 0.5))
 			Quests.Progress(killer, "kill", typeName, 1)
 		end
 		local spoils = Items.Roll(def.Loot)

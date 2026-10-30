@@ -76,12 +76,38 @@ end
 local function living(players)
 	local out = {}
 	for _, p in players do
-		local hum = p.Parent and p.Character and p.Character:FindFirstChildOfClass("Humanoid")
-		if hum and hum.Health > 0 and (p.Character.HumanoidRootPart.Position - R.Origin).Magnitude < R.Radius + 30 then
+		local char = p.Parent and p.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		if hum and root and hum.Health > 0 and (root.Position - R.Origin).Magnitude < R.Radius + 30 then
 			table.insert(out, p)
 		end
 	end
 	return out
+end
+
+-- Drops members who died or left; they stop getting raid HUD updates and teleports.
+local function prune(raid)
+	local keep = living(raid.players)
+	for _, p in raid.players do
+		if not table.find(keep, p) and p.Parent then
+			Remotes.Raid:FireClient(p, nil)
+		end
+	end
+	raid.players = keep
+end
+
+-- Enemies still standing, read from the world rather than a counter so a destroyed or
+-- fallen NPC can never leave the wave stuck.
+local function enemiesAlive(raid)
+	local n = 0
+	for _, m in raid.folder:GetChildren() do
+		local hum = m:FindFirstChildOfClass("Humanoid")
+		if hum and hum.Health > 0 then
+			n += 1
+		end
+	end
+	return n
 end
 
 local function spawnPoint(angleIndex, count)
@@ -89,7 +115,7 @@ local function spawnPoint(angleIndex, count)
 	return R.Origin + Vector3.new(math.cos(a) * (R.Radius - 10), 4, math.sin(a) * (R.Radius - 10))
 end
 
-local function runWave(raid, index, wave)
+local function runWave(raid, index, wave, deadline)
 	local members = raid.players
 	local scale = 1 + R.ScalePerPlayer * math.max(0, #members - 1)
 	local alive, total = 0, 0
@@ -117,13 +143,24 @@ local function runWave(raid, index, wave)
 			task.wait(0.3)
 		end
 	end
-	while alive > 0 and raid.active do
+	task.wait(1) -- let the last spawn settle before counting
+	while raid.active and os.clock() < deadline do
 		task.wait(0.5)
-		if #living(members) == 0 then
+		prune(raid)
+		members = raid.players
+		if #members == 0 then
 			return false
 		end
+		local left = enemiesAlive(raid)
+		if left ~= alive then
+			alive = left
+			raidHud(members, { Wave = index, Waves = #R.Waves, Remaining = alive, Total = total, Boss = boss })
+		end
+		if alive == 0 then
+			return true
+		end
 	end
-	return raid.active
+	return false
 end
 
 local function reward(raid)
@@ -136,7 +173,8 @@ local function reward(raid)
 	end
 	-- a raid always pays out at least one implant: the thing you cannot easily craft
 	local implants = { "ReflexOptic", "TargetingLens", "ServoArm", "ArcGauntlet", "NeuralCore", "OverclockCore" }
-	bundle[implants[math.random(#implants)]] = (bundle[implants[math.random(#implants)]] or 0) + 1
+	local implant = implants[math.random(#implants)]
+	bundle[implant] = (bundle[implant] or 0) + 1
 	local vault = Loot.Spawn(CFrame.new(R.Origin + Vector3.new(0, 3, 0)), bundle, { Label = "Raid Vault", Action = "Claim", Hold = 2, Lifetime = R.ExitDelay + 5, Size = Vector3.new(5, 5, 5), Color = Color3.fromRGB(255, 200, 60) })
 	if vault then
 		vault.Anchored = true
@@ -154,11 +192,14 @@ end
 local function extract(raid)
 	for _, p in raid.players do
 		local char = p.Parent and p.Character
-		if char and char:FindFirstChild("HumanoidRootPart") and char.Humanoid.Health > 0 then
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if hum and hum.Health > 0 and char:FindFirstChild("HumanoidRootPart") then
 			char:PivotTo(WorldPhase.GetSpawnCFrame(p))
 			Combat.GrantIFrames(char, Config.SpawnProtection)
 		end
-		Remotes.Raid:FireClient(p, nil)
+		if p.Parent then
+			Remotes.Raid:FireClient(p, nil)
+		end
 	end
 end
 
@@ -171,31 +212,34 @@ local function finish(raid, success)
 		announce(raid.players, "The raid has failed.", "Kill")
 		task.wait(3)
 	end
-	extract(raid)
-	for _, child in raid.folder:GetChildren() do
-		child:Destroy()
-	end
-	active = nil
 end
 
 local function run(raid)
 	task.wait(R.JoinWindow)
 	raid.open = false
-	raid.players = living(raid.players)
-	if #raid.players == 0 then
-		active = nil
-		return
-	end
-	announce(raid.players, "Gate sealed. Survive.", "Emergence")
-	local deadline = os.clock() + R.TimeLimit
-	for index, wave in R.Waves do
-		if not runWave(raid, index, wave) or os.clock() > deadline then
-			finish(raid, false)
-			return
+	prune(raid)
+	if #raid.players > 0 then
+		announce(raid.players, "Gate sealed. Survive.", "Emergence")
+		local deadline = os.clock() + R.TimeLimit
+		local ok, err = pcall(function()
+			for index, wave in R.Waves do
+				if not runWave(raid, index, wave, deadline) then
+					finish(raid, false)
+					return
+				end
+				task.wait(2)
+			end
+			finish(raid, true)
+		end)
+		if not ok then
+			warn("[Raids] raid thread failed:", err)
+			raid.active = false
 		end
-		task.wait(2)
 	end
-	finish(raid, true)
+	-- Unconditional epilogue: whatever happened above, everyone goes home and the slot frees up.
+	extract(raid)
+	raid.folder:Destroy()
+	active = nil
 end
 
 local function join(player)
@@ -209,7 +253,7 @@ local function join(player)
 		return
 	end
 	if not active then
-		active = { players = {}, open = true, active = true, folder = Instance.new("Folder") }
+		active = { players = {}, open = true, active = true, folder = Instance.new("Folder"), windowEndsAt = os.clock() + R.JoinWindow }
 		active.folder.Name = "RaidEnemies"
 		active.folder.Parent = workspace
 		Remotes.Announce:FireAllClients(("%s opened the Blackout gate. %ds to join."):format(player.DisplayName, R.JoinWindow), "Event")
@@ -221,7 +265,7 @@ local function join(player)
 	table.insert(active.players, player)
 	local slot = #active.players
 	char:PivotTo(CFrame.new(R.Origin + Vector3.new(math.cos(slot) * 8, 4, math.sin(slot) * 8)))
-	Combat.GrantIFrames(char, R.JoinWindow)
+	Combat.GrantIFrames(char, math.max(0, active.windowEndsAt - os.clock()) + 1)
 	Remotes.Raid:FireClient(player, { Wave = 0, Waves = #R.Waves, Remaining = 0, Total = 0, Joining = true })
 end
 

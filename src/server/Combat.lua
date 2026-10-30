@@ -29,7 +29,7 @@ local function st(char)
 	if not s then
 		s = {
 			block = false, blockStart = 0, iframes = 0, stunned = 0, busyUntil = 0, token = 0,
-			lastSpend = 0, lastPostureHit = 0, lastDodge = 0, lastHeavy = 0,
+			lastSpend = 0, lastPostureHit = 0, lastDodge = 0, lastHeavy = 0, lastBlockRelease = -10,
 			combo = 0, comboWeapon = nil, comboExpires = 0,
 			hyperarmorUntil = 0, swingArmorUntil = 0, takenMult = 1, takenUntil = 0, arcBonus = 0, arcUntil = 0,
 			windupUntil = 0, lastCost = 0,
@@ -537,10 +537,16 @@ function Combat.SetBlock(player, down)
 	local s = st(char)
 	if down then
 		if Combat.CanAct(char) and not s.block and os.clock() >= s.busyUntil then
-			s.block, s.blockStart = true, os.clock()
+			local t = os.clock()
+			s.block = true
+			-- Tapping block repeatedly must not re-arm the parry window every press.
+			s.blockStart = if t - s.lastBlockRelease >= C.ParryRearm then t else -10
 			char:SetAttribute("Blocking", true)
 		end
 	else
+		if s.block then
+			s.lastBlockRelease = os.clock()
+		end
 		s.block = false
 		char:SetAttribute("Blocking", false)
 	end
@@ -572,7 +578,7 @@ function Combat.Init()
 	Net.On("Heavy", { rate = 4, burst = 6 }, Combat.Heavy)
 	Net.On("Feint", { rate = 6, burst = 8 }, Combat.Feint)
 	Net.On("Flicker", { rate = 8, burst = 12 }, Combat.Flicker)
-	Net.On("Block", { rate = 10, burst = 20, args = { "boolean" } }, Combat.SetBlock)
+	Net.On("Block", { rate = 4, burst = 8, args = { "boolean" } }, Combat.SetBlock)
 	Net.On("Dodge", { rate = 4, burst = 6, args = { "vector" } }, Combat.Dodge)
 
 	local accumulator = 0

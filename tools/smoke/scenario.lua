@@ -167,8 +167,16 @@ check("PvP hit lands once protection expires", c2.Humanoid.Health < before)
 local invBefore = 0
 c2.Humanoid.Health = 0
 run(0.5)
-local lootable = workspace_:FindFirstChild("Lootable", true)
+local lootable
+for _, d in workspace_:GetDescendants() do if d:GetAttribute("Label") == "Rival's remains" then lootable = d end end
 check("rival's remains dropped as loot", lootable ~= nil)
+-- regression: the dead player (still a corpse during the respawn wait) must not loot their own remains
+if lootable then
+	local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+	for _, pr in lootable:GetChildren() do if pr.ClassName == "ProximityPrompt" and pr.ActionText == "Loot" then pr.Triggered:Fire(p2) end end
+	run(0.2)
+	check("a corpse cannot loot its own remains", lootable.Parent ~= nil and Inventory.Count(p2, "PipeClub") == 0)
+end
 run(8)
 check("rival respawned as a fresh character", p2.Character ~= nil and p2.Character ~= c2 and p2.Character.Humanoid.Health > 0)
 

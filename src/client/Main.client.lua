@@ -274,7 +274,7 @@ local function setHelmetcam(on)
 		savedZoom.min, savedZoom.max = player.CameraMinZoomDistance, player.CameraMaxZoomDistance
 		player.CameraMinZoomDistance, player.CameraMaxZoomDistance = 0.5, 0.5
 	else
-		player.CameraMinZoomDistance, player.CameraMaxZoomDistance = 0.5, savedZoom.max
+		player.CameraMinZoomDistance, player.CameraMaxZoomDistance = savedZoom.min, savedZoom.max
 		local char = player.Character
 		if char then
 			for _, p in char:GetDescendants() do

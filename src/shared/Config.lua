@@ -66,6 +66,7 @@ Config.SpawnProtection = 8 -- seconds of invulnerability after spawning into the
 Config.RespawnDelay = 5
 Config.CombatLogSeconds = 15 -- leaving this soon after combat = permadeath
 Config.CombatLogPunish = true
+Config.OwnerLockout = 60 -- seconds a dead player's new character cannot take their own old remains
 Config.LootHold = 1.5 -- seconds to hold E to loot / steal from a body
 Config.CorpseLifetime = 300
 
@@ -114,6 +115,7 @@ Config.Combat = {
 	FeintRefund = 0.6, -- fraction of the swing's stamina you get back
 	CriticalPostureMult = 1.75, -- heavy attacks crush blocks
 	ParryWindow = 0.22, -- block pressed this recently before impact = parry
+	ParryRearm = 0.6, -- time block must have been released before a new press can parry again
 	ParryStun = 1.1,
 	ParryPostureRelief = 25,
 	GuardBreakStun = 1.4,

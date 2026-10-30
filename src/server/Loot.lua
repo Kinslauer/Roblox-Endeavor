@@ -12,7 +12,7 @@ local D = Config.Devour
 
 local Loot = {}
 
--- opts: Label, Action, Hold, Lifetime, Color, Size, Devour ({ Level = n } for a conduit's remains, { Npc = true } for NPCs)
+-- opts: Label, Action, Hold, Lifetime, Color, Size, OwnerUserId (the dead player: locked out for OwnerLockout seconds), Devour ({ Level = n } for a conduit's remains, { Npc = true } for NPCs)
 function Loot.Spawn(cframe, bundle, opts)
 	opts = opts or {}
 	if next(bundle) == nil then
@@ -36,9 +36,21 @@ function Loot.Spawn(cframe, bundle, opts)
 	prompt.KeyboardKeyCode = Enum.KeyCode.X -- E is flicker
 	prompt.Parent = part
 
+	local spawnedAt = os.clock()
+	local function canTake(who)
+		local hum = who.Character and who.Character:FindFirstChildOfClass("Humanoid")
+		if not part.Parent or not hum or hum.Health <= 0 then
+			return false -- gone, or the taker is dead (a corpse must not loot its own remains)
+		end
+		if opts.OwnerUserId == who.UserId and os.clock() - spawnedAt < Config.OwnerLockout then
+			return false
+		end
+		return true
+	end
+
 	prompt.Triggered:Connect(function(looter)
-		if not part.Parent then
-			return -- someone else got there first
+		if not canTake(looter) then
+			return
 		end
 		part.Parent = nil
 		Inventory.AddAll(looter, bundle)
@@ -54,10 +66,10 @@ function Loot.Spawn(cframe, bundle, opts)
 		devour.KeyboardKeyCode, devour.UIOffset = Enum.KeyCode.M, Vector2.new(0, 60)
 		devour.Parent = part
 		devour.Triggered:Connect(function(eater)
-			local char, hum = eater.Character, eater.Character and eater.Character:FindFirstChildOfClass("Humanoid")
-			if not part.Parent or not hum or hum.Health <= 0 then
+			if not canTake(eater) then
 				return
 			end
+			local char, hum = eater.Character, eater.Character:FindFirstChildOfClass("Humanoid")
 			part.Parent = nil
 			local xp = if opts.Devour.Npc then D.NpcXp else D.XpBase + D.XpPerLevel * (opts.Devour.Level or 1)
 			Stats.AddXp(eater, xp)
@@ -70,6 +82,7 @@ function Loot.Spawn(cframe, bundle, opts)
 	end
 
 	part.Parent = workspace
+	part:SetNetworkOwner(nil) -- clients must not be able to drag loot around
 	Debris:AddItem(part, opts.Lifetime or Config.CorpseLifetime)
 	return part
 end

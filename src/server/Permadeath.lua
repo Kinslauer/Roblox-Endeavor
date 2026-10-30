@@ -17,7 +17,7 @@ local function dropRemains(player, profile, cframe)
 	if next(bundle) == nil then
 		bundle.Cloth = 1 -- a body is always worth devouring
 	end
-	Loot.Spawn(cframe, bundle, { Label = player.DisplayName .. "'s remains", Devour = { Level = profile.Level } })
+	Loot.Spawn(cframe, bundle, { Label = player.DisplayName .. "'s remains", Devour = { Level = profile.Level }, OwnerUserId = player.UserId })
 end
 
 -- Account-level stats that survive deaths (a "legacy" for leaderboards/cosmetics later).
@@ -60,12 +60,17 @@ function Permadeath.Handle(player, char)
 
 	local survived = recordLegacy(player.UserId, profile)
 	Remotes.Died:FireClient(player, { Survived = survived, Kills = profile.Kills, Level = profile.Level, Killer = killerName })
+	player:SetAttribute("LastCombat", nil) -- the fight is over; quitting now is not combat-logging
 	PlayerData.Reset(player)
 end
 
 -- Player quit mid-fight: they lose the character, but the body stays behind to be looted.
 function Permadeath.CombatLog(player)
 	local profile, char = PlayerData.Get(player), player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not hum or hum.Health <= 0 then
+		return -- already handled by Permadeath.Handle
+	end
 	local root = char and char:FindFirstChild("HumanoidRootPart")
 	if profile and root then
 		dropRemains(player, profile, root.CFrame)

@@ -53,7 +53,7 @@ function Stats.AddXp(player, amount)
 	if not data then
 		return
 	end
-	data.Xp += amount
+	data.Xp += math.floor(amount)
 	while data.Xp >= Stats.XpNeeded(data.Level) do
 		data.Xp -= Stats.XpNeeded(data.Level)
 		data.Level += 1
