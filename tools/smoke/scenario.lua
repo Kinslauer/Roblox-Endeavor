@@ -175,7 +175,8 @@ if lootable then
 	local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
 	for _, pr in lootable:GetChildren() do if pr.ClassName == "ProximityPrompt" and pr.ActionText == "Loot" then pr.Triggered:Fire(p2) end end
 	run(0.2)
-	check("a corpse cannot loot its own remains", lootable.Parent ~= nil and Inventory.Count(p2, "PipeClub") == 0)
+	-- (the wiped profile already holds starting gear, so check the remains survived and no Ration was taken)
+	check("a corpse cannot loot its own remains", lootable.Parent ~= nil and Inventory.Count(p2, "Ration") <= 1)
 end
 run(8)
 check("rival respawned as a fresh character", p2.Character ~= nil and p2.Character ~= c2 and p2.Character.Humanoid.Health > 0)
