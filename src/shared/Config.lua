@@ -96,7 +96,7 @@ Config.Gore = {
 -- The Front: the war world, a separate place in the same universe. Conduits "tap in" from a
 -- Neural Net terminal and control a recruit there. The recruit's gear is the conduit's money.
 Config.War = {
-	PlaceId = 0, -- set after publishing the Front place; 0 = teleport disabled (Studio can't teleport anyway)
+	PlaceId = 81481823786216, -- the Front place inside the Endeavor experience (universe 10773835758)
 	Factions = { "Union", "Pact" },
 	FactionColors = { Union = Color3.fromRGB(70, 110, 200), Pact = Color3.fromRGB(200, 60, 60) },
 	UplinkSeconds = 4, -- the neural-net dive animation before the teleport
