@@ -7,6 +7,7 @@ local Shared = ReplicatedStorage.Shared
 local Armor = require(Shared.Armor)
 local Config = require(Shared.Config)
 local Cybernetics = require(Shared.Cybernetics)
+local Hideout = require(Shared.Hideout)
 local Remotes = require(Shared.Remotes)
 local Skills = require(Shared.Skills)
 local Weapons = require(Shared.Weapons)
@@ -35,7 +36,7 @@ local derived = {}
 -- What NPCs (and anything without a profile) fight with.
 local DEFAULT = {
 	Stats = {}, Tags = {}, Resist = { Physical = 0, Arc = 0 }, MaxPosture = C.BasePosture, PostureRegen = C.PostureRegenPerSecond,
-	StaminaCostMult = 1, BlockReduction = C.BlockReduction, DodgeIFrames = C.DodgeIFrames, DamageMult = 1,
+	StaminaCostMult = 1, BlockReduction = C.BlockReduction, DodgeIFrames = C.DodgeIFrames, DamageMult = 1, WeaponBroken = false,
 	PostureDamageMult = 1, ChargeGain = 1, WeightScore = 0, FlickerRate = 1, FlashBonus = 0, ParryWindow = C.ParryWindow,
 }
 for _, name in S.Names do
@@ -52,18 +53,25 @@ local function compute(data)
 		for slot, id in data[field] do
 			local piece = source.defs[id]
 			if piece and piece.Slot == slot and (data.Inventory[id] or 0) > 0 then
+				-- worn gear gives less; a broken piece gives nothing but its weight. Upgrades add on top.
+				local cond = Hideout.ConditionMult((data.Condition or {})[id])
+				local kind = if field == "Armor" then "Armor" else "Cybernetic"
+				local up = ((data.Upgrades or {})[id] or 0) * Hideout.UpgradeBonus[kind]
+				local bonusMult = cond * (1 + (if kind == "Cybernetic" then up else 0))
 				for stat, bonus in piece.Stats or {} do
-					stats[stat] = (stats[stat] or 0) + bonus
+					stats[stat] = (stats[stat] or 0) + math.floor(bonus * bonusMult + 0.5)
 				end
-				for kind, amount in piece.Resist or {} do
-					resist[kind] += amount
+				for rkind, amount in piece.Resist or {} do
+					resist[rkind] += amount * cond + (if kind == "Armor" and rkind == "Physical" then up else 0)
 				end
 				for _, tag in piece.Tags or {} do
-					tags[tag] = (tags[tag] or 0) + 1
+					if cond > 0 then
+						tags[tag] = (tags[tag] or 0) + 1
+					end
 				end
 				for key in sum do
 					if key ~= "Weight" then
-						sum[key] += piece[key] or 0
+						sum[key] += (piece[key] or 0) * bonusMult
 					end
 				end
 				sum.Weight += Armor.WeightScore[piece.Weight] or 0
@@ -91,7 +99,9 @@ local function compute(data)
 		StaminaCostMult = 1 + 0.04 * weight,
 		BlockReduction = math.min(0.9, C.BlockReduction + 0.02 * weight),
 		DodgeIFrames = math.max(0.2, C.DodgeIFrames - 0.012 * weight + stats.Agility * 0.002),
-		DamageMult = 1 + stats.Strength * S.DamagePerStrength,
+		-- the equipped weapon's condition and upgrade level (Fists never wear)
+		DamageMult = (1 + stats.Strength * S.DamagePerStrength) * (if data.Equipped == "Fists" then 1 else Hideout.ConditionMult((data.Condition or {})[data.Equipped]) * (1 + ((data.Upgrades or {})[data.Equipped] or 0) * Hideout.UpgradeBonus.Weapon)),
+		WeaponBroken = data.Equipped ~= "Fists" and Hideout.ConditionMult((data.Condition or {})[data.Equipped]) == 0,
 		PostureDamageMult = 1 + stats.Strength * S.PostureDamagePerStrength,
 		ChargeGain = 1 + sum.ChargeGain + stats.Intelligence * S.ChargePerIntelligence,
 		FlickerRate = 1 + sum.FlickerRate + stats.Intelligence * F.RatePerIntelligence,
@@ -127,7 +137,7 @@ function Gear.Push(player)
 		Remotes.LoadoutChanged:FireClient(player, {
 			Stats = d.Stats, Tags = d.Tags, Resist = d.Resist, MaxPosture = d.MaxPosture, WeightScore = d.WeightScore,
 			FlickerRate = d.FlickerRate, FlashBonus = d.FlashBonus,
-			Weapon = data.Equipped, Armor = data.Armor, Cyber = data.Cyber, Slots = data.SkillSlots,
+			Weapon = data.Equipped, Armor = data.Armor, Cyber = data.Cyber, Slots = data.SkillSlots, Condition = data.Condition, Upgrades = data.Upgrades,
 		})
 	end
 end

@@ -13,6 +13,7 @@ local Recruit = require(script.Parent.Common.Recruit)
 
 local W = Config.War
 local Factions = {}
+Factions.IsDeployed = function(player) return true end -- replaced by Soldiers.Init
 Factions.Changed = Instance.new("BindableEvent") -- (scales)
 
 local store = DataStoreService:GetDataStore(W.Scales.StoreName)
@@ -89,9 +90,9 @@ function Factions.IncomePerMinute(faction)
 end
 
 local function sync()
+	local mine = { Union = pending.Union, Pact = pending.Pact }
+	pending.Union, pending.Pact = 0, 0
 	local ok, err = pcall(function()
-		local mine = { Union = pending.Union, Pact = pending.Pact }
-		pending.Union, pending.Pact = 0, 0
 		local result = store:UpdateAsync("scales", function(old)
 			old = old or { Union = 1000, Pact = 1000 }
 			for f in old do
@@ -105,6 +106,8 @@ local function sync()
 	end)
 	if not ok then
 		warn("[Factions] scales sync failed:", err)
+		pending.Union += mine.Union -- nothing earned is lost; it goes with the next sync
+		pending.Pact += mine.Pact
 	end
 	broadcast()
 end
@@ -113,7 +116,7 @@ function Factions.Init()
 	task.spawn(function()
 		while true do
 			sync()
-			task.wait(30)
+			task.wait(30 + math.random() * 15) -- jitter: every server syncing on the same beat would throttle the key
 		end
 	end)
 	-- credit income: every 15s, each conduit earns a slice of their faction's per-minute rate
@@ -122,7 +125,7 @@ function Factions.Init()
 			task.wait(15)
 			for _, player in Players:GetPlayers() do
 				local data, faction = PlayerData.Get(player), Factions.Of(player)
-				if data and faction then
+				if data and faction and Factions.IsDeployed(player) then -- income needs a recruit on the field, not a lobby
 					data.War.Credits += math.floor(Factions.IncomePerMinute(faction) / 4)
 					Remotes.RecruitApp:FireClient(player, Recruit.Snapshot(data.War))
 				end

@@ -29,11 +29,13 @@ function Guns.Make(id, condition, attachments)
 		parts[name] = condition or 100
 	end
 	local w = {
-		Id = id, Def = def, Parts = parts, Attachments = {}, Mag = def.MagSize, Spare = {}, Chamber = true, BoltOpen = false,
+		Id = id, Def = def, Parts = parts, Attachments = {}, Mag = def.MagSize - 1, Spare = {}, Chamber = true, BoltOpen = false, Reloading = false,
 		Mode = def.Modes[1], Jammed = false, LastShot = 0, Busy = 0, Aiming = false,
 	}
 	for slot, att in attachments or {} do
-		w.Attachments[slot] = { Id = att.Id, Condition = att.Condition or 100 }
+		if table.find(def.Slots, slot) and Firearms.Attachments[att.Id] and Firearms.Attachments[att.Id].Slot == slot then
+			w.Attachments[slot] = { Id = att.Id, Condition = att.Condition or 100 }
+		end
 	end
 	return w
 end
@@ -83,12 +85,9 @@ function Guns.CycleMode(w)
 end
 
 -- Pull the bolt: ejects whatever is chambered (live or dud) and chambers the next round.
-function Guns.Rack(w)
-	if isBusy(w) then
-		return
-	end
+-- A jam is cleared with Unjam, which takes longer; racking a jammed gun does nothing.
+local function rack(w)
 	busy(w, w.Def.Reload.Rack)
-	w.Jammed = false
 	w.Chamber = false
 	w.BoltOpen = false
 	if w.Mag and w.Mag > 0 then
@@ -99,12 +98,20 @@ function Guns.Rack(w)
 	end
 end
 
+function Guns.Rack(w)
+	if isBusy(w) or w.Jammed or w.Reloading then
+		return
+	end
+	rack(w)
+end
+
 -- Reload in stages: drop the magazine (keeping it as a spare if it has rounds), seat a fresh
 -- one, and if the chamber is empty, rack. A mint gun does this fast; a worn one is slower.
 function Guns.Reload(w)
-	if isBusy(w) or #w.Spare == 0 then
+	if isBusy(w) or w.Reloading or #w.Spare == 0 then
 		return false
 	end
+	w.Reloading = true
 	local r = w.Def.Reload
 	local wear = 1 + (1 - (w.Parts.Magazine or 100) / 100) * 0.5
 	-- pick the fullest spare
@@ -118,11 +125,12 @@ function Guns.Reload(w)
 	task.delay(r.EjectMag * wear, function()
 		w.Mag = fresh
 		busy(w, r.InsertMag * wear)
-		if not w.Chamber then
-			task.delay(r.InsertMag * wear, function()
-				Guns.Rack(w)
-			end)
-		end
+		task.delay(r.InsertMag * wear, function()
+			if not w.Chamber then
+				rack(w) -- the stage sequence owns the gun; it never gets stuck on a busy check
+			end
+			w.Reloading = false
+		end)
 	end)
 	return true
 end
@@ -131,9 +139,11 @@ function Guns.Unjam(w)
 	if not w.Jammed or isBusy(w) then
 		return
 	end
-	busy(w, 1.2 + (1 - (w.Parts.Receiver or 100) / 100) * 1.5)
-	task.delay(w.Busy - os.clock(), function()
-		Guns.Rack(w)
+	local seconds = 1.2 + (1 - (w.Parts.Receiver or 100) / 100) * 1.5
+	busy(w, seconds)
+	task.delay(seconds, function()
+		w.Jammed = false
+		rack(w)
 	end)
 end
 

@@ -12,6 +12,7 @@ local Armor = require(Shared:WaitForChild("Armor"))
 local Cybernetics = require(Shared:WaitForChild("Cybernetics"))
 local Config = require(Shared:WaitForChild("Config"))
 local Firearms = require(Shared:WaitForChild("Firearms"))
+local HideoutDefs = require(Shared:WaitForChild("Hideout"))
 local Items = require(Shared:WaitForChild("Items"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local Skills = require(Shared:WaitForChild("Skills"))
@@ -139,6 +140,7 @@ end)
 
 -- ===== Inventory / crafting (I) =====
 local lastInventory, lastEquipped, lastArmor, lastCyber = {}, "Fists", {}, {}
+local lastCondition, lastUpgrades = {}, {}
 
 local function renderInventory()
 	clear(invPanel)
@@ -166,7 +168,14 @@ local function renderInventory()
 			end })
 		end
 		local suffix = if def.Slot then (" [%s]"):format(def.Slot) else ""
-		addRow(invPanel, ("%s x%d%s"):format(def.Name, lastInventory[id], suffix), buttons)
+		if def.Type == "Weapon" or def.Type == "Armor" or def.Type == "Cybernetic" then
+			local cond, up = lastCondition[id] or 100, lastUpgrades[id] or 0
+			suffix ..= (" %d%%%s"):format(cond, if up > 0 then " +" .. up else "")
+			if cond <= 0 then
+				suffix ..= " BROKEN"
+			end
+		end
+		addRow(invPanel, ("%s x%d%s"):format(def.Name, lastInventory[id], suffix), buttons, if (lastCondition[id] or 100) <= 25 then Color3.fromRGB(255, 150, 120) else nil)
 	end
 	addRow(invPanel, "-- Crafting --", {})
 	for recipeId, recipe in Items.Recipes do
@@ -247,7 +256,9 @@ local function renderLoadout()
 end
 Remotes.LoadoutChanged.OnClientEvent:Connect(function(data)
 	loadout = data
+	lastCondition, lastUpgrades = data.Condition or {}, data.Upgrades or {}
 	renderLoadout()
+	renderInventory()
 end)
 
 Remotes.QuestChanged.OnClientEvent:Connect(function(title, progress, count)
@@ -585,6 +596,95 @@ Remotes.RecruitApp.OnClientEvent:Connect(function(snap, open)
 	renderApp()
 end)
 
+-- ===== Hideout panel (X at your workbench, or O) =====
+local hidePanel = panel(UDim2.fromOffset(560, 460), UDim2.new(0.5, -280, 0.5, -230))
+local hideout
+local function costText(cost)
+	local parts = {}
+	for id, n in cost do
+		table.insert(parts, ("%d %s"):format(n, Items.Defs[id] and Items.Defs[id].Name or id))
+	end
+	return if #parts > 0 then table.concat(parts, ", ") else "free"
+end
+local function renderHideout()
+	clear(hidePanel)
+	if not hideout then
+		return
+	end
+	local h = hideout
+	if not h.Site then
+		addRow(hidePanel, "No hideout. Find an orange site post in the city and claim it (10 scrap).", {})
+		addRow(hidePanel, "A hideout is where you repair, upgrade and store gear. Build walls: others can breach them and strip your vault.", {})
+		return
+	end
+	addRow(hidePanel, ("%s  -  %s  -  %s"):format(h.Name or "Hideout", h.TierName or "", if h.Owned then "yours" else "crew member"), {}, Color3.fromRGB(255, 170, 40))
+	local nextTier = HideoutDefs.Tiers[(h.Tier or 1) + 1]
+	if h.Owned and nextTier then
+		addRow(hidePanel, ("Upgrade workshop to %s: %s"):format(nextTier.Name, costText(nextTier.Cost)), { { text = "Upgrade", fn = function() Remotes.HideoutUpgrade:FireServer() end } })
+	end
+	addRow(hidePanel, "-- MODULES --", {})
+	for id, def in HideoutDefs.Modules do
+		if h.Modules and h.Modules[id] then
+			addRow(hidePanel, def.Name .. "  (built)", {}, Color3.fromRGB(140, 220, 160))
+		elseif h.Owned then
+			addRow(hidePanel, ("%s - %s  [%s, tier %d]"):format(def.Name, def.Desc, costText(def.Cost), def.Tier), { { text = "Build", fn = function() Remotes.HideoutBuild:FireServer(id) end } }, if def.Tier > (h.Tier or 1) then Color3.fromRGB(140, 140, 140) else nil)
+		end
+	end
+	addRow(hidePanel, "-- BENCH: repair and upgrade what you carry --", {})
+	for id, count in lastInventory do
+		local def = Items.Defs[id]
+		if def and (def.Type == "Weapon" or def.Type == "Armor" or def.Type == "Cybernetic") then
+			local cond, up = (h.Condition or {})[id] or 100, (h.Upgrades or {})[id] or 0
+			local buttons = {}
+			if cond < 100 then
+				table.insert(buttons, { text = "Repair", color = Color3.fromRGB(120, 90, 40), fn = function() Remotes.HideoutRepair:FireServer(id) end })
+			end
+			if up < 3 then
+				table.insert(buttons, { text = ("+%d"):format(up + 1), color = Color3.fromRGB(60, 110, 80), fn = function() Remotes.ItemUpgrade:FireServer(id) end })
+			end
+			if h.Modules and h.Modules.Vault then
+				table.insert(buttons, { text = "Store", fn = function() Remotes.VaultPut:FireServer(id, 1) end })
+			end
+			addRow(hidePanel, ("%s x%d  %d%%  +%d"):format(def.Name, count, cond, up), buttons, if cond <= 0 then Color3.fromRGB(255, 120, 120) else nil)
+		elseif def and def.Type == "Material" and h.Modules and h.Modules.Vault then
+			addRow(hidePanel, ("%s x%d"):format(def.Name, count), { { text = "Store all", fn = function() Remotes.VaultPut:FireServer(id, count) end } })
+		end
+	end
+	if h.Modules and h.Modules.Vault then
+		addRow(hidePanel, "-- VAULT --", {})
+		for id, count in h.Vault or {} do
+			local def = Items.Defs[id] or { Name = id }
+			local c, u = (h.VaultCondition or {})[id], (h.VaultUpgrades or {})[id]
+			addRow(hidePanel, ("%s x%d%s%s"):format(def.Name, count, if c then (" %d%%"):format(c) else "", if u then " +" .. u else ""), { { text = "Take", fn = function() Remotes.VaultTake:FireServer(id, 1) end }, { text = "Take all", fn = function() Remotes.VaultTake:FireServer(id, count) end } })
+		end
+	end
+	addRow(hidePanel, "-- CREW --", {})
+	for _, userId in h.Members or {} do
+		local name = tostring(userId)
+		for _, p in Players:GetPlayers() do
+			if p.UserId == userId then name = p.DisplayName end
+		end
+		addRow(hidePanel, name, if h.Owned then { { text = "Kick", color = Color3.fromRGB(120, 60, 60), fn = function() Remotes.HideoutKick:FireServer(userId) end } } else {})
+	end
+	if h.Owned then
+		for _, p in Players:GetPlayers() do
+			if p ~= player and not table.find(h.Members or {}, p.UserId) then
+				addRow(hidePanel, "Invite " .. p.DisplayName, { { text = "Invite", fn = function() Remotes.HideoutInvite:FireServer(p.Name) end } })
+			end
+		end
+	end
+	addRow(hidePanel, if h.Owned then "Abandon the hideout (the vault stays for whoever breaches it)" else "Leave the crew", { { text = "Leave", color = Color3.fromRGB(120, 60, 60), fn = function() Remotes.HideoutLeave:FireServer() end } })
+end
+Remotes.Hideout.OnClientEvent:Connect(function(state, open)
+	if state then
+		hideout = state
+	end
+	if open then
+		hidePanel.Visible = true
+	end
+	renderHideout()
+end)
+
 -- ===== Tutorial panel =====
 local tutorialPanel = make("Frame", { Size = UDim2.fromOffset(560, 112), Position = UDim2.new(0.5, -280, 0, 110), BackgroundColor3 = Color3.fromRGB(10, 14, 20), BackgroundTransparency = 0.15, Visible = false })
 make("UIStroke", { Color = Color3.fromRGB(0, 220, 255), Thickness = 1.5 }, tutorialPanel)
@@ -725,7 +825,7 @@ if player.Character then
 end
 
 local SKILL_KEYS = { [Enum.KeyCode.R] = 1, [Enum.KeyCode.Y] = 2, [Enum.KeyCode.V] = 3 }
-local TOGGLES = { [Enum.KeyCode.J] = statsPanel, [Enum.KeyCode.Tab] = invPanel, [Enum.KeyCode.L] = loadoutPanel, [Enum.KeyCode.N] = app }
+local TOGGLES = { [Enum.KeyCode.J] = statsPanel, [Enum.KeyCode.Tab] = invPanel, [Enum.KeyCode.L] = loadoutPanel, [Enum.KeyCode.N] = app, [Enum.KeyCode.O] = hidePanel }
 
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then

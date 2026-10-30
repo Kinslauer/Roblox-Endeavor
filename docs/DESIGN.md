@@ -32,6 +32,7 @@ Scavenge -> craft/upgrade -> take quests -> fight (NPCs, players, events) -> get
 | Devour | Consume remains for xp/charge/heal instead of looting them (Cursed Gear's devour). |
 | Helmetcam | First-person with visible body (TTK-style), toggled with P. |
 | The Front (war world) | Separate place sharing the profile. Neural Net uplink; Union vs Pact; global ever-tipping scales; the moving hill; recruit app (shop/locker/order/repair); simulated firearms with parts and malfunctions; ballistics with zones and armor; staged structures, craters, artillery; recruits drop everything damaged. |
+| Hideouts | Claimable, tiered workshops with modules, vault, crew, defenses; wear/repair/upgrade economy on salvage; NPC raid pressure scaling with worth; player vault theft that carries upgrades. |
 | Destruction & salvage | Breakable props -> salvage + grabbable chunks; grab/throw with parry deflect; shared explosions; tiered breach points on locked buildings; hourly dematerialization. Stories 1-7 + 10 (Restricted gore) of the design doc, plus timed catches; 8 (stress test) and 9 (war world) remain. |
 
 ## Roadmap

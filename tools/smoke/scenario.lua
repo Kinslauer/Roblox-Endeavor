@@ -408,6 +408,75 @@ corpseCount = 0
 for _, c in gore:GetChildren() do if c.Name == "Corpse" then corpseCount += 1 end end
 check("rematerialize clears corpses", corpseCount == 0)
 
+
+-- ===== Hideouts, wear, repair, upgrades, vault theft =====
+local Hideouts = M.mockEnv.__require(SSS.Server.Hideouts)
+local PlayerData = M.mockEnv.__require(SSS.Server.Common.PlayerData)
+check("hideout sites placed", #Hideouts.Sites >= 10)
+as(player)
+Inventory.Add(player, "Scrap", 200); Inventory.Add(player, "SheetMetal", 60); Inventory.Add(player, "Wire", 40); Inventory.Add(player, "Battery", 12); Inventory.Add(player, "Pipe", 10); Inventory.Add(player, "Cloth", 30); Inventory.Add(player, "Powder", 8)
+Remotes.HideoutClaim:FireServer(1); run(0.3)
+local site = Hideouts.Sites[1]
+check("claimed a site", site.Owner == player.UserId and site.Built ~= nil)
+Remotes.HideoutBuild:FireServer("Vault"); Remotes.HideoutBuild:FireServer("Walls"); Remotes.HideoutBuild:FireServer("Bunks"); run(0.5)
+local pd = PlayerData.Get(player)
+check("built vault, walls and bunks", pd.Hideout.Modules.Vault and pd.Hideout.Modules.Walls and pd.Hideout.Modules.Bunks and site.Gate ~= nil)
+Remotes.HideoutBuild:FireServer("Turret"); run(0.3)
+check("tier-1 cannot build a turret", not pd.Hideout.Modules.Turret)
+Remotes.HideoutUpgrade:FireServer(); run(0.3)
+check("workshop upgraded to tier 2", pd.Hideout.Tier == 2)
+
+-- wear: swing a weapon at the dummy; condition drops; repair restores it
+Remotes.EquipItem:FireServer("Sledge"); run(0.3)
+pc = player.Character
+local dummy2
+for _, m in workspace_:GetDescendants() do if m.Name == "Training Dummy" and m:FindFirstChildOfClass("Humanoid") and m:FindFirstChildOfClass("Humanoid").Health > 0 then dummy2 = m break end end
+pc.HumanoidRootPart.CFrame = M.CF.lookAt(dummy2.HumanoidRootPart.Position + M.V3.new(0, 0, 5), dummy2.HumanoidRootPart.Position)
+run(0.5)
+for _ = 1, 6 do Remotes.Attack:FireServer(); run(0.9) end
+check("weapon wears with use", (pd.Condition.Sledge or 100) < 100)
+local scrapBefore = Inventory.Count(player, "Scrap")
+Remotes.HideoutRepair:FireServer("Sledge"); run(0.3)
+check("bench repair restores condition for materials", pd.Condition.Sledge == 100 and Inventory.Count(player, "Scrap") < scrapBefore)
+Remotes.ItemUpgrade:FireServer("Sledge"); run(0.3)
+check("weapon upgraded to +1", pd.Upgrades.Sledge == 1)
+Remotes.ItemUpgrade:FireServer("Sledge"); run(0.3)
+check("+2 needs a forge", pd.Upgrades.Sledge == 1)
+Remotes.HideoutBuild:FireServer("Forge"); run(0.3); Remotes.ItemUpgrade:FireServer("Sledge"); run(0.3)
+check("+2 after building a forge", pd.Upgrades.Sledge == 2)
+local Gear = M.mockEnv.__require(SSS.Server.Gear)
+check("upgrade raises damage", Gear.Get(player).DamageMult > 1 + 5 * 0.03)
+
+-- vault: store the sledge, it carries its +2; a non-member cannot strip it while the gate stands
+Remotes.VaultPut:FireServer("Sledge", 1); run(0.3)
+check("stored in the vault with its upgrade", pd.Hideout.Vault.Sledge == 1 and pd.Hideout.VaultUpgrades.Sledge == 2 and Inventory.Count(player, "Sledge") == 0)
+local rival2 = p2.Character
+local vaultPart = site.Vault
+rival2.HumanoidRootPart.CFrame = M.CF.new(vaultPart.Position + M.V3.new(3, 0, 0)); run(0.2)
+for _, pr in vaultPart:GetChildren() do if pr.ClassName == "ProximityPrompt" then pr.Triggered:Fire(p2) end end
+run(0.3)
+check("gate standing: vault cannot be stripped", pd.Hideout.Vault.Sledge == 1)
+-- breach the gate with a charge, then strip it
+as(p2)
+Inventory.Add(p2, "BreachingCharge", 1)
+p2.Character.HumanoidRootPart.CFrame = M.CF.new(site.Gate.Door.Position + M.V3.new(0, 0, -4)); run(0.3)
+Remotes.UseItem:FireServer("BreachingCharge"); run(5)
+check("raider breached the compound gate", site.Gate:FindFirstChild("Door") == nil)
+p2.Character.HumanoidRootPart.CFrame = M.CF.new(vaultPart.Position + M.V3.new(3, 0, 0)); run(0.2)
+for _, pr in vaultPart:GetChildren() do if pr.ClassName == "ProximityPrompt" then pr.Triggered:Fire(p2) end end
+run(0.3)
+local rd = PlayerData.Get(p2)
+check("vault stripped: thief holds the +2 sledge, owner lost it", next(pd.Hideout.Vault) == nil and Inventory.Count(p2, "Sledge") == 1 and rd.Upgrades.Sledge == 2)
+as(player)
+-- crew: invite the rival (after they drop their own claim-less state), they spawn at the bunks
+Remotes.HideoutInvite:FireServer("Rival"); run(0.3)
+check("crew member added", table.find(pd.Hideout.Members, p2.UserId) ~= nil)
+check("crew spawns at the bunks", Hideouts.SpawnCFrame(p2) ~= nil)
+-- NPC raid pressure
+local before = #game_:GetService("CollectionService"):GetTagged("NPC")
+Hideouts.NpcRaid(site); run(0.5)
+check("npc raid spawns raiders at the compound", #game_:GetService("CollectionService"):GetTagged("NPC") > before)
+
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

@@ -119,7 +119,25 @@ Config.War = {
 	RespawnSeconds = 8,
 	Artillery = { Cooldown = 120, Shells = 6, Radius = 16, Damage = 110, Spread = 25, Delay = 6 },
 	BodyCapPerSector = 60,
+	Entrench = {
+		DigSeconds = 4, -- hold to dig a foxhole with the entrenching tool every recruit carries
+		FoxholeDepth = 3.5,
+		FoxholeRadius = 3.2,
+		MinClearance = 7, -- studs from a structure or another hole: you dig in the open, not through walls
+		SandbagSeconds = 2.5,
+		SandbagsCarried = 3, -- low sandbag sections a recruit can carry from the shop
+		MaxPerSector = 40, -- earthworks cap per sector; the oldest collapse first
+	},
 	SectorRebuildSeconds = 240, -- an empty sector the hill has left rebuilds after this
+}
+
+Config.Hideouts = {
+	Sites = 12, -- claimable sites laid out through the city and outskirts
+	Radius = 34, -- compound half-size
+	RaidBaseInterval = 420, -- seconds between NPC raid rolls per hideout at tier 1 (divided by RaidWeight)
+	RaidersPerMember = 2,
+	TurretHostileNPC = true,
+	MedbayHealPerSecond = 2,
 }
 
 Config.SpawnProtection = 8 -- seconds of invulnerability after spawning into the open world

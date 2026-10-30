@@ -42,6 +42,9 @@ function Inventory.Remove(player, itemId, count)
 	end
 	local left = profile.Inventory[itemId] - count
 	profile.Inventory[itemId] = if left > 0 then left else nil
+	if left <= 0 then
+		profile.Condition[itemId], profile.Upgrades[itemId] = nil, nil
+	end
 	Gear.Validate(player) -- unequips anything no longer owned
 	Inventory.Push(player)
 	return true

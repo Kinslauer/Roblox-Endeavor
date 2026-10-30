@@ -98,7 +98,7 @@ local function describe()
 	local mag = if weapon.Mag == nil then "NO MAG" else ("mag %d/%d"):format(weapon.Mag, weapon.MagSize)
 	local status = if weapon.Jammed then "JAMMED (T to clear)" elseif weapon.BoltOpen then "BOLT OPEN (R)" elseif not weapon.Chamber then "EMPTY CHAMBER (T)" else "ready"
 	weaponPanel.Text = ("%s  [%s]\n%s   %s   spare %d\n%s\n%s"):format(weapon.Name, slotName, weapon.Mode:upper(), mag, weapon.Spare, status, table.concat(parts, "  "))
-	kitLabel.Text = ("grenades %d   dressings %d   armor %s   helmet %s"):format(kit.Grenades or 0, kit.Medkits or 0,
+	kitLabel.Text = ("grenades %d   dressings %d   sandbags %d   armor %s   helmet %s"):format(kit.Grenades or 0, kit.Medkits or 0, kit.Sandbags or 0,
 		if kit.Armor then ("%d%%"):format(kit.Armor.Condition) else "-", if kit.Helmet then ("%d%%"):format(kit.Helmet.Condition) else "-")
 end
 Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c)
@@ -131,6 +131,12 @@ Remotes.Soldier.OnClientEvent:Connect(function(kind, a, b)
 	elseif kind == "Hurt" then
 		hurtFrame.BackgroundTransparency = 0.55
 		TweenService:Create(hurtFrame, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
+	elseif kind == "Entrenching" then
+		if a then
+			announce(if a == "Dig" then ("Digging in... %ds. Stay still."):format(b) else "Stacking sandbags...", "Info", b)
+		else
+			announce("Interrupted.", "Kill", 1)
+		end
 	elseif kind == "Deployed" then
 		announce(("Deployed with the %s%s."):format(a, if b then " as a conscript: order a loadout (M) before next time" else ""), "Info", 6)
 	elseif kind == "Died" then
@@ -248,7 +254,11 @@ end)
 
 -- ===== explosions / world =====
 Remotes.World.OnClientEvent:Connect(function(kind, a, b)
-	if kind == "Explosion" then
+	if kind == "Dig" then
+		local puff = make("Part", { Anchored = true, CanCollide = false, CanQuery = false, Size = Vector3.new(3, 1, 3), Position = a + Vector3.new(0, 1, 0), Color = Color3.fromRGB(70, 60, 45), Material = Enum.Material.Ground, Transparency = 0.3 }, workspace)
+		TweenService:Create(puff, TweenInfo.new(1), { Transparency = 1, Position = a + Vector3.new(0, 4, 0) }):Play()
+		Debris:AddItem(puff, 1)
+	elseif kind == "Explosion" then
 		local sphere = make("Part", { Shape = Enum.PartType.Ball, Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon,
 			Color = Color3.fromRGB(255, 150, 60), Size = Vector3.new(2, 2, 2), Position = a, Transparency = 0.1 }, workspace)
 		TweenService:Create(sphere, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = Vector3.new(b * 2, b * 2, b * 2), Transparency = 1 }):Play()
@@ -298,6 +308,10 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		if ray then
 			Remotes.Artillery:FireServer(ray.Position)
 		end
+	elseif key == Enum.KeyCode.F then
+		Remotes.Entrench:FireServer("Dig")
+	elseif key == Enum.KeyCode.V then
+		Remotes.Entrench:FireServer("Sandbag")
 	elseif key == Enum.KeyCode.M then
 		app.Visible = not app.Visible
 	end
@@ -314,8 +328,13 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 -- full auto: keep sending trigger pulls while held; the server's RPM gate decides what fires
+local lastAuto = 0
 RunService.Heartbeat:Connect(function()
 	if firing and weapon and weapon.Mode == "Auto" then
-		Remotes.Fire:FireServer(camera.CFrame.LookVector)
+		local rpm = (Firearms.Defs[weapon.Id] and Firearms.Defs[weapon.Id].RPM) or 600
+		if os.clock() - lastAuto >= 60 / rpm then
+			lastAuto = os.clock()
+			Remotes.Fire:FireServer(camera.CFrame.LookVector)
+		end
 	end
 end)

@@ -144,6 +144,8 @@ function Battlefield.Crater(position, radius)
 	local index = Battlefield.SectorAt(position)
 	if index then
 		scorch:SetAttribute("Sector", index)
+	else
+		game:GetService("Debris"):AddItem(scorch, 600) -- outside the grid nothing rebuilds it, so it fades
 	end
 end
 
@@ -174,7 +176,7 @@ local function buildSector(index)
 	-- two trench lines (sunken walkways with sandbag lips), one each way
 	local function trench(center, length, horizontal)
 		local size = if horizontal then Vector3.new(length, 4, 6) else Vector3.new(6, 4, length)
-		part(folder, { Name = "Trench", Size = size, Position = center + Vector3.new(0, GROUND_TOP - 2, 0), Color = MUD, Material = Enum.Material.Mud, CanCollide = false })
+		part(folder, { Name = "Trench", Size = size, Position = center + Vector3.new(0, GROUND_TOP - 2, 0), Color = MUD, Material = Enum.Material.Mud, CanCollide = false, CanQuery = false })
 		part(folder, { Name = "TrenchFloor", Size = Vector3.new(size.X, 1, size.Z), Position = center + Vector3.new(0, GROUND_TOP - 3.5, 0), Color = MUD, Material = Enum.Material.Mud })
 		for side = -1, 1, 2 do
 			local lip = if horizontal then Vector3.new(0, 0, side * 3.8) else Vector3.new(side * 3.8, 0, 0)

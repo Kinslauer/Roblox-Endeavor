@@ -22,6 +22,11 @@ local Soldiers = {}
 local soldiers = {} -- [player] = { Kit, Weapons = { Primary, Sidearm }, Active = "Primary", Armor, Helmet, Grenades, Medkits, LastHit = { by, t } }
 local artilleryReady = { Union = 0, Pact = 0 }
 local bodies = {} -- ordered
+local earthworks = {} -- [sectorIndex] = ordered list of foxholes/sandbags
+local digging = {} -- [player] = finish time
+local spawning = {} -- [player] = true while Spawn is yielding
+local deathToken = {} -- [player] = n; a delayed respawn only fires for the death it belongs to
+
 local rng = Random.new()
 
 local function warOf(player)
@@ -32,7 +37,7 @@ end
 local function pushWeapon(player)
 	local s = soldiers[player]
 	if s then
-		Remotes.Weapon:FireClient(player, "State", Guns.Snapshot(s.Weapons[s.Active]), s.Active, { Grenades = s.Grenades, Medkits = s.Medkits,
+		Remotes.Weapon:FireClient(player, "State", Guns.Snapshot(s.Weapons[s.Active]), s.Active, { Grenades = s.Grenades, Medkits = s.Medkits, Sandbags = s.Sandbags,
 			Armor = s.Armor and { Id = s.Armor.Id, Condition = s.Armor.Condition }, Helmet = s.Helmet and { Id = s.Helmet.Id, Condition = s.Helmet.Condition } })
 	end
 end
@@ -66,9 +71,10 @@ end
 
 function Soldiers.Spawn(player)
 	local war = warOf(player)
-	if not war or not player.Parent then
+	if not war or not player.Parent or soldiers[player] or spawning[player] then
 		return
 	end
+	spawning[player] = true
 	local faction = Factions.Assign(player)
 	local kit = Recruit.Deploy(war)
 	if not kit.Primary and not kit.Sidearm then
@@ -78,6 +84,7 @@ function Soldiers.Spawn(player)
 	local char = player.Character
 	local root = char and char:WaitForChild("HumanoidRootPart", 10)
 	local hum = char and char:WaitForChild("Humanoid", 10)
+	spawning[player] = nil
 	if not (root and hum) then
 		return
 	end
@@ -88,7 +95,7 @@ function Soldiers.Spawn(player)
 	local s = {
 		Kit = kit, Weapons = buildWeapons(kit), Active = if kit.Primary then "Primary" else "Sidearm",
 		Armor = kit.Armor and { Id = kit.Armor.Id, Condition = kit.Armor.Condition }, Helmet = kit.Helmet and { Id = kit.Helmet.Id, Condition = kit.Helmet.Condition },
-		Grenades = kit.Grenades or 0, Medkits = kit.Medkits or 0, Faction = faction, Protected = os.clock() + Config.SpawnProtection,
+		Grenades = kit.Grenades or 0, Medkits = kit.Medkits or 0, Sandbags = kit.Sandbags or 0, Faction = faction, Protected = os.clock() + Config.SpawnProtection,
 	}
 	soldiers[player] = s
 	pushWeapon(player)
@@ -131,6 +138,11 @@ function Soldiers.Damage(victimModel, amount, attacker, zone, pen, kind)
 	if s then
 		amount = armorAbsorb(s, zone or "Torso", amount, pen or 0)
 		s.LastHit = { by = attacker, t = os.clock(), kind = kind }
+		if digging[victim] then
+			digging[victim] = nil -- a hit stops the shovel; you stand back up
+			hum.WalkSpeed = 14
+			Remotes.Soldier:FireClient(victim, "Entrenching", nil)
+		end
 	end
 	hum:TakeDamage(amount)
 	if victim then
@@ -225,7 +237,7 @@ function Soldiers.OnDied(player, char)
 	end
 	local killer = s.LastHit and os.clock() - s.LastHit.t < 15 and s.LastHit.by or nil
 	local root = char:FindFirstChild("HumanoidRootPart")
-	if killer and killer ~= player then
+	if killer and killer ~= player and Factions.Of(killer) ~= s.Faction then -- no credit for shooting your own side
 		local kw = warOf(killer)
 		if kw then
 			kw.RecruitKills += 1
@@ -235,13 +247,22 @@ function Soldiers.OnDied(player, char)
 		Hill.OnKill(Factions.Of(killer), root and root.Position or Vector3.zero)
 		Remotes.Announce:FireAllClients(("%s's recruit was killed by %s's recruit."):format(player.DisplayName, killer.DisplayName), "Kill")
 	end
-	dropBody(player, char, s)
+	if not s.Kit.Conscript then
+		dropBody(player, char, s) -- a conscript's free pistol is not loot: no farming bodies for pistols
+	end
 	Remotes.Soldier:FireClient(player, "Died", killer and killer.DisplayName)
+	deathToken[player] = (deathToken[player] or 0) + 1
+	local token = deathToken[player]
 	task.delay(W.RespawnSeconds, function()
-		if player.Parent then
+		if player.Parent and deathToken[player] == token then
 			Soldiers.Spawn(player)
 		end
 	end)
+end
+
+function Soldiers.IsDeployed(player)
+	local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	return soldiers[player] ~= nil and hum ~= nil and hum.Health > 0
 end
 
 -- ===== explosions on the Front (grenades, artillery) =====
@@ -269,6 +290,126 @@ function Soldiers.Explode(origin, radius, damage, attacker)
 	Battlefield.Crater(origin, radius * 0.5)
 end
 
+-- ===== entrenching: dig a foxhole, or stack a low sandbag section (open ground only) =====
+local function openGround(position, selfPlayer)
+	local E = W.Entrench
+	for _, model in Battlefield.StructuresNear(position, E.MinClearance) do
+		return false, "too close to a building"
+	end
+	local index = Battlefield.SectorAt(position)
+	for _, work in earthworks[index or 0] or {} do
+		if work.Parent and (work.Position - position).Magnitude < E.MinClearance then
+			return false, "already dug in here"
+		end
+	end
+	return true
+end
+
+local function registerWork(part)
+	local index = Battlefield.SectorAt(part.Position) or 0
+	earthworks[index] = earthworks[index] or {}
+	table.insert(earthworks[index], part)
+	part.Destroying:Connect(function()
+		local list = earthworks[index]
+		local i = list and table.find(list, part)
+		if i then
+			table.remove(list, i)
+		end
+	end)
+	while #earthworks[index] > W.Entrench.MaxPerSector do
+		local oldest = table.remove(earthworks[index], 1)
+		if oldest.Parent then
+			oldest:Destroy()
+		end
+	end
+end
+
+local function foxhole(player, position)
+	local E = W.Entrench
+	-- dig through whatever is there: fallen recruits in the hole are buried
+	for _, body in table.clone(bodies) do
+		if body.Parent and (body.Position - position).Magnitude < E.FoxholeRadius + 1 then
+			body:Destroy()
+		end
+	end
+	local ground = 2
+	local hole = Instance.new("Part")
+	hole.Name, hole.Shape = "Foxhole", Enum.PartType.Cylinder
+	hole.Size = Vector3.new(E.FoxholeDepth, E.FoxholeRadius * 2, E.FoxholeRadius * 2)
+	hole.CFrame = CFrame.new(position.X, ground - E.FoxholeDepth / 2 + 0.05, position.Z) * CFrame.Angles(0, 0, math.pi / 2)
+	hole.Color, hole.Material, hole.Anchored, hole.CanCollide = Color3.fromRGB(45, 38, 28), Enum.Material.Mud, true, false
+	hole.Parent = workspace
+	-- the floor you stand on, and the lip of spoil that is the actual cover
+	local floor = Instance.new("Part")
+	floor.Name, floor.Shape, floor.Size = "FoxholeFloor", Enum.PartType.Cylinder, Vector3.new(0.5, E.FoxholeRadius * 2, E.FoxholeRadius * 2)
+	floor.CFrame = CFrame.new(position.X, ground - E.FoxholeDepth, position.Z) * CFrame.Angles(0, 0, math.pi / 2)
+	floor.Color, floor.Material, floor.Anchored = Color3.fromRGB(45, 38, 28), Enum.Material.Mud, true
+	floor.Parent = hole
+	local lip = Instance.new("Part")
+	lip.Name, lip.Shape, lip.Size = "Spoil", Enum.PartType.Cylinder, Vector3.new(1.2, E.FoxholeRadius * 2 + 2.5, E.FoxholeRadius * 2 + 2.5)
+	lip.CFrame = CFrame.new(position.X, ground + 0.6, position.Z) * CFrame.Angles(0, 0, math.pi / 2)
+	lip.Color, lip.Material, lip.Anchored = Color3.fromRGB(70, 60, 45), Enum.Material.Ground, true
+	lip.Parent = hole
+	local terrain = workspace:FindFirstChildOfClass("Terrain")
+	if terrain and terrain.FillBall then
+		pcall(function()
+			terrain:FillBall(Vector3.new(position.X, ground - 1, position.Z), E.FoxholeRadius, Enum.Material.Air)
+		end)
+	end
+	registerWork(hole)
+	Remotes.World:FireAllClients("Dig", position)
+	return hole
+end
+
+local function sandbag(player, position, look)
+	local bag = Instance.new("Part")
+	bag.Name, bag.Size = "LowSandbags", Vector3.new(5, 1.6, 1.4)
+	bag.CFrame = CFrame.lookAt(Vector3.new(position.X, 2 + 0.8, position.Z), Vector3.new(position.X + look.X, 2 + 0.8, position.Z + look.Z))
+	bag.Color, bag.Material, bag.Anchored = Color3.fromRGB(140, 125, 90), Enum.Material.Fabric, true
+	bag.Parent = workspace
+	registerWork(bag)
+	return bag
+end
+
+local function onEntrench(player, mode)
+	local s = soldiers[player]
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (s and root and hum and hum.Health > 0) or digging[player] then
+		return
+	end
+	local E = W.Entrench
+	local look = root.CFrame.LookVector
+	local spot = root.Position + Vector3.new(look.X, 0, look.Z).Unit * (if mode == "Dig" then 0 else 4)
+	local ok, why = openGround(Vector3.new(spot.X, 2, spot.Z), player)
+	if not ok then
+		Remotes.Announce:FireClient(player, "Can't entrench: " .. why, "Info")
+		return
+	end
+	if mode == "Sandbag" and s.Sandbags <= 0 then
+		Remotes.Announce:FireClient(player, "No sandbags left. The shop sells them.", "Info")
+		return
+	end
+	local seconds = if mode == "Dig" then E.DigSeconds else E.SandbagSeconds
+	digging[player] = os.clock() + seconds
+	hum.WalkSpeed = 0
+	Remotes.Soldier:FireClient(player, "Entrenching", mode, seconds)
+	task.delay(seconds, function()
+		digging[player] = nil
+		if not (player.Parent and player.Character == char and hum.Health > 0) then
+			return
+		end
+		hum.WalkSpeed = 14
+		if mode == "Dig" then
+			foxhole(player, Vector3.new(spot.X, 2, spot.Z))
+		else
+			s.Sandbags -= 1
+			sandbag(player, spot, look)
+			pushWeapon(player)
+		end
+	end)
+end
 -- ===== remotes =====
 local function active(player)
 	local s = soldiers[player]
@@ -286,12 +427,20 @@ local function onFire(player, dir)
 		return
 	end
 	-- the client aims; the server refuses directions a body facing that way could not shoot
-	if root.CFrame.LookVector:Dot(dir.Unit) < 0.2 then
+	if dir.Magnitude < 0.5 or root.CFrame.LookVector:Dot(dir.Unit) < 0.2 then
 		return
 	end
 	local result = Guns.Trigger(w)
 	if result == "fired" then
-		local muzzle = root.Position + Vector3.new(0, 1.5, 0) + dir.Unit * 2
+		local eye = root.Position + Vector3.new(0, 1.5, 0)
+		local muzzle = eye + dir.Unit * 2
+		local ray = RaycastParams.new()
+		ray.FilterType = Enum.RaycastFilterType.Exclude
+		ray.FilterDescendantsInstances = { player.Character }
+		local wall = workspace:Raycast(eye, muzzle - eye, ray)
+		if wall then
+			muzzle = wall.Position - dir.Unit * 0.3 -- muzzle against a wall: the round starts on your side of it
+		end
 		Guns.Shoot(player, w, muzzle, dir.Unit, function(model, zone, damage, pen, at)
 			local dealt = Soldiers.Damage(model, damage, player, zone, pen, "Bullet")
 			Remotes.Weapon:FireAllClients("Impact", at, Vector3.yAxis, dealt > 0)
@@ -300,11 +449,14 @@ local function onFire(player, dir)
 	elseif result ~= "busy" then
 		Remotes.Weapon:FireClient(player, "Click", result)
 	end
-	pushWeapon(player)
+	if result ~= "busy" then
+		pushWeapon(player)
+	end
 end
 
 function Soldiers.Init()
 	Players.CharacterAutoLoads = false
+	Factions.IsDeployed = Soldiers.IsDeployed
 	Net.On("Fire", { rate = 20, burst = 30, args = { "vector" } }, onFire)
 	Net.On("Reload", { rate = 2, burst = 3 }, function(player)
 		local _, w = active(player)
@@ -341,7 +493,8 @@ function Soldiers.Init()
 		local s = active(player)
 		if s then
 			local other = if s.Active == "Primary" then "Sidearm" else "Primary"
-			if s.Weapons[other] then
+			local cur = s.Weapons[s.Active]
+			if s.Weapons[other] and not (cur and os.clock() < cur.Busy) then
 				s.Active = other
 				pushWeapon(player)
 			end
@@ -356,7 +509,7 @@ function Soldiers.Init()
 	Net.On("Grenade", { rate = 1, burst = 2, args = { "vector" } }, function(player, dir)
 		local s = active(player)
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		if not (s and root) or s.Grenades <= 0 then
+		if not (s and root) or s.Grenades <= 0 or dir.Magnitude < 0.5 then
 			return
 		end
 		s.Grenades -= 1
@@ -405,6 +558,11 @@ function Soldiers.Init()
 			end
 		end)
 	end)
+	Net.On("Entrench", { rate = 1, burst = 2, args = { "string" } }, function(player, mode)
+		if mode == "Dig" or mode == "Sandbag" then
+			onEntrench(player, mode)
+		end
+	end)
 	Net.On("Deploy", { rate = 1, burst = 2 }, function(player)
 		if not soldiers[player] and PlayerData.Get(player) then
 			Soldiers.Spawn(player)
@@ -449,7 +607,14 @@ function Soldiers.Init()
 	end
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(function(player)
+		local s = soldiers[player]
+		if s and player.Character and not s.Kit.Conscript then
+			dropBody(player, player.Character, s) -- quitting mid-fight leaves your gear on the field like dying would
+		end
 		soldiers[player] = nil
+		digging[player] = nil
+		spawning[player] = nil
+		deathToken[player] = nil
 		PlayerData.Release(player)
 	end)
 	for _, p in Players:GetPlayers() do

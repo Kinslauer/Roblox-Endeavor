@@ -27,6 +27,7 @@ function Recruit.Catalog()
 	out.Ammo = { Kind = "Ammo", Name = "Ammunition (3 magazines)", Price = 60 }
 	out.Grenade = { Kind = "Grenade", Name = "Frag grenade", Price = 90 }
 	out.Medkit = { Kind = "Medkit", Name = "Field dressing", Price = 50 }
+	out.Sandbags = { Kind = "Sandbags", Name = "Sandbags (3 low sections)", Price = 40 }
 	return out
 end
 local CATALOG = Recruit.Catalog()
@@ -106,21 +107,29 @@ function Recruit.Order(war, loadout)
 	if type(loadout) ~= "table" then
 		return false
 	end
+	-- each slot only takes its own kind of thing: a plate carrier is not a helmet
+	local KIND = {
+		Primary = function(id) return Firearms.Defs[id] ~= nil and Firearms.Defs[id].Class ~= "Pistol" end,
+		Sidearm = function(id) return Firearms.Defs[id] ~= nil and Firearms.Defs[id].Class == "Pistol" end,
+		Armor = function(id) return Firearms.Armor[id] ~= nil and not Firearms.Armor[id].Head end,
+		Helmet = function(id) return Firearms.Armor[id] ~= nil and Firearms.Armor[id].Head == true end,
+	}
 	local order = { Attachments = {} }
 	for _, slot in { "Primary", "Sidearm", "Armor", "Helmet" } do
 		local id = loadout[slot]
 		if id ~= nil then
-			if type(id) ~= "string" or not war.Locker[id] then
+			if type(id) ~= "string" or not war.Locker[id] or not KIND[slot](id) then
 				return false
 			end
 			order[slot] = id
 		end
 	end
-	if type(loadout.Attachments) == "table" then
+	if type(loadout.Attachments) == "table" and order.Primary then
+		local slots = Firearms.Defs[order.Primary].Slots
 		for _, slot in { "Optic", "Muzzle", "Grip" } do
 			local id = loadout.Attachments[slot]
 			if id ~= nil then
-				if type(id) ~= "string" or not war.Locker[id] or not Firearms.Attachments[id] or Firearms.Attachments[id].Slot ~= slot then
+				if type(id) ~= "string" or not war.Locker[id] or not Firearms.Attachments[id] or Firearms.Attachments[id].Slot ~= slot or not table.find(slots, slot) then
 					return false
 				end
 				order.Attachments[slot] = id
@@ -145,17 +154,17 @@ function Recruit.Deploy(war)
 			end
 		end
 	end
-	for slot, id in order.Attachments or {} do
-		local condition = Recruit.LockerTake(war, id, 1)
-		if condition then
-			kit.Attachments[slot] = { Id = id, Condition = condition }
+	if kit.Primary then
+		for slot, id in order.Attachments or {} do
+			local condition = Recruit.LockerTake(war, id, 1)
+			if condition then
+				kit.Attachments[slot] = { Id = id, Condition = condition }
+			end
 		end
 	end
-	-- consumables: take what is there, up to a carry limit
-	kit.Magazines = (Recruit.LockerTake(war, "Ammo", math.min(3, (war.Locker.Ammo or { count = 0 }).count)) and math.min(3, 3)) or 0
-	if kit.Magazines == 0 and not war.Locker.Ammo then
-		kit.Magazines = 0
-	end
+	-- consumables: take what is there, up to a carry limit (one Ammo unit = one magazine)
+	local mags = math.min(3, (war.Locker.Ammo or { count = 0 }).count)
+	kit.Magazines = if mags > 0 and Recruit.LockerTake(war, "Ammo", mags) then mags else 0
 	for _ = 1, 2 do
 		if Recruit.LockerTake(war, "Grenade", 1) then
 			kit.Grenades += 1
@@ -164,6 +173,7 @@ function Recruit.Deploy(war)
 	if Recruit.LockerTake(war, "Medkit", 1) then
 		kit.Medkits = 1
 	end
+	kit.Sandbags = if Recruit.LockerTake(war, "Sandbags", 1) then 3 else 0
 	war.Deployments += 1
 	return kit
 end

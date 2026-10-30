@@ -6,6 +6,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local City = require(script.Parent.City)
 local Combat = require(script.Parent.Combat)
 local Gear = require(script.Parent.Gear)
+local Hideouts = require(script.Parent.Hideouts)
 local Inventory = require(script.Parent.Inventory)
 local Permadeath = require(script.Parent.Permadeath)
 local PlayerData = require(script.Parent.Common.PlayerData)
@@ -37,7 +38,7 @@ function Lifecycle.Spawn(player)
 	if not (root and hum) then
 		return
 	end
-	char:PivotTo(WorldPhase.GetSpawnCFrame(player))
+	char:PivotTo(Hideouts.SpawnCFrame(player) or WorldPhase.GetSpawnCFrame(player))
 	Gear.Recompute(player) -- fresh derived stats (important after a permadeath wipe)
 	Stats.Apply(player, true)
 	Stats.Push(player)

@@ -81,6 +81,21 @@ server, cleared by dematerialization). `"Moderate"` keeps only a light distant s
 in the Roblox Creator Dashboard questionnaire** (Restricted = age-verified 18+ only, blocked in some regions, cannot be
 changed back - see the design doc, section 9); the code only makes the game match it.
 
+## Hideouts, wear and upgrades
+- **Wear**: every conduit weapon, armor piece and implant has a condition (shown in `Tab` and `L`). Landing hits wears
+  your weapon; taking hits wears what you wear. Worn gear does less (down to half); at 0% a weapon swings as fists and
+  armor protects nothing. Repair costs salvage by kind (weapons: scrap + pipe; armor: sheet metal + cloth; implants:
+  wire + batteries). Upgrades (+1/+2/+3) add damage, resist or implant strength and cost more each level.
+- **Hideouts** (`src/server/Hideouts.lua`, `src/shared/Hideout.lua`): twelve orange site posts in the city and outskirts;
+  claim one for 10 scrap (`X`). `X` at your bench (or `O`) opens the panel. Tiers: Tinkerer's Bench -> Workshop -> Foundry,
+  each raising the upgrade cap, vault size and module count. Modules: vault, walls + gate (gate tier rises with your
+  workshop), alarm, generator, arc turret, forge (+2 and up), bunks (your crew spawns there), medbay.
+- **Crew**: invite other conduits; they use your bench and vault and spawn at your bunks.
+- **Raids**: a compound with a vault rolls NPC raids on its own clock, faster at higher tiers and with a bigger crew;
+  raiders also work the gate. Any player who breaches the gate can strip the vault - the stolen gear keeps its
+  condition and upgrades, so a raid can erase your progress. The hideout outlives permadeath (a crew keeps it) but only
+  stands while its owner is on the server; a site taken while you were away is lost.
+
 ## The Front (war world)
 A second place built from `war.project.json` (`rojo build war.project.json -o build/Front.rbxlx`), sharing the conduit
 profile (same ProfileService store, same universe). Code lives in `src/war/` and `src/common/`.
@@ -102,7 +117,9 @@ profile (same ProfileService store, same universe). Code lives in `src/war/` and
   limbs x0.6); armor plates absorb damage by condition and penetration.
 - **Controls** (TTK/Tarkov): `LMB` fire · `RMB` aim · `R` reload · `T` rack / clear jam · `B` selector · `1`/`2` weapon ·
   `G` frag · `H` field dressing · `Q`/`E` lean · `K` call artillery on your aim point (inside the hill, 2 min cooldown) ·
-  `M` recruit app. Always first person.
+  `M` recruit app · `F` dig a foxhole (4s, stay still; a hit stops you) · `V` stack a low sandbag section (3 per
+  deployment from the shop). Entrenching only works on open ground, away from buildings and other works; digging
+  through fallen recruits buries them. Always first person.
 - **Destruction**: structures have four stages (Intact -> Damaged -> Ruined -> Rubble) and only explosives damage them;
   shells and grenades carve craters (terrain when present, scorch otherwise). Bodies persist up to the sector cap.
 - Test it without Roblox: `python3 tools/smoke/gen.py tools/smoke/war.lua > /tmp/hw.lua && luau /tmp/hw.lua`.

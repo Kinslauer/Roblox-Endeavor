@@ -10,6 +10,7 @@ local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local Weapons = require(Shared.Weapons)
+local Hideout = require(Shared.Hideout)
 local Gear = require(script.Parent.Gear)
 local Stats = require(script.Parent.Stats)
 local Net = require(script.Parent.Common.Net)
@@ -122,6 +123,48 @@ function Combat.AddCharge(char, amount)
 	if max then
 		char:SetAttribute("Charge", math.clamp((char:GetAttribute("Charge") or 0) + amount, 0, max))
 	end
+end
+
+-- ===== Wear (see shared/Hideout) =====
+local wearDirty = {} -- players whose gear changed condition; recomputed at most a few times a second
+
+local function markWear(player)
+	if not wearDirty[player] then
+		wearDirty[player] = true
+		task.delay(0.5, function()
+			wearDirty[player] = nil
+			if player.Parent then
+				Gear.Recompute(player)
+			end
+		end)
+	end
+end
+
+function Combat.WearWeapon(player, weapon)
+	local data = PlayerData.Get(player)
+	if not data or data.Equipped == "Fists" or not Weapons.Defs[data.Equipped] then
+		return
+	end
+	local id = data.Equipped
+	data.Condition[id] = math.max(0, (data.Condition[id] or 100) - Hideout.Wear.WeaponPerHit)
+	if data.Condition[id] <= Hideout.Wear.BrokenAt then
+		Remotes.Announce:FireClient(player, Weapons.Defs[id].Name .. " is broken. Repair it at a bench.", "Info")
+	end
+	markWear(player)
+end
+
+function Combat.WearWorn(player)
+	local data = PlayerData.Get(player)
+	if not data then
+		return
+	end
+	for _, id in data.Armor do
+		data.Condition[id] = math.max(0, (data.Condition[id] or 100) - Hideout.Wear.ArmorPerHitTaken)
+	end
+	for _, id in data.Cyber do
+		data.Condition[id] = math.max(0, (data.Condition[id] or 100) - Hideout.Wear.CyberPerHitTaken)
+	end
+	markWear(player)
 end
 
 -- ===== Flickering cursed energy (Black Flash) =====
@@ -347,6 +390,9 @@ local function applyDamage(attacker, victim, amount, opts)
 
 	vhum:TakeDamage(amount)
 	victim:SetAttribute("LastHitType", opts.Type or "Physical")
+	if vp then
+		Combat.WearWorn(vp)
+	end
 	if attacker ~= victim then
 		tag(attacker, victim)
 	end
@@ -430,6 +476,10 @@ local function pulse(char, spec, mods, seen)
 		if result == "hit" or result == "guardbreak" then
 			local gain = (C.ChargePerHit + (mods.chargeBonus or 0)) * d.ChargeGain * (if overloaded then 2 else 1)
 			Combat.AddCharge(char, gain)
+			local player = Players:GetPlayerFromCharacter(char)
+			if player and mods.weapon and not mods.improvised then
+				Combat.WearWeapon(player, mods.weapon)
+			end
 		end
 		if mods.onHit then
 			mods.onHit(result, model)
@@ -508,6 +558,9 @@ local function weaponOf(player)
 	if char and char:GetAttribute("Improvised") then
 		return Weapons.Defs.PipeClub, true -- a pipe or sign plate swung like a club
 	end
+	if data and Gear.Get(player).WeaponBroken then
+		return Weapons.Defs.Fists, false -- a broken weapon is dead weight; you fight with your hands
+	end
 	return data and (Weapons.Defs[data.Equipped] or Weapons.Defs.Fists), false
 end
 
@@ -545,7 +598,7 @@ function Combat.Attack(player)
 	s.block = false
 	char:SetAttribute("Blocking", false)
 	s.combo, s.comboWeapon = combo, weapon
-	local mods = { chargeBonus = weapon.ChargeBonus, label = combo, weapon = weapon }
+	local mods = { chargeBonus = weapon.ChargeBonus, label = combo, weapon = weapon, improvised = improvised }
 	if improvised then
 		mods.onHit = function(result)
 			if (result == "hit" or result == "blocked" or result == "guardbreak") and Combat.World then

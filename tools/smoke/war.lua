@@ -61,11 +61,17 @@ check("credits spent", snap.Credits == Config.War.StartingCredits - 950 - 60 - 3
 Remotes.WarOrder:FireServer({ Primary = "M16A1", Armor = "FlakVest" }); run(0.3)
 check("order accepted", lastApp(u)[3].Loadout.Primary == "M16A1")
 
+-- Red orders a bought Makarov so their body carries real gear later (conscript pistols are not loot)
+as(p)
+Remotes.WarBuy:FireServer("Makarov"); Remotes.WarOrder:FireServer({ Sidearm = "Makarov" }); run(0.2)
+p.Character.Humanoid.Health = 0
+as(u)
 -- die and come back with the ordered rifle
 u.Character.Humanoid.Health = 0
 run(Config.War.RespawnSeconds + 1)
 w = weaponState(u)
 check("respawned carrying the ordered M16A1 with magazines", w ~= nil and w.Id == "M16A1" and w.Spare == 3)
+check("conscript body left no loot", workspace_:FindFirstChild("RecruitRemains") == nil)
 local uc, pc = u.Character, p.Character
 
 -- the mechanism: safety, selector, dry fire, reload
@@ -106,7 +112,7 @@ uc.HumanoidRootPart.CFrame = M.CF.new(body.Position + M.V3.new(2, 2, 0)); run(0.
 for _, pr in body:GetChildren() do if pr.ClassName == "ProximityPrompt" then pr.Triggered:Fire(u) end end
 run(0.3)
 snap = lastApp(u)[3]
-check("looted enemy sidearm lands in the locker damaged", snap.Locker.Makarov ~= nil and snap.Locker.Makarov.condition < 70)
+check("looted enemy sidearm lands in the locker damaged", snap.Locker.Makarov ~= nil and snap.Locker.Makarov.condition < 100)
 M.mockEnv.__require(SSS.Server.Common.PlayerData).Get(u).War.Credits += 500 -- income takes minutes; fund the repair
 Remotes.WarBuy:FireServer("Medkit"); run(0.2) -- refresh the snapshot
 snap = lastApp(u)[3]
@@ -159,6 +165,23 @@ check("grenade thrown", nade ~= nil)
 if nade then nade.CFrame = M.CF.new(p2.HumanoidRootPart.Position + M.V3.new(2, 0, 0)); nade.AssemblyLinearVelocity = M.V3.zero end
 run(4)
 check("frag grenade hurt the enemy", p2.Humanoid.Health < hpN)
+
+
+-- entrenching: dig a foxhole in the open; a hit interrupts; sandbags need stock
+as(u)
+local E = Config.War.Entrench
+uc = u.Character
+uc.HumanoidRootPart.CFrame = Battlefield.BaseCFrame("Union") + M.V3.new(0, 0, 40) -- open ground outside the grid
+run(0.2)
+Remotes.Entrench:FireServer("Dig"); run(E.DigSeconds + 0.5)
+check("dug a foxhole", workspace_:FindFirstChild("Foxhole") ~= nil)
+Remotes.Entrench:FireServer("Dig"); run(0.3)
+local digMsg for _, e in M.FireLog do if e[1] == "Announce" and e.player == u and type(e[3]) == "string" and e[3]:find("already dug") then digMsg = true end end
+check("cannot dig on top of your own hole", digMsg == true)
+uc.HumanoidRootPart.CFrame = uc.HumanoidRootPart.CFrame + M.V3.new(20, 0, 0); run(0.2) -- clear of the hole
+Remotes.Entrench:FireServer("Sandbag"); run(0.3)
+local bagMsg for _, e in M.FireLog do if e[1] == "Announce" and e.player == u and type(e[3]) == "string" and e[3]:find("No sandbags") then bagMsg = true end end
+check("sandbags need stock from the shop", bagMsg == true)
 
 check("no script errors", #M.errors == 0)
 for _, e in M.errors do print(e) end

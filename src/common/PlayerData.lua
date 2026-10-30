@@ -24,6 +24,11 @@ local TEMPLATE = {
 	Cyber = {}, -- [slot] = itemId
 	SkillSlots = {}, -- ["1"] = skillId (string keys so the table stays a dictionary)
 	Inventory = {},
+	Condition = {}, -- [itemId] = 0-100 for the stack you own (weapons, armor, cybers); missing = 100
+	Upgrades = {}, -- [itemId] = 0-3
+	-- The hideout is the conduit's claim on the city: it outlives the character (a crew keeps it),
+	-- but a raid can strip it. Plot 0 = none.
+	Hideout = { Plot = 0, Tier = 1, Modules = {}, Vault = {}, VaultCondition = {}, VaultUpgrades = {}, Members = {}, Name = "" },
 	-- The war world (a separate place, same universe) reads and writes this part of the profile.
 	-- A conduit is not reset by the recruit dying; the recruit's gear is.
 	War = {
@@ -66,7 +71,7 @@ end
 -- Permadeath wipes the conduit; the war-world account (faction, credits, locker) survives it,
 -- because a recruit is a thing the conduit owns, not the conduit itself.
 local function wipe(data)
-	local war = data.War
+	local war, hideout = data.War, data.Hideout
 	for key in data do
 		data[key] = nil
 	end
@@ -74,6 +79,7 @@ local function wipe(data)
 		data[key] = deepCopy(value)
 	end
 	data.War = war or deepCopy(TEMPLATE.War)
+	data.Hideout = hideout or deepCopy(TEMPLATE.Hideout)
 	newCharacter(data)
 end
 
