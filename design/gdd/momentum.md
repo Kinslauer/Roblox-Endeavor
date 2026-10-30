@@ -67,6 +67,11 @@ AirPopExtend = 0.3, MaxJuggleHits = 4, LandStun = 0.45, EnemyStepRange = 9, Enem
   - a launcher that **kills** still throws the body up (on a 70 hp grunt, light, light, heavy is lethal).
   What stays: one light doesn't stagger a grunt (Poise 2), so a grunt already swinging trades with your first light.
   Open the combo on an opening - its recovery after a swing, a parry, or a flick.
+- 2026-10-29, later (owner s24 "i still cant launch"): a live Studio run as the owner's character showed the launcher
+  working when each press waited for the last swing to end - but a real player presses during the recovery, and any
+  attack pressed more than 0.08 s early was thrown away. **Input queue** (`Config.Combat.InputQueue = 0.4`): an attack
+  or heavy pressed within 0.4 s of being free is held and played the moment you are (one slot, latest press wins;
+  a stagger, dodge or guard clears it). Mashed light, light, heavy (0.45 s apart) now lands all three and launches.
 - **Launch**: a melee heavy (`mods.label == "Heavy"`, not `Ranged`) that lands on an **open** enemy — `Combat.IsOpen`
   read *before* the hit's own stun: stunned right now, or posture-broken within `GrabStunWindow` — sets
   `juggledUntil = now + LaunchAirTime`, stuns it for `LaunchAirTime + LandStun`, gives the root `(0, LaunchVelocity, 0) +

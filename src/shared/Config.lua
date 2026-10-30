@@ -347,6 +347,7 @@ Config.Combat = {
 	ChargePerHit = 8,
 	MaxResist = 0.75,
 	HeavyCooldown = 1.2,
+	InputQueue = 0.4, -- an attack/heavy pressed this long (s) before you're free is held and played then (Combat enqueue)
 	KillCreditSeconds = 15,
 }
 

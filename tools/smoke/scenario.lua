@@ -734,6 +734,39 @@ do
 			g4:Destroy()
 			run(1.5)
 		end
+		-- mashed (owner s24 "i still cant launch"): presses 0.45 s apart land inside the last swing's recovery and
+		-- used to be thrown away; the input queue plays each one the moment you're free
+		do
+			Remotes.EquipItem:FireServer("PipeClub"); run(Config.Combat.HeavyCooldown + 0.3)
+			me:SetAttribute("Stamina", 100)
+			me:SetAttribute("DevGod", true)
+			me:PivotTo(M.CF.lookAt(M.V3.new(200, 5, 200), M.V3.new(200, 5, 190)))
+			local g6 = NPCs.Spawn("Grunt", M.V3.new(200, 5, 195))
+			g6.Humanoid.MaxHealth = 400; g6.Humanoid.Health = 400
+			local mark6 = #M.FireLog
+			Remotes.Attack:FireServer(); run(0.45)
+			Remotes.Attack:FireServer(); run(0.45)
+			Remotes.Heavy:FireServer(); run(2.0)
+			local up6, hits6 = false, 0
+			for i = mark6 + 1, #M.FireLog do
+				local e = M.FireLog[i]
+				if e[1] == "CombatEvent" and e[4] == g6 then
+					if e[3] == "Launch" then up6 = true elseif e[3] == "Hit" then hits6 += 1 end
+				end
+			end
+			check("mashed light, light, heavy: all three swings land", hits6 >= 3)
+			check("mashed light, light, heavy still launches (input queue)", up6)
+			-- a press far too early (more than InputQueue before you're free) is still dropped
+			run(Config.Combat.HeavyCooldown + 1)
+			local s6 = Combat.State(me)
+			Remotes.Heavy:FireServer(); run(0.05)
+			local busy = s6.busyUntil
+			Remotes.Attack:FireServer(); run(0.05)
+			check("a press far ahead of the recovery is not queued", s6.queued == nil and s6.busyUntil == busy)
+			me:SetAttribute("DevGod", nil)
+			g6:Destroy()
+			run(2)
+		end
 		-- ...and when that heavy kills (a plain 70 hp grunt), the body still goes up
 		do
 			local def = Weapons.Defs.PipeClub

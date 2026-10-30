@@ -935,11 +935,42 @@ local function sanitizeAim(char, aim)
 	return aim
 end
 
-function Combat.Attack(player, aim)
-	local char, weapon = player.Character, weaponOf(player)
-	if not (char and weapon and Combat.CanAct(char)) then
+-- Input queue (Config.Combat.InputQueue): an attack or heavy pressed while your last swing is still finishing
+-- is held and plays the moment you're free, instead of being thrown away (owner s24: "i still cant launch" -
+-- light, light, heavy pressed at a natural pace dropped the presses that came early). One slot: the latest
+-- press wins. Getting staggered, dodging or raising your guard clears it.
+local function enqueue(player, char, action, aim)
+	local s, t = st(char), os.clock()
+	if not isAlive(char) or t < s.stunned then
 		return
 	end
+	local wait = s.busyUntil - BUFFER - t
+	if wait <= 0 or wait > C.InputQueue then
+		return
+	end
+	local ticket, token = {}, s.token
+	s.queued = ticket
+	task.delay(wait, function()
+		if s.queued ~= ticket then
+			return -- replaced by a later press, or cleared
+		end
+		s.queued = nil
+		if s.token == token and player.Character == char then
+			action(player, aim)
+		end
+	end)
+end
+
+function Combat.Attack(player, aim)
+	local char, weapon = player.Character, weaponOf(player)
+	if not (char and weapon) then
+		return
+	end
+	if not Combat.CanAct(char) then
+		enqueue(player, char, Combat.Attack, aim)
+		return
+	end
+	st(char).queued = nil
 	Combat.ClearProtection(char)
 	local s, t = st(char), os.clock()
 	local combo = if s.comboWeapon == weapon and t <= s.comboExpires then s.combo % #weapon.Attacks + 1 else 1
@@ -968,9 +999,14 @@ end
 
 function Combat.Heavy(player, aim)
 	local char, weapon = player.Character, weaponOf(player)
-	if not (char and weapon and Combat.CanAct(char)) then
+	if not (char and weapon) then
 		return
 	end
+	if not Combat.CanAct(char) then
+		enqueue(player, char, Combat.Heavy, aim)
+		return
+	end
+	st(char).queued = nil
 	Combat.ClearProtection(char)
 	local s, t = st(char), os.clock()
 	if player:GetAttribute("Zone") == "Range" and not weapon.Heavy.Ranged then
@@ -1031,6 +1067,9 @@ function Combat.SetBlock(player, down)
 	local s = st(char)
 	s.blockHeld = down -- a held intent: the regen loop raises the guard the moment you're free again
 	if down then
+		s.queued = nil -- guarding drops a queued swing
+	end
+	if down then
 		if Combat.CanAct(char) and not s.block and os.clock() >= s.busyUntil then
 			s.block, s.blockStart = true, os.clock()
 			char:SetAttribute("Blocking", true)
@@ -1050,6 +1089,7 @@ function Combat.Dodge(player, direction)
 	if t < s.stunned or t - s.lastDodge < C.DodgeCooldown then
 		return
 	end
+	s.queued = nil -- a dodge drops a queued swing
 	direction = Vector3.new(direction.X, 0, direction.Z)
 	if direction.Magnitude < 0.1 or not Combat.SpendStamina(char, C.DodgeCost) then
 		return
