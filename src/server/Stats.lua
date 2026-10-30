@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Props = require(ReplicatedStorage.Shared.Props)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Gear = require(script.Parent.Gear)
 local Net = require(script.Parent.Net)
@@ -18,7 +19,11 @@ function Stats.Apply(player, fill)
 	end
 	hum.MaxHealth = d.MaxHealth
 	hum.Health = if fill then d.MaxHealth else math.min(hum.Health, d.MaxHealth)
-	hum.WalkSpeed = d.WalkSpeed
+	-- Walk speed is recomputed here from everything that affects it, so no system can erase
+	-- another's modifier: held-chunk weight (Destruction) and stun (Combat).
+	local holdClass = char:GetAttribute("HoldClass")
+	local holdMult = if holdClass then Props.Weights[holdClass].SpeedMult else 1
+	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult
 
 	char:SetAttribute("MaxStamina", d.MaxStamina)
 	char:SetAttribute("MaxPosture", d.MaxPosture)

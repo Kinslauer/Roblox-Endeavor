@@ -331,9 +331,17 @@ for _, m in workspace_:GetDescendants() do if m:GetAttribute("Investigate") then
 -- grenade: throw at the rival
 rc.HumanoidRootPart.CFrame = M.CF.new(pc.HumanoidRootPart.Position + M.V3.new(0, 0, 6)); run(0.2)
 Inventory.Add(player, "PipeGrenade", 1)
-local hpBeforeNade = rc.Humanoid.Health
-Remotes.UseItem:FireServer("PipeGrenade", M.V3.new(0, 0, 1)); run(3.2)
+pc.Humanoid.Health = pc.Humanoid.MaxHealth
+local hpBeforeNade, myHpBefore = rc.Humanoid.Health, pc.Humanoid.Health
+Remotes.UseItem:FireServer("PipeGrenade", M.V3.new(0, 0, 1)); run(0.05)
+local nade = dfolder:FindFirstChild("PipeGrenade")
+check("grenade spawned", nade ~= nil)
+-- no physics in the mock: fly it by hand to the rival, then let the fuse run out
+for _ = 1, 3 do nade.CFrame = M.CF.new(nade.Position + nade.AssemblyLinearVelocity * (1/30)); run(1/30) end
+nade.AssemblyLinearVelocity = M.V3.zero; run(3)
 check("pipe grenade exploded and hurt the rival", rc.Humanoid.Health < hpBeforeNade)
+check("your own grenade hurts you too", pc.Humanoid.Health < myHpBefore and pc.Humanoid.Health > 0)
+run(1)
 
 -- arc pistol is cell-fed
 Inventory.Add(player, "ArcPistol", 1); Remotes.EquipItem:FireServer("ArcPistol"); run(1.5)

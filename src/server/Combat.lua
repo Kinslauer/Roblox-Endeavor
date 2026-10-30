@@ -11,6 +11,7 @@ local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local Weapons = require(Shared.Weapons)
 local Gear = require(script.Parent.Gear)
+local Stats = require(script.Parent.Stats)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 local WorldPhase = require(script.Parent.WorldPhase)
@@ -255,10 +256,17 @@ function Combat.Stun(char, duration)
 		s.baseSpeed = hum.WalkSpeed
 	end
 	s.stunned = endsAt
+	char:SetAttribute("Stunned", true)
 	hum.WalkSpeed = 0
 	task.delay(duration, function()
 		if os.clock() >= s.stunned and hum.Parent and hum.Health > 0 then
-			hum.WalkSpeed = s.baseSpeed or Config.Stats.BaseWalkSpeed
+			char:SetAttribute("Stunned", false)
+			local player = Players:GetPlayerFromCharacter(char)
+			if player then
+				Stats.Apply(player, false) -- recomputes speed with any held-chunk penalty
+			else
+				hum.WalkSpeed = s.baseSpeed or Config.Stats.BaseWalkSpeed
+			end
 		end
 	end)
 end
@@ -286,12 +294,12 @@ local function knockback(char, direction, magnitude)
 	end
 end
 
--- opts: Posture, Type ("Physical"|"Arc"), Unblockable, GuardBreak (blocks fail; parry still works),
+-- opts: Posture, Type ("Physical"|"Arc"|"Thrown"|"Explosive"), Unblockable, GuardBreak (blocks fail; parry still works), SelfHarm,
 --       Knockback (studs/s), Stun (seconds)
 -- Returns "hit" | "blocked" | "parried" | "dodged" | "guardbreak" | "none"
 local function applyDamage(attacker, victim, amount, opts)
 	local vhum = getHum(victim)
-	if not vhum or vhum.Health <= 0 or attacker == victim then
+	if not vhum or vhum.Health <= 0 or (attacker == victim and not opts.SelfHarm) then
 		return "none"
 	end
 	local ap, vp = Players:GetPlayerFromCharacter(attacker), Players:GetPlayerFromCharacter(victim)
@@ -334,10 +342,13 @@ local function applyDamage(attacker, victim, amount, opts)
 	if t < vs.takenUntil then
 		amount *= vs.takenMult
 	end
-	amount *= 1 - math.min(C.MaxResist, vd.Resist[opts.Type or "Physical"] or 0)
+	-- armor knows Physical and Arc; thrown and explosive damage count as Physical for resists
+	amount *= 1 - math.min(C.MaxResist, vd.Resist[if opts.Type == "Arc" then "Arc" else "Physical"] or 0)
 
 	vhum:TakeDamage(amount)
-	tag(attacker, victim)
+	if attacker ~= victim then
+		tag(attacker, victim)
+	end
 
 	if result ~= "blocked" and t >= math.max(vs.hyperarmorUntil, vs.swingArmorUntil) then
 		Combat.Stun(victim, opts.Stun or C.HitStunDefault)

@@ -289,7 +289,13 @@ local function nearestGrabbable()
 	end
 	return best
 end
-RunService.Heartbeat:Connect(function()
+local holdAccum = 0
+RunService.Heartbeat:Connect(function(dt)
+	holdAccum += dt
+	if holdAccum < 0.1 then
+		return
+	end
+	holdAccum = 0
 	local char = player.Character
 	local holding = char and char:GetAttribute("Holding")
 	if holding then

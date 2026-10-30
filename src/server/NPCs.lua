@@ -1,5 +1,6 @@
 -- Hostile NPCs. Data-driven types with telegraphed attacks so parry/dodge timing is readable.
 -- Rigs are placeholder blocks until real models exist (swap NPCs.BuildRig).
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -16,13 +17,11 @@ NPCs.Killed = Instance.new("BindableEvent") -- (typeName, model, killerPlayer?)
 
 -- Breaches and explosions are loud: idle NPCs within `radius` walk over to look.
 function NPCs.Alert(position, radius)
-	for _, model in workspace:GetDescendants() do
-		if model:IsA("Model") and model:GetAttribute("NPC") then
-			local root = model:FindFirstChild("HumanoidRootPart")
-			if root and (root.Position - position).Magnitude <= radius then
-				model:SetAttribute("Investigate", position)
-				model:SetAttribute("InvestigateUntil", os.clock() + 15)
-			end
+	for _, model in CollectionService:GetTagged("NPC") do
+		local root = model.Parent and model:FindFirstChild("HumanoidRootPart")
+		if root and (root.Position - position).Magnitude <= radius then
+			model:SetAttribute("Investigate", position)
+			model:SetAttribute("InvestigateUntil", os.clock() + 15)
 		end
 	end
 end
@@ -103,6 +102,7 @@ function NPCs.Spawn(typeName, position, opts)
 	hum.MaxHealth = def.Health * scale
 	hum.Health = hum.MaxHealth
 	model:SetAttribute("NPC", typeName)
+	CollectionService:AddTag(model, "NPC")
 	if def.Boss then
 		model:SetAttribute("Boss", true)
 	end

@@ -18,6 +18,7 @@ local Gear = require(script.Parent.Gear)
 local Loot = require(script.Parent.Loot)
 local Net = require(script.Parent.Net)
 local NPCs = require(script.Parent.NPCs)
+local Stats = require(script.Parent.Stats)
 
 local D = Config.Destruction
 local Destruction = {}
@@ -334,20 +335,28 @@ function Destruction.Explode(origin, spec, attacker)
 		return result == nil or (result.Position - target).Magnitude < 2.5
 	end
 	-- characters (players and NPCs): falloff with distance, blocked by cover
-	local seen = {}
-	for _, model in workspace:GetDescendants() do
-		if model:IsA("Model") and not seen[model] and getHum(model) then
-			local root = model:FindFirstChild("HumanoidRootPart")
-			if root then
-				local dist = (root.Position - origin).Magnitude
-				if dist <= spec.Radius and visible(root.Position, { model }) then
-					seen[model] = true
-					local falloff = 1 - (dist / spec.Radius) ^ 1.5
-					Combat.Damage(attacker or model, model, spec.Damage * falloff, {
-						Posture = spec.Damage * falloff, Type = "Explosive", Unblockable = true,
-						Knockback = 50 * falloff + 20, Stun = 0.8,
-					})
-				end
+	local candidates = {}
+	for _, player in Players:GetPlayers() do
+		if player.Character then
+			table.insert(candidates, player.Character)
+		end
+	end
+	for _, npc in CollectionService:GetTagged("NPC") do
+		if npc.Parent then
+			table.insert(candidates, npc)
+		end
+	end
+	for _, model in candidates do
+		local root = model:FindFirstChild("HumanoidRootPart")
+		if root and getHum(model) then
+			local dist = (root.Position - origin).Magnitude
+			if dist <= spec.Radius and visible(root.Position, { model }) then
+				local falloff = 1 - (dist / spec.Radius) ^ 1.5
+				-- SelfHarm: your own grenade hurts you too (armor and posture still apply)
+				Combat.Damage(attacker or model, model, spec.Damage * falloff, {
+					Posture = spec.Damage * falloff, Type = "Explosive", Unblockable = true, SelfHarm = true,
+					Knockback = 50 * falloff + 20, Stun = 0.8,
+				})
 			end
 		end
 	end
@@ -364,7 +373,7 @@ function Destruction.Explode(origin, spec, attacker)
 				local dist = (part.Position - origin).Magnitude
 				Destruction.HitInstance(part, spec.World * (1 - (dist / spec.Radius) ^ 1.5), "Explosive", attacker)
 			end
-		elseif part:GetAttribute("Chunk") and not part.Anchored then
+		elseif part:GetAttribute("Chunk") and not part.Anchored and not (entryOf(part) and entryOf(part).heldBy) then
 			local away = part.Position - origin
 			part.AssemblyLinearVelocity = (if away.Magnitude > 0.5 then away.Unit else Vector3.yAxis) * 40 + Vector3.new(0, 25, 0)
 		elseif part:GetAttribute("Chunk") then
@@ -378,18 +387,34 @@ function Destruction.Explode(origin, spec, attacker)
 end
 
 -- ===== Grenades and charges (used via Inventory.Use) =====
+local function handsFull(char)
+	local class = char:GetAttribute("HoldClass")
+	return class == "Medium" or class == "Heavy"
+end
+
+-- Where a thrown object may appear: never on the far side of a wall the thrower is pressed against.
+local function launchPoint(char, root, direction, distance)
+	local ray = RaycastParams.new()
+	ray.FilterType = Enum.RaycastFilterType.Exclude
+	ray.FilterDescendantsInstances = { char }
+	local target = root.Position + direction * distance + Vector3.new(0, 1.5, 0)
+	local hit = workspace:Raycast(root.Position, target - root.Position, ray)
+	return if hit then hit.Position - direction * 0.6 else target
+end
+
 function Destruction.ThrowGrenade(player, direction)
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
-	if not root then
+	if not root or not Combat.CanAct(char) or handsFull(char) then
 		return false
 	end
+	Combat.SetBusy(char, 0.3)
 	local spec = D.Explosion.Grenade
 	direction = if typeof(direction) == "Vector3" and direction.Magnitude > 0.1 then direction.Unit else root.CFrame.LookVector
 	local nade = Instance.new("Part")
 	nade.Name, nade.Shape, nade.Size = "PipeGrenade", Enum.PartType.Cylinder, Vector3.new(1.2, 0.5, 0.5)
 	nade.Color, nade.Material = Color3.fromRGB(70, 72, 80), Enum.Material.Metal
-	nade.CFrame = CFrame.new(root.Position + direction * 2 + Vector3.new(0, 1, 0))
+	nade.CFrame = CFrame.new(launchPoint(char, root, direction, 2))
 	nade.Parent = folder
 	nade:SetNetworkOwner(nil)
 	nade.AssemblyLinearVelocity = direction * spec.Speed + Vector3.new(0, 18, 0)
@@ -405,9 +430,10 @@ end
 function Destruction.PlantCharge(player)
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
-	if not root then
+	if not root or not Combat.CanAct(char) or handsFull(char) then
 		return false
 	end
+	Combat.SetBusy(char, 0.3)
 	local spec = D.Explosion.Charge
 	local best, bestDist = nil, spec.PlantRange
 	for model, entry in breaches do
@@ -432,11 +458,13 @@ function Destruction.PlantCharge(player)
 	task.delay(spec.Fuse, function()
 		local at = charge.Position
 		charge:Destroy()
+		Destruction.Explode(at, spec, char)
 		if best.tdef.Health == math.huge then
 			world("BreachResist", best.cframe.Position)
-			Remotes.Announce:FireClient(player, "The seal doesn't even scratch. This one needs a key.", "Info")
+			if player.Parent then
+				Remotes.Announce:FireClient(player, "The seal doesn't even scratch. This one needs a key.", "Info")
+			end
 		end
-		Destruction.Explode(at, spec, char)
 	end)
 	return true
 end
@@ -446,14 +474,9 @@ local function weightOf(part)
 	return Props.Weights[part:GetAttribute("Weight") or "Light"], part:GetAttribute("Weight") or "Light"
 end
 
+-- Walk speed is owned by Stats.Apply, which reads the HoldClass attribute (and stun).
 local function applyHoldSpeed(player)
-	local char = player.Character
-	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if hum then
-		local h = held[player]
-		local mult = if h then weightOf(h.part).SpeedMult else 1
-		hum.WalkSpeed = Gear.Get(player).WalkSpeed * mult
-	end
+	Stats.Apply(player, false)
 end
 
 function Destruction.Grab(player, part)
@@ -470,8 +493,8 @@ function Destruction.Grab(player, part)
 		return
 	end
 	local entry = entryOf(part)
-	if not entry or entry.heldBy then
-		return
+	if not entry or entry.heldBy or entry.inFlight then
+		return -- catching a throw out of the air is a stretch goal, not a free counter
 	end
 	local w, class = weightOf(part)
 	if w.StrengthReq and Gear.Get(player).Stats.Strength < w.StrengthReq then
@@ -490,7 +513,7 @@ function Destruction.Grab(player, part)
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0, weld.Part1 = root, part
 	weld.Parent = part
-	held[player] = { part = part, entry = entry, weld = weld, class = class }
+	held[player] = { part = part, entry = entry, weld = weld, class = class, at = os.clock() }
 	char:SetAttribute("Holding", part.Name)
 	char:SetAttribute("HoldClass", class)
 	char:SetAttribute("Improvised", part:GetAttribute("Improvised") == true)
@@ -533,7 +556,9 @@ end
 
 -- Server-side flight: the chunk damages the first thing it reaches after MinFlight studs.
 local function fly(part, entry, thrower, w, speed)
+	entry.inFlight = true
 	local start = part.Position
+	local seen = {} -- targets already resolved this flight (a dodge is not re-rolled every frame)
 	local last = start
 	local deadline = os.clock() + D.FlightTime
 	local ray = RaycastParams.new()
@@ -557,6 +582,7 @@ local function fly(part, entry, thrower, w, speed)
 	local conn
 	conn = RunService.Heartbeat:Connect(function()
 		if not live or not part.Parent or entry.heldBy or os.clock() > deadline then
+			entry.inFlight = false
 			conn:Disconnect()
 			return
 		end
@@ -579,7 +605,8 @@ local function fly(part, entry, thrower, w, speed)
 					local along = if segLen > 0.01 then math.clamp(toRoot:Dot(seg) / (segLen * segLen), 0, 1) else 0
 					near = (toRoot - seg * along).Magnitude <= reach
 				end
-				if near and getHum(model) and model ~= thrower then
+				if near and not seen[model] and getHum(model) and model ~= thrower then
+					seen[model] = true
 					local result, newThrower = hitCharacter(model)
 					if result == "deflected" then
 						thrower = newThrower
@@ -602,6 +629,7 @@ local function fly(part, entry, thrower, w, speed)
 		end
 		last = pos
 		if not live then
+			entry.inFlight = false
 			conn:Disconnect()
 		end
 	end)
@@ -617,7 +645,10 @@ function Destruction.Throw(player, direction, charge)
 	if typeof(direction) ~= "Vector3" or direction.Magnitude < 0.1 then
 		direction = root.CFrame.LookVector
 	end
+	-- The client reports how long it held the key; the server caps that by how long it has
+	-- actually held the chunk, so a charged throw always has a readable windup.
 	charge = math.clamp(if type(charge) == "number" and charge == charge then charge else 0, 0, 1)
+	charge = math.min(charge, math.max(0, (os.clock() - h.at - D.GrabTime) / D.MaxChargeTime))
 	local w = weightOf(h.part)
 	local stats = Gear.Get(player).Stats
 	local stamina = w.Stamina * (1 + charge) * (1 - 0.005 * stats.Willpower)
@@ -630,7 +661,7 @@ function Destruction.Throw(player, direction, charge)
 	local entry, part = h.entry, h.part
 	release(player, true)
 	Combat.SetBusy(char, 0.3)
-	part.CFrame = CFrame.new(root.Position + dir * 3 + Vector3.new(0, 1.5, 0))
+	part.CFrame = CFrame.new(launchPoint(char, root, dir, 3))
 	part.AssemblyLinearVelocity = dir * speed + Vector3.new(0, 4, 0)
 	world("Throw", char, part)
 	fly(part, entry, char, w, speed)
@@ -729,7 +760,10 @@ function Destruction.Init()
 	Net.On("Grab", { rate = 3, burst = 4, args = { "instance" } }, Destruction.Grab)
 	Net.On("Throw", { rate = 3, burst = 4, args = { "vector", "number" } }, Destruction.Throw)
 	Net.On("Drop", { rate = 3, burst = 4 }, function(player)
-		Destruction.Drop(player, false)
+		local char = player.Character
+		if char and os.clock() >= Combat.State(char).stunned then
+			Destruction.Drop(player, false)
+		end
 	end)
 
 	Players.PlayerRemoving:Connect(function(player)
@@ -738,6 +772,19 @@ function Destruction.Init()
 	Players.PlayerAdded:Connect(function(player)
 		player.CharacterRemoving:Connect(function()
 			Destruction.Drop(player, false)
+		end)
+		player.CharacterAdded:Connect(function(char)
+			local hum = char:WaitForChild("Humanoid", 10)
+			if hum then
+				hum.Died:Connect(function()
+					local root = char:FindFirstChild("HumanoidRootPart")
+					local v = root and root.AssemblyLinearVelocity or Vector3.zero
+					local h = release(player, true)
+					if h then
+						h.part.AssemblyLinearVelocity = v + Vector3.new(0, 6, 0) -- drops with their last movement
+					end
+				end)
+			end
 		end)
 	end)
 
