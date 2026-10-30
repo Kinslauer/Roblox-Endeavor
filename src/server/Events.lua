@@ -49,9 +49,10 @@ local function raiderAmbush()
 		return
 	end
 	Remotes.Announce:FireClient(pick.player, "Raiders have found you.", "Event")
-	for _ = 1, rng:NextInteger(2, 4) do
+	local pack = { "Raider", "Raider", "Raider", "Shocker", "Brute" }
+	for i = 1, rng:NextInteger(2, 4) do
 		local angle = rng:NextNumber(0, math.pi * 2)
-		NPCs.Spawn("Raider", pick.root.Position + Vector3.new(math.cos(angle) * 55, 4, math.sin(angle) * 55))
+		NPCs.Spawn(pack[rng:NextInteger(1, if i == 1 then 3 else #pack)], pick.root.Position + Vector3.new(math.cos(angle) * 55, 4, math.sin(angle) * 55))
 	end
 end
 

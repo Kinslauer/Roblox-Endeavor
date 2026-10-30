@@ -88,7 +88,7 @@ local loadoutPanel = panel(UDim2.fromOffset(420, 400), UDim2.new(1, -440, 0.5, -
 -- ===== Announcements =====
 local KIND_COLORS = {
 	Emergence = Color3.fromRGB(255, 90, 90), Event = Color3.fromRGB(255, 200, 60),
-	Kill = Color3.fromRGB(230, 230, 230), Info = Color3.fromRGB(120, 220, 255),
+	Kill = Color3.fromRGB(230, 230, 230), Info = Color3.fromRGB(120, 220, 255), District = Color3.fromRGB(200, 200, 255),
 }
 local bannerToken = 0
 Remotes.Announce.OnClientEvent:Connect(function(text, kind)
@@ -251,6 +251,61 @@ Remotes.Died.OnClientEvent:Connect(function(summary)
 	end)
 end)
 
+-- ===== Raid HUD =====
+local raidLabel = label({ Size = UDim2.fromOffset(360, 44), Position = UDim2.new(1, -380, 0, 50), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(255, 80, 80), Font = Enum.Font.GothamBold, TextSize = 18, Text = "" })
+Remotes.Raid.OnClientEvent:Connect(function(info)
+	if not info then
+		raidLabel.Text = ""
+	elseif info.Joining then
+		raidLabel.Text = "BLACKOUT RAID\nwaiting for the gate..."
+	elseif info.Done then
+		raidLabel.Text = "RAID CLEARED\nclaim the vault"
+	else
+		raidLabel.Text = ("%s\nwave %d/%d  -  %d left"):format(if info.Boss then "THE WARDEN" else "BLACKOUT RAID", info.Wave, info.Waves, info.Remaining)
+	end
+end)
+
+-- ===== Helmetcam (P): first person with your body visible =====
+local helmetcam = false
+local savedZoom = { min = 0.5, max = 128 }
+local function setHelmetcam(on)
+	helmetcam = on
+	if on then
+		savedZoom.min, savedZoom.max = player.CameraMinZoomDistance, player.CameraMaxZoomDistance
+		player.CameraMinZoomDistance, player.CameraMaxZoomDistance = 0.5, 0.5
+	else
+		player.CameraMinZoomDistance, player.CameraMaxZoomDistance = 0.5, savedZoom.max
+		local char = player.Character
+		if char then
+			for _, p in char:GetDescendants() do
+				if p:IsA("BasePart") then
+					p.LocalTransparencyModifier = 0
+				end
+			end
+		end
+	end
+end
+-- Roblox hides the whole body in first person; re-show everything except the head each frame.
+RunService.RenderStepped:Connect(function()
+	if not helmetcam then
+		return
+	end
+	local char = player.Character
+	if not char then
+		return
+	end
+	for _, p in char:GetChildren() do
+		if p:IsA("BasePart") and p.Name ~= "Head" and p.Name ~= "HumanoidRootPart" then
+			p.LocalTransparencyModifier = 0
+		elseif p:IsA("Accessory") then
+			local handle = p:FindFirstChild("Handle")
+			if handle then
+				handle.LocalTransparencyModifier = 1
+			end
+		end
+	end
+end)
+
 -- ===== Tutorial panel =====
 local tutorialPanel = make("Frame", { Size = UDim2.fromOffset(560, 112), Position = UDim2.new(0.5, -280, 0, 110), BackgroundColor3 = Color3.fromRGB(10, 14, 20), BackgroundTransparency = 0.15, Visible = false })
 make("UIStroke", { Color = Color3.fromRGB(0, 220, 255), Thickness = 1.5 }, tutorialPanel)
@@ -296,7 +351,7 @@ local function flash(char, color)
 end
 
 local FLASH = {
-	Hit = Color3.fromRGB(255, 70, 70), Block = Color3.fromRGB(150, 150, 255), Parry = Color3.fromRGB(255, 255, 255),
+	Hit = Color3.fromRGB(255, 70, 70), Block = Color3.fromRGB(150, 150, 255), Parry = Color3.fromRGB(255, 255, 255), Devour = Color3.fromRGB(120, 0, 160),
 	GuardBreak = Color3.fromRGB(255, 160, 0), Burst = Color3.fromRGB(80, 170, 255), Dodge = Color3.fromRGB(120, 255, 200),
 	Buff = Color3.fromRGB(255, 220, 120), Flick = Color3.fromRGB(255, 60, 60), Feint = Color3.fromRGB(200, 200, 200),
 }
@@ -417,6 +472,8 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		Remotes.Flicker:FireServer() -- tap just before your swing connects
 	elseif key == Enum.KeyCode.Z then
 		Remotes.Feint:FireServer()
+	elseif key == Enum.KeyCode.P then
+		setHelmetcam(not helmetcam)
 	elseif key == Enum.KeyCode.Q then
 		local char = player.Character
 		local hum = char and char:FindFirstChildOfClass("Humanoid")

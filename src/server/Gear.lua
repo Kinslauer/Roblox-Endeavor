@@ -10,6 +10,7 @@ local Cybernetics = require(Shared.Cybernetics)
 local Remotes = require(Shared.Remotes)
 local Skills = require(Shared.Skills)
 local Weapons = require(Shared.Weapons)
+local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 
 local S, C, F = Config.Stats, Config.Combat, Config.Flicker
@@ -252,8 +253,8 @@ function Gear.SetSkill(player, slot, skillId)
 end
 
 function Gear.Init()
-	Remotes.Unequip.OnServerEvent:Connect(Gear.Unequip)
-	Remotes.SetSkill.OnServerEvent:Connect(Gear.SetSkill)
+	Net.On("Unequip", { rate = 4, args = { "string" } }, Gear.Unequip)
+	Net.On("SetSkill", { rate = 4, args = { "int", "string?" } }, Gear.SetSkill)
 end
 
 return Gear

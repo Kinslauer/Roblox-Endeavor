@@ -4,11 +4,15 @@ local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Inventory = require(script.Parent.Inventory)
+local Stats = require(script.Parent.Stats)
+
+local D = Config.Devour
 
 local Loot = {}
 
--- opts: Label, Action, Hold, Lifetime, Color, Size
+-- opts: Label, Action, Hold, Lifetime, Color, Size, Devour ({ Level = n } for a conduit's remains, { Npc = true } for NPCs)
 function Loot.Spawn(cframe, bundle, opts)
 	opts = opts or {}
 	if next(bundle) == nil then
@@ -40,6 +44,30 @@ function Loot.Spawn(cframe, bundle, opts)
 		Inventory.AddAll(looter, bundle)
 		part:Destroy()
 	end)
+
+	if opts.Devour then
+		-- Devour (M): consume the remains for cursed energy instead of looting them. The loot is
+		-- destroyed, so it is a real choice - and it takes longer, so it is a real risk.
+		local devour = Instance.new("ProximityPrompt")
+		devour.ObjectText, devour.ActionText = opts.Label or "Remains", "Devour"
+		devour.HoldDuration, devour.MaxActivationDistance, devour.RequiresLineOfSight = D.Hold, 8, false
+		devour.KeyboardKeyCode, devour.UIOffset = Enum.KeyCode.M, Vector2.new(0, 60)
+		devour.Parent = part
+		devour.Triggered:Connect(function(eater)
+			local char, hum = eater.Character, eater.Character and eater.Character:FindFirstChildOfClass("Humanoid")
+			if not part.Parent or not hum or hum.Health <= 0 then
+				return
+			end
+			part.Parent = nil
+			local xp = if opts.Devour.Npc then D.NpcXp else D.XpBase + D.XpPerLevel * (opts.Devour.Level or 1)
+			Stats.AddXp(eater, xp)
+			char:SetAttribute("Charge", char:GetAttribute("MaxCharge"))
+			hum.Health = math.min(hum.MaxHealth, hum.Health + hum.MaxHealth * D.HealFraction)
+			Remotes.CombatEvent:FireAllClients("Devour", char)
+			Remotes.Announce:FireClient(eater, ("Devoured: +%d xp, charge restored."):format(xp), "Info")
+			part:Destroy()
+		end)
+	end
 
 	part.Parent = workspace
 	Debris:AddItem(part, opts.Lifetime or Config.CorpseLifetime)

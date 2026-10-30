@@ -26,7 +26,11 @@ Scavenge -> craft/upgrade -> take quests -> fight (NPCs, players, events) -> get
 | Loot / stealing | Remains and crates are hold-to-loot prompts; hold time is the risk window. |
 | Crafting | Recipe table in `Items.Recipes`. |
 | Quests | Rotating collect/kill/craft/bounty quests with XP + item rewards. |
-| Events (`Events`) | Weighted director: supply drops (announced to all, pulls PvP) and raider ambushes. |
+| Events (`Events`) | Weighted director: supply drops (announced to all, pulls PvP) and mixed ambushes (Raider/Shocker/Brute). |
+| City (`City`) | Four generated districts with danger tiers, verticality, refilling caches, district banners and an explore quest. |
+| Raids (`Raids`) | Blackout Gate -> sealed arena -> 4 waves -> Warden boss -> vault with a guaranteed implant. Scales with party size. Permadeath applies. |
+| Devour | Consume remains for xp/charge/heal instead of looting them (Cursed Gear's devour). |
+| Helmetcam | First-person with visible body (TTK-style), toggled with P. |
 
 ## Roadmap
 **Immediately after friend testing**
@@ -39,6 +43,8 @@ Scavenge -> craft/upgrade -> take quests -> fight (NPCs, players, events) -> get
 - Safe-ish zones / spawn protection so new characters are not spawn-killed.
 
 **Then**
+- Hand-built district art replacing the generator; a proper Blackout interior for raids; more raid gates with different bosses.
+- Cold War-style war world: faction fronts, vehicles, destructible cover (needs the notes from the earlier session).
 - Deepwoken-style depth: talent tree and more skills gated by stat thresholds and armor sets, status effects (bleed, burn, shock), armor set bonuses, weapon-specific hit effects.
 - Conduit powers: multiple trees (arc, cinder, void...) with cooldown/charge costs.
 - Pickpocketing on live players, lockpicking containers, bounty board, factions/territory.

@@ -32,6 +32,37 @@ Config.PlotSpacing = 1500
 Config.CityFallbackRadius = 300
 Config.CityFallbackHeight = 10
 
+Config.City = {
+	CacheRespawn = 240, -- seconds before an opened cache refills
+}
+
+Config.Raid = {
+	JoinWindow = 20, -- seconds the gate stays open after someone starts a raid
+	MaxPlayers = 6,
+	TimeLimit = 600,
+	Waves = {
+		{ Raider = 4 },
+		{ Raider = 3, Shocker = 2 },
+		{ Brute = 1, Raider = 2, Shocker = 2 },
+		{ Warden = 1 }, -- the boss wave
+	},
+	ScalePerPlayer = 0.25, -- enemy health/damage multiplier per extra raider
+	Origin = Vector3.new(-3000, 50, 0), -- the raid instance is built far from the city
+	Radius = 70,
+	ExitDelay = 25, -- seconds to loot the vault before being sent home
+	Xp = 400,
+}
+
+Config.Devour = {
+	Hold = 3, -- seconds; longer than looting, and you can't do both
+	XpBase = 40,
+	XpPerLevel = 20,
+	HealFraction = 0.3,
+	NpcXp = 15,
+}
+
+Config.SpawnProtection = 8 -- seconds of invulnerability after spawning into the open world
+
 Config.RespawnDelay = 5
 Config.CombatLogSeconds = 15 -- leaving this soon after combat = permadeath
 Config.CombatLogPunish = true

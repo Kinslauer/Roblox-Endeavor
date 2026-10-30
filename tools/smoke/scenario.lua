@@ -61,7 +61,7 @@ run(1)
 check("step 3 after spending 5 points", step() == 3)
 
 -- 3 loot
-local locker = workspace_:FindFirstChild("Lootable", true)
+local locker = plot:FindFirstChild("Lootable", true)
 check("locker exists", locker ~= nil)
 locker:FindFirstChildOfClass("ProximityPrompt").Triggered:Fire(player)
 run(1)
@@ -157,7 +157,12 @@ c1.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, 0), M.V3.new(0, 5, -4))
 c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, -4), M.V3.new(0, 5, 0))
 local before = c2.Humanoid.Health
 Remotes.Attack:FireServer(); run(0.8)
-check("PvP hit lands in the open world", c2.Humanoid.Health < before)
+check("spawn protection blocks the first hit", c2.Humanoid.Health == before)
+run(9)
+c1.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, 0), M.V3.new(0, 5, -4))
+c2.HumanoidRootPart.CFrame = M.CF.lookAt(M.V3.new(0, 5, -4), M.V3.new(0, 5, 0))
+Remotes.Attack:FireServer(); run(0.8)
+check("PvP hit lands once protection expires", c2.Humanoid.Health < before)
 -- kill rival -> permadeath
 local invBefore = 0
 c2.Humanoid.Health = 0
@@ -166,6 +171,73 @@ local lootable = workspace_:FindFirstChild("Lootable", true)
 check("rival's remains dropped as loot", lootable ~= nil)
 run(8)
 check("rival respawned as a fresh character", p2.Character ~= nil and p2.Character ~= c2 and p2.Character.Humanoid.Health > 0)
+
+-- ===== City, devour, enemy roster, raid =====
+local city = workspace_:FindFirstChild("City")
+check("city generated", city ~= nil and #city:GetChildren() > 100)
+local caches = game_:GetService("CollectionService"):GetTagged("Cache")
+check("loot caches placed", #caches >= 20)
+check("raid gate built", workspace_:FindFirstChild("RaidGate") ~= nil)
+
+-- district banner
+local p1char = player.Character
+p1char.HumanoidRootPart.CFrame = M.CF.new(0, 5, -420); run(2.5)
+local sawDistrict = false
+for _, e in M.FireLog do if e[1] == "Announce" and e[4] == "District" then sawDistrict = true end end
+check("district banner on entry", sawDistrict)
+
+-- devour the rival's remains (loot is destroyed, xp + charge gained)
+local remains
+for _, d in workspace_:GetDescendants() do if d.Name == "Lootable" and d:FindFirstChildOfClass("ProximityPrompt") then
+	for _, pr in d:GetChildren() do if pr.ClassName == "ProximityPrompt" and pr.ActionText == "Devour" then remains = d; break end end
+end end
+check("player remains are devourable", remains ~= nil)
+if remains then
+	local before = player.Character:GetAttribute("Charge")
+	player.Character:SetAttribute("Charge", 0)
+	for _, pr in remains:GetChildren() do if pr.ClassName == "ProximityPrompt" and pr.ActionText == "Devour" then pr.Triggered:Fire(player) end end
+	run(0.5)
+	check("devour restores charge and removes the body", player.Character:GetAttribute("Charge") == player.Character:GetAttribute("MaxCharge") and remains.Parent == nil)
+end
+
+-- raid: enter the gate, then fight (we cheat the kills so the test is fast and deterministic)
+local gatePrompt
+for _, d in workspace_.RaidGate:GetDescendants() do if d.ClassName == "ProximityPrompt" then gatePrompt = d end end
+check("gate has a prompt", gatePrompt ~= nil)
+as(player)
+gatePrompt.Triggered:Fire(player); run(1)
+local pos = player.Character.HumanoidRootPart.Position
+check("player moved into the raid arena", math.abs(pos.X - (-3000)) < 60)
+run(21) -- join window
+local enemies = workspace_:FindFirstChild("RaidEnemies")
+check("wave 1 spawned", enemies ~= nil and #enemies:GetChildren() >= 4)
+enemies = enemies or M.newInstance("Folder")
+local killed, wavesSeen = 0, {}
+local function slayAll()
+	for _, m in enemies:GetChildren() do
+		local h = m:FindFirstChildOfClass("Humanoid")
+		if h and h.Health > 0 then m:SetAttribute("LastAttackerUserId", player.UserId); m:SetAttribute("LastAttackerName", "Tester"); m:SetAttribute("LastHitTime", M.setNow()); h.Health = 0; killed += 1 end
+	end
+end
+local bossSeen = false
+for _ = 1, 12 do
+	run(3)
+	for _, m in enemies:GetChildren() do if m:GetAttribute("Boss") then bossSeen = true end end
+	slayAll()
+	run(1)
+	local done = false
+	for _, e in M.FireLog do if e[1] == "Raid" and type(e[3]) == "table" and e[3].Done then done = true end end
+	if done then break end
+end
+check("all four waves including the Warden were fought", killed >= 13 and bossSeen)
+local vault
+for _, d in workspace_:GetDescendants() do if d:GetAttribute("Label") == "Raid Vault" then vault = d end end
+check("raid vault spawned", vault ~= nil)
+run(28)
+local home = player.Character.HumanoidRootPart.Position
+check("extracted back to the city after the raid", math.abs(home.X) < 700 and math.abs(home.Z) < 700)
+check("raid folder cleaned up", enemies ~= nil and #enemies:GetChildren() == 0)
+
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

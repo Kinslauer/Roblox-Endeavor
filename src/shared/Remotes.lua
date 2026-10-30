@@ -6,7 +6,7 @@ local NAMES = {
 	-- client -> server
 	"Attack", "Heavy", "Feint", "Flicker", "Block", "Dodge", "UseSkill", "SetSkill", "Allocate", "UseItem", "EquipItem", "Unequip", "Craft", "TutorialSkip",
 	-- server -> client
-	"CombatEvent", "StatsChanged", "InventoryChanged", "LoadoutChanged", "QuestChanged", "Announce", "PhaseChanged", "Died", "Tutorial",
+	"CombatEvent", "StatsChanged", "InventoryChanged", "LoadoutChanged", "QuestChanged", "Announce", "PhaseChanged", "Died", "Tutorial", "Raid",
 }
 
 local folder

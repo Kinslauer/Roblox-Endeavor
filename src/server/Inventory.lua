@@ -5,6 +5,7 @@ local Items = require(Shared.Items)
 local Remotes = require(Shared.Remotes)
 local PlayerData = require(script.Parent.PlayerData)
 local Gear = require(script.Parent.Gear)
+local Net = require(script.Parent.Net)
 
 local Inventory = {}
 Inventory.Added = Instance.new("BindableEvent") -- (player, itemId, count)
@@ -99,9 +100,9 @@ function Inventory.Craft(player, recipeId)
 end
 
 function Inventory.Init()
-	Remotes.UseItem.OnServerEvent:Connect(Inventory.Use)
-	Remotes.EquipItem.OnServerEvent:Connect(Inventory.Equip)
-	Remotes.Craft.OnServerEvent:Connect(Inventory.Craft)
+	Net.On("UseItem", { rate = 3, burst = 4, args = { "string" } }, Inventory.Use)
+	Net.On("EquipItem", { rate = 4, burst = 8, args = { "string" } }, Inventory.Equip)
+	Net.On("Craft", { rate = 3, burst = 4, args = { "string" } }, Inventory.Craft)
 end
 
 return Inventory

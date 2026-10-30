@@ -110,7 +110,7 @@ end
 
 -------------------------------------------------- instances
 local EVENTS = { Changed=1, Triggered=1, Died=1, HealthChanged=1, Touched=1, AncestryChanged=1, OnServerEvent=1, OnClientEvent=1,
-	PlayerAdded=1, PlayerRemoving=1, CharacterAdded=1, Event=1, Heartbeat=1, Destroying=1, Activated=1, InputBegan=1, InputEnded=1 }
+	PlayerAdded=1, PlayerRemoving=1, CharacterAdded=1, Event=1, Heartbeat=1, RenderStepped=1, Destroying=1, Activated=1, InputBegan=1, InputEnded=1 }
 local Instance, new = {}, nil
 local methods = {}
 local Inst = {}
@@ -179,6 +179,8 @@ function methods.IsStudio() return true end
 function methods.IsServer() return true end
 function methods.IsClient() return false end
 function methods.BindToClose() end
+function methods.SetNetworkOwner() end
+function methods.GetDebugId() return "id" end
 
 local DEFAULTS = {
 	Humanoid = function(i) rawset(i, "MaxHealth", 100); rawset(i, "_Health", 100); rawset(i, "WalkSpeed", 16); rawset(i, "HipHeight", 0) end,
@@ -256,7 +258,7 @@ function methods.GetService(self, name)
 		s._init = true
 		function s.GetDataStore() local ds = {}; function ds.GetAsync() return nil end; function ds.SetAsync() end; function ds.UpdateAsync(_, k, f) return f(nil) end; function ds.RemoveAsync() end; return ds end
 	elseif name == "RunService" and not s._init then
-		s._init = true; s.Heartbeat = sig(s, "Heartbeat")
+		s._init = true; s.Heartbeat = sig(s, "Heartbeat"); s.RenderStepped = sig(s, "RenderStepped")
 	end
 	return s
 end

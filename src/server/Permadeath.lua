@@ -14,7 +14,10 @@ local Permadeath = {}
 
 local function dropRemains(player, profile, cframe)
 	local bundle = table.clone(profile.Inventory)
-	Loot.Spawn(cframe, bundle, { Label = player.DisplayName .. "'s remains" })
+	if next(bundle) == nil then
+		bundle.Cloth = 1 -- a body is always worth devouring
+	end
+	Loot.Spawn(cframe, bundle, { Label = player.DisplayName .. "'s remains", Devour = { Level = profile.Level } })
 end
 
 -- Account-level stats that survive deaths (a "legacy" for leaderboards/cosmetics later).

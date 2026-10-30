@@ -1,7 +1,10 @@
 local Server = script.Parent
 
 local Arena = require(Server.Arena)
+local City = require(Server.City)
+local Raids = require(Server.Raids)
 local Gear = require(Server.Gear)
+local Net = require(Server.Net)
 local WorldPhase = require(Server.WorldPhase)
 local Stats = require(Server.Stats)
 local Inventory = require(Server.Inventory)
@@ -14,11 +17,13 @@ local Lifecycle = require(Server.Lifecycle)
 
 -- Must run before WorldPhase.Init so its CitySpawn pads are found. A bug in the test arena
 -- must never stop the game from starting, so it is isolated.
+City.Init()
 local ok, err = pcall(Arena.Init)
 if not ok then
 	warn("[Arena] failed to build:", err)
 end
 WorldPhase.Init()
+Net.Init()
 Gear.Init()
 Stats.Init()
 Inventory.Init()
@@ -26,5 +31,6 @@ Quests.Init()
 Combat.Init()
 SkillRunner.Init()
 Events.Init()
+Raids.Init()
 Tutorial.Init()
 Lifecycle.Init()

@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Gear = require(script.Parent.Gear)
+local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 
 local S = Config.Stats
@@ -76,7 +77,7 @@ function Stats.Allocate(player, statName)
 end
 
 function Stats.Init()
-	Remotes.Allocate.OnServerEvent:Connect(Stats.Allocate)
+	Net.On("Allocate", { rate = 6, burst = 12, args = { "string" } }, Stats.Allocate)
 	Gear.Changed.Event:Connect(function(player)
 		Stats.Apply(player, false)
 		Stats.Push(player)

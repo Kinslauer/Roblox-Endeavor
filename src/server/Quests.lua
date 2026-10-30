@@ -13,6 +13,9 @@ Quests.Defs = {
 	{ Id = "raider_cull", Title = "Thin the Raiders: defeat 3", Kind = "kill", Target = "Raider", Count = 3, Reward = { Xp = 120, Items = { Medkit = 1 } } },
 	{ Id = "field_medic", Title = "Field Medic: craft a Medkit", Kind = "craft", Target = "Medkit", Count = 1, Reward = { Xp = 50, Items = { Ration = 2 } } },
 	{ Id = "bounty", Title = "Bounty: eliminate another conduit", Kind = "kill", Target = "Player", Count = 1, Reward = { Xp = 250, Items = { ShockBaton = 1 } } },
+	{ Id = "survey", Title = "Survey: enter 3 districts", Kind = "explore", Target = "District", Count = 3, Reward = { Xp = 90, Items = { Ration = 2, Wire = 2 } } },
+	{ Id = "brute", Title = "Heavy Metal: bring down a Brute", Kind = "kill", Target = "Brute", Count = 1, Reward = { Xp = 150, Items = { Scrap = 8 } } },
+	{ Id = "raid", Title = "Breach: clear a Blackout raid", Kind = "raid", Target = "Any", Count = 1, Reward = { Xp = 300, Items = { Medkit = 2 } } },
 }
 
 local byId = {}

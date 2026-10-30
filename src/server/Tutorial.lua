@@ -14,6 +14,7 @@ local Skills = require(Shared.Skills)
 local Combat = require(script.Parent.Combat)
 local Inventory = require(script.Parent.Inventory)
 local Loot = require(script.Parent.Loot)
+local Net = require(script.Parent.Net)
 local NPCs = require(script.Parent.NPCs)
 local PlayerData = require(script.Parent.PlayerData)
 local WorldPhase = require(script.Parent.WorldPhase)
@@ -331,7 +332,7 @@ function Tutorial.Release(player)
 end
 
 function Tutorial.Init()
-	Remotes.TutorialSkip.OnServerEvent:Connect(function(player)
+	Net.On("TutorialSkip", { rate = 1, burst = 2 }, function(player)
 		local ctx = contexts[player]
 		if ctx then
 			ctx.index = #STEPS

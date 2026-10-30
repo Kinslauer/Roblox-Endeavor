@@ -18,7 +18,7 @@ Enable *Game Settings > Security > Enable Studio Access to API Services* to test
 ## Controls (Cursed Gear layout)
 `LMB` attack (your weapon's combo) · `RMB` heavy/critical · `F` block (tap just before a hit to parry) · `Q` dodge ·
 **`E` flicker** · `Z` feint (cancel a swing's windup) · `R` / `Y` / `V` skill slots 1-3 · `X` interact (loot, armory) ·
-`Tab` inventory/crafting/equip · `L` loadout · `J` attributes.
+`Tab` inventory/crafting/equip · `L` loadout · `J` attributes · `M` devour remains · `P` helmetcam (first person, body visible).
 
 ## Flickering cursed energy (Black Flash)
 Tap `E` just *before* your swing connects (within ~0.28s). A well-timed flick boosts that hit (x1.25) and starts a chain;
@@ -33,6 +33,22 @@ attributes, loot a locker (hold `X`), craft a Medkit, wear armor, attack, heavy,
 parry and block a training dummy that telegraphs its strikes, feint, and use a skill. Each step has a live counter. Once
 every player has finished or skipped (and 30s have passed) the world opens early; otherwise it opens at the 10-minute cap.
 `Config.Tutorial.Enabled = false` restores the short timed prologue.
+
+## The city, raids and devouring
+- **City** (`src/server/City.lua`): four generated districts around the Pit - Transit Hub (low danger), Corp Plaza and
+  The Sprawl (medium), Blackout Zone (high). Ruined towers with ledges, rubble, neon signage, a pylon per district for
+  navigation, refilling loot caches, and a banner when you cross into a district. Replace any district with hand-built
+  art later; the generator is only there so the world exists now.
+- **Raids** (`src/server/Raids.lua`): the Blackout Gate opens a 20s join window for up to 6 players, teleports them to
+  a sealed arena and runs four waves (Raiders, Shockers, a Brute, then the **Warden** boss with a telegraphed slam and
+  lunge). Enemies scale with party size. Clearing it drops a vault (3x supply rolls + a guaranteed implant) and 400 xp,
+  then extracts you. Dying inside is still permadeath.
+- **Enemies** (`src/server/NPCs.lua`): Raider, Brute (hyperarmor, big knockback), Shocker (arc damage, stuns), Warden.
+  Every attack is telegraphed with a red flash (orange = unblockable) so parry/dodge timing is readable.
+- **Devour** (`M` on remains): consume a body for xp, full charge and a heal instead of looting it. Takes longer than
+  looting and destroys the loot, so it is a choice and a risk.
+- **Spawn protection**: 8s of invulnerability after spawning into the open world or extracting from a raid.
+- **Net** (`src/server/Net.lua`): every client->server remote is rate-limited and type-checked before any system sees it.
 
 ## Test arena
 With `Config.Dev.Enabled = true` (default for now) the prologue is 15s and the world opens into a generated neon arena:

@@ -160,14 +160,6 @@ end
 
 function WorldPhase.Init()
 	workspace:SetAttribute("Phase", phase)
-	if #CollectionService:GetTagged("CitySpawn") == 0 then
-		-- No city built yet: lay down a placeholder slab so the game is testable.
-		local ground = Instance.new("Part")
-		ground.Name, ground.Anchored = "PlaceholderCity", true
-		ground.Size, ground.Position = Vector3.new(1200, 4, 1200), Vector3.new(0, 0, 0)
-		ground.Color, ground.Material = Color3.fromRGB(50, 50, 55), Enum.Material.Asphalt
-		ground.Parent = workspace
-	end
 end
 
 return WorldPhase

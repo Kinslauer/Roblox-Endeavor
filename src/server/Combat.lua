@@ -11,6 +11,7 @@ local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local Weapons = require(Shared.Weapons)
 local Gear = require(script.Parent.Gear)
+local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 local WorldPhase = require(script.Parent.WorldPhase)
 
@@ -567,12 +568,12 @@ function Combat.Dodge(player, direction)
 end
 
 function Combat.Init()
-	Remotes.Attack.OnServerEvent:Connect(Combat.Attack)
-	Remotes.Heavy.OnServerEvent:Connect(Combat.Heavy)
-	Remotes.Feint.OnServerEvent:Connect(Combat.Feint)
-	Remotes.Flicker.OnServerEvent:Connect(Combat.Flicker)
-	Remotes.Block.OnServerEvent:Connect(Combat.SetBlock)
-	Remotes.Dodge.OnServerEvent:Connect(Combat.Dodge)
+	Net.On("Attack", { rate = 8, burst = 12 }, Combat.Attack)
+	Net.On("Heavy", { rate = 4, burst = 6 }, Combat.Heavy)
+	Net.On("Feint", { rate = 6, burst = 8 }, Combat.Feint)
+	Net.On("Flicker", { rate = 8, burst = 12 }, Combat.Flicker)
+	Net.On("Block", { rate = 10, burst = 20, args = { "boolean" } }, Combat.SetBlock)
+	Net.On("Dodge", { rate = 4, burst = 6, args = { "vector" } }, Combat.Dodge)
 
 	local accumulator = 0
 	RunService.Heartbeat:Connect(function(dt)

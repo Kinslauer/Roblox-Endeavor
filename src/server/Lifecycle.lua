@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local City = require(script.Parent.City)
 local Combat = require(script.Parent.Combat)
 local Gear = require(script.Parent.Gear)
 local Inventory = require(script.Parent.Inventory)
@@ -46,6 +47,8 @@ function Lifecycle.Spawn(player)
 		if profile then
 			profile.Awakened = true
 		end
+		Combat.GrantIFrames(char, Config.SpawnProtection) -- fresh characters are not free kills
+		City.ResetVisits(player)
 		Quests.Assign(player)
 	elseif Config.Tutorial.Enabled then
 		Tutorial.Start(player)
