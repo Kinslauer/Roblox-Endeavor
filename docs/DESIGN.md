@@ -44,7 +44,8 @@ Scavenge -> craft/upgrade -> take quests -> fight (NPCs, players, events) -> get
 
 **Then**
 - Hand-built district art replacing the generator; a proper Blackout interior for raids; more raid gates with different bosses.
-- Cold War-style war world: faction fronts, vehicles, destructible cover (needs the notes from the earlier session).
+- Cold War-style war world: faction fronts, artillery, sector resets, no vehicles (see the destruction doc).
+- Destruction & salvage: breach points, destructible props, salvage crafting, grab-and-throw debris, explosions; war-world destruction at scale. See [systems/destruction-and-salvage.md](systems/destruction-and-salvage.md).
 - Deepwoken-style depth: talent tree and more skills gated by stat thresholds and armor sets, status effects (bleed, burn, shock), armor set bonuses, weapon-specific hit effects.
 - Conduit powers: multiple trees (arc, cinder, void...) with cooldown/charge costs.
 - Pickpocketing on live players, lockpicking containers, bounty board, factions/territory.
