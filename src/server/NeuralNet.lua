@@ -8,6 +8,8 @@ local TeleportService = game:GetService("TeleportService")
 local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
+local Assets = require(Shared.Assets)
+local ModelAssets = require(script.Parent.Common.ModelAssets)
 local Net = require(script.Parent.Common.Net)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local Recruit = require(script.Parent.Common.Recruit)
@@ -95,6 +97,9 @@ local function buildTerminal(position, label)
 	body.Position = position + Vector3.new(0, 3.5, 0)
 	body.Color, body.Material = Color3.fromRGB(18, 20, 30), Enum.Material.Metal
 	body.Parent = model
+	if ModelAssets.Spawn(Assets.Loot.Terminal, CFrame.new(position), "Shell", model) then
+		body.Transparency = 1
+	end
 	local screen = Instance.new("Part")
 	screen.Size, screen.Anchored, screen.CanCollide = Vector3.new(4, 3, 0.3), true, false
 	screen.Position = position + Vector3.new(0, 4.2, 1.3)

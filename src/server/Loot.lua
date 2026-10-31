@@ -10,6 +10,9 @@ local Stats = require(script.Parent.Stats)
 
 local D = Config.Devour
 
+local Assets = require(ReplicatedStorage.Shared.Assets)
+local ModelAssets = require(script.Parent.Common.ModelAssets)
+
 local Loot = {}
 
 -- opts: Label, Action, Hold, Lifetime, Color, Size, OwnerUserId (the dead player: locked out for OwnerLockout seconds), Devour ({ Level = n } for a conduit's remains, { Npc = true } for NPCs)
@@ -26,6 +29,12 @@ function Loot.Spawn(cframe, bundle, opts)
 	part.Anchored = false
 	part.CFrame = cframe
 	part:SetAttribute("Label", opts.Label or "Remains")
+	-- the look: crates for caches and drops, a stash bag for remains, spoils and salvage
+	local label = opts.Label or "Remains"
+	local meshId = if opts.Mesh then Assets.Loot[opts.Mesh] elseif label:find("Vault") then Assets.Loot.CrateB elseif label:find("Cache") or label:find("Crate") or label:find("Drop") then Assets.Loot.CrateA else Assets.Loot.Stash
+	if meshId and ModelAssets.Spawn(meshId, part.CFrame * CFrame.new(0, -part.Size.Y / 2, 0), "Mesh", part) then
+		part.Transparency = 1
+	end
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ObjectText = opts.Label or "Remains"

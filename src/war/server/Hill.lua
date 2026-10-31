@@ -83,11 +83,21 @@ end
 
 function Hill.Init()
 	since = os.clock()
+	-- a column of light from the ground to the sky with the beacon on top: visible from anywhere on the front
 	marker = Instance.new("Part")
 	marker.Name, marker.Anchored, marker.CanCollide, marker.CanQuery = "HillMarker", true, false, false
 	marker.Shape, marker.Size = Enum.PartType.Ball, Vector3.new(14, 14, 14)
 	marker.Material, marker.Color, marker.Transparency = Enum.Material.Neon, Color3.fromRGB(255, 220, 80), 0.3
 	marker.Position = Battlefield.SectorCenter(current) + Vector3.new(0, 60, 0)
+	local column = Instance.new("Part")
+	column.Name, column.Anchored, column.CanCollide, column.CanQuery = "HillColumn", true, false, false
+	column.Shape, column.Size = Enum.PartType.Cylinder, Vector3.new(120, 3, 3)
+	column.Material, column.Color, column.Transparency = Enum.Material.Neon, Color3.fromRGB(255, 220, 80), 0.6
+	column.CFrame = CFrame.new(marker.Position - Vector3.new(0, 60, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0, weld.Part1 = marker, column
+	weld.Parent = column
+	column.Parent = marker
 	marker.Parent = workspace
 	task.spawn(function()
 		while true do

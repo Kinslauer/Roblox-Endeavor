@@ -39,6 +39,8 @@ report). Versions: Endeavor v28, Front v15.
 - [ ] Mannequins on the magenta pads by the test armory: Raider, Brute, Shocker, Warden. Limbs in the right place
       (left arm on the character's left), idle animation playing, weapon in the right hand.
 - [ ] Live hostiles walk with moving legs, telegraph attacks, and die with gore (dismemberment, pools, corpse stays).
+- [ ] Loot looks right: caches and supply drops are olive crates with a hazard stripe, vault caches dark with a cyan
+      lock, remains/spoils/salvage a canvas stash bag; the prompt still works on each.
 - [ ] Corpses can be looted; your own corpse after death cannot be looted by you for 60 s.
 
 ## Endeavor: destruction and salvage
@@ -68,6 +70,7 @@ report). Versions: Endeavor v28, Front v15.
 - [ ] Raid arena: waves spawn, rewards at the vault, extraction works.
 
 ## Endeavor → Front
+- [ ] Neural Net terminals are dark cabinets with a cyan pulse either side of the purple screen.
 - [ ] Neural Net terminal (X) plays the uplink sequence and teleports to the Front (needs the Roblox app or
       "Open from Roblox", not Studio Play).
 
@@ -85,6 +88,7 @@ report). Versions: Endeavor v28, Front v15.
 - [ ] Dig (F) makes a foxhole with a thump; sandbags (V) stack a low wall with the mesh on it.
 - [ ] Artillery (K): warning, then whistle about two seconds before the shells land.
 - [ ] Wind with distant guns is audible as ambience.
+- [ ] The hill is marked by a column of yellow light from ground to sky with the beacon on top; it moves with the hill.
 - [ ] Hill moves, tickets tip the scales HUD, income only while deployed.
 - [ ] Recruit death drops damaged gear that anyone can loot; conscript bodies give nothing.
 

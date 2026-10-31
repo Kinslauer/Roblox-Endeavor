@@ -165,6 +165,15 @@ Assets.Worn = {
 	OverclockCore = { Id = 128521678913563, Limb = "UpperTorso" },
 }
 
+-- Loot containers and the Neural Net terminal shell (tools/models/loot.py): meshes ride inside the lootable
+-- part / terminal body, which turn invisible. Loot.Spawn picks by label unless opts.Mesh names one.
+Assets.Loot = {
+	CrateA = 135218922360091, -- supply / cache crate
+	CrateB = 116144381772246, -- vault cache, glowing lock
+	Stash = 74319019375137, -- remains, spoils, salvage
+	Terminal = 83359264941281,
+}
+
 -- Roblox drops Blender material colours on import, so every part is named "<Part>_<Material>"
 -- and the material is applied from this table when the model is loaded.
 Assets.Materials = {
