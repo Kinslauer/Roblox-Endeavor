@@ -12,6 +12,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Firearms = require(Shared:WaitForChild("Firearms"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local Sounds = require(Shared:WaitForChild("Sounds"))
+Sounds.Loop("AmbFront", 0.4) -- wind over the mud and guns on the horizon
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera

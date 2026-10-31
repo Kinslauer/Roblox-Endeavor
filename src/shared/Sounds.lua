@@ -28,6 +28,9 @@ Sounds.Ids = {
 	ImpactDirt = 87807811707604,
 	ImpactFlesh = 118429901746744,
 	Dig = 88314587694249,
+	AmbCity = 75239004859369,
+	AmbWind = 78591666343512,
+	AmbFront = 102348000683973,
 	ArtilleryWhistle = 121714797919348,
 }
 
@@ -91,6 +94,27 @@ function Sounds.Play(name, at, opts)
 	end
 	sound:Play()
 	Debris:AddItem(sound, 6)
+	return sound
+end
+
+-- Starts (or returns) a looping ambient bed in SoundService; one per name.
+local loops = {}
+function Sounds.Loop(name, volume)
+	local id = Sounds.Ids[name]
+	if not id then
+		return nil
+	end
+	if loops[name] then
+		loops[name].Volume = volume or loops[name].Volume
+		return loops[name]
+	end
+	local sound = Instance.new("Sound")
+	sound.Name = "Ambient_" .. name
+	sound.SoundId = "rbxassetid://" .. id
+	sound.Looped, sound.Volume = true, volume or 0.3
+	sound.Parent = SoundService
+	sound:Play()
+	loops[name] = sound
 	return sound
 end
 

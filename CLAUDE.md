@@ -86,14 +86,14 @@ store `ConduitCharacter_v2`) is shared by both places.
   24x20x12, four stages each) replace the box structures; Battlefield picks the kit nearest the wanted width.
   Hideout modules (`tools/models/hideout.py` -> `Assets.Hideout`): bench per tier, vault, bunks, generator, turret, forge,
   medbay; each mesh sits inside its collider part (`dress()` in Hideouts.lua), prompts stay on the part.
-  Sounds: 25 synthesized effects (`tools/sounds/synth.py`, uploaded as Audio assets) in `src/shared/Sounds.lua`; both
+  Sounds: 25 synthesized effects + 3 ambient loops (city hum, wind, Front wind with distant guns) (`tools/sounds/synth.py`, uploaded as Audio assets) in `src/shared/Sounds.lua`; both
   clients play them from their existing event handlers (`Sounds.Play(name, partOrPosition)`). Unheard by me: verify in-game.
   Still placeholder: custom animations, arena/raid geometry, hideout walls (generated slabs).
   Known limit: MeshPart CollisionFidelity can't be set from scripts, so collapsed stumps may collide as hulls.
 - All balance numbers are first guesses pending the user's playtest checklist.
 
 ## Open items
-- Next art: hideout walls/gate, ambient sound beds (city hum, wind),
+- Next art: hideout walls/gate,
   animations (hooks exist: `CombatEvent` "Swing"). Awaiting the user's in-game look at the rigs (animation playback can't be verified from the Luau execution API).
 - The user's playtest checklist (pending).
 - Front: real 20-player frame-rate test; war world art; vehicles are intentionally absent.

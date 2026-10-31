@@ -20,6 +20,9 @@ local Sounds = require(Shared:WaitForChild("Sounds"))
 local SOUND = { Hit = "HitFlesh", Block = "BlockThud", Parry = "HitClang", GuardBreak = "GuardBreak", Devour = "Devour", Flick = "FlickerTick" }
 -- Sounds for props breaking, by prop id; anything else is metal. Chunks hitting the ground thud.
 local BREAK_SOUND = { WindowPane = "BreakGlass", Crate = "BreakWood", Slab = "Collapse", Chunk = "ImpactDirt" }
+-- the city never stops humming; the wind carries through the ruins
+Sounds.Loop("AmbCity", 0.35)
+Sounds.Loop("AmbWind", 0.2)
 
 local Skills = require(Shared:WaitForChild("Skills"))
 

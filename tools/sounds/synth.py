@@ -81,3 +81,30 @@ save("impact_flesh", mix(lowpass(noise(0.1), 400) * env(int(0.1 * SR), 0.001, 0.
 save("dig", mix(lowpass(noise(0.3), 500) * env(int(0.3 * SR), 0.01, 0.25) * (0.6 + 0.4 * np.abs(np.sin(t(0.3) * 40))), tone(0.1, 300, 150) * env(int(0.1 * SR), 0.001, 0.08) * 0.3))
 save("artillery_whistle", tone(2.2, 2400, 900) * env(int(2.2 * SR), 0.3, 1.8, 0.2, 0.1) * 0.6 + bandpass(noise(2.2), 1500, 4000) * env(int(2.2 * SR), 0.5, 1.6) * 0.3)
 print("SOUNDS DONE")
+
+# ---- ambient beds: seamless loops (the tail is crossfaded into the head)
+def loopable(x, fade=1.0):
+    n = int(fade * SR); head, tail = x[:n].copy(), x[-n:].copy()
+    ramp = np.linspace(0, 1, n)
+    x = x[:-n]; x[:n] = head * ramp + tail * (1 - ramp)
+    return x
+def ambient_city(sec=24.0):
+    hum = tone(sec, 55) * 0.5 + tone(sec, 110) * 0.25 + tone(sec, 164) * 0.1
+    slow = 0.7 + 0.3 * np.sin(t(sec) * 0.37) * np.sin(t(sec) * 0.11)
+    wind = lowpass(noise(sec), 400) * (0.6 + 0.4 * np.sin(t(sec) * 0.23 + 1.0))
+    crackle = highpass(noise(sec), 6000) * (rng.random(int(sec * SR)) < 0.0004) * 6
+    return loopable(hum * slow + wind * 0.8 + lowpass(crackle, 8000) * 0.5, 2.0)
+def ambient_wind(sec=24.0):
+    gust = 0.5 + 0.5 * np.abs(np.sin(t(sec) * 0.19) * np.sin(t(sec) * 0.07 + 0.4))
+    return loopable(bandpass(noise(sec), 150, 1200) * gust + lowpass(noise(sec), 200) * 0.4, 2.0)
+def ambient_front(sec=30.0):
+    base = ambient_wind(sec + 2.0)[: int(sec * SR)]
+    for _ in range(14):  # distant guns and the odd shell, rolled off
+        at = int(rng.uniform(0.5, sec - 1.5) * SR)
+        s = lowpass(shot(0.7, 70, crack=False), 350) * rng.uniform(0.2, 0.6)
+        base[at: at + len(s)] += s[: len(base) - at]
+    return loopable(base, 2.0)
+save("amb_city", ambient_city())
+save("amb_wind", ambient_wind())
+save("amb_front", ambient_front())
+print("AMBIENT DONE")
