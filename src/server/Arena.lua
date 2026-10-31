@@ -17,6 +17,8 @@ local Inventory = require(script.Parent.Inventory)
 local NPCs = require(script.Parent.NPCs)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local Stats = require(script.Parent.Stats)
+local Rigs = require(script.Parent.Rigs)
+local Assets = require(Shared.Assets)
 
 local Arena = {}
 
@@ -258,6 +260,31 @@ local function buildArmory()
 	-- training dummies in front of the armory (they regenerate and show damage numbers)
 	for i = -1, 1 do
 		dummy(Vector3.new(i * 18, floorY + 2.5, 108))
+	end
+	-- a mannequin of every uploaded character rig, idling on a pad: look at it, it won't fight back
+	local k = 0
+	for typeName, id in Assets.Rigs do
+		if id ~= 0 then
+			local model, hum, root = Rigs.Build(id, typeName .. " (display)")
+			if model then
+				k += 1
+				local pos = Vector3.new(44 + k * 8, floorY + 1 + hum.HipHeight + root.Size.Y / 2, 124)
+				part({ Name = "DisplayPad", Size = Vector3.new(6, 0.4, 6), Position = Vector3.new(pos.X, floorY + 1.2, pos.Z), Material = Enum.Material.Neon, Color = MAGENTA, Transparency = 0.5 })
+				model:PivotTo(CFrame.lookAt(pos, pos + Vector3.new(0, 0, -10)))
+				model:SetAttribute("Display", true)
+				model.Parent = folder
+				root:SetNetworkOwner(nil)
+				root.Anchored = true -- it stands still; the idle animation still plays on the limbs
+				Rigs.Animate(model, hum)
+				local label = Instance.new("BillboardGui")
+				label.Size, label.StudsOffset, label.AlwaysOnTop = UDim2.fromOffset(160, 30), Vector3.new(0, 4.5, 0), true
+				local text = Instance.new("TextLabel")
+				text.Size, text.BackgroundTransparency, text.Text = UDim2.fromScale(1, 1), 1, typeName
+				text.TextColor3, text.Font, text.TextScaled = MAGENTA, Enum.Font.GothamBold, true
+				text.Parent = label
+				label.Parent = root
+			end
+		end
 	end
 end
 

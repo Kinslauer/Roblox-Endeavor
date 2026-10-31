@@ -12,6 +12,8 @@ local Loot = require(script.Parent.Loot)
 local Quests = require(script.Parent.Quests)
 local Stats = require(script.Parent.Stats)
 local Gore = require(script.Parent.Gore)
+local Rigs = require(script.Parent.Rigs)
+local Assets = require(Shared.Assets)
 
 local NPCs = {}
 NPCs.Killed = Instance.new("BindableEvent") -- (typeName, model, killerPlayer?)
@@ -46,6 +48,16 @@ NPCs.Types = {
 }
 
 function NPCs.BuildRig(name, typeDef)
+	-- a Blender rig if one is uploaded for this type; the box rig otherwise
+	local rigId = Assets.Rigs[name]
+	if rigId and rigId ~= 0 then
+		local model, hum, root = Rigs.Build(rigId, name)
+		if model then
+			hum.MaxHealth, hum.Health, hum.WalkSpeed = typeDef.Health or 100, typeDef.Health or 100, typeDef.Speed or 0
+			model:SetAttribute("Rigged", true)
+			return model, hum, root
+		end
+	end
 	local model = Instance.new("Model")
 	model.Name = name
 	local root = Instance.new("Part")
@@ -110,6 +122,9 @@ function NPCs.Spawn(typeName, position, opts)
 	model:PivotTo(CFrame.new(position))
 	model.Parent = opts.Parent or workspace
 	root:SetNetworkOwner(nil)
+	if model:GetAttribute("Rigged") then
+		Rigs.Animate(model, hum)
+	end
 
 	local alive = true
 	hum.Died:Connect(function()
