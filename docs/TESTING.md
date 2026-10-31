@@ -1,7 +1,7 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v62, Front v19.
+report). Versions: Endeavor v63, Front v19.
 
 ## Endeavor: first minutes
 - [ ] The starting room is a pod: dark panelled walls with cyan seams, diamond-plate floor, the console in a terminal
@@ -235,16 +235,16 @@ move; the city and the scarp overlook stay put. The server's seed is printed in 
 - [ ] Rival conduit crews (2 crews of 3, purple-grey raider rigs named Rival, rebar blades) walk between the frontier's
       sites and fight whoever they meet. Killing one drops rival loot and may put "Rival intel: <contract>" on your board
       even without RAIDS.
-- [ ] The first log-in is the stack upload: "INITIALIZATION 1/1: CONSCIOUSNESS STACK UPLOADED", then "Every death from
-      here is a reboot of the stack". The panel's second line reads "Stack: uploaded".
-- [ ] Before the upload, dying wipes what the computer knew (contacts met die with the body) and the death screen says
-      "No stack was uploaded". After it, the death screen says "STACK REBOOT" and contacts, contracts and the archive
-      survive. Tapping in to the Front banners "Linking your stack to the recruit's".
+- [ ] The first log-in reads "> INIT 1/1 . . . STACK READ . . . RESIDENT" and the panel's second line "> STACK: RESIDENT".
+      Nothing explains what that means.
+- [ ] Before the upload, dying wipes what the computer knew (contacts met die with the body) and the death screen ends
+      "> NO STACK . . . NO RECOVERY". After it, "> STACK RESIDENT . . . REBOOTING" and contacts, contracts and the archive
+      survive. Tapping in to the Front shows "> LINK: RECRUIT STACK . . . OK". Meeting a contact: "> RAIDS: ONLINE".
 
 ## Endeavor: the cycle and the clues
-- [ ] Every hour (10 minutes while Dev is on) the city warns "dematerializing in 60s", debris flickers, colour drains
+- [ ] Every hour (10 minutes while Dev is on), with no countdown text: debris flickers for a minute, colour drains
       over the last 5 s, then a second of white: broken props, breaches and structures are back, loose remains and
-      dropped gear nobody looted are gone, woken valley encounters are gone, and "The ruins rematerialize". You stay
+      dropped gear nobody looted are gone, woken valley encounters are gone. Nothing announces it. You stay
       where you stand with what you carry; the hideout is untouched. F2 "Cycle: Run now" does it on demand.
 - [ ] After a cycle the contacts have moved: the Broker to one of three spots in the Reach (by the trader, inside the
       gate, by a dome), the Fixer (under the span, Transit Hub plaza, Sprawl plaza), the Dealer (overlook deck, second

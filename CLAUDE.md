@@ -46,6 +46,9 @@ store `ConduitCharacter_v2`) is shared by both places.
   cannot teleport between places. They cannot see logs easily: ask for F9 → Server/Client tab screenshots.
 
 ## Decisions the user made (do not relitigate)
+- **Show, don't tell** (owner, 2026-10-31): no banner explains a system or the lore. Machine text is terse and
+  diegetic ("> INIT 1/1 . . . STACK READ . . . RESIDENT", "> RAIDS: ONLINE", "> STACK RESIDENT . . . REBOOTING"); the
+  cycle shows itself (flicker, colour drain, white-out) with no countdown text; contacts and fragments hint, never state.
 - No classes: weapon = moveset; skills unlock from effective stats + worn armor/cyber tags.
 - Flickering cursed energy = Black Flash timing mechanic (tap E before impact; 3 chained = Black Flash + Zone).
 - Catching thrown chunks is timing-based (grab press within 0.25s of impact).
@@ -66,7 +69,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   "Upload stack / log in".
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v62, Front v19). Front v10 verified on a real server:
+- Both places published and starting cleanly (Endeavor v63, Front v19). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.

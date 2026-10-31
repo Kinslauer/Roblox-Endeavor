@@ -63,7 +63,6 @@ function Cycle.Run()
 		nf += 1
 	end
 	workspace:SetAttribute("Cycle", index)
-	Remotes.Announce:FireAllClients("The ruins rematerialize.", "Info")
 	print(("[Cycle] %d: %d loose lootables cleared, %d encounters stood down, contacts at %s, %d fragments out"):format(index, loose, stood,
 		(function()
 			local t = {}
@@ -93,8 +92,7 @@ local function loop()
 		local total = seconds()
 		nextAt = os.clock() + total
 		task.wait(math.max(1, total - D.CycleWarning))
-		Remotes.Announce:FireAllClients(("The city is dematerializing in %ds."):format(D.CycleWarning), "Emergence")
-		Remotes.World:FireAllClients("DematerializeWarning", D.CycleWarning)
+		Remotes.World:FireAllClients("DematerializeWarning", D.CycleWarning) -- debris flickers; nothing says why
 		task.wait(math.max(0, D.CycleWarning - C.FlickerSeconds))
 		Remotes.World:FireAllClients("Flicker", C.FlickerSeconds)
 		task.wait(C.FlickerSeconds)

@@ -134,10 +134,8 @@ function Terminal.Upload(player)
 		return false
 	end
 	k.Uploaded = true
-	announce(player, "INITIALIZATION 1/1: CONSCIOUSNESS STACK UPLOADED. The computer runs on you now.", "Emergence")
-	task.delay(2.5, function()
-		announce(player, "Every death from here is a reboot of the stack. What this computer learns, it keeps.", "Info")
-	end)
+	-- the machine talks like a machine; what it means is for the player to work out
+	announce(player, "> INIT 1/1 . . . STACK READ . . . RESIDENT", "Emergence")
 	Terminal.Push(player)
 	return true
 end
@@ -170,7 +168,7 @@ function Terminal.Meet(player, contactId)
 	if not k.Contacts[contactId] then
 		k.Contacts[contactId] = true
 		task.delay(3, function()
-			announce(player, ("%s unlocked on your hideout computer."):format(c.App), "Reward")
+			announce(player, ("> %s: ONLINE"):format(c.App), "Reward")
 		end)
 	end
 	Terminal.Push(player)
