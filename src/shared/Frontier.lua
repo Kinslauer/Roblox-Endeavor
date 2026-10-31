@@ -85,6 +85,22 @@ local SITE_DEFS = {
 		Guards = { { "Brute", 2 }, { "Shocker", 2 }, { "Raider", 2 } }, Scale = 1.3, Stock = { { "Relic", 1 }, { "Vault", 2 } }, Fixed = { OverclockCore = 1 } },
 }
 
+-- Encounters a valley cell can roll on top of its template (server/Frontier.lua runs them):
+--   Ambush: a hidden pack that springs when someone walks into the cell (then rests Config.Frontier.AmbushRest)
+--   Patrol: a pack that walks a loop through the cell and its neighbours
+--   Nest: Shockers around a stash worth taking
+--   Bounty: a named, oversized Brute who drops relic-table loot
+-- false = a quiet cell. The weights are the list.
+local ENCOUNTERS = {
+	false, false, false, false,
+	{ Kind = "Ambush", Guards = { { "Raider", 3 }, { "Shocker", 1 } }, Scale = 1.2 },
+	{ Kind = "Ambush", Guards = { { "Raider", 2 }, { "Brute", 1 } }, Scale = 1.2 },
+	{ Kind = "Patrol", Guards = { { "Raider", 2 }, { "Shocker", 1 } }, Scale = 1.15 },
+	{ Kind = "Patrol", Guards = { { "Shocker", 2 } }, Scale = 1.2 },
+	{ Kind = "Nest", Guards = { { "Shocker", 3 } }, Scale = 1.1, Stock = { { "Supply", 1 } } },
+	{ Kind = "Bounty", Guards = { { "Brute", 1 } }, Scale = 1.6, Names = { "Hollowjaw", "The Culler", "Ten-Ton Vey", "Rebar Saint", "Mother Gravel" } },
+}
+
 -- Valley chunk templates and how often they are dealt (server/Frontier.lua builds each).
 local VALLEY_CHUNKS = { "Forest", "Forest", "Forest", "Forest", "Glade", "Glade", "Boulders", "Ruin", "Marsh", "Crater" }
 
@@ -205,12 +221,21 @@ function Frontier.Generate(seed)
 		site.Position = cell.Center + Vector3.new(rng:NextNumber(-25, 25), 0, rng:NextNumber(-25, 25))
 		table.insert(L.Sites, site)
 	end
-	-- every other valley cell gets a template
+	-- every other valley cell gets a template, and most roll an encounter on top of it
 	for r = 2, rows - 1 do
 		for c = 2, cols - 1 do
 			local cell = L.Cells[r][c]
 			if cell.Type == "Valley" then
 				cell.Type = VALLEY_CHUNKS[rng:NextInteger(1, #VALLEY_CHUNKS)]
+			end
+			if not cell.Site and cell.Type ~= "Reach" then
+				local roll = ENCOUNTERS[rng:NextInteger(1, #ENCOUNTERS)]
+				if roll then
+					cell.Encounter = table.clone(roll)
+					if cell.Encounter.Names then
+						cell.Encounter.Boss = cell.Encounter.Names[rng:NextInteger(1, #cell.Encounter.Names)]
+					end
+				end
 			end
 		end
 	end

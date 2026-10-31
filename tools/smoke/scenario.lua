@@ -779,7 +779,7 @@ do
 	for _, m in CS:GetTagged("NPC") do if m:GetAttribute("Frontier") then guards += 1 end end
 	check("frontier: every site and checkpoint is built", sites == #FS.Sites and posts == #FS.Route - 1)
 	print("frontier guards standing: " .. guards)
-	check("frontier: guards stand at the checkpoints and sites", guards >= 40 and guards <= 64)
+	check("frontier: guards stand at the checkpoints and sites", guards >= 40 and guards <= 96)
 	local stocked = 0
 	for _, c in Frontier.Containers() do
 		if c.part and c.part.Parent and next(Loot.Contents(c.part)) ~= nil then stocked += 1 end
@@ -820,6 +820,43 @@ do
 	run(1.6)
 	check("frontier: leaving the market drops the protection", player:GetAttribute("Safe") == nil)
 	check("frontier: buying away from the market is refused", Frontier.Buy(player, "Medkit") == false)
+	-- encounters: a quiet valley cell versus a rolled one; an ambush springs on entry and then rests
+	local ambushCell, patrolCell, bountyCell
+	for r = 2, FS.Rows - 1 do
+		for c = 2, FS.Cols - 1 do
+			local cell = FS.L.Cells[r][c]
+			if cell.Encounter then
+				if cell.Encounter.Kind == "Ambush" and not ambushCell then ambushCell = cell
+				elseif cell.Encounter.Kind == "Patrol" and not patrolCell then patrolCell = cell
+				elseif cell.Encounter.Kind == "Bounty" and not bountyCell then bountyCell = cell end
+			end
+		end
+	end
+	print("frontier encounters: ambush " .. tostring(ambushCell ~= nil) .. " patrol " .. tostring(patrolCell ~= nil) .. " bounty " .. tostring(bountyCell ~= nil))
+	check("frontier: the valley rolled encounters", ambushCell ~= nil or patrolCell ~= nil or bountyCell ~= nil)
+	if patrolCell then
+		player.Character:PivotTo(M.CF.new(patrolCell.Center.X + 100, 0, patrolCell.Center.Z))
+		run(1.6)
+		local e = Frontier.Encounters()[patrolCell]
+		check("frontier: a patrol wakes when someone comes near", e and e.models and #e.models > 0)
+	end
+	if bountyCell then
+		player.Character:PivotTo(M.CF.new(bountyCell.Center.X + 100, 0, bountyCell.Center.Z))
+		run(1.6)
+		local e = Frontier.Encounters()[bountyCell]
+		check("frontier: the bounty wears its name", e and e.models[1] and e.models[1].Name == bountyCell.Encounter.Boss)
+	end
+	if ambushCell then
+		local npcsBefore = #CS:GetTagged("NPC")
+		player.Character:PivotTo(M.CF.new(ambushCell.Center.X, 0, ambushCell.Center.Z))
+		run(1.6)
+		local e = Frontier.Encounters()[ambushCell]
+		check("frontier: walking into an ambush cell springs it", e and e.models and #e.models > 0 and #CS:GetTagged("NPC") > npcsBefore)
+		local sprung = #CS:GetTagged("NPC")
+		run(1.6)
+		check("frontier: a sprung ambush rests", #CS:GetTagged("NPC") == sprung)
+		for _, m in e.models do m:Destroy() end
+	end
 	-- the crew remembers the way: route knowledge survives permadeath
 	local fresh = PlayerData.Reset(player)
 	check("frontier: the route survives permadeath", fresh.Frontier.Route == 1 and fresh.Frontier.Found[site.Key] == true)

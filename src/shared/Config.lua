@@ -186,12 +186,18 @@ Config.City = {
 
 -- the world north of the city wall (shared/Frontier.lua, server/Frontier.lua)
 Config.Frontier = {
-	Cap = 64, -- frontier guards alive at once (checkpoints + sites), on top of the city's population
+	Cap = 80, -- frontier post guards alive at once (checkpoints + sites), on top of the city's population
 	Respawn = 240, -- seconds before a dead guard returns to its post
 	Refill = 600, -- seconds before an emptied site container is restocked
 	CheckpointReach = 45, -- studs from a checkpoint that counts as reaching it
 	DiscoverRadius = 150, -- studs from a site that marks it on your map for good
 	Seed = 0, -- 0 = a new layout every server; any other number = always that layout
+	AmbushRadius = 70, -- studs from a cell's centre that springs its ambush
+	AmbushRest = 300, -- seconds before a sprung ambush can spring again
+	PatrolLeg = 12, -- seconds between a patrol's waypoints
+	WakeRadius = 420, -- a patrol, nest or bounty stands up once someone is this close to its cell
+	SleepSeconds = 90, -- with nobody within twice WakeRadius for this long, a woken encounter stands down
+	EncounterCap = 40, -- encounter bodies (patrols, nests, bounties, ambushes) alive at once
 }
 
 Config.Raid = {

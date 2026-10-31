@@ -60,7 +60,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   K artillery, F dig, V sandbags, M app.
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v57, Front v19). Front v10 verified on a real server:
+- Both places published and starting cleanly (Endeavor v59, Front v19). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.
@@ -188,6 +188,11 @@ store `ConduitCharacter_v2`) is shared by both places.
   Frontier kit (`tools/models/frontier.py` -> `Assets.Frontier`: Pines/Broad/Dead/Rocks/Tent/Dome/Tower, materials
   Bark/DeadBark/Needle/Leaf/LeafDark/Stone/StoneDark/Canvas/Frame/DomeGlass/SolarGlass): `kit()` in server/Frontier.lua
   spawns + `Model:ScaleTo`s them with part fallbacks; live v57: 574 trees, 256 rocks, 8 tents, 9 domes, 6 towers, 8.3s build.
+  Encounters (shared ENCOUNTERS list, `cell.Encounter` rolled per non-site valley cell): Ambush (springs within
+  Config.Frontier.AmbushRadius, rests AmbushRest, NoRespawn), Patrol (`Patrol` loop opts in spawnGuard), Nest (stash),
+  Bounty (named Brute, Relic hoard on death). Standing ones wake within WakeRadius and stand down after SleepSeconds
+  with nobody near; capped by EncounterCap separately from the post Cap (bodies carry the `Encounter` attribute).
+  `Frontier.Encounters()` for tests.
 
 - The test arena (Arena.lua: the Pit, armory, mannequins, dummies) is built at `Config.Dev.ArenaOrigin` (3000, 0, 0),
   off the map, on its own slab; its pads are tagged ArenaSpawn, not CitySpawn. The city's centre is `City.buildCrossroads`

@@ -671,10 +671,11 @@ local function buildReach()
 end
 
 -- ===== guards =====
-local function countAlive()
+-- Living frontier bodies: posts (checkpoints, sites) and encounters are capped separately.
+local function countAlive(encounter)
 	local n = 0
 	for _, model in CollectionService:GetTagged("NPC") do
-		if model:GetAttribute("Frontier") then
+		if model:GetAttribute("Frontier") and (model:GetAttribute("Encounter") == true) == (encounter == true) then
 			local hum = model.Parent and model:FindFirstChildOfClass("Humanoid")
 			if hum and hum.Health > 0 then
 				n += 1
@@ -684,8 +685,11 @@ local function countAlive()
 	return n
 end
 
-local function spawnGuard(typeName, anchor, radius, scale, bossName)
-	if countAlive() >= C.Cap then
+-- opts: NoRespawn (an encounter body stays dead until its encounter rolls again), OnDied(model, position),
+-- Patrol = { points } (walks the loop instead of wandering the anchor)
+local function spawnGuard(typeName, anchor, radius, scale, bossName, opts)
+	opts = opts or {}
+	if countAlive(opts.Encounter) >= (if opts.Encounter then C.EncounterCap else C.Cap) then
 		return nil
 	end
 	local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(3, radius)
@@ -696,18 +700,43 @@ local function spawnGuard(typeName, anchor, radius, scale, bossName)
 		Scale = scale,
 		OnDied = function()
 			alive -= 1
-			task.delay(C.Respawn, function()
-				if WorldPhase.IsOpen() then
-					spawnGuard(typeName, anchor, radius, scale, bossName)
-				end
-			end)
+			if opts.OnDied then
+				local root = model and model:FindFirstChild("HumanoidRootPart")
+				opts.OnDied(model, root and root.Position or anchor)
+			end
+			if not opts.NoRespawn then
+				task.delay(C.Respawn, function()
+					if WorldPhase.IsOpen() then
+						spawnGuard(typeName, anchor, radius, scale, bossName, opts)
+					end
+				end)
+			end
 		end,
 	})
 	if model then
 		alive += 1
 		model:SetAttribute("Frontier", true)
+		if opts.Encounter then
+			model:SetAttribute("Encounter", true)
+		end
 		if bossName then
 			model.Name = bossName
+		end
+		if opts.Patrol then
+			-- walk the loop: each leg is a point of the patrol, taken in turn
+			task.spawn(function()
+				local i = rng:NextInteger(1, #opts.Patrol)
+				while model.Parent do
+					if not model:GetAttribute("Investigate") then
+						i = (i % #opts.Patrol) + 1
+						local p = opts.Patrol[i]
+						model:SetAttribute("Investigate", Vector3.new(p.X, ground(p.X, p.Z), p.Z))
+						model:SetAttribute("InvestigateUntil", os.clock() + C.PatrolLeg)
+					end
+					task.wait(C.PatrolLeg)
+				end
+			end)
+			return model
 		end
 		-- stand their ground: wander a little around the anchor
 		task.spawn(function()
@@ -724,12 +753,155 @@ local function spawnGuard(typeName, anchor, radius, scale, bossName)
 	return model
 end
 
-local function spawnPack(def, anchor, radius)
+local function spawnPack(def, anchor, radius, opts)
+	local models = {}
 	for _, g in def.Guards or {} do
 		for i = 1, g[2] do
-			spawnGuard(g[1], anchor, radius, def.Scale or 1, if def.Boss and i == 1 and g == def.Guards[1] then def.Boss else nil)
+			local m = spawnGuard(g[1], anchor, radius, def.Scale or 1, if def.Boss and i == 1 and g == def.Guards[1] then def.Boss else nil, opts)
+			if m then
+				table.insert(models, m)
+			end
 		end
 	end
+	return models
+end
+
+-- ===== encounters =====
+-- Each valley cell may carry one (shared/Frontier ENCOUNTERS). Patrols, nests and bounties stand from
+-- world open and come back after Config.Frontier.Respawn; ambushes sleep in the cell until someone
+-- walks in, then rest. Encounters count toward the frontier cap like guards.
+local encounters = {} -- cell -> { def, state, until }
+
+local function patrolLoop(cell)
+	-- a loop through the cell and whichever neighbours are valley ground
+	local pts = { cell.Center + Vector3.new(rng:NextNumber(-40, 40), 0, rng:NextNumber(-40, 40)) }
+	for _, d in { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } } do
+		local nr, nc = cell.Row + d[1], cell.Col + d[2]
+		local n = F.L.Cells[nr] and F.L.Cells[nr][nc]
+		if n and n.Zone == "Valley" and n.Type ~= "Reach" and rng:NextNumber() < 0.6 then
+			table.insert(pts, n.Center + Vector3.new(rng:NextNumber(-50, 50), 0, rng:NextNumber(-50, 50)))
+		end
+	end
+	if #pts < 2 then
+		table.insert(pts, cell.Center + Vector3.new(60, 0, -60))
+	end
+	return pts
+end
+
+local function startEncounter(cell)
+	local e = cell.Encounter
+	local entry = encounters[cell] or { def = e }
+	encounters[cell] = entry
+	entry.started = true
+	entry.lastNear = os.clock()
+	local anchor = cell.Center + Vector3.new(rng:NextNumber(-30, 30), 0, rng:NextNumber(-30, 30))
+	if e.Kind == "Patrol" then
+		entry.models = spawnPack(e, anchor, 10, { Patrol = patrolLoop(cell), Encounter = true })
+	elseif e.Kind == "Nest" then
+		entry.models = spawnPack(e, anchor, 14, { Encounter = true })
+		local spoils = Items.Roll("Supply")
+		for id, n in Items.Roll("Vault") do
+			spoils[id] = (spoils[id] or 0) + n
+		end
+		if next(spoils) == nil then
+			spoils.ArcCell = 8
+		end
+		if not entry.stash or not entry.stash.Parent then
+			entry.stash = Loot.Spawn(CFrame.new(anchor.X, ground(anchor.X, anchor.Z) + 2, anchor.Z), spoils, { Label = "Shocker Nest", Mesh = "Stash" })
+		end
+	elseif e.Kind == "Bounty" then
+		entry.models = spawnPack({ Guards = e.Guards, Scale = e.Scale, Boss = e.Boss }, anchor, 8, {
+			Encounter = true,
+			OnDied = function(_, position)
+				-- the bounty: relic-table spoils where it fell, announced to everyone
+				local spoils = Items.Roll("Relic")
+				if next(spoils) == nil then
+					spoils.ArcCell = 10
+				end
+				Loot.Spawn(CFrame.new(position + Vector3.new(0, 2, 0)), spoils, { Label = e.Boss .. "'s Hoard", Mesh = "CrateB" })
+				Remotes.Announce:FireAllClients(("%s has fallen in the valley."):format(e.Boss), "Event")
+			end,
+		})
+	end
+end
+
+local function springAmbush(cell, player)
+	local e = cell.Encounter
+	local entry = encounters[cell] or { def = e }
+	encounters[cell] = entry
+	entry.restUntil = os.clock() + C.AmbushRest
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local around = root and root.Position or cell.Center
+	-- they come out of the trees behind and beside you
+	local anchor = Vector3.new(around.X, 0, around.Z) + Vector3.new(rng:NextNumber(-20, 20), 0, rng:NextNumber(-20, 20))
+	entry.models = spawnPack(e, anchor, 18, { NoRespawn = true, Encounter = true })
+	Remotes.Announce:FireClient(player, "Ambush!", "Emergence")
+	for _, m in entry.models do
+		m:SetAttribute("Investigate", around)
+		m:SetAttribute("InvestigateUntil", os.clock() + 10)
+	end
+end
+
+-- A woken encounter nobody is near any more stands down (its bodies vanish) and wakes again later.
+local function standDown(entry)
+	for _, m in entry.models or {} do
+		if m.Parent then
+			m:Destroy()
+		end
+	end
+	entry.models = nil
+	entry.started = false
+end
+
+local function encounterTick(now)
+	-- who is near which woken encounter
+	for cell, entry in encounters do
+		if entry.started then
+			local near = false
+			for _, player in Players:GetPlayers() do
+				local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				if root and (Vector3.new(root.Position.X, 0, root.Position.Z) - cell.Center).Magnitude <= C.WakeRadius * 2 then
+					near = true
+					break
+				end
+			end
+			if near then
+				entry.lastNear = now
+			elseif now - (entry.lastNear or now) > C.SleepSeconds then
+				standDown(entry)
+			end
+		end
+	end
+	for _, player in Players:GetPlayers() do
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if not root or not hum or hum.Health <= 0 then
+			continue
+		end
+		local cell = F.CellAt(root.Position.X, root.Position.Z)
+		if cell and cell.Encounter and cell.Encounter.Kind == "Ambush" then
+			local entry = encounters[cell]
+			local resting = entry and entry.restUntil and now < entry.restUntil
+			if not resting and (Vector3.new(root.Position.X, 0, root.Position.Z) - cell.Center).Magnitude <= C.AmbushRadius then
+				springAmbush(cell, player)
+			end
+		end
+		-- standing encounters wake as you come near (so the valley is not full of bodies nobody sees)
+		local flatPos = Vector3.new(root.Position.X, 0, root.Position.Z)
+		for _, c in F.L.Cells do
+			for _, other in c do
+				if other.Encounter and other.Encounter.Kind ~= "Ambush" and not (encounters[other] and encounters[other].started) then
+					if (flatPos - other.Center).Magnitude <= C.WakeRadius then
+						startEncounter(other)
+					end
+				end
+			end
+		end
+	end
+end
+
+function Frontier.Encounters()
+	return encounters
 end
 
 -- ===== sites =====
@@ -1002,6 +1174,9 @@ local current, inMarket = {}, {}
 
 local function tick()
 	local now = os.clock()
+	if spawned then
+		encounterTick(now)
+	end
 	for _, player in Players:GetPlayers() do
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		local fd = root and dataOf(player)
@@ -1072,6 +1247,21 @@ function Frontier.Populate()
 	for _, site in F.Sites do
 		spawnPack(site, site.Ground or site.Position, 18)
 	end
+	local kinds = {}
+	for r = 2, F.Rows - 1 do
+		for c = 2, F.Cols - 1 do
+			local cell = F.L.Cells[r][c]
+			if cell.Encounter then
+				kinds[cell.Encounter.Kind] = (kinds[cell.Encounter.Kind] or 0) + 1
+			end
+		end
+	end
+	local list = {}
+	for k, n in kinds do
+		table.insert(list, k .. "=" .. n)
+	end
+	table.sort(list)
+	print("[Frontier] encounters rolled: " .. table.concat(list, " ") .. " (they wake as players come near); guards alive " .. alive)
 end
 
 function Frontier.Alive()

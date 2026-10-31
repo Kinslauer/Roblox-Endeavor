@@ -1,7 +1,7 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v57, Front v19.
+report). Versions: Endeavor v59, Front v19.
 
 ## Endeavor: first minutes
 - [ ] The starting room is a pod: dark panelled walls with cyan seams, diamond-plate floor, the console in a terminal
@@ -208,6 +208,13 @@ move; the city and the scarp overlook stay put. The server's seed is printed in 
 - [ ] Relic sites' containers hold cybernetics, armor and weapons the city rarely drops (and one guaranteed: Echo Array,
       Conduit Harness, Overclock Core); emptied containers refill after 10 minutes.
 - [ ] Site guards return to their posts 4 minutes after dying.
+- [ ] Chunk encounters (most valley cells roll one; F9 log line "[Frontier] encounters rolled"): an **ambush** springs
+      with an "Ambush!" banner when you walk into its cell, hostiles closing from behind and beside you, and does not
+      spring again for 5 minutes; a **patrol** (2 to 3 bodies) walks a loop through its cell and the neighbours and only
+      stands up once you are within 420 studs; a **nest** is three Shockers around a "Shocker Nest" stash; a **bounty**
+      is a named, oversized Brute (Hollowjaw, The Culler, Ten-Ton Vey, Rebar Saint, Mother Gravel) that drops a
+      "<name>'s Hoard" crate of relic-table loot and is announced to everyone when it falls.
+- [ ] Encounters nobody is near for 90 s stand down (their bodies vanish) and wake again when someone returns.
 - [ ] Dev panel (F2): "North" row (Scarp, Hairpin, Reach) and "Sites" row (Ridge, Mast, Mine, Ship) teleports.
 - [ ] Nothing falls through the terrain: walk the switchbacks, the trail and a mountain slope.
 - [ ] The valley is dressed with real models: low-poly pines and broadleaf trees of varied size, bare dead trees on
