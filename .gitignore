@@ -4,3 +4,4 @@
 *.rbxmx
 sourcemap.json
 Packages/
+tools/models/out/

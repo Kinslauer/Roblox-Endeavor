@@ -12,6 +12,8 @@ local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Props = require(Shared.Props)
+local Assets = require(Shared.Assets)
+local InsertService = game:GetService("InsertService")
 local Remotes = require(Shared.Remotes)
 local Combat = require(script.Parent.Combat)
 local Gear = require(script.Parent.Gear)
@@ -72,16 +74,60 @@ local function buildPart(spec, origin, parent)
 	return p
 end
 
+-- Uploaded models are loaded once and cloned; a failed load falls back to generated parts.
+local assetCache = {}
+local function loadAsset(id)
+	if id == 0 then
+		return nil
+	end
+	if assetCache[id] == nil then
+		local ok, result = pcall(function()
+			local container = InsertService:LoadAsset(id)
+			local model = container:FindFirstChildWhichIsA("Model") or container:FindFirstChildWhichIsA("BasePart")
+			if model then
+				model.Parent = nil
+			end
+			container:Destroy()
+			return model
+		end)
+		if not ok or not result then
+			warn("[Destruction] could not load asset", id, result)
+		end
+		assetCache[id] = (ok and result) or false
+	end
+	return assetCache[id] or nil
+end
+
 -- Spawns an intact prop at `cframe`. Returns the model.
 function Destruction.SpawnProp(propId, cframe)
 	local def = Props.Defs[propId]
 	assert(def, "unknown prop " .. tostring(propId))
-	local model = Instance.new("Model")
-	model.Name = propId
-	for _, spec in def.Parts do
-		buildPart(spec, cframe, model)
+	local template = loadAsset(Assets.Props[propId] or 0)
+	local model
+	if template then
+		-- Blender-built model: a Model of MeshParts (or a single MeshPart). Anchor it and set it down.
+		model = template:Clone()
+		if model:IsA("BasePart") then
+			local holder = Instance.new("Model")
+			model.Parent = holder
+			model = holder
+		end
+		for _, p in model:GetDescendants() do
+			if p:IsA("BasePart") then
+				p.Anchored = true
+			end
+		end
+		model.Name = propId
+		model.PrimaryPart = model:FindFirstChildWhichIsA("BasePart")
+		model:PivotTo(cframe)
+	else
+		model = Instance.new("Model")
+		model.Name = propId
+		for _, spec in def.Parts do
+			buildPart(spec, cframe, model)
+		end
+		model.PrimaryPart = model:FindFirstChildWhichIsA("BasePart")
 	end
-	model.PrimaryPart = model:FindFirstChildWhichIsA("BasePart")
 	model:SetAttribute("Prop", propId)
 	model:SetAttribute("Health", def.Health)
 	CollectionService:AddTag(model, "Destructible")
@@ -110,9 +156,17 @@ local function removeChunk(entry)
 end
 
 local function spawnChunk(chunkDef, cframe, impulse)
-	local p = Instance.new("Part")
+	local p
+	local template = chunkDef.Asset and loadAsset(Assets.Chunks[chunkDef.Asset] or 0)
+	if template then
+		-- a Blender chunk: use its mesh (first part of the model) as the physical piece
+		local mesh = if template:IsA("BasePart") then template:Clone() else (template:FindFirstChildWhichIsA("BasePart") and template:FindFirstChildWhichIsA("BasePart"):Clone())
+		p = mesh or Instance.new("Part")
+	else
+		p = Instance.new("Part")
+		p.Size, p.Color, p.Material = chunkDef.Size, chunkDef.Color, chunkDef.Material or Enum.Material.Metal
+	end
 	p.Name = chunkDef.Name
-	p.Size, p.Color, p.Material = chunkDef.Size, chunkDef.Color, chunkDef.Material or Enum.Material.Metal
 	p.CFrame = cframe
 	p.Anchored = false
 	p:SetAttribute("Chunk", true)

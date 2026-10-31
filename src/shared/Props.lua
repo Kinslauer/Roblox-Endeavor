@@ -27,9 +27,9 @@ Props.Defs = {
 			{ Size = Vector3.new(1.6, 0.4, 0.8), Offset = Vector3.new(2.2, 13.4, 0), Color = Color3.fromRGB(255, 240, 200), Material = NEON, Light = true },
 		},
 		Chunks = {
-			{ Name = "Pipe", Weight = "Light", Size = Vector3.new(0.8, 6, 0.8), Color = Color3.fromRGB(70, 72, 80), Material = METAL, Improvised = true, Durability = 6 },
-			{ Name = "Pipe", Weight = "Light", Size = Vector3.new(0.8, 5, 0.8), Color = Color3.fromRGB(70, 72, 80), Material = METAL, Improvised = true, Durability = 6 },
-			{ Name = "Light Head", Weight = "Medium", Size = Vector3.new(3, 1, 1), Color = Color3.fromRGB(90, 90, 100), Material = METAL },
+			{ Name = "Pipe", Weight = "Light", Size = Vector3.new(0.8, 6, 0.8), Color = Color3.fromRGB(70, 72, 80), Material = METAL, Improvised = true, Durability = 6, Asset = "PipeLong" },
+			{ Name = "Pipe", Weight = "Light", Size = Vector3.new(0.8, 5, 0.8), Color = Color3.fromRGB(70, 72, 80), Material = METAL, Improvised = true, Durability = 6, Asset = "PipeShort" },
+			{ Name = "Light Head", Weight = "Medium", Size = Vector3.new(3, 1, 1), Color = Color3.fromRGB(90, 90, 100), Material = METAL, Asset = "LampHead" },
 		},
 	},
 	StreetSign = {
