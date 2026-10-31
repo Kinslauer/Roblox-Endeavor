@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Inventory = require(script.Parent.Inventory)
+local PlayerData = require(script.Parent.Common.PlayerData)
 local Stats = require(script.Parent.Stats)
 
 local D = Config.Devour
@@ -14,6 +15,16 @@ local Assets = require(ReplicatedStorage.Shared.Assets)
 local ModelAssets = require(script.Parent.Common.ModelAssets)
 
 local Loot = {}
+
+-- What the grid cannot hold lands at the player's feet as a small stash.
+Inventory.Overflow = function(player, bundle, meta)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	local cf = CFrame.new(root.Position + root.CFrame.LookVector * 3 - Vector3.new(0, 2, 0))
+	Loot.Spawn(cf, bundle, { Label = "Dropped gear", Action = "Pick up", Hold = 0.5, Lifetime = 600, Size = Vector3.new(2, 1, 2), Meta = meta })
+end
 
 -- opts: Label, Action, Hold, Lifetime, Color, Size, OwnerUserId (the dead player: locked out for OwnerLockout seconds), Devour ({ Level = n } for a conduit's remains, { Npc = true } for NPCs)
 function Loot.Spawn(cframe, bundle, opts)
@@ -62,8 +73,26 @@ function Loot.Spawn(cframe, bundle, opts)
 			return
 		end
 		part.Parent = nil
-		Inventory.AddAll(looter, bundle)
-		part:Destroy()
+		local left = Inventory.AddAll(looter, bundle, true)
+		if opts.Meta and opts.Meta.Condition then
+			-- dropped gear keeps its wear: the worse of what you had and what you picked up
+			local profile = PlayerData.Get(looter)
+			for id in bundle do
+				if profile and profile.Inventory[id] and not left[id] then
+					profile.Condition[id] = math.min(profile.Condition[id] or 100, opts.Meta.Condition)
+					if opts.Meta.Upgrades then
+						profile.Upgrades[id] = math.max(profile.Upgrades[id] or 0, opts.Meta.Upgrades)
+					end
+				end
+			end
+		end
+		if next(left) then
+			bundle = left -- the rest stays here for later, or for someone with room
+			part.Parent = workspace
+			Remotes.Announce:FireClient(looter, "No room for the rest. It stays here.", "Info")
+		else
+			part:Destroy()
+		end
 	end)
 
 	if opts.Devour then

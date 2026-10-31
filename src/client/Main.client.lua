@@ -152,18 +152,130 @@ end)
 local lastInventory, lastEquipped, lastArmor, lastCyber = {}, "Fists", {}, {}
 local lastCondition, lastUpgrades = {}, {}
 
-local function renderInventory()
-	clear(invPanel)
-	local ids = {}
-	for id in lastInventory do
-		table.insert(ids, id)
+local lastGrid = { W = 5, H = 3, Items = {}, Pack = "", Weight = 0, Carry = 15 }
+local CELL = 34
+local TYPE_COLORS = {
+	Material = Color3.fromRGB(90, 96, 110), Consumable = Color3.fromRGB(70, 130, 90), Ammo = Color3.fromRGB(60, 120, 150),
+	Weapon = Color3.fromRGB(150, 90, 60), Armor = Color3.fromRGB(80, 90, 150), Cybernetic = Color3.fromRGB(130, 70, 160), Pack = Color3.fromRGB(120, 100, 60),
+}
+local gridHolder = make("Frame", { Size = UDim2.new(1, -8, 0, 10), BackgroundTransparency = 1, LayoutOrder = 1 }, invPanel)
+local gridFrame = make("Frame", { Position = UDim2.fromOffset(4, 0), BackgroundColor3 = Color3.fromRGB(24, 24, 32), BorderSizePixel = 0 }, gridHolder)
+local selected -- index of the stack whose actions are shown
+local drag -- { index, rot, ghost, startPos, moved }
+local short = function(name)
+	local words = name:split(" ")
+	if #words == 1 then
+		return name:sub(1, 6)
 	end
-	table.sort(ids, function(a, b)
-		local da, db = Items.Defs[a], Items.Defs[b]
-		return if da.Type ~= db.Type then da.Type < db.Type else da.Name < db.Name
-	end)
-	for _, id in ids do
-		local def, buttons = Items.Defs[id], {}
+	local s = ""
+	for _, w in words do
+		s ..= w:sub(1, 1)
+	end
+	return s
+end
+local renderInventory -- forward
+
+local function cellAt(screenPos)
+	local rel = screenPos - gridFrame.AbsolutePosition
+	local x, y = math.floor(rel.X / CELL) + 1, math.floor(rel.Y / CELL) + 1
+	return x, y, rel.X >= -CELL and rel.Y >= -CELL and rel.X <= gridFrame.AbsoluteSize.X + CELL and rel.Y <= gridFrame.AbsoluteSize.Y + CELL
+end
+
+local function drawGrid()
+	for _, c in gridFrame:GetChildren() do
+		c:Destroy()
+	end
+	local W, H = lastGrid.W, lastGrid.H
+	gridFrame.Size = UDim2.fromOffset(W * CELL, H * CELL)
+	gridHolder.Size = UDim2.new(1, -8, 0, H * CELL + 4)
+	for y = 0, H - 1 do
+		for x = 0, W - 1 do
+			make("Frame", { Size = UDim2.fromOffset(CELL - 2, CELL - 2), Position = UDim2.fromOffset(x * CELL + 1, y * CELL + 1), BackgroundColor3 = Color3.fromRGB(36, 36, 48), BorderSizePixel = 0 }, gridFrame)
+		end
+	end
+	for index, item in lastGrid.Items do
+		local def = Items.Defs[item.Id]
+		local w, h = Items.Footprint(item.Id, item.Rot)
+		local cond = lastCondition[item.Id]
+		local frame = make("TextButton", {
+			Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4), Position = UDim2.fromOffset((item.X - 1) * CELL + 2, (item.Y - 1) * CELL + 2),
+			BackgroundColor3 = TYPE_COLORS[def and def.Type] or Color3.fromRGB(90, 90, 90), BorderSizePixel = selected == index and 2 or 0, BorderColor3 = Color3.fromRGB(255, 230, 120),
+			Text = "", AutoButtonColor = false,
+		}, gridFrame)
+		make("TextLabel", { Size = UDim2.new(1, -4, 1, -14), Position = UDim2.fromOffset(2, 2), BackgroundTransparency = 1, Text = short(def and def.Name or item.Id), TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top }, frame)
+		local tag = if item.Count > 1 then tostring(item.Count) elseif cond and cond < 100 then cond .. "%" else ""
+		make("TextLabel", { Size = UDim2.new(1, -4, 0, 12), Position = UDim2.new(0, 2, 1, -14), BackgroundTransparency = 1, Text = tag, TextColor3 = if cond and cond <= 25 then Color3.fromRGB(255, 150, 120) else Color3.fromRGB(230, 230, 240), Font = Enum.Font.Gotham, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Right }, frame)
+		if lastEquipped == item.Id or (def and def.Slot and (lastArmor[def.Slot] == item.Id or lastCyber[def.Slot] == item.Id)) then
+			make("Frame", { Size = UDim2.new(1, 0, 0, 3), BackgroundColor3 = Color3.fromRGB(120, 255, 200), BorderSizePixel = 0 }, frame)
+		end
+		frame.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				drag = { index = index, rot = item.Rot, startPos = input.Position, moved = false, size = Vector2.new(w, h) }
+				drag.ghost = make("Frame", { Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4), Position = UDim2.fromOffset(input.Position.X - 10, input.Position.Y - 10), BackgroundColor3 = frame.BackgroundColor3, BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 50 }, gui)
+				make("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = short(def and def.Name or item.Id), TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 12, ZIndex = 51 }, drag.ghost)
+			end
+		end)
+	end
+end
+
+local function endDrag(input)
+	if not drag then
+		return
+	end
+	local d = drag
+	drag = nil
+	if d.ghost then
+		d.ghost:Destroy()
+	end
+	if not d.moved then
+		selected = if selected == d.index then nil else d.index
+		renderInventory()
+		return
+	end
+	local x, y, inside = cellAt(input.Position)
+	if inside then
+		local item = lastGrid.Items[d.index]
+		if item then
+			-- the ghost's top-left is what you drop; clamp into the grid so an edge drop still lands
+			local w, h = Items.Footprint(item.Id, d.rot)
+			x, y = math.clamp(x, 1, math.max(1, lastGrid.W - w + 1)), math.clamp(y, 1, math.max(1, lastGrid.H - h + 1))
+			Remotes.MoveItem:FireServer(d.index, x, y, d.rot)
+		end
+	else
+		Remotes.DropItem:FireServer(d.index)
+	end
+end
+UserInputService.InputChanged:Connect(function(input)
+	if drag and input.UserInputType == Enum.UserInputType.MouseMovement then
+		if (input.Position - drag.startPos).Magnitude > 4 then
+			drag.moved = true
+		end
+		local w, h = drag.size.X, drag.size.Y
+		if drag.rot ~= lastGrid.Items[drag.index].Rot then
+			w, h = h, w
+		end
+		drag.ghost.Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4)
+		drag.ghost.Position = UDim2.fromOffset(input.Position.X - CELL / 2, input.Position.Y - CELL / 2)
+	end
+end)
+UserInputService.InputEnded:Connect(function(input)
+	if drag and input.UserInputType == Enum.UserInputType.MouseButton1 then
+		endDrag(input)
+	end
+end)
+
+renderInventory = function()
+	gridHolder.Parent = nil -- clear() would destroy it
+	clear(invPanel)
+	local wt = ("Weight %.1f / %d%s"):format(lastGrid.Weight or 0, lastGrid.Carry or 0, if (lastGrid.Weight or 0) > (lastGrid.Carry or 0) then "  OVERWEIGHT" else "")
+	local packName = if lastGrid.Pack ~= "" and Items.Defs[lastGrid.Pack] then Items.Defs[lastGrid.Pack].Name else "pockets"
+	local packButtons = if lastGrid.Pack ~= "" then { { text = "Take off", color = Color3.fromRGB(120, 70, 70), fn = function() Remotes.Unequip:FireServer("Pack") end } } else {}
+	addRow(invPanel, ("%s  (%dx%d)  %s  -  drag to move, R rotates, drop outside to drop"):format(packName, lastGrid.W, lastGrid.H, wt), packButtons, if (lastGrid.Weight or 0) > (lastGrid.Carry or 0) then Color3.fromRGB(255, 150, 120) else nil)
+	drawGrid()
+	gridHolder.Parent = invPanel
+	local item = selected and lastGrid.Items[selected]
+	if item then
+		local id, def, buttons = item.Id, Items.Defs[item.Id], {}
 		if def.Type == "Consumable" then
 			table.insert(buttons, { text = if def.Throwable then "Throw" elseif def.Plantable then "Plant" else "Use", fn = function() Remotes.UseItem:FireServer(id, cameraDirection()) end })
 		elseif def.Type == "Weapon" then
@@ -176,8 +288,15 @@ local function renderInventory()
 			table.insert(buttons, { text = if worn then "Remove" else "Wear", color = if worn then Color3.fromRGB(120, 70, 70) else nil, fn = function()
 				if worn then Remotes.Unequip:FireServer(def.Slot) else Remotes.EquipItem:FireServer(id) end
 			end })
+		elseif def.Type == "Pack" then
+			table.insert(buttons, { text = "Wear", fn = function() Remotes.EquipItem:FireServer(id) end })
 		end
-		local suffix = if def.Slot then (" [%s]"):format(def.Slot) else ""
+		table.insert(buttons, { text = "Drop", color = Color3.fromRGB(120, 70, 70), fn = function() Remotes.DropItem:FireServer(selected) end })
+		if item.Count > 1 then
+			table.insert(buttons, { text = "Drop 1", color = Color3.fromRGB(100, 70, 70), fn = function() Remotes.DropItem:FireServer(selected, 1) end })
+		end
+		local shape = Items.Shape(id)
+		local suffix = ("  %dx%d  %.1fkg each"):format(shape.Size[1], shape.Size[2], shape.Weight)
 		if def.Type == "Weapon" or def.Type == "Armor" or def.Type == "Cybernetic" then
 			local cond, up = lastCondition[id] or 100, lastUpgrades[id] or 0
 			suffix ..= (" %d%%%s"):format(cond, if up > 0 then " +" .. up else "")
@@ -185,7 +304,9 @@ local function renderInventory()
 				suffix ..= " BROKEN"
 			end
 		end
-		addRow(invPanel, ("%s x%d%s"):format(def.Name, lastInventory[id], suffix), buttons, if (lastCondition[id] or 100) <= 25 then Color3.fromRGB(255, 150, 120) else nil)
+		addRow(invPanel, ("%s x%d%s"):format(def.Name, item.Count, suffix), buttons, if (lastCondition[id] or 100) <= 25 then Color3.fromRGB(255, 150, 120) else nil)
+	else
+		addRow(invPanel, "Click an item for actions.", {})
 	end
 	addRow(invPanel, "-- Crafting --", {})
 	for recipeId, recipe in Items.Recipes do
@@ -196,8 +317,14 @@ local function renderInventory()
 		addRow(invPanel, Items.Defs[recipe.Output].Name .. ": " .. table.concat(parts, ", "), { { text = "Craft", fn = function() Remotes.Craft:FireServer(recipeId) end } })
 	end
 end
-Remotes.InventoryChanged.OnClientEvent:Connect(function(inv, equipped, armor, cyber)
+Remotes.InventoryChanged.OnClientEvent:Connect(function(inv, equipped, armor, cyber, grid)
 	lastInventory, lastEquipped, lastArmor, lastCyber = inv, equipped, armor, cyber
+	if grid then
+		lastGrid = grid
+		if selected and not lastGrid.Items[selected] then
+			selected = nil
+		end
+	end
 	renderInventory()
 end)
 
@@ -715,8 +842,12 @@ local function renderHideout()
 	end
 	addRow(hidePanel, "-- MODULES --", {})
 	for id, def in HideoutDefs.Modules do
-		if h.Modules and h.Modules[id] then
-			addRow(hidePanel, def.Name .. "  (built)", {}, Color3.fromRGB(140, 220, 160))
+		if h.Modules and h.Modules[id] and def.Levels and tonumber(h.Modules[id]) and tonumber(h.Modules[id]) < def.Levels then
+			-- leveled module: show the level and let the owner build the next one
+			local lvl = tonumber(h.Modules[id])
+			addRow(hidePanel, ("%s  level %d/%d - %s  [%s]"):format(def.Name, lvl, def.Levels, def.Desc, costText(def.Cost)), if h.Owned then { { text = "Level up", fn = function() Remotes.HideoutBuild:FireServer(id) end } } else {}, Color3.fromRGB(140, 220, 160))
+		elseif h.Modules and h.Modules[id] then
+			addRow(hidePanel, def.Name .. (if def.Levels then ("  (level %d, max)"):format(tonumber(h.Modules[id]) or def.Levels) else "  (built)"), {}, Color3.fromRGB(140, 220, 160))
 		elseif h.Owned then
 			addRow(hidePanel, ("%s - %s  [%s, tier %d]"):format(def.Name, def.Desc, costText(def.Cost), def.Tier), { { text = "Build", fn = function() Remotes.HideoutBuild:FireServer(id) end } }, if def.Tier > (h.Tier or 1) then Color3.fromRGB(140, 140, 140) else nil)
 		end
@@ -1130,6 +1261,10 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		return
 	end
 	local key = input.KeyCode
+	if drag and key == Enum.KeyCode.R then
+		drag.rot = 1 - drag.rot -- rotate the stack you are carrying
+		return
+	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		Remotes.Attack:FireServer()
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 then

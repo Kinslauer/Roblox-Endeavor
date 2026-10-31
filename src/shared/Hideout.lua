@@ -20,6 +20,7 @@ Hideout.Modules = {
 	Generator = { Name = "Generator", Desc = "Powers the turret and alarm. Without it they are scrap.", Cost = { Scrap = 15, Battery = 3, Wire = 4 }, Tier = 2 },
 	Forge = { Name = "Forge", Desc = "Needed for +2 and +3 upgrades.", Cost = { Scrap = 50, SheetMetal = 20, Powder = 4 }, Tier = 2 },
 	Bunks = { Name = "Bunks", Desc = "Your crew spawns here instead of the city.", Cost = { Cloth = 12, Scrap = 10 }, Tier = 1 },
+	Shelves = { Name = "Shelving", Desc = "+24 vault capacity per level, three levels. Build it again to add a level.", Cost = { Scrap = 20, SheetMetal = 6 }, Tier = 1, Levels = 3, PerLevel = 24 },
 	Medbay = { Name = "Medbay", Desc = "Slow healing while inside the compound.", Cost = { Cloth = 10, Wire = 4, Glass = 4 }, Tier = 2 },
 }
 Hideout.GateTier = { "Weak", "Standard", "Reinforced" } -- by workshop tier

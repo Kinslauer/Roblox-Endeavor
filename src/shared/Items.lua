@@ -20,7 +20,81 @@ Items.Defs = {
 	ArcCell = { Name = "Arc Cell", Type = "Ammo" },
 	PipeGrenade = { Name = "Pipe Grenade", Type = "Consumable", Throwable = "Grenade" },
 	BreachingCharge = { Name = "Breaching Charge", Type = "Consumable", Plantable = "Charge" },
+	-- packs: worn on the back, they set the size of your grid and how much you can carry at speed
+	Satchel = { Name = "Satchel", Type = "Pack", Grid = { 7, 5 }, Carry = 25, Size = { 2, 2 }, Weight = 1 },
+	Rucksack = { Name = "Rucksack", Type = "Pack", Grid = { 9, 6 }, Carry = 40, Size = { 3, 3 }, Weight = 2 },
+	FramePack = { Name = "Frame Pack", Type = "Pack", Grid = { 11, 7 }, Carry = 60, Size = { 3, 4 }, Weight = 3.5 },
 }
+
+-- Grid footprint { w, h }, weight (kg-ish) and stack size per item. Anything not listed here takes
+-- the defaults of its Type below.
+local SHAPES = {
+	Scrap = { Size = { 1, 1 }, Weight = 1.0, Stack = 20 },
+	Wire = { Size = { 1, 1 }, Weight = 0.3, Stack = 20 },
+	Cloth = { Size = { 1, 1 }, Weight = 0.2, Stack = 20 },
+	Glass = { Size = { 1, 1 }, Weight = 0.4, Stack = 10 },
+	SheetMetal = { Size = { 2, 1 }, Weight = 1.5, Stack = 10 },
+	Pipe = { Size = { 1, 2 }, Weight = 1.5, Stack = 10 },
+	Battery = { Size = { 1, 1 }, Weight = 0.8, Stack = 10 },
+	Powder = { Size = { 1, 1 }, Weight = 0.3, Stack = 20 },
+	SignPlating = { Size = { 2, 2 }, Weight = 2.0, Stack = 5 },
+	ArcCell = { Size = { 1, 1 }, Weight = 0.1, Stack = 30 },
+	Medkit = { Size = { 1, 1 }, Weight = 0.6, Stack = 5 },
+	Ration = { Size = { 1, 1 }, Weight = 0.4, Stack = 5 },
+	PipeGrenade = { Size = { 1, 1 }, Weight = 0.8, Stack = 5 },
+	BreachingCharge = { Size = { 2, 1 }, Weight = 2.0, Stack = 3 },
+	PipeClub = { Size = { 1, 3 }, Weight = 3 },
+	RebarBlade = { Size = { 1, 3 }, Weight = 3 },
+	ShockBaton = { Size = { 1, 2 }, Weight = 2 },
+	ScrapSpear = { Size = { 1, 5 }, Weight = 3 },
+	Sledge = { Size = { 2, 4 }, Weight = 8 },
+	ArcPistol = { Size = { 2, 1 }, Weight = 1.5 },
+	ScavHelm = { Size = { 2, 2 }, Weight = 1.5 },
+	PlatedHelm = { Size = { 2, 2 }, Weight = 4 },
+	ArcHood = { Size = { 2, 2 }, Weight = 1 },
+	ScrapVest = { Size = { 3, 3 }, Weight = 4 },
+	RiotPlate = { Size = { 3, 3 }, Weight = 9 },
+	ConduitHarness = { Size = { 3, 3 }, Weight = 3 },
+	ScrapGreaves = { Size = { 2, 2 }, Weight = 2.5 },
+	ServoGreaves = { Size = { 2, 2 }, Weight = 3 },
+	PlatedGreaves = { Size = { 2, 2 }, Weight = 5 },
+}
+local TYPE_DEFAULTS = {
+	Material = { Size = { 1, 1 }, Weight = 0.5, Stack = 20 },
+	Consumable = { Size = { 1, 1 }, Weight = 0.5, Stack = 5 },
+	Ammo = { Size = { 1, 1 }, Weight = 0.1, Stack = 30 },
+	Weapon = { Size = { 1, 3 }, Weight = 3, Stack = 1 },
+	Armor = { Size = { 2, 2 }, Weight = 3, Stack = 1 },
+	Cybernetic = { Size = { 1, 1 }, Weight = 0.5, Stack = 1 },
+	Pack = { Size = { 2, 2 }, Weight = 1, Stack = 1 },
+}
+function Items.Shape(id)
+	local def = Items.Defs[id]
+	local base = TYPE_DEFAULTS[def and def.Type] or TYPE_DEFAULTS.Material
+	local s = SHAPES[id] or {}
+	return { Size = def and def.Size or s.Size or base.Size, Weight = def and def.Weight or s.Weight or base.Weight, Stack = def and def.Stack or s.Stack or base.Stack }
+end
+-- carried weight and the carry limit of a profile (pack or pockets); pure, so Gear can use them too
+local Config = require(script.Parent.Config)
+function Items.GridWeight(profile)
+	local total = 0
+	for _, item in (profile.Grid and profile.Grid.Items) or {} do
+		total += Items.Shape(item.Id).Weight * item.Count
+	end
+	if profile.Pack and profile.Pack ~= "" and Items.Defs[profile.Pack] then
+		total += Items.Shape(profile.Pack).Weight
+	end
+	return total
+end
+function Items.Carry(profile)
+	local pack = profile.Pack and profile.Pack ~= "" and Items.Defs[profile.Pack]
+	return if pack and pack.Carry then pack.Carry else Config.Inventory.PocketCarry
+end
+-- footprint after rotation (rot 1 swaps width and height)
+function Items.Footprint(id, rot)
+	local size = Items.Shape(id).Size
+	return if rot == 1 then size[2] else size[1], if rot == 1 then size[1] else size[2]
+end
 
 -- Weapons and armor are defined in their own modules; register them as items here.
 for id, weapon in Weapons.Defs do
@@ -35,6 +109,9 @@ end
 
 Items.Recipes = {
 	Medkit = { Output = "Medkit", Count = 1, Inputs = { Cloth = 2, Scrap = 1 } },
+	Satchel = { Output = "Satchel", Count = 1, Inputs = { Cloth = 4, Scrap = 1 } },
+	Rucksack = { Output = "Rucksack", Count = 1, Inputs = { Cloth = 8, Scrap = 4, Wire = 2 } },
+	FramePack = { Output = "FramePack", Count = 1, Inputs = { Cloth = 10, SheetMetal = 2, Wire = 4, Pipe = 2 } },
 	RebarBlade = { Output = "RebarBlade", Count = 1, Inputs = { Scrap = 6, Cloth = 1 } },
 	ScrapSpear = { Output = "ScrapSpear", Count = 1, Inputs = { Scrap = 5, Cloth = 2 } },
 	ShockBaton = { Output = "ShockBaton", Count = 1, Inputs = { PipeClub = 1, Wire = 3, Scrap = 2 } },

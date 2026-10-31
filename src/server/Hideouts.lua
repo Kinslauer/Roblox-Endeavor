@@ -239,8 +239,10 @@ end
 
 -- ===== the vault =====
 local VAULT_CAP = function(h)
-	return HideoutDefs.Tiers[h.Tier].Vault
+	local shelves = tonumber(h.Modules.Shelves) or 0
+	return HideoutDefs.Tiers[h.Tier].Vault + shelves * (HideoutDefs.Modules.Shelves.PerLevel or 0)
 end
+Hideouts.VaultCap = VAULT_CAP
 
 local function vaultCount(h)
 	local n = 0
@@ -443,7 +445,15 @@ local function buildModule(player, moduleId)
 	local site, owned = siteOfPlayer(player)
 	local h = hideoutOf(player)
 	local def = type(moduleId) == "string" and HideoutDefs.Modules[moduleId]
-	if not (site and owned and h and def) or h.Modules[moduleId] then
+	if not (site and owned and h and def) then
+		return
+	end
+	local leveled = def.Levels ~= nil
+	if h.Modules[moduleId] and not leveled then
+		return
+	end
+	if leveled and (tonumber(h.Modules[moduleId]) or 0) >= def.Levels then
+		Remotes.Announce:FireClient(player, def.Name .. " is at its top level.", "Info")
 		return
 	end
 	local tier = HideoutDefs.Tiers[h.Tier]
@@ -455,7 +465,7 @@ local function buildModule(player, moduleId)
 	for _ in h.Modules do
 		built += 1
 	end
-	if built >= tier.Modules then
+	if built >= tier.Modules and not (leveled and h.Modules[moduleId]) then
 		Remotes.Announce:FireClient(player, ("A %s holds %d modules. Upgrade the workshop."):format(tier.Name, tier.Modules), "Info")
 		return
 	end
@@ -465,7 +475,7 @@ local function buildModule(player, moduleId)
 		return
 	end
 	spend(player, def.Cost)
-	h.Modules[moduleId] = true
+	h.Modules[moduleId] = if leveled then (tonumber(h.Modules[moduleId]) or 0) + 1 else true
 	build(site, h)
 	push(player)
 end

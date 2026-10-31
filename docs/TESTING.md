@@ -33,6 +33,21 @@ report). Versions: Endeavor v36, Front v18.
 - [ ] Equipping a weapon from Tab puts its model in your right hand; fists show nothing. Check each: pipe club,
       rebar blade, shock baton, scrap spear, sledge, arc pistol. Note any that point the wrong way or float.
 
+## Endeavor: inventory (Tab)
+- [ ] Tab shows a grid (pockets 6x4 without a pack). Items are coloured blocks sized by footprint: materials 1x1 stacking
+      to 20, a pipe club 1x3, a sledge 2x4, vests 3x3, sheet metal 2x1, a satchel 2x2. Stacks show their count, gear its
+      condition %. Worn/held items have a green bar.
+- [ ] Drag a block to move it; press R while dragging to rotate; drop onto a same-item stack to merge; a drop that
+      overlaps or leaves the grid snaps back. Dropping outside the grid drops the stack at your feet ("Dropped gear").
+- [ ] Click a block for actions (Use / Equip / Wear / Drop / Drop 1) and its size and weight.
+- [ ] Picking up more than fits: what fits comes in, the rest stays in the container ("No room for the rest").
+      Crafting or looting into a full grid drops the result at your feet.
+- [ ] Craft a Satchel (4 cloth, 1 scrap), click it, Wear: the grid becomes 7x5 and the satchel leaves the grid. Rucksack
+      9x6 and Frame Pack 11x7 likewise. "Take off" shrinks the grid; anything that no longer fits spills at your feet.
+- [ ] Weight shows as "Weight x / carry"; over the carry limit (15 pockets, 25/40/60 packs) you walk at 60% speed and
+      stamina costs more; the row turns red and says OVERWEIGHT.
+- [ ] Hideout: build Shelving (20 scrap, 6 sheet metal) up to three times; each level adds 24 vault capacity.
+
 ## Endeavor: worn gear
 - [ ] Wearing armor from Tab shows it on your body: helms on the head (Scav cap with goggles, Plated with a red slit,
       Arc hood with cyan lines), vests on the chest (Scrap plates, Riot plate with collar, Conduit harness with a glowing

@@ -11,6 +11,7 @@ local Hideout = require(Shared.Hideout)
 local Remotes = require(Shared.Remotes)
 local Skills = require(Shared.Skills)
 local Weapons = require(Shared.Weapons)
+local Items = require(Shared.Items)
 local Net = require(script.Parent.Common.Net)
 local PlayerData = require(script.Parent.Common.PlayerData)
 
@@ -102,6 +103,7 @@ local function compute(data)
 		-- the equipped weapon's condition and upgrade level (Fists never wear)
 		DamageMult = (1 + stats.Strength * S.DamagePerStrength) * (if data.Equipped == "Fists" then 1 else Hideout.ConditionMult((data.Condition or {})[data.Equipped]) * (1 + ((data.Upgrades or {})[data.Equipped] or 0) * Hideout.UpgradeBonus.Weapon)),
 		WeaponBroken = data.Equipped ~= "Fists" and Hideout.ConditionMult((data.Condition or {})[data.Equipped]) == 0,
+		Overweight = Items.GridWeight(data) > Items.Carry(data),
 		PostureDamageMult = 1 + stats.Strength * S.PostureDamagePerStrength,
 		ChargeGain = 1 + sum.ChargeGain + stats.Intelligence * S.ChargePerIntelligence,
 		FlickerRate = 1 + sum.FlickerRate + stats.Intelligence * F.RatePerIntelligence,
@@ -214,6 +216,11 @@ function Gear.Unequip(player, what)
 	end
 	if what == "Weapon" then
 		data.Equipped = "Fists"
+	elseif what == "Pack" then
+		if Gear.UnequipPack then
+			Gear.UnequipPack(player)
+		end
+		return
 	elseif FIELD_OF_SLOT[what] then
 		data[FIELD_OF_SLOT[what]][what] = nil
 	else

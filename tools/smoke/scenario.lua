@@ -139,6 +139,9 @@ check("step 14 after skill", step() == 14)
 -- finale: world should open after min prologue time since all players ready
 local openedAt = nil
 check("world opens after tutorial", run(60, function() return workspace_:GetAttribute("Phase") == "Open" end))
+-- the rest of the scenario hands out piles of materials; give the pockets room for them (the grid has its own tests)
+local ConfigM = M.mockEnv.__require(RS.Shared.Config)
+ConfigM.Inventory.Pockets[1], ConfigM.Inventory.Pockets[2] = 30, 30
 run(8)
 local pos = root().CFrame.Position
 check("player teleported into the arena", math.abs(pos.Y - 6.9) < 3 or pos.Y < 100)
@@ -500,6 +503,61 @@ end
 print("population: standing hostiles=" .. populated .. " alive=" .. Population.Alive())
 check("population spawned district packs at world open", populated >= 8)
 check("population stays under its cap", populated <= 36)
+
+-- grid inventory: footprints, stacks, overflow, moves, packs, weight
+as(player)
+local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+local Items_ = M.mockEnv.__require(RS.Shared.Items)
+local prof = pd
+ConfigM.Inventory.Pockets[1], ConfigM.Inventory.Pockets[2] = 6, 4
+-- empty the pockets first so the numbers below are exact
+for _, it in table.clone(prof.Grid.Items) do Inventory.Drop(player, table.find(prof.Grid.Items, it)) end
+run(0.2)
+check("grid starts as pockets", Inventory.GridSize(prof) == 6 and #prof.Grid.Items == 0)
+Inventory.Add(player, "Scrap", 45)
+check("materials stack to 20", #prof.Grid.Items == 3 and prof.Inventory.Scrap == 45)
+local lootBefore = 0
+for _, p in game_.Workspace:GetDescendants() do if p.Name == "Lootable" then lootBefore += 1 end end
+Inventory.Add(player, "Sledge", 3) -- 2x4 each: two fit beside the scrap in 6x4, the third cannot
+run(0.2)
+local lootAfter = 0
+for _, p in game_.Workspace:GetDescendants() do if p.Name == "Lootable" then lootAfter += 1 end end
+check("what cannot fit drops at your feet", (prof.Inventory.Sledge or 0) == 2 and lootAfter > lootBefore)
+Inventory.Add(player, "PipeClub", 1) -- 1x3: the free cells are fragmented, so this needs the repack
+check("a long item fits after a repack", prof.Inventory.PipeClub == 1)
+local club
+for i, it in prof.Grid.Items do if it.Id == "PipeClub" then club = i end end
+local before = { prof.Grid.Items[club].X, prof.Grid.Items[club].Y }
+Remotes.MoveItem:FireServer(club, 1, 1, 0); run(0.1) -- onto the scrap: refused
+check("a move onto another stack is refused", prof.Grid.Items[club].X == before[1] and prof.Grid.Items[club].Y == before[2])
+Remotes.MoveItem:FireServer(club, 99, 1, 0); run(0.1)
+check("a move outside the grid is refused", prof.Grid.Items[club].X == before[1])
+-- make room for the satchel (2x2): drop one sledge, then craft
+for i, it in prof.Grid.Items do if it.Id == "Sledge" then Remotes.DropItem:FireServer(i); break end end
+run(0.1)
+check("dropping a stack frees its cells", prof.Inventory.Sledge == 1)
+Inventory.Add(player, "Cloth", 4)
+Remotes.Craft:FireServer("Satchel"); run(0.2)
+check("a satchel can be crafted", (prof.Inventory.Satchel or 0) == 1)
+Remotes.EquipItem:FireServer("Satchel"); run(0.2)
+check("wearing a pack grows the grid", prof.Pack == "Satchel" and Inventory.GridSize(prof) == 7 and (prof.Inventory.Satchel or 0) == 0)
+Inventory.Add(player, "Sledge", 1)
+check("the bigger grid takes another sledge", prof.Inventory.Sledge == 2)
+Inventory.Add(player, "Scrap", 40)
+check("overweight flips when the pack is overloaded", Items_.GridWeight(prof) > Items_.Carry(prof))
+local Stats_ = M.mockEnv.__require(SSS.Server.Stats)
+Stats_.Apply(player, false); run(0.1)
+check("overweight slows the walk", player.Character.Humanoid.WalkSpeed < 16 and player.Character:GetAttribute("Overweight") == true)
+Remotes.Unequip:FireServer("Pack"); run(0.2)
+check("taking the pack off shrinks the grid and spills the rest", prof.Pack == "" and Inventory.GridSize(prof) == 6)
+check("counts cache matches the grid", (function()
+	local sum = 0
+	for _, it in prof.Grid.Items do sum += it.Count end
+	local cache = 0
+	for _, c in prof.Inventory do cache += c end
+	return sum == cache
+end)())
+ConfigM.Inventory.Pockets[1], ConfigM.Inventory.Pockets[2] = 30, 30
 
 -- dev tools: teleport to the armory and spawn a hostile through the F2 panel's remote
 as(player)

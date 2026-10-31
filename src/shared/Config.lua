@@ -33,6 +33,14 @@ Config.PlotSpacing = 1500
 Config.CityFallbackRadius = 300
 Config.CityFallbackHeight = 10
 
+-- The grid inventory (server/Inventory.lua): pockets without a pack, and what being over the carry limit costs.
+Config.Inventory = {
+	Pockets = { 6, 4 }, -- grid without a pack
+	PocketCarry = 15, -- weight you move freely with without a pack
+	OverweightSpeedMult = 0.6, -- walk speed while over the carry limit
+	OverweightStaminaMult = 1.6, -- stamina costs while over
+}
+
 Config.City = {
 	CacheRespawn = 240, -- seconds before an opened cache refills
 	-- standing hostiles per district Danger (server/Population.lua)

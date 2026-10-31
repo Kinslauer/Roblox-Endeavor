@@ -30,7 +30,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (96 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
+  `scenario` = Endeavor end to end (110 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
   Endeavor client boots. They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution (`ROBLOX_API_KEY` with Luau Execution Sessions: Write) runs a script
@@ -107,6 +107,14 @@ store `ConduitCharacter_v2`) is shared by both places.
   attribute (own and other players). Uploading Animation assets isn't possible through Open Cloud.
   Still placeholder: nothing major; everything below is polish and balance.
   Known limit: MeshPart CollisionFidelity can't be set from scripts, so collapsed stumps may collide as hulls.
+- Grid inventory (`src/server/Inventory.lua`, shapes in `Items.Shape`/`Items.Footprint`, `Config.Inventory`): profile.Grid.Items
+  = { Id, X, Y, Rot, Count } is the truth, profile.Inventory the count cache (recount after every change). Add/Remove/
+  AddAll keep their names; Add drops overflow through `Inventory.Overflow` (set by Loot) unless keepLeftover; placement
+  tops up stacks, then first-free with rotation, then a full repack (`layout`). Packs (Type "Pack", Grid, Carry) set the
+  grid via profile.Pack; EquipItem wears one, Unequip "Pack" takes it off (relayout, spill). Overweight -> Gear derived
+  `Overweight` (stamina) + Stats walk speed + "Overweight" attribute. Remotes MoveItem(index,x,y,rot), DropItem(index,
+  count?). Client: drag/drop grid in the Tab panel (`drawGrid`, R rotates). Hideout `Shelves` is a leveled module
+  (h.Modules.Shelves = level, VAULT_CAP adds PerLevel).
 - `src/server/DevTools.lua` + the client's F2 panel (Config.Dev.Enabled only): teleport to landmarks/districts/sites,
   spawn hostiles, fire events, heal, materials, open world, die. Remote "Dev".
 - `src/server/Population.lua`: standing hostile packs per district Danger (Config.City.Population: cap 36, respawn 150s,

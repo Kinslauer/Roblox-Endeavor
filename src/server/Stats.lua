@@ -26,7 +26,9 @@ function Stats.Apply(player, fill)
 	local holdClass = char:GetAttribute("HoldClass")
 	local holdMult = if holdClass then Props.Weights[holdClass].SpeedMult else 1
 	local sprintMult = if char:GetAttribute("Sprinting") then Config.Combat.SprintMult else 1
-	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult * sprintMult
+	local weightMult = if d.Overweight then Config.Inventory.OverweightSpeedMult else 1
+	char:SetAttribute("Overweight", d.Overweight == true)
+	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult * sprintMult * weightMult
 
 	char:SetAttribute("Weapon", PlayerData.Get(player).Equipped)
 	HeldWeapons.Attach(char, PlayerData.Get(player).Equipped)

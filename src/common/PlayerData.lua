@@ -23,7 +23,9 @@ local TEMPLATE = {
 	Armor = {}, -- [slot] = itemId
 	Cyber = {}, -- [slot] = itemId
 	SkillSlots = {}, -- ["1"] = skillId (string keys so the table stays a dictionary)
-	Inventory = {},
+	Inventory = {}, -- [itemId] = count: a cache recomputed from Grid (every system reads this)
+	Grid = { Items = {} }, -- the real thing: { Id, X, Y, Rot, Count } placed in the pack's grid
+	Pack = "", -- worn pack item id ("" = pockets only)
 	Condition = {}, -- [itemId] = 0-100 for the stack you own (weapons, armor, cybers); missing = 100
 	Upgrades = {}, -- [itemId] = 0-3
 	-- The hideout is the conduit's claim on the city: it outlives the character (a crew keeps it),
