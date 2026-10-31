@@ -475,6 +475,22 @@ local function onFire(player, dir)
 end
 
 function Soldiers.Init()
+	-- the locker terminal at each base opens the recruit app (M does too, anywhere)
+	for _, locker in Battlefield.Lockers do
+		local target = if locker:IsA("Model") then locker.PrimaryPart else locker
+		if target then
+			local prompt = Instance.new("ProximityPrompt")
+			prompt.ObjectText, prompt.ActionText, prompt.HoldDuration = "Locker", "Open recruit app", 0.3
+			prompt.MaxActivationDistance, prompt.RequiresLineOfSight = 10, false
+			prompt.Parent = target
+			prompt.Triggered:Connect(function(player)
+				local war = warOf(player)
+				if war then
+					Remotes.RecruitApp:FireClient(player, Recruit.Snapshot(war), true)
+				end
+			end)
+		end
+	end
 	Players.CharacterAutoLoads = false
 	Factions.IsDeployed = Soldiers.IsDeployed
 	Net.On("Fire", { rate = 20, burst = 30, args = { "vector" } }, onFire)

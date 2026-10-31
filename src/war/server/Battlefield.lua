@@ -14,6 +14,7 @@ local W = Config.War
 local H = W.Hill
 local Battlefield = {}
 Battlefield.StructureDamaged = Instance.new("BindableEvent") -- (model, stage)
+Battlefield.Lockers = {} -- the locker terminals at each base (Soldiers puts the recruit-app prompt on them)
 
 local GROUND_TOP = 2
 local folder
@@ -298,10 +299,30 @@ function Battlefield.Init()
 	-- faction bases: a bunker each, beyond the grid edges
 	for _, faction in W.Factions do
 		local cf = Battlefield.BaseCFrame(faction)
-		local bunker = part(folder, { Name = faction .. "Base", Size = Vector3.new(40, 12, 60), Position = Vector3.new(cf.Position.X + (if faction == "Union" then -30 else 30), GROUND_TOP + 6, 0), Color = Color3.fromRGB(80, 85, 80), Material = Enum.Material.Concrete })
+		-- the bunker faces the grid: Union sits at -X and looks +X, Pact the other way
+		local inward = if faction == "Union" then 1 else -1
+		local bunkerCF = CFrame.new(cf.Position.X - inward * 30, GROUND_TOP, 0) * CFrame.Angles(0, -inward * math.pi / 2, 0)
+		local bunker = ModelAssets.Spawn(Assets.Base.Bunker, bunkerCF, faction .. "Base", folder)
+		if not bunker then
+			bunker = part(folder, { Name = faction .. "Base", Size = Vector3.new(40, 12, 60), Position = Vector3.new(cf.Position.X - inward * 30, GROUND_TOP + 6, 0), Color = CONCRETE, Material = Enum.Material.Concrete })
+		end
 		bunker:SetAttribute("Faction", faction)
-		local flag = part(folder, { Size = Vector3.new(0.5, 20, 0.5), Position = Vector3.new(cf.Position.X, GROUND_TOP + 10, 0), Color = W.FactionColors[faction], Material = Enum.Material.Neon })
-		flag.Name = faction .. "Flag"
+		local flag = ModelAssets.Spawn(Assets.Base.Flag, CFrame.new(cf.Position.X + inward * 6, GROUND_TOP, 22), faction .. "Flag", folder)
+		if flag then
+			for _, p in flag:GetDescendants() do
+				if p:IsA("BasePart") and p.Name:match("_Flag$") then
+					p.Color = W.FactionColors[faction]
+				end
+			end
+		else
+			flag = part(folder, { Name = faction .. "Flag", Size = Vector3.new(0.5, 20, 0.5), Position = Vector3.new(cf.Position.X, GROUND_TOP + 10, 0), Color = W.FactionColors[faction], Material = Enum.Material.Neon })
+		end
+		local locker = ModelAssets.Spawn(Assets.Base.Locker, CFrame.new(cf.Position.X + inward * 6, GROUND_TOP, -22) * CFrame.Angles(0, -inward * math.pi / 2, 0), faction .. "Locker", folder)
+		if not locker then
+			locker = part(folder, { Name = faction .. "Locker", Size = Vector3.new(4, 6, 2), Position = Vector3.new(cf.Position.X + inward * 6, GROUND_TOP + 3, -22), Color = Color3.fromRGB(40, 42, 48), Material = Enum.Material.Metal })
+		end
+		locker:SetAttribute("Faction", faction)
+		table.insert(Battlefield.Lockers, locker)
 	end
 	local Lighting = game:GetService("Lighting")
 	Lighting.ClockTime, Lighting.Brightness = 7.5, 1.5

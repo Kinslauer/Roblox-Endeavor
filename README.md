@@ -132,6 +132,26 @@ profile (same ProfileService store, same universe). Code lives in `src/war/` and
   shells and grenades carve craters (terrain when present, scorch otherwise). Bodies persist up to the sector cap.
 - Test it without Roblox: `python3 tools/smoke/gen.py tools/smoke/war.lua > /tmp/hw.lua && luau /tmp/hw.lua`.
 
+## Art, sound and animation
+- **Models are built by script in Blender** (`tools/models/*.py`, see `tools/models/README.md`), previewed with a
+  software rasterizer and uploaded as Model assets through Open Cloud. Every id lives in `src/shared/Assets.lua`;
+  `src/common/ModelAssets.lua` loads, caches, dresses (materials ride in part names), anchors and places them, and
+  everything falls back to generated blocks if an asset is missing. Done: street props with A/B/C wear, building kits
+  per district, the four enemy rigs (R15 skeletons built by `src/server/Rigs.lua`), melee weapons and firearms held in
+  the right hand (`src/common/HeldWeapons.lua`), hideout modules, walls and gate, the raid arena, the Front's props,
+  staged buildings and faction bases.
+- **Sounds are synthesized** (`tools/sounds/synth.py`, numpy + ffmpeg, no samples) and uploaded as Audio assets;
+  `src/shared/Sounds.lua` holds the ids and `Sounds.Play(name, at)` is the one call the clients make. Ambient loops:
+  city hum and wind in Endeavor, wind and distant guns on the Front.
+- **Animation is procedural**: the clients tween Motor6D offsets under Roblox's idle/walk animations for swings (windup,
+  slash), hostile telegraphs, flinches, guard poses and guard jolts. Animation assets can't be uploaded through Open
+  Cloud, so there are none.
+- **The director** (`src/server/Events.lua`) throws events at an open world every 1 to 2.5 minutes: supply drops,
+  raider ambushes, blackouts (the city goes dark, Shockers come out), Warden patrols, salvage caches and dead drops at
+  hideout sites. Quests (`src/server/Quests.lua`) chain forever and now include breaking things, catches, Black Flash
+  and tapping in to the Front.
+- **Playtest checklist**: `docs/TESTING.md`.
+
 ## Test arena
 With `Config.Dev.Enabled = true` (default for now) the prologue is 15s and the world opens into a generated neon arena:
 ring with 4 gates, pillars, cover, a center platform and 8 spawn pads. The **Test Armory** outside the south gate has free

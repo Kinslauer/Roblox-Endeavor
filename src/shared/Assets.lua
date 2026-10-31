@@ -134,6 +134,14 @@ Assets.Compound = {
 	RaidGate = 113137125539955,
 }
 
+-- The Front's faction bases (tools/models/base.py): bunker shell (hollow, door toward the grid), flagpole
+-- (the Cloth_Flag part is recoloured per faction) and the locker terminal that opens the recruit app.
+Assets.Base = {
+	Bunker = 114043336589277,
+	Flag = 72596583156716,
+	Locker = 111491796184766,
+}
+
 -- Roblox drops Blender material colours on import, so every part is named "<Part>_<Material>"
 -- and the material is applied from this table when the model is loaded.
 Assets.Materials = {
@@ -194,6 +202,7 @@ Assets.Materials = {
 	Ember = { Color = Color3.fromRGB(255, 115, 25), Material = Enum.Material.Neon, Light = Color3.fromRGB(255, 120, 30) },
 	Red = { Color = Color3.fromRGB(178, 30, 30), Material = Enum.Material.SmoothPlastic },
 	Hazard = { Color = Color3.fromRGB(216, 166, 26), Material = Enum.Material.Metal },
+	Flag = { Color = Color3.fromRGB(220, 220, 220), Material = Enum.Material.Fabric },
 	Rubble = { Color = Color3.fromRGB(84, 82, 79), Material = Enum.Material.Concrete },
 }
 
