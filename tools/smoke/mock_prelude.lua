@@ -80,6 +80,7 @@ CF.__mul = function(a, b)
 end
 CF.__add = function(a, b) return mkcf(a.Position + b, a.r) end
 CF.__sub = function(a, b) return mkcf(a.Position - b, a.r) end
+CF.identity = mkcf(V3.new(0, 0, 0))
 function CF.Inverse(a) return a end
 function CF.ToObjectSpace(a, b) return b end
 function CF.ToWorldSpace(a, b) return a * b end

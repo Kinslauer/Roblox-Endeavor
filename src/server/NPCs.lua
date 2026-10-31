@@ -95,6 +95,7 @@ local function nearestTarget(root, aggro, filter)
 end
 
 local function telegraph(model, seconds, color)
+	Combat.FX("Windup", model, seconds)
 	local warn = Instance.new("Highlight")
 	warn.FillColor, warn.OutlineColor = color, color
 	warn.FillTransparency = 0.3

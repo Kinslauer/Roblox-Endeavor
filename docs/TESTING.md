@@ -12,6 +12,11 @@ report). Versions: Endeavor v22, Front v12.
 
 ## Endeavor: combat
 - [ ] Light swing (LMB) and heavy swing (RMB/hold) show an arc and make a whoosh (heavy is deeper).
+- [ ] Swings animate: the arm winds up and back, the torso twists, then the arm snaps down through the arc.
+      Heavy swings wind up higher and slower. Other conduits' swings animate too.
+- [ ] Blocking (F) raises both arms into a guard (yours and other players'); a blocked or parried hit jolts the guard.
+- [ ] Getting hit flinches head and torso; a guard break staggers harder.
+- [ ] Hostiles raise their arm for the whole telegraph (red glow) and slash when it lands; dodge/parry on the slash.
 - [ ] Hitting a dummy or hostile thuds and flashes it red; parry (F just before impact) clangs and flashes white.
 - [ ] Guard break (blocking too long) plays the deep crack; posture bar empties.
 - [ ] Flicker (E just before your hit lands) ticks; three chained = BLACK FLASH banner, red shockwave, boom.

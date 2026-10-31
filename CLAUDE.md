@@ -89,12 +89,15 @@ store `ConduitCharacter_v2`) is shared by both places.
   clients play them from their existing event handlers (`Sounds.Play(name, partOrPosition)`). Unheard by me: verify in-game.
   Compound shells (`tools/models/compound.py` -> `Assets.Compound`): `ModelAssets.Shell(id, part, pitch)` tiles panel
   models along a wall part and hides it; used for hideout walls + gate frame and the raid arena walls/pillars/gate.
-  Still placeholder: custom animations.
+  Procedural animation (client, Motor6D C0 tweens under the Animator): windup/slash on "Swing" and NPC "Windup"
+  (fired by NPCs.telegraph), flinch on Hit/GuardBreak, guard jolt on Parry/Block, block pose from the Blocking
+  attribute (own and other players). Uploading Animation assets isn't possible through Open Cloud.
+  Still placeholder: nothing major; everything below is polish and balance.
   Known limit: MeshPart CollisionFidelity can't be set from scripts, so collapsed stumps may collide as hulls.
 - All balance numbers are first guesses pending the user's playtest checklist.
 
 ## Open items
-- Next art: animations (hooks exist: `CombatEvent` "Swing"). Awaiting the user's in-game look at the rigs (animation playback can't be verified from the Luau execution API).
+- Awaiting the user's in-game look at the rigs (animation playback can't be verified from the Luau execution API).
 - The playtest checklist is `docs/TESTING.md`: add a line for every feature that lands; the user ticks it.
 - Front: real 20-player frame-rate test; war world art; vehicles are intentionally absent.
 - Experience internal name is still "Conduit" (cosmetic; rename in Configurations → Basic Settings).

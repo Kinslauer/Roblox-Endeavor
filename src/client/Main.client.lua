@@ -803,13 +803,107 @@ local function blackFlashFx(attacker, victim)
 	end
 end
 
--- A swing has no animation yet: draw a quick arc in front of whoever swung and punch our camera.
+-- Procedural animation: Motor6D C0 offsets tweened on top of whatever the Animator is doing
+-- (the Animator writes Transform, not C0, so idle/walk keep playing underneath). Works on player
+-- R15 rigs and on the Blender enemy rigs, which use the same joint names.
+local baseC0 = setmetatable({}, { __mode = "k" })
+local jointTweens = setmetatable({}, { __mode = "k" })
+local function joint(char, name)
+	local m = typeof(char) == "Instance" and char:FindFirstChild(name, true)
+	if m and m:IsA("Motor6D") then
+		if baseC0[m] == nil then
+			baseC0[m] = m.C0
+		end
+		return m
+	end
+	return nil
+end
+local function pose(char, name, offset, seconds, style)
+	local m = joint(char, name)
+	if not m then
+		return
+	end
+	local old = jointTweens[m]
+	if old then
+		old:Cancel()
+	end
+	local tw = TweenService:Create(m, TweenInfo.new(seconds, style or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { C0 = baseC0[m] * offset })
+	jointTweens[m] = tw
+	tw:Play()
+end
+local function relax(char, seconds)
+	for _, name in { "RightShoulder", "LeftShoulder", "RightElbow", "LeftElbow", "Waist", "Neck" } do
+		pose(char, name, CFrame.identity, seconds or 0.3)
+	end
+end
+-- raise the weapon arm up and back, twist the torso; `seconds` is how long the windup is held
+local function windupAnim(char, seconds, heavy)
+	local lift = if heavy then math.rad(175) else math.rad(150)
+	pose(char, "RightShoulder", CFrame.Angles(lift, 0, math.rad(if heavy then 35 else 20)), math.max(0.08, seconds * 0.8))
+	pose(char, "RightElbow", CFrame.Angles(math.rad(40), 0, 0), seconds * 0.8)
+	pose(char, "Waist", CFrame.Angles(0, math.rad(if heavy then 35 else 20), 0), seconds * 0.8)
+	pose(char, "LeftShoulder", CFrame.Angles(math.rad(40), 0, math.rad(-15)), seconds * 0.8)
+end
+-- the slash itself: arm snaps forward-down, torso untwists past centre, then everything settles
+local function slashAnim(char, heavy)
+	pose(char, "RightShoulder", CFrame.Angles(math.rad(if heavy then 35 else 55), 0, math.rad(-10)), if heavy then 0.12 else 0.08, Enum.EasingStyle.Quart)
+	pose(char, "RightElbow", CFrame.identity, 0.1)
+	pose(char, "Waist", CFrame.Angles(0, math.rad(if heavy then -30 else -20), 0), 0.1, Enum.EasingStyle.Quart)
+	pose(char, "LeftShoulder", CFrame.Angles(math.rad(-20), 0, math.rad(-10)), 0.1)
+	task.delay(if heavy then 0.3 else 0.18, function()
+		relax(char, if heavy then 0.45 else 0.3)
+	end)
+end
+local function swingAnim(char, heavy)
+	local windup = if heavy then 0.3 else 0.1
+	windupAnim(char, windup, heavy)
+	task.delay(windup, function()
+		slashAnim(char, heavy)
+	end)
+end
+-- flinch: head and torso snap back, arms come up, then recover
+local function staggerAnim(char, hard)
+	pose(char, "Waist", CFrame.Angles(math.rad(if hard then -22 else -12), 0, math.rad(6)), 0.06, Enum.EasingStyle.Quart)
+	pose(char, "Neck", CFrame.Angles(math.rad(if hard then -30 else -18), 0, 0), 0.06, Enum.EasingStyle.Quart)
+	pose(char, "RightShoulder", CFrame.Angles(math.rad(30), 0, math.rad(20)), 0.08)
+	pose(char, "LeftShoulder", CFrame.Angles(math.rad(30), 0, math.rad(-20)), 0.08)
+	task.delay(if hard then 0.35 else 0.15, function()
+		relax(char, if hard then 0.5 else 0.3)
+	end)
+end
+-- guard: both arms up and across, elbows bent, weight back
+local function blockPose(char, on)
+	if on then
+		pose(char, "RightShoulder", CFrame.Angles(math.rad(70), 0, math.rad(-25)), 0.12)
+		pose(char, "LeftShoulder", CFrame.Angles(math.rad(70), 0, math.rad(25)), 0.12)
+		pose(char, "RightElbow", CFrame.Angles(math.rad(70), 0, 0), 0.12)
+		pose(char, "LeftElbow", CFrame.Angles(math.rad(70), 0, 0), 0.12)
+		pose(char, "Waist", CFrame.Angles(math.rad(-6), 0, 0), 0.12)
+	else
+		relax(char, 0.2)
+	end
+end
+-- parry / block impact: the guard jolts and comes back
+local function guardHitAnim(char)
+	pose(char, "RightShoulder", CFrame.Angles(math.rad(95), 0, math.rad(-35)), 0.05, Enum.EasingStyle.Quart)
+	pose(char, "LeftShoulder", CFrame.Angles(math.rad(95), 0, math.rad(35)), 0.05, Enum.EasingStyle.Quart)
+	task.delay(0.1, function()
+		if char:GetAttribute("Blocking") then
+			blockPose(char, true)
+		else
+			relax(char, 0.25)
+		end
+	end)
+end
+
+-- A swing: pose the rig, draw a quick arc in front of whoever swung and punch our camera.
 local function swingFx(char, label)
 	local root = typeof(char) == "Instance" and char:FindFirstChild("HumanoidRootPart")
 	if not root then
 		return
 	end
 	local heavy = label == "Heavy"
+	swingAnim(char, heavy)
 	Sounds.Play(if heavy then "SwingHeavy" else "SwingLight", root)
 	local arc = make("Part", { Shape = Enum.PartType.Cylinder, Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon,
 		Color = if heavy then Color3.fromRGB(255, 170, 60) else Color3.fromRGB(220, 230, 255), Transparency = 0.35,
@@ -844,8 +938,20 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 			}, workspace)
 			Debris:AddItem(beam, 0.1)
 		end
+	elseif kind == "Windup" then
+		windupAnim(a, tonumber(b) or 0.5, (tonumber(b) or 0) >= 0.7)
+		task.delay(tonumber(b) or 0.5, function()
+			slashAnim(a, (tonumber(b) or 0) >= 0.7)
+		end)
 	elseif FLASH[kind] then
 		flash(a, FLASH[kind])
+	end
+	if kind == "Hit" then
+		staggerAnim(a, false)
+	elseif kind == "GuardBreak" then
+		staggerAnim(a, true)
+	elseif kind == "Parry" or kind == "Block" then
+		guardHitAnim(a)
 	end
 	if SOUND[kind] and typeof(a) == "Instance" then
 		Sounds.Play(SOUND[kind], a:FindFirstChild("HumanoidRootPart") or a)
@@ -857,6 +963,7 @@ local function bindStance(char)
 	local stance
 	local function update()
 		local blocking = char:GetAttribute("Blocking")
+		blockPose(char, blocking and true or false)
 		if blocking and not stance then
 			stance = make("Highlight", { FillTransparency = 1, OutlineColor = Color3.fromRGB(120, 160, 255), OutlineTransparency = 0 }, char)
 		elseif not blocking and stance then
@@ -877,6 +984,24 @@ local function bindBar(fill, char, valueAttr, maxAttr)
 	char:GetAttributeChangedSignal(maxAttr):Connect(update)
 	update()
 end
+-- other conduits' guards are posed too (their Blocking attribute replicates)
+local function bindOtherBlock(char)
+	char:GetAttributeChangedSignal("Blocking"):Connect(function()
+		blockPose(char, char:GetAttribute("Blocking") and true or false)
+	end)
+end
+for _, other in Players:GetPlayers() do
+	if other ~= player then
+		if other.Character then
+			bindOtherBlock(other.Character)
+		end
+		other.CharacterAdded:Connect(bindOtherBlock)
+	end
+end
+Players.PlayerAdded:Connect(function(other)
+	other.CharacterAdded:Connect(bindOtherBlock)
+end)
+
 local function onCharacter(char)
 	bindStance(char)
 	bindBar(staminaFill, char, "Stamina", "MaxStamina")
