@@ -15,6 +15,7 @@ local Firearms = require(Shared:WaitForChild("Firearms"))
 local HideoutDefs = require(Shared:WaitForChild("Hideout"))
 local Items = require(Shared:WaitForChild("Items"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
+local Sounds = require(Shared:WaitForChild("Sounds"))
 local Skills = require(Shared:WaitForChild("Skills"))
 
 local player = Players.LocalPlayer
@@ -350,6 +351,7 @@ local function debris(position, color, count, size)
 end
 
 local function explosionFx(origin, radius)
+	Sounds.Play("Explosion", origin)
 	local sphere = make("Part", { Shape = Enum.PartType.Ball, Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon,
 		Color = Color3.fromRGB(255, 160, 60), Size = Vector3.new(2, 2, 2), Position = origin, Transparency = 0.1 }, workspace)
 	TweenService:Create(sphere, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = Vector3.new(radius * 2, radius * 2, radius * 2), Transparency = 1 }):Play()
@@ -426,6 +428,7 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b, c)
 		end
 	elseif kind == "Catch" then
 		flash(a, Color3.fromRGB(255, 255, 255))
+		Sounds.Play("Catch", typeof(a) == "Instance" and (a:FindFirstChild("HumanoidRootPart") or a) or nil)
 		if a == player.Character then
 			bannerToken += 1
 			local token = bannerToken
@@ -440,10 +443,12 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b, c)
 		explosionFx(a, b)
 	elseif kind == "Break" then
 		debris(a, Color3.fromRGB(90, 90, 100), 8, 0.5)
+		Sounds.Play(BREAK_SOUND[b] or "BreakMetal", a)
 	elseif kind == "PropHit" then
 		debris(a, Color3.fromRGB(120, 120, 130), 2, 0.3)
 	elseif kind == "Breach" then
 		debris(a, Color3.fromRGB(60, 60, 70), 16, 0.7)
+		Sounds.Play("Collapse", a)
 	elseif kind == "BreachResist" then
 		debris(a, Color3.fromRGB(255, 220, 120), 3, 0.2)
 	elseif kind == "Fuse" and typeof(a) == "Instance" then
@@ -730,6 +735,11 @@ end)
 
 -- ===== Combat feedback & movement =====
 
+-- Sounds for combat events, played at the character they happened to.
+local SOUND = { Hit = "HitFlesh", Block = "BlockThud", Parry = "HitClang", GuardBreak = "GuardBreak", Devour = "Devour", Flick = "FlickerTick" }
+-- Sounds for props breaking, by prop id; anything else is metal. Chunks hitting the ground thud.
+local BREAK_SOUND = { WindowPane = "BreakGlass", Crate = "BreakWood", Slab = "Collapse", Chunk = "ImpactDirt" }
+
 local FLASH = {
 	Hit = Color3.fromRGB(255, 70, 70), Block = Color3.fromRGB(150, 150, 255), Parry = Color3.fromRGB(255, 255, 255), Devour = Color3.fromRGB(120, 0, 160),
 	GuardBreak = Color3.fromRGB(255, 160, 0), Burst = Color3.fromRGB(80, 170, 255), Dodge = Color3.fromRGB(120, 255, 200),
@@ -768,6 +778,7 @@ end)
 
 local function blackFlashFx(attacker, victim)
 	local vroot = typeof(victim) == "Instance" and victim:FindFirstChild("HumanoidRootPart")
+	Sounds.Play("BlackFlash", vroot or nil)
 	if vroot then
 		local spark = make("Part", { Shape = Enum.PartType.Ball, Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon,
 			Color = Color3.fromRGB(255, 20, 20), Size = Vector3.new(2, 2, 2), Position = vroot.Position }, workspace)
@@ -796,6 +807,7 @@ local function swingFx(char, label)
 		return
 	end
 	local heavy = label == "Heavy"
+	Sounds.Play(if heavy then "SwingHeavy" else "SwingLight", root)
 	local arc = make("Part", { Shape = Enum.PartType.Cylinder, Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon,
 		Color = if heavy then Color3.fromRGB(255, 170, 60) else Color3.fromRGB(220, 230, 255), Transparency = 0.35,
 		Size = Vector3.new(0.15, if heavy then 9 else 7, if heavy then 9 else 7), CFrame = root.CFrame * CFrame.new(0, 0.5, -3) * CFrame.Angles(0, 0, math.pi / 2) }, workspace)
@@ -831,6 +843,9 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 		end
 	elseif FLASH[kind] then
 		flash(a, FLASH[kind])
+	end
+	if SOUND[kind] and typeof(a) == "Instance" then
+		Sounds.Play(SOUND[kind], a:FindFirstChild("HumanoidRootPart") or a)
 	end
 end)
 

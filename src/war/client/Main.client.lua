@@ -11,6 +11,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Firearms = require(Shared:WaitForChild("Firearms"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
+local Sounds = require(Shared:WaitForChild("Sounds"))
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -101,7 +102,7 @@ local function describe()
 	kitLabel.Text = ("grenades %d   dressings %d   sandbags %d   armor %s   helmet %s"):format(kit.Grenades or 0, kit.Medkits or 0, kit.Sandbags or 0,
 		if kit.Armor then ("%d%%"):format(kit.Armor.Condition) else "-", if kit.Helmet then ("%d%%"):format(kit.Helmet.Condition) else "-")
 end
-Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c)
+Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c, d)
 	if kind == "State" then
 		weapon, slotName, kit = a, b, c or kit
 		describe()
@@ -109,15 +110,21 @@ Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c)
 		recoilPitch += a * (if aiming then 0.7 else 1)
 		recoilYaw += (math.random() - 0.5) * 2 * b
 	elseif kind == "Click" then
+		Sounds.Play("DryClick")
 		crosshair.Text = if a == "dry" then "click" elseif a == "safe" then "SAFE" elseif a == "jam" then "JAM" else "+"
 		task.delay(0.4, function() crosshair.Text = "+" end)
 	elseif kind == "Shot" and typeof(a) == "Instance" then
+		-- near shots crack, far ones roll; loudness comes from the weapon's attachments (suppressors)
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local far = root and (root.Position - b).Magnitude > 180
+		Sounds.Play(if far then "ShotDistant" else "ShotRifle", b, { Volume = (if far then 0.6 else 1) * (tonumber(d) or 1) })
 		local tracer = make("Part", { Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 230, 150),
 			Size = Vector3.new(0.08, 0.08, 6), CFrame = CFrame.lookAt(b, b + c) * CFrame.new(0, 0, -6) }, workspace)
 		Debris:AddItem(tracer, 0.06)
 		local flash = make("PointLight", { Brightness = 3, Range = 10, Color = Color3.fromRGB(255, 200, 120) }, a:FindFirstChild("Head") or a)
 		Debris:AddItem(flash, 0.05)
 	elseif kind == "Impact" then
+		Sounds.Play(if c then "ImpactFlesh" else "ImpactDirt", a)
 		local puff = make("Part", { Anchored = true, CanCollide = false, CanQuery = false, Size = Vector3.new(0.4, 0.4, 0.4), Position = a,
 			Color = if c then Color3.fromRGB(150, 20, 20) else Color3.fromRGB(120, 110, 90), Material = Enum.Material.SmoothPlastic }, workspace)
 		Debris:AddItem(puff, 0.5)
@@ -255,10 +262,12 @@ end)
 -- ===== explosions / world =====
 Remotes.World.OnClientEvent:Connect(function(kind, a, b)
 	if kind == "Dig" then
+		Sounds.Play("Dig", a)
 		local puff = make("Part", { Anchored = true, CanCollide = false, CanQuery = false, Size = Vector3.new(3, 1, 3), Position = a + Vector3.new(0, 1, 0), Color = Color3.fromRGB(70, 60, 45), Material = Enum.Material.Ground, Transparency = 0.3 }, workspace)
 		TweenService:Create(puff, TweenInfo.new(1), { Transparency = 1, Position = a + Vector3.new(0, 4, 0) }):Play()
 		Debris:AddItem(puff, 1)
 	elseif kind == "Explosion" then
+		Sounds.Play("Explosion", a)
 		local sphere = make("Part", { Shape = Enum.PartType.Ball, Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon,
 			Color = Color3.fromRGB(255, 150, 60), Size = Vector3.new(2, 2, 2), Position = a, Transparency = 0.1 }, workspace)
 		TweenService:Create(sphere, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = Vector3.new(b * 2, b * 2, b * 2), Transparency = 1 }):Play()
@@ -269,6 +278,9 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b)
 			recoilYaw += (math.random() - 0.5) * 4
 		end
 	elseif kind == "ArtilleryWarning" then
+		task.delay(math.max(0, (tonumber(b) or 0) - 2), function()
+			Sounds.Play("ArtilleryWhistle", a)
+		end)
 		announce(("Incoming! Shells land in %ds."):format(b), "Emergence", b)
 	end
 end)
@@ -289,6 +301,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	elseif key == Enum.KeyCode.R then
 		Remotes.Reload:FireServer()
 	elseif key == Enum.KeyCode.T then
+		Sounds.Play("Rack")
 		if weapon and weapon.Jammed then Remotes.Unjam:FireServer() else Remotes.Rack:FireServer() end
 	elseif key == Enum.KeyCode.B then
 		Remotes.Mode:FireServer()
