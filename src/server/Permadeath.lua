@@ -9,7 +9,13 @@ local PlayerData = require(script.Parent.Common.PlayerData)
 local Quests = require(script.Parent.Quests)
 local Stats = require(script.Parent.Stats)
 
-local legacyStore = DataStoreService:GetDataStore("ConduitLegacy_v1")
+-- Account-level record of every character's fate. Optional: without DataStore access
+-- (unpublished place, API services off) deaths simply aren't recorded.
+local legacyStore
+do
+	local ok, result = pcall(DataStoreService.GetDataStore, DataStoreService, "ConduitLegacy_v1")
+	legacyStore = if ok then result else nil
+end
 local Permadeath = {}
 
 local function dropRemains(player, profile, cframe)
@@ -24,6 +30,9 @@ end
 local function recordLegacy(userId, profile)
 	local survived = os.time() - profile.BornAt
 	task.spawn(function()
+		if not legacyStore then
+			return
+		end
 		pcall(function()
 			legacyStore:UpdateAsync("Legacy_" .. userId, function(old)
 				old = old or { Deaths = 0, TotalKills = 0, BestSurvival = 0 }

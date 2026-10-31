@@ -1,6 +1,7 @@
 -- Minimal Roblox mock, just enough to execute the game's server code and catch runtime errors.
 local G = _G
 local now, frame = 0, 0
+M_UNPUBLISHED = true -- Studio on a file opened from disk: DataStores throw
 local task_
 local newInstance
 local sleepers, spawnedErrors = {}, {}
@@ -314,7 +315,7 @@ function methods.GetService(self, name)
 		s._init = true; function s.Create() return newInstance("Tween") end
 	elseif name == "DataStoreService" and not s._init then
 		s._init = true
-		function s.GetDataStore() local ds = {}; function ds.GetAsync() return nil end; function ds.SetAsync() end; function ds.UpdateAsync(_, k, f) return f(nil) end; function ds.RemoveAsync() end; return ds end
+		function s.GetDataStore() if M_UNPUBLISHED then error("You must publish this place to the web to access DataStore") end local ds = {}; function ds.GetAsync() return nil end; function ds.SetAsync() end; function ds.UpdateAsync(_, k, f) return f(nil) end; function ds.RemoveAsync() end; return ds end
 	elseif name == "RunService" and not s._init then
 		s._init = true; s.Heartbeat = sig(s, "Heartbeat"); s.RenderStepped = sig(s, "RenderStepped")
 	end

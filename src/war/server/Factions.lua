@@ -16,7 +16,19 @@ local Factions = {}
 Factions.IsDeployed = function(player) return true end -- replaced by Soldiers.Init
 Factions.Changed = Instance.new("BindableEvent") -- (scales)
 
-local store = DataStoreService:GetDataStore(W.Scales.StoreName)
+-- The global scales live in a DataStore. In an unpublished or API-disabled place the store is
+-- unavailable; the scales then stay local to this server instead of taking the game down.
+local store
+local function getStore()
+	if store == nil then
+		local ok, result = pcall(DataStoreService.GetDataStore, DataStoreService, W.Scales.StoreName)
+		store = if ok then result else false
+		if not ok then
+			warn("[Factions] no DataStore (unpublished place or API access off): scales are local only")
+		end
+	end
+	return store or nil
+end
 local scales = { Union = 1000, Pact = 1000 } -- local view; synced with the global store
 local pending = { Union = 0, Pact = 0 } -- tickets earned here since the last sync
 
@@ -90,10 +102,15 @@ function Factions.IncomePerMinute(faction)
 end
 
 local function sync()
+	local ds = getStore()
+	if not ds then
+		broadcast()
+		return
+	end
 	local mine = { Union = pending.Union, Pact = pending.Pact }
 	pending.Union, pending.Pact = 0, 0
 	local ok, err = pcall(function()
-		local result = store:UpdateAsync("scales", function(old)
+		local result = ds:UpdateAsync("scales", function(old)
 			old = old or { Union = 1000, Pact = 1000 }
 			for f in old do
 				old[f] = math.max(100, (old[f] + (mine[f] or 0)) * (1 - W.Scales.Decay))
