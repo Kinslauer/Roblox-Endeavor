@@ -238,6 +238,12 @@ local function drawGridInto(gridF, grid, source, holder)
 	for index, item in grid.Items do
 		local def = Items.Defs[item.Id]
 		local w, h = Items.Footprint(item.Id, item.Rot)
+		if item.Hidden then
+			-- not searched yet: a dark block with a question mark, nothing to drag
+			local shade = make("Frame", { Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4), Position = UDim2.fromOffset((item.X - 1) * CELL + 2, (item.Y - 1) * CELL + 2), BackgroundColor3 = Color3.fromRGB(50, 46, 56), BorderSizePixel = 0 }, gridF)
+			make("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "?", TextColor3 = Color3.fromRGB(150, 140, 160), Font = Enum.Font.GothamBold, TextSize = 18 }, shade)
+			continue
+		end
 		local cond = lastCondition[item.Id]
 		local frame = make("TextButton", {
 			Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4), Position = UDim2.fromOffset((item.X - 1) * CELL + 2, (item.Y - 1) * CELL + 2),
@@ -889,7 +895,9 @@ renderContainer = function()
 		containerPanel.Visible = false
 		return
 	end
-	addRow(containerPanel, container.label, { { text = "Take all", fn = function() Remotes.ContainerTake:FireServer(container.key, 0) end },
+	local g = container.grid
+	local status = if g.Searching then ("searching %d/%d"):format(g.Revealed or 0, g.Total or 0) elseif (g.Revealed or 0) < (g.Total or 0) then ("%d/%d found - stay close to keep searching"):format(g.Revealed or 0, g.Total or 0) else ("%.1f kg"):format(g.Weight or 0)
+	addRow(containerPanel, ("%s  (%s)"):format(container.label, status), { { text = "Take all", fn = function() Remotes.ContainerTake:FireServer(container.key, 0) end },
 		{ text = "Close", color = Color3.fromRGB(90, 90, 100), fn = function() container = nil; renderContainer() end } })
 	local holder = make("Frame", { Size = UDim2.new(1, -8, 0, container.grid.H * CELL + 4), BackgroundTransparency = 1 }, containerPanel)
 	containerGridFrame = make("Frame", { Position = UDim2.fromOffset(4, 0), BackgroundColor3 = Color3.fromRGB(30, 26, 22), BorderSizePixel = 0 }, holder)

@@ -30,7 +30,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (118 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
+  `scenario` = Endeavor end to end (120 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
   Endeavor client boots. They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution (`ROBLOX_API_KEY` with Luau Execution Sessions: Write) runs a script
@@ -121,7 +121,9 @@ store `ConduitCharacter_v2`) is shared by both places.
   CarryPerPackLevel per level (Items.Carry mirrors it). Remote "SortItems" -> Inventory.Sort (relayout).
 - Loot containers: every Loot.Spawn part is a grid container (`containers[key]`, key on the part attribute ContainerKey);
   the prompt opens it on the looter's client (World "Container"), `Loot.Take(player, key, index|0)` moves stacks into the
-  pack within 14 studs, `Loot.Contents(part)` reads what is left; the part is destroyed when empty. Client: container
+  pack within 14 studs, `Loot.Contents(part)` reads what is left; the part is destroyed when empty. Searching: per-looter `Seen`/`Searching`
+  (weak tables), reveal loop paced by Config.Inventory.SearchBase/PerCell, stops beyond SearchReach; snapshots mask
+  unrevealed items as Hidden; `Loot.RevealAll(part, player)` for tests. Client: container
   panel beside the pack, drag/double-click/Take all. Remote "ContainerTake".
 - Inventory icons: `tools/models/icons.py` -> `Assets.Icons` + `Assets.IconFor(itemId)` (falls back to weapon/worn models);
   `src/server/IconLibrary.lua` clones them into ReplicatedStorage.Icons at startup; the client's `itemIcon` renders a

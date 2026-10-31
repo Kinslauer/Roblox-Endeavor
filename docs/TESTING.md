@@ -46,6 +46,10 @@ report). Versions: Endeavor v41, Front v19.
 - [ ] Looting is a search: X on a crate, stash, corpse or salvage opens its own grid beside your pack. Drag items into
       your pack, double-click to quick-move, or Take all. The container closes and vanishes when empty; what does not
       fit stays in it ("No room in your pack for the rest"). You must stay within reach to take.
+- [ ] Searching takes time: blocks start as dark "?" shapes and reveal one by one (big items slower, about half a
+      second each plus a bit per cell); walking away stops the search where it was and reopening resumes it. The
+      header shows "searching n/m", then the container's total weight once everything is found. Hidden items
+      cannot be taken, by drag or Take all.
 - [ ] Crafting into a full grid drops the result at your feet.
 - [ ] Double-click moves a stack between your pack and the vault when the hideout panel is open.
 - [ ] Craft a Satchel (4 cloth, 1 scrap), click it, Wear: the grid becomes 7x5 and the satchel leaves the grid. Rucksack

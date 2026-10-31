@@ -39,6 +39,10 @@ Config.Inventory = {
 	PocketCarry = 15, -- weight you move freely with without a pack
 	OverweightSpeedMult = 0.6, -- walk speed while over the carry limit
 	OverweightStaminaMult = 1.6, -- stamina costs while over
+	-- searching a container: items reveal one at a time (bigger ones take longer); walking away stops it
+	SearchBase = 0.45, -- seconds per item
+	SearchPerCell = 0.12, -- extra seconds per cell of its footprint
+	SearchReach = 14, -- studs; further than this and the search (and taking) stops
 	CarryPerPackLevel = 5, -- extra carry per bench upgrade of the worn pack (each level also adds a row)
 }
 

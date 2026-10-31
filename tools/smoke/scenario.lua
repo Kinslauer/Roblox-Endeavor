@@ -71,6 +71,21 @@ check("the locker opens as a container with its items", (function()
 	return (c.ScrapVest or 0) == 1 and (c.Cloth or 0) == 2
 end)())
 root().CFrame = M.CF.new(locker.Position + M.V3.new(3, 0, 0)); run(0.1) -- taking needs you within reach
+Remotes.ContainerTake:FireServer(locker:GetAttribute("ContainerKey"), 0); run(0.1)
+local prof0 = M.mockEnv.__require(SSS.Server.Common.PlayerData).Get(player)
+check("nothing can be taken before it is revealed", prof0.Inventory.ScrapVest == nil and locker.Parent ~= nil)
+locker:FindFirstChildOfClass("ProximityPrompt").Triggered:Fire(player) -- (re)start the search while standing here
+run(1.2)
+check("the search reveals items over time", (function()
+	local Loot_ = M.mockEnv.__require(SSS.Server.Loot)
+	-- after ~1.2s at least one small item should be revealed: take all moves only revealed ones
+	Remotes.ContainerTake:FireServer(locker:GetAttribute("ContainerKey"), 0); run(0.1)
+	local c = Loot_.Contents(locker)
+	local left = 0
+	for _, n in c do left += n end
+	return left < 4 -- 4 items were inside (1 vest, 2 cloth, 1 scrap): something came out
+end)())
+M.mockEnv.__require(SSS.Server.Loot).RevealAll(locker, player) -- the rest, without waiting (the dummy timing below is tight)
 Remotes.ContainerTake:FireServer(locker:GetAttribute("ContainerKey"), 0); run(0.2)
 run(1)
 check("step 4 after looting", step() == 4)

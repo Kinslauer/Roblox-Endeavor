@@ -47,8 +47,62 @@ local function containerFor(bundle)
 	return { Items = {}, W = W, H = H }
 end
 
-local function snapshot(box)
-	return { W = box.W, H = box.H, Items = box.Items }
+-- What a particular looter sees: items they have revealed, plus "?" blocks for the rest. Hidden
+-- entries keep only footprint and position so the client can draw the shape.
+local function snapshot(c, player)
+	local seen = c.Seen[player] or {}
+	local items = {}
+	local revealed, weight = 0, 0
+	for _, item in c.Box.Items do
+		if seen[item] then
+			table.insert(items, item)
+			revealed += 1
+			weight += Items.Shape(item.Id).Weight * item.Count
+		else
+			table.insert(items, { Id = item.Id, X = item.X, Y = item.Y, Rot = item.Rot, Count = item.Count, Hidden = true })
+		end
+	end
+	return { W = c.Box.W, H = c.Box.H, Items = items, Revealed = revealed, Total = #c.Box.Items, Weight = weight, Searching = c.Searching[player] == true }
+end
+
+local function send(c, key, player)
+	Remotes.World:FireClient(player, "Container", key, snapshot(c, player), c.Opts.Label or "Remains")
+end
+
+-- Reveals the container's items to `player` one at a time, as long as they stay in reach.
+local function search(c, key, player)
+	if c.Searching[player] then
+		return
+	end
+	c.Searching[player] = true
+	c.Seen[player] = c.Seen[player] or {}
+	local I = Config.Inventory
+	task.spawn(function()
+		while containers[key] == c and c.Part.Parent do
+			local nextItem
+			for _, item in c.Box.Items do
+				if not c.Seen[player][item] then
+					nextItem = item
+					break
+				end
+			end
+			if not nextItem then
+				break
+			end
+			local shape = Items.Shape(nextItem.Id)
+			task.wait(I.SearchBase + I.SearchPerCell * shape.Size[1] * shape.Size[2])
+			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			if not (root and c.Part.Parent and (root.Position - c.Part.Position).Magnitude <= I.SearchReach) then
+				break -- walked away or it is gone: the search stops where it was
+			end
+			c.Seen[player][nextItem] = true
+			send(c, key, player)
+		end
+		c.Searching[player] = nil
+		if containers[key] == c and c.Part.Parent then
+			send(c, key, player)
+		end
+	end)
 end
 
 -- Takes stack `index` (0 = everything) from container `key` into the player's pack, what fits.
@@ -58,9 +112,10 @@ function Loot.Take(player, key, index)
 		return
 	end
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if not root or (root.Position - c.Part.Position).Magnitude > 14 or not c.CanTake(player) then
+	if not root or (root.Position - c.Part.Position).Magnitude > Config.Inventory.SearchReach or not c.CanTake(player) then
 		return
 	end
+	local seen = c.Seen[player] or {}
 	local profile = PlayerData.Get(player)
 	local function applyMeta(id)
 		if c.Meta and c.Meta.Condition and profile and profile.Inventory[id] then
@@ -73,9 +128,11 @@ function Loot.Take(player, key, index)
 	local indices = {}
 	if index == 0 then
 		for i = #c.Box.Items, 1, -1 do
-			table.insert(indices, i)
+			if seen[c.Box.Items[i]] then
+				table.insert(indices, i)
+			end
 		end
-	elseif c.Box.Items[index] then
+	elseif c.Box.Items[index] and seen[c.Box.Items[index]] then
 		table.insert(indices, index)
 	end
 	local blocked = false
@@ -103,7 +160,18 @@ function Loot.Take(player, key, index)
 		Remotes.World:FireClient(player, "ContainerClose", key)
 		c.Part:Destroy()
 	else
-		Remotes.World:FireClient(player, "Container", key, snapshot(c.Box), c.Opts.Label or "Remains")
+		send(c, key, player)
+	end
+end
+
+-- Tests and tools: reveal everything to a player at once.
+function Loot.RevealAll(part, player)
+	local c = containers[part:GetAttribute("ContainerKey")]
+	if c then
+		c.Seen[player] = c.Seen[player] or {}
+		for _, item in c.Box.Items do
+			c.Seen[player][item] = true
+		end
 	end
 end
 
@@ -169,7 +237,7 @@ function Loot.Spawn(cframe, bundle, opts)
 	nextKey += 1
 	local key = tostring(nextKey)
 	part:SetAttribute("ContainerKey", key)
-	containers[key] = { Part = part, Box = containerFor(bundle), Meta = opts.Meta, Opts = opts, CanTake = canTake }
+	containers[key] = { Part = part, Box = containerFor(bundle), Meta = opts.Meta, Opts = opts, CanTake = canTake, Seen = setmetatable({}, { __mode = "k" }), Searching = setmetatable({}, { __mode = "k" }) }
 	part.Destroying:Connect(function()
 		containers[key] = nil
 	end)
@@ -179,7 +247,8 @@ function Loot.Spawn(cframe, bundle, opts)
 		end
 		local c = containers[key]
 		if c then
-			Remotes.World:FireClient(looter, "Container", key, snapshot(c.Box), opts.Label or "Remains")
+			send(c, key, looter)
+			search(c, key, looter)
 		end
 	end)
 
