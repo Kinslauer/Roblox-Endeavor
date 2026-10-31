@@ -68,7 +68,7 @@ function Permadeath.Handle(player, char)
 		player.DisplayName .. (if killerName then " was eliminated by " .. killerName else " has fallen") .. ".", "Kill")
 
 	local survived = recordLegacy(player.UserId, profile)
-	Remotes.Died:FireClient(player, { Survived = survived, Kills = profile.Kills, Level = profile.Level, Killer = killerName })
+	Remotes.Died:FireClient(player, { Survived = survived, Kills = profile.Kills, Level = profile.Level, Killer = killerName, Uploaded = profile.Knowledge and profile.Knowledge.Uploaded == true })
 	player:SetAttribute("LastCombat", nil) -- the fight is over; quitting now is not combat-logging
 	PlayerData.Reset(player)
 end

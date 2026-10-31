@@ -1,7 +1,9 @@
 -- The hideout computer: state, apps, contracts (shared/Terminal.lua for the defs). One console per
 -- hideout with the Computer module; Remotes.Terminal(action, arg) while it is open. Knowledge lives in
--- profile.Knowledge = { Contacts = { id = true }, Contracts = { [id] = { Done } }, Completed = n } and
--- survives permadeath.
+-- profile.Knowledge = { Uploaded, Contacts = { id = true }, Contracts = { [id] = { Done } }, Completed = n }.
+-- The lore (owner, 2026-10-31): a conduit uploads their consciousness stack through the hideout computer; that
+-- is initialization, and it is why permadeath is a reboot and not an end. The computer runs on the stack (your
+-- brain is its operating system), so everything it learns stays with it. Until the upload, nothing does.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -111,7 +113,7 @@ function Terminal.State(player)
 	table.sort(archive, function(a, b)
 		return a.Order < b.Order
 	end)
-	return { Apps = apps, Contracts = contracts, House = house, Market = market, Archive = archive, Credits = data.War.Credits or 0, Completed = k.Completed or 0, MaxActive = T.MaxActive,
+	return { Uploaded = k.Uploaded == true, Apps = apps, Contracts = contracts, House = house, Market = market, Archive = archive, Credits = data.War.Credits or 0, Completed = k.Completed or 0, MaxActive = T.MaxActive,
 		Locked = { RAIDS = "find the Broker", HOUSE = "find the Fixer", MARKET = "find the Dealer" } }
 end
 
@@ -124,8 +126,28 @@ function Terminal.Push(player)
 	end
 end
 
+-- The first log-in is the stack upload: initialization. Before it the console shows nothing but the prompt
+-- to upload; after it the computer runs on you, and permadeath only reboots what you uploaded.
+function Terminal.Upload(player)
+	local k = knowledge(player)
+	if not k or k.Uploaded then
+		return false
+	end
+	k.Uploaded = true
+	announce(player, "INITIALIZATION 1/1: CONSCIOUSNESS STACK UPLOADED. The computer runs on you now.", "Emergence")
+	task.delay(2.5, function()
+		announce(player, "Every death from here is a reboot of the stack. What this computer learns, it keeps.", "Info")
+	end)
+	Terminal.Push(player)
+	return true
+end
+
 function Terminal.Open(player)
 	open[player] = true
+	local k = knowledge(player)
+	if k and not k.Uploaded then
+		Terminal.Upload(player)
+	end
 	Terminal.Push(player)
 end
 

@@ -1,7 +1,9 @@
 # CONDUIT (working title)
 
 A permadeath, always-on-PvP Roblox game. It plays like a solo game until the world "emerges"
-into a shared, ruined cyberpunk megacity full of quests, random events and combat.
+into a shared, ruined cyberpunk megacity full of quests, random events and combat. Conduits are the ones
+who could not buy their way out: they upload their consciousness stack through a hideout computer, and every
+death is a reboot of that upload (see docs/DESIGN.md, "The stack").
 Combat and progression are inspired by Cursed Gear and Deepwoken.
 
 See [docs/DESIGN.md](docs/DESIGN.md) for the design and roadmap.

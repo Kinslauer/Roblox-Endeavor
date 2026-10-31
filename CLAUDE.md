@@ -59,8 +59,14 @@ store `ConduitCharacter_v2`) is shared by both places.
   P helmetcam. Front: LMB fire, RMB aim, R reload, T rack/unjam, B selector, 1/2 switch, G frag, H dressing, Q/E lean,
   K artillery, F dig, V sandbags, M app.
 
+- Lore (owner, 2026-10-31; docs/DESIGN.md "The stack"): conduits upload their consciousness stack through the hideout
+  computer (first log-in = initialization, `Knowledge.Uploaded`); every death is a reboot of the stack; on the Front the
+  stack links to the recruit's; the rich uploaded and escaped the world. Mechanically: Knowledge survives permadeath only
+  once Uploaded (PlayerData.wipe); the death screen says STACK REBOOT or that nothing survives; the computer prompt is
+  "Upload stack / log in".
+
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v61, Front v19). Front v10 verified on a real server:
+- Both places published and starting cleanly (Endeavor v62, Front v19). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.

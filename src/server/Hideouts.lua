@@ -248,7 +248,7 @@ local function build(site, h)
 		lamp.Range, lamp.Brightness, lamp.Color = 12, 1, Color3.fromRGB(60, 220, 140)
 		lamp.Parent = screen
 		local cp = Instance.new("ProximityPrompt")
-		cp.ObjectText, cp.ActionText, cp.HoldDuration = "Computer", "Log in", 0.4
+		cp.ObjectText, cp.ActionText, cp.HoldDuration = "Computer", "Upload stack / log in", 0.4
 		cp.MaxActivationDistance, cp.RequiresLineOfSight, cp.KeyboardKeyCode = 8, false, Enum.KeyCode.X
 		cp.Parent = console
 		cp.Triggered:Connect(function(player)

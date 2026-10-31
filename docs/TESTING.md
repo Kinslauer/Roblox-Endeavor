@@ -1,7 +1,7 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v61, Front v19.
+report). Versions: Endeavor v62, Front v19.
 
 ## Endeavor: first minutes
 - [ ] The starting room is a pod: dark panelled walls with cyan seams, diamond-plate floor, the console in a terminal
@@ -235,7 +235,11 @@ move; the city and the scarp overlook stay put. The server's seed is printed in 
 - [ ] Rival conduit crews (2 crews of 3, purple-grey raider rigs named Rival, rebar blades) walk between the frontier's
       sites and fight whoever they meet. Killing one drops rival loot and may put "Rival intel: <contract>" on your board
       even without RAIDS.
-- [ ] Permadeath keeps the computer's knowledge: contacts met, contracts held, contracts completed.
+- [ ] The first log-in is the stack upload: "INITIALIZATION 1/1: CONSCIOUSNESS STACK UPLOADED", then "Every death from
+      here is a reboot of the stack". The panel's second line reads "Stack: uploaded".
+- [ ] Before the upload, dying wipes what the computer knew (contacts met die with the body) and the death screen says
+      "No stack was uploaded". After it, the death screen says "STACK REBOOT" and contacts, contracts and the archive
+      survive. Tapping in to the Front banners "Linking your stack to the recruit's".
 
 ## Endeavor: the cycle and the clues
 - [ ] Every hour (10 minutes while Dev is on) the city warns "dematerializing in 60s", debris flickers, colour drains

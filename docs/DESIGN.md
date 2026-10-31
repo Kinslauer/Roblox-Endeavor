@@ -6,6 +6,17 @@
 3. **Skill-based combat.** Timing (parry, dodge i-frames) and stamina management beat stat checking.
 4. **A living ruin.** A cyberpunk megacity that is wrecked but inhabited; events keep it unpredictable.
 
+## The stack (lore that the systems run on; owner, 2026-10-31)
+Conduits have to upload their consciousness to live the way they do: every life is a reboot of that upload. The upload
+happens once, through the **hideout computer**, and it is the first segment of initialization; from then on the computer
+runs on the conduit (their brain is its operating system), which is why its apps stay unlocked across deaths and why
+they are unlocked out in the world, by meeting people. On the Front a conduit links their stack to the one inside their
+recruit, so a dead recruit costs gear, not the conduit. Most people with money uploaded and *left* the hellscape that is
+still called the world; the conduits are the ones still in it, and the hourly reset is the evidence of what it is.
+Rules: `Knowledge.Uploaded` is set on the first log-in; only an uploaded stack survives permadeath (contacts, contracts,
+archive); before that everything the body knew dies with it. The hideout and the route north belong to the crew and
+survive regardless.
+
 ## Core loop
 Scavenge -> craft/upgrade -> take quests -> fight (NPCs, players, events) -> get stronger -> risk it all.
 

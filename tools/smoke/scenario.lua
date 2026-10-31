@@ -873,7 +873,13 @@ do
 		local firstSite = FS.Sites[1]
 		local cid = "Clear_" .. firstSite.Key
 		pd.Knowledge = { Contacts = {}, Contracts = {}, Completed = 0 }
+		-- before the upload nothing the computer knows survives a death
+		pd.Knowledge.Contacts.Dealer = true
+		local unuploaded = PlayerData.Reset(player)
+		check("computer: without an uploaded stack, knowledge dies with the body", unuploaded.Knowledge.Contacts.Dealer == nil and unuploaded.Knowledge.Uploaded == false)
+		pd = unuploaded
 		Terminal.Open(player)
+		check("computer: the first log-in uploads the stack", pd.Knowledge.Uploaded == true)
 		check("computer: RAIDS is locked until the Broker is met", Terminal.Accept(player, cid) == false)
 		Terminal.Meet(player, "Broker"); run(0.1)
 		check("computer: meeting the Broker unlocks RAIDS", pd.Knowledge.Contacts.Broker == true and Terminal.Accept(player, cid) == true)

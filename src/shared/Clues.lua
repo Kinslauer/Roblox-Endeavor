@@ -69,6 +69,11 @@ Clues.Fragments = {
 		Text = "A Neural Net schematic. The 'tap in' line does not run to the Front. It runs up, and the label at the top reads ARCHIVE.",
 		Rule = { Every = 3, Needs = { "Ledger" } },
 	},
+	Departed = {
+		Name = "Fragment: The Departed", Anomaly = "Wrong", Where = "City",
+		Text = "A brokerage receipt, stamped PAID IN FULL: one consciousness stack, one upload, one exit. The signature is a name you have seen on a tower. Nobody by that name lives in the city.",
+		Rule = { Every = 2 },
+	},
 	TheDoor = {
 		Name = "Fragment: The Door", Anomaly = "Echo", Where = "Site",
 		Text = "A photograph of a door that is nowhere in the city and nowhere in the valley. On the back, in pencil: 'outside the hour'.",

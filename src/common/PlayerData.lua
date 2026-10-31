@@ -34,8 +34,10 @@ local TEMPLATE = {
 	-- What the crew knows of the world north of the wall: the route's checkpoints reached, the sites
 	-- found, whether the Reach was ever seen. Survives permadeath (the hideout remembers the way).
 	Frontier = { Route = 0, Found = {}, Reached = false },
-	-- The hideout computer's knowledge: contacts met, contracts held. Uploaded consciousness: survives permadeath.
-	Knowledge = { Contacts = {}, Contracts = {}, Completed = 0, Fragments = {} },
+	-- The hideout computer's knowledge: contacts met, contracts held, fragments read. Once the consciousness
+	-- stack is uploaded through the computer (Uploaded), permadeath is a reboot: this survives. Before that it
+	-- dies with the body.
+	Knowledge = { Uploaded = false, Contacts = {}, Contracts = {}, Completed = 0, Fragments = {} },
 	-- The war world (a separate place, same universe) reads and writes this part of the profile.
 	-- A conduit is not reset by the recruit dying; the recruit's gear is.
 	War = {
@@ -88,7 +90,8 @@ local function wipe(data)
 	data.War = war or deepCopy(TEMPLATE.War)
 	data.Hideout = hideout or deepCopy(TEMPLATE.Hideout)
 	data.Frontier = frontier or deepCopy(TEMPLATE.Frontier)
-	data.Knowledge = knowledge or deepCopy(TEMPLATE.Knowledge)
+	-- the stack: what was uploaded survives the reboot; a conduit who never uploaded starts from nothing
+	data.Knowledge = if knowledge and knowledge.Uploaded then knowledge else deepCopy(TEMPLATE.Knowledge)
 	newCharacter(data)
 end
 

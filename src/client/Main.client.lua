@@ -135,7 +135,7 @@ local KIND_COLORS = {
 	Kill = Color3.fromRGB(230, 230, 230), Info = Color3.fromRGB(120, 220, 255), District = Color3.fromRGB(200, 200, 255),
 }
 local bannerToken = 0
-Remotes.Announce.OnClientEvent:Connect(function(text, kind)
+local function announce(text, kind)
 	bannerToken += 1
 	local token = bannerToken
 	banner.Text, banner.TextColor3, banner.TextTransparency = text, KIND_COLORS[kind] or Color3.new(1, 1, 1), 0
@@ -144,7 +144,8 @@ Remotes.Announce.OnClientEvent:Connect(function(text, kind)
 			banner.TextTransparency = 1
 		end
 	end)
-end)
+end
+Remotes.Announce.OnClientEvent:Connect(announce)
 
 -- ===== Attributes (K) =====
 local statLabels = {}
@@ -651,8 +652,9 @@ local deathScreen = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColo
 local deathText = label({ Size = UDim2.fromScale(1, 1), TextSize = 28, Text = "", ZIndex = 11, Parent = deathScreen })
 Remotes.Died.OnClientEvent:Connect(function(summary)
 	local m, s = math.floor(summary.Survived / 60), summary.Survived % 60
-	deathText.Text = ("YOU DIED\n\nSurvived %dm %ds  |  Level %d  |  %d kills\n%s\n\nA new conduit awakens..."):format(
-		m, s, summary.Level, summary.Kills, if summary.Killer then "Killed by " .. summary.Killer else "")
+	deathText.Text = ("YOU DIED\n\nSurvived %dm %ds  |  Level %d  |  %d kills\n%s\n\n%s"):format(
+		m, s, summary.Level, summary.Kills, if summary.Killer then "Killed by " .. summary.Killer else "",
+		if summary.Uploaded then "STACK REBOOT: the body is gone; the computer remembers." else "No stack was uploaded. Everything this body knew dies with it.")
 	deathScreen.Visible = true
 	task.delay(Config.RespawnDelay, function()
 		deathScreen.Visible = false
@@ -1269,6 +1271,7 @@ local uplinkFrame = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColo
 local uplinkText = label({ Size = UDim2.fromScale(1, 1), Text = "", TextSize = 30, Font = Enum.Font.Code, TextColor3 = Color3.fromRGB(170, 90, 255), ZIndex = 21, Parent = uplinkFrame })
 Remotes.Uplink.OnClientEvent:Connect(function(phase, seconds, faction)
 	if phase == "Begin" then
+		announce("Linking your stack to the recruit's. The body on the Front is theirs; the mind is yours.", "Info")
 		uplinkFrame.Visible, uplinkFrame.BackgroundTransparency = true, 1
 		TweenService:Create(uplinkFrame, TweenInfo.new(seconds * 0.6), { BackgroundTransparency = 0 }):Play()
 		local cc = make("ColorCorrectionEffect", { Saturation = 0, Contrast = 0 }, Lighting)
@@ -1380,6 +1383,7 @@ renderTerminal = function(t)
 		return function() Remotes.Terminal:FireServer(action, arg) end
 	end
 	addRow(terminalPanel, ("HIDEOUT COMPUTER  -  %d credits  -  %d contracts done"):format(t.Credits or 0, t.Completed or 0), { { text = "Log out", color = Color3.fromRGB(90, 50, 50), fn = send("Close") } }, GREEN)
+	addRow(terminalPanel, if t.Uploaded then "Stack: uploaded. This machine runs on you. Death reboots it; nothing here is lost." else "Stack: not uploaded.", {}, DIM)
 	-- RAIDS
 	if not t.Apps.RAIDS then
 		addRow(terminalPanel, "RAIDS  -  locked: " .. (t.Locked.RAIDS or ""), {}, DIM)
