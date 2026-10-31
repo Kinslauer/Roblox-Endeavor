@@ -60,7 +60,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   K artillery, F dig, V sandbags, M app.
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v32, Front v17). Front v10 verified on a real server:
+- Both places published and starting cleanly (Endeavor v35, Front v18). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.
@@ -107,7 +107,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   attribute (own and other players). Uploading Animation assets isn't possible through Open Cloud.
   Still placeholder: nothing major; everything below is polish and balance.
   Known limit: MeshPart CollisionFidelity can't be set from scripts, so collapsed stumps may collide as hulls.
-- `src/server/Population.lua`: standing hostile packs per district Danger (Config.City.Population: cap 28, respawn 150s,
+- `src/server/Population.lua`: standing hostile packs per district Danger (Config.City.Population: cap 36, respawn 150s,
   wander via the NPC Investigate attribute); on top of events, raids and hideout defenders.
 - `src/server/Landmarks.lua`: persistent markers (terminals, raid gate, armory) sent on world open and respawn.
 - World markers: World "Marker"(key, position, label, seconds, color) / "MarkerClear"(key) -> client beacon with live

@@ -499,7 +499,7 @@ for _, m in game_:GetService("CollectionService"):GetTagged("NPC") do
 end
 print("population: standing hostiles=" .. populated .. " alive=" .. Population.Alive())
 check("population spawned district packs at world open", populated >= 8)
-check("population stays under its cap", populated <= 28)
+check("population stays under its cap", populated <= 36)
 
 -- director events: every one runs without error and leaves something behind
 as(player)

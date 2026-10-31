@@ -37,7 +37,7 @@ Config.City = {
 	CacheRespawn = 240, -- seconds before an opened cache refills
 	-- standing hostiles per district Danger (server/Population.lua)
 	Population = {
-		Cap = 28, -- hostiles alive at once from all sources, before Population stops adding
+		Cap = 36, -- hostiles alive at once from all sources, before Population stops adding
 		Respawn = 150, -- seconds before a dead pack member returns
 		PackRadius = 35, -- how far a pack wanders from its anchor
 		Tiers = {
