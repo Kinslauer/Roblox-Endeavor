@@ -727,9 +727,11 @@ local function debris(position, color, count, size)
 	end
 end
 
+local floatWord, damageFlash, flashDamage, hitMarker, reticleActive
+do
 -- ===== Combat readout (ported from combat-feel's HudCombat): words over victims, reticle, damage vignette =====
 local liveNumbers = 0
-local function floatWord(char, text, color, big)
+floatWord = function(char, text, color, big)
 	local D = HUD.DamageNumbers
 	local anchor = typeof(char) == "Instance" and (char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart"))
 	if not anchor or liveNumbers >= D.MaxLive then
@@ -748,9 +750,9 @@ local function floatWord(char, text, color, big)
 	TweenService:Create(lbl, TweenInfo.new(D.Life * 0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, D.Life * 0.6), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
 end
 -- red vignette when I take damage
-local damageFlash = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = HUD.DamageFlash.Color, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 0 })
+damageFlash = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = HUD.DamageFlash.Color, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 0 })
 make("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.35, 1), NumberSequenceKeypoint.new(0.65, 1), NumberSequenceKeypoint.new(1, 0) }) }, damageFlash)
-local function flashDamage(strength)
+flashDamage = function(strength)
 	local F = HUD.DamageFlash
 	damageFlash.BackgroundTransparency = 1 - F.MaxTransparency * math.clamp(strength or 1, 0, 1)
 	TweenService:Create(damageFlash, TweenInfo.new(F.Seconds, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 }):Play()
@@ -767,10 +769,10 @@ do
 	table.insert(reticleParts, { frame = make("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(R.Thickness, R.Thickness), BorderSizePixel = 0, BackgroundColor3 = R.Color }, reticle) })
 end
 local reticleHitUntil = 0
-local function hitMarker()
+hitMarker = function()
 	reticleHitUntil = os.clock() + HUD.Reticle.HitSeconds
 end
-local reticleActive = function() return false end -- rebound once the stance exists below
+reticleActive = function() return false end -- rebound once the stance exists below
 RunService.Heartbeat:Connect(function()
 	reticle.Visible = reticleActive()
 	if not reticle.Visible then
@@ -792,16 +794,19 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 
+end
+local shake, hitstop, impact, neon, fxSpawn
+do
 -- ===== Impact feel (ported from combat-feel): camera shake, FOV hitstop, sparks, rings, shards, ghosts =====
 local IMP = Config.Impacts
 local trauma, shakeSeed = 0, math.random() * 100
 local fovTween
-local function shake(amount)
+shake = function(amount)
 	if amount and amount > 0 then
 		trauma = math.min(1, trauma + amount)
 	end
 end
-local function hitstop(seconds)
+hitstop = function(seconds)
 	if not seconds or seconds <= 0 then
 		return
 	end
@@ -832,7 +837,7 @@ RunService:BindToRenderStep("EndeavorCameraShake", 201, function(dt) -- RenderPr
 	trauma = math.max(0, trauma - dt / IMP.Camera.ShakeDecay)
 end)
 local fxFolder
-local function fxSpawn(part, lifetime)
+fxSpawn = function(part, lifetime)
 	if not fxFolder or not fxFolder.Parent then
 		fxFolder = workspace:FindFirstChild("FX") or Instance.new("Folder")
 		fxFolder.Name = "FX"
@@ -846,7 +851,7 @@ local function fxSpawn(part, lifetime)
 	Debris:AddItem(part, lifetime)
 	return part
 end
-local function neon(shape, size, color, cframe)
+neon = function(shape, size, color, cframe)
 	local part = Instance.new("Part")
 	part.Shape, part.Size, part.Color, part.Material, part.CFrame = shape, size, color, Enum.Material.Neon, cframe
 	part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch = true, false, false, false
@@ -911,7 +916,7 @@ local function involvesMe(a, b)
 	return me ~= nil and (a == me or b == me)
 end
 -- the feel for an event on `victim`: effects for everyone, shake and hitstop only when I am in it
-local function impact(kind, victim, attacker, heavy)
+impact = function(kind, victim, attacker, heavy)
 	local spec = IMP[kind]
 	if not spec then
 		return
@@ -938,6 +943,7 @@ local function impact(kind, victim, attacker, heavy)
 	end
 end
 
+end
 local function explosionFx(origin, radius)
 	Sounds.Play("Explosion", origin)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -1830,15 +1836,17 @@ end
 local SKILL_KEYS = { [Enum.KeyCode.R] = 1, [Enum.KeyCode.Y] = 2, [Enum.KeyCode.V] = 3 }
 local TOGGLES = { [Enum.KeyCode.J] = statsPanel, [Enum.KeyCode.Tab] = invPanel, [Enum.KeyCode.L] = loadoutPanel, [Enum.KeyCode.N] = app, [Enum.KeyCode.O] = hidePanel }
 
+local AIM, MENUS, menuOpen, aimActive, applyAim, toggleAim
+do
 -- ===== Combat stance (ported from combat-feel's Aim) =====
 -- While on, the body turns to the camera's yaw, the camera rides over the right shoulder and the mouse is
 -- locked to the centre, so melee cones and the arc pistol (both fire along the facing on the server) go where
 -- you look. It pauses, freeing the cursor, while any panel needs the mouse or LeftAlt is held.
-local AIM = Config.Aim
+AIM = Config.Aim
 local GameSettings = UserSettings():GetService("UserGameSettings")
 local aimOn = AIM.DefaultOn
-local MENUS = { statsPanel, invPanel, loadoutPanel, app, hidePanel, containerPanel, devPanel, deathScreen }
-local function menuOpen()
+MENUS = { statsPanel, invPanel, loadoutPanel, app, hidePanel, containerPanel, devPanel, deathScreen }
+menuOpen = function()
 	for _, m in MENUS do
 		if m.Visible then
 			return true
@@ -1846,7 +1854,7 @@ local function menuOpen()
 	end
 	return false
 end
-local function aimActive()
+aimActive = function()
 	return aimOn and not helmetcam and not menuOpen() and not UserInputService:IsKeyDown(AIM.FreeCursorKey)
 end
 local function aimPreset()
@@ -1854,7 +1862,7 @@ local function aimPreset()
 	local def = char and Weapons.Defs[char:GetAttribute("Weapon") or ""]
 	return if def and def.Family == "Sidearm" then AIM.Ranged else AIM.Melee
 end
-local function applyAim()
+applyAim = function()
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if hum then
@@ -1907,6 +1915,10 @@ RunService:BindToRenderStep("EndeavorAim", 202, function() -- after the camera s
 		UserInputService.MouseBehavior = if aimActive() then Enum.MouseBehavior.LockCenter else Enum.MouseBehavior.Default
 	end
 end)
+toggleAim = function()
+	aimOn = not aimOn
+	applyAim()
+end
 local function bindAim(char)
 	task.defer(applyAim)
 	local lastKind
@@ -1924,6 +1936,7 @@ end
 player.CharacterAdded:Connect(bindAim)
 if player.Character then
 	bindAim(player.Character)
+end
 end
 reticleActive = aimActive
 
@@ -2313,6 +2326,7 @@ pcall(function()
 	end
 end)
 
+do
 -- ===== Nameplates (ported from combat-feel): bodies read first =====
 -- Roblox's over-head name and health bar are switched off locally for every humanoid we plate; a small
 -- plate sits at hip height, lower-left, fading with distance. Players white, hostiles red; never my own.
@@ -2419,8 +2433,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 				end
 			end
 		else
-			aimOn = not aimOn
-			applyAim()
+			toggleAim()
 		end
 	elseif key == Enum.KeyCode.F1 then
 		controls.Visible = not controls.Visible
@@ -2465,3 +2478,5 @@ UserInputService.InputEnded:Connect(function(input)
 		Remotes.Throw:FireServer(cameraDirection(), charge)
 	end
 end)
+
+end
