@@ -606,6 +606,20 @@ check("vault take comes back to the pack", (hv.Vault.Scrap or 0) == 0)
 Remotes.HideoutBuild:FireServer("Shelves"); run(0.3)
 check("shelving adds rows to the vault grid", Hideouts_.VaultBox(hv).H == 8 or (hv.Modules.Shelves == nil))
 
+-- input queue: a heavy pressed during a light swing's recovery plays when the swing ends instead of being dropped
+as(player)
+Remotes.EquipItem:FireServer("PipeClub"); run(0.2)
+local Combat_ = M.mockEnv.__require(SSS.Server.Combat)
+local heavyFired = false
+local qconn = Combat_.Used.Event:Connect(function(name, who) if name == "Heavy" and who == player then heavyFired = true end end)
+Remotes.Attack:FireServer(); run(0.05)
+Remotes.Heavy:FireServer() -- too early: queued
+run(0.05)
+check("an early heavy is not thrown away", not heavyFired)
+run(1.5)
+check("the queued heavy plays once the swing ends", heavyFired)
+qconn:Disconnect()
+
 -- dev tools: teleport to the armory and spawn a hostile through the F2 panel's remote
 as(player)
 local devRoot = player.Character.HumanoidRootPart

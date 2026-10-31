@@ -673,8 +673,161 @@ local function debris(position, color, count, size)
 	end
 end
 
+-- ===== Impact feel (ported from combat-feel): camera shake, FOV hitstop, sparks, rings, shards, ghosts =====
+local IMP = Config.Impacts
+local trauma, shakeSeed = 0, math.random() * 100
+local fovTween
+local function shake(amount)
+	if amount and amount > 0 then
+		trauma = math.min(1, trauma + amount)
+	end
+end
+local function hitstop(seconds)
+	if not seconds or seconds <= 0 then
+		return
+	end
+	local cam = workspace.CurrentCamera
+	if not cam then
+		return
+	end
+	if fovTween then
+		fovTween:Cancel()
+	end
+	local base = 70
+	cam.FieldOfView = base + IMP.Camera.HitstopFov
+	fovTween = TweenService:Create(cam, TweenInfo.new(seconds, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { FieldOfView = base })
+	fovTween:Play()
+end
+RunService:BindToRenderStep("EndeavorCameraShake", Enum.RenderPriority.Camera.Value + 1, function(dt)
+	if trauma <= 0 then
+		return
+	end
+	local cam = workspace.CurrentCamera
+	if not cam then
+		return
+	end
+	local t = os.clock() * IMP.Camera.ShakeFrequency
+	local amp = trauma * trauma * IMP.Camera.ShakeMagnitude
+	local offset = Vector3.new(math.noise(shakeSeed, t, 0) * 2 * amp, math.noise(shakeSeed + 10, t, 0) * 2 * amp, 0)
+	cam.CFrame = cam.CFrame * CFrame.new(offset) * CFrame.Angles(0, 0, math.noise(shakeSeed + 20, t, 0) * 2 * amp * 0.05)
+	trauma = math.max(0, trauma - dt / IMP.Camera.ShakeDecay)
+end)
+local fxFolder
+local function fxSpawn(part, lifetime)
+	if not fxFolder or not fxFolder.Parent then
+		fxFolder = workspace:FindFirstChild("FX") or Instance.new("Folder")
+		fxFolder.Name = "FX"
+		fxFolder.Parent = workspace
+	end
+	if #fxFolder:GetChildren() >= IMP.MaxInstances then
+		part:Destroy()
+		return nil
+	end
+	part.Parent = fxFolder
+	Debris:AddItem(part, lifetime)
+	return part
+end
+local function neon(shape, size, color, cframe)
+	local part = Instance.new("Part")
+	part.Shape, part.Size, part.Color, part.Material, part.CFrame = shape, size, color, Enum.Material.Neon, cframe
+	part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch = true, false, false, false
+	return part
+end
+local function sparks(position, spec)
+	if not spec then
+		return
+	end
+	local anchor = neon(Enum.PartType.Ball, Vector3.new(0.2, 0.2, 0.2), spec.Color, CFrame.new(position))
+	anchor.Transparency = 1
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Color = ColorSequence.new(spec.Color)
+	emitter.LightEmission = 1
+	emitter.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, spec.Size), NumberSequenceKeypoint.new(1, 0) })
+	emitter.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) })
+	emitter.Lifetime = NumberRange.new(spec.Life * 0.6, spec.Life)
+	emitter.Speed = NumberRange.new(spec.Speed * 0.5, spec.Speed)
+	emitter.SpreadAngle = Vector2.new(180, 180)
+	emitter.Drag, emitter.Rate, emitter.Enabled = 4, 0, false
+	emitter.Parent = anchor
+	if fxSpawn(anchor, spec.Life + 0.1) then
+		emitter:Emit(spec.Count)
+	end
+end
+local function ring(position, spec)
+	local part = neon(Enum.PartType.Cylinder, Vector3.new(0.15, 1, 1), spec.Color, CFrame.new(position) * CFrame.Angles(0, 0, math.rad(90)))
+	if fxSpawn(part, spec.Life + 0.05) then
+		TweenService:Create(part, TweenInfo.new(spec.Life, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.new(0.15, spec.Size, spec.Size), Transparency = 1 }):Play()
+	end
+end
+local function shards(position, spec)
+	for _ = 1, spec.Count do
+		local shard = neon(Enum.PartType.Block, Vector3.new(spec.Size, spec.Size * 0.4, spec.Size * 0.6), spec.Color, CFrame.new(position) * CFrame.Angles(math.random() * 6, math.random() * 6, 0))
+		shard.Anchored, shard.Massless = false, true
+		if fxSpawn(shard, spec.Life) then
+			shard.AssemblyLinearVelocity = Vector3.new(math.random() - 0.5, math.random() * 0.8 + 0.2, math.random() - 0.5).Unit * spec.Speed
+			TweenService:Create(shard, TweenInfo.new(spec.Life), { Transparency = 1 }):Play()
+		end
+	end
+end
+local function ghost(char, seconds, color)
+	if typeof(char) ~= "Instance" then
+		return
+	end
+	for _, part in char:GetChildren() do
+		if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and part.Transparency < 1 then
+			local copy = Instance.new("Part")
+			copy.Size, copy.CFrame, copy.Color, copy.Material, copy.Transparency = part.Size, part.CFrame, color, Enum.Material.ForceField, 0.4
+			copy.Anchored, copy.CanCollide, copy.CanQuery, copy.CanTouch = true, false, false, false
+			if fxSpawn(copy, seconds) then
+				TweenService:Create(copy, TweenInfo.new(seconds), { Transparency = 1 }):Play()
+			end
+		end
+	end
+end
+local function torsoOf(char)
+	return typeof(char) == "Instance" and (char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart"))
+end
+local function involvesMe(a, b)
+	local me = player.Character
+	return me ~= nil and (a == me or b == me)
+end
+-- the feel for an event on `victim`: effects for everyone, shake and hitstop only when I am in it
+local function impact(kind, victim, attacker, heavy)
+	local spec = IMP[kind]
+	if not spec then
+		return
+	end
+	local torso = torsoOf(victim)
+	if torso then
+		local front = torso.Position + torso.CFrame.LookVector * 1.5
+		if kind == "Hit" then
+			sparks(torso.Position, spec.Sparks)
+		elseif kind == "Block" then
+			sparks(front, spec.Sparks)
+		elseif kind == "Parry" then
+			sparks(front, spec.Sparks)
+			ring(front, spec.Ring)
+		elseif kind == "GuardBreak" then
+			shards(torso.Position + torso.CFrame.LookVector * 1.2, spec.Shards)
+		elseif kind == "Dodged" then
+			ghost(victim, spec.Ghost, spec.Color)
+		end
+	end
+	if involvesMe(victim, attacker) then
+		shake((spec.Shake or 0) * (if heavy then IMP.HeavyShakeMult else 1))
+		hitstop((spec.Hitstop or 0) * (if heavy then IMP.HeavyHitstopMult else 1))
+	end
+end
+
 local function explosionFx(origin, radius)
 	Sounds.Play("Explosion", origin)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if root then
+		local d = (root.Position - origin).Magnitude
+		if d < IMP.Explosion.Radius then
+			shake(IMP.Explosion.Shake * (1 - d / IMP.Explosion.Radius))
+		end
+	end
 	local sphere = make("Part", { Shape = Enum.PartType.Ball, Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon,
 		Color = Color3.fromRGB(255, 160, 60), Size = Vector3.new(2, 2, 2), Position = origin, Transparency = 0.1 }, workspace)
 	TweenService:Create(sphere, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = Vector3.new(radius * 2, radius * 2, radius * 2), Transparency = 1 }):Play()
@@ -1221,6 +1374,8 @@ local function blackFlashFx(attacker, victim)
 		Debris:AddItem(spark, 0.4)
 	end
 	if attacker == player.Character or victim == player.Character then
+		shake(IMP.BlackFlash.Shake)
+		hitstop(IMP.BlackFlash.Hitstop)
 		local cc = make("ColorCorrectionEffect", { Brightness = -0.35, Contrast = 0.6, Saturation = -1, TintColor = Color3.fromRGB(255, 120, 120) }, Lighting)
 		TweenService:Create(cc, TweenInfo.new(0.4), { Brightness = 0, Contrast = 0, Saturation = 0, TintColor = Color3.new(1, 1, 1) }):Play()
 		Debris:AddItem(cc, 0.5)
@@ -1398,8 +1553,9 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 			Debris:AddItem(billboard, 1.0)
 			TweenService:Create(billboard, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { StudsOffset = billboard.StudsOffset + Vector3.new(0, 3, 0) }):Play()
 			TweenService:Create(text, TweenInfo.new(0.9), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
-			local cam = workspace.CurrentCamera
-			cam.CFrame = cam.CFrame * CFrame.Angles(math.rad(if amount >= 30 then 0.8 else 0.3), 0, 0)
+			local heavy = amount >= IMP.Hit.HeavyAmount
+			shake((if result == "blocked" then IMP.Block.Shake else IMP.Hit.Shake) * (if heavy then IMP.HeavyShakeMult else 1))
+			hitstop((if result == "blocked" then 0 else IMP.Hit.Hitstop) * (if heavy then IMP.HeavyHitstopMult else 1))
 		end
 	elseif kind == "Windup" then
 		windupAnim(a, tonumber(b) or 0.5, (tonumber(b) or 0) >= 0.7)
@@ -1411,10 +1567,15 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 	end
 	if kind == "Hit" then
 		staggerAnim(a, false)
+		impact("Hit", a, nil, false)
 	elseif kind == "GuardBreak" then
 		staggerAnim(a, true)
+		impact("GuardBreak", a, nil, true)
 	elseif kind == "Parry" or kind == "Block" then
 		guardHitAnim(a)
+		impact(kind, a, nil, false)
+	elseif kind == "Dodged" then
+		impact("Dodged", a, nil, false)
 	end
 	if SOUND[kind] and typeof(a) == "Instance" then
 		Sounds.Play(SOUND[kind], a:FindFirstChild("HumanoidRootPart") or a)

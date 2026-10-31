@@ -289,6 +289,7 @@ function Combat.Stun(char, duration)
 	local s = st(char)
 	local endsAt = os.clock() + duration
 	s.token += 1
+	s.queued = nil -- a stagger drops a queued swing
 	Combat.CancelFlicker(char)
 	s.busyUntil = 0
 	s.block = false
@@ -588,12 +589,43 @@ local function spendAmmo(player, weapon)
 	return Inventory.Remove(player, weapon.Ammo, 1)
 end
 
+-- Input queue (Config.Combat.InputQueue, ported from combat-feel): an attack or heavy pressed while your last
+-- swing is still finishing is held and plays the moment you're free instead of being thrown away, so a
+-- natural light, light, heavy never drops a press. One slot: the latest press wins. Getting staggered,
+-- dodging or raising your guard clears it.
+local function enqueue(player, char, action)
+	local s, t = st(char), os.clock()
+	if not isAlive(char) or t < s.stunned then
+		return
+	end
+	local wait = s.busyUntil - BUFFER - t
+	if wait <= 0 or wait > C.InputQueue then
+		return
+	end
+	local ticket, token = {}, s.token
+	s.queued = ticket
+	task.delay(wait, function()
+		if s.queued ~= ticket then
+			return -- replaced by a later press, or cleared
+		end
+		s.queued = nil
+		if s.token == token and player.Character == char then
+			action(player)
+		end
+	end)
+end
+
 function Combat.Attack(player)
 	local char = player.Character
 	local weapon, improvised = weaponOf(player)
-	if not (char and weapon and Combat.CanAct(char)) or handsFull(char) then
+	if not (char and weapon) or handsFull(char) then
 		return
 	end
+	if not Combat.CanAct(char) then
+		enqueue(player, char, Combat.Attack)
+		return
+	end
+	st(char).queued = nil
 	local s, t = st(char), os.clock()
 	local combo = if s.comboWeapon == weapon and t <= s.comboExpires then s.combo % #weapon.Attacks + 1 else 1
 	local spec = weapon.Attacks[combo]
@@ -620,9 +652,14 @@ end
 
 function Combat.Heavy(player)
 	local char, weapon = player.Character, weaponOf(player)
-	if not (char and weapon and Combat.CanAct(char)) or handsFull(char) then
+	if not (char and weapon) or handsFull(char) then
 		return
 	end
+	if not Combat.CanAct(char) then
+		enqueue(player, char, Combat.Heavy)
+		return
+	end
+	st(char).queued = nil
 	local s, t = st(char), os.clock()
 	if t - s.lastHeavy < C.HeavyCooldown or not Combat.SpendStamina(char, weapon.Heavy.Stamina) or not spendAmmo(player, weapon) then
 		return
@@ -660,6 +697,7 @@ function Combat.SetBlock(player, down)
 	end
 	local s = st(char)
 	if down then
+		s.queued = nil -- guarding drops a queued swing
 		if Combat.CanAct(char) and not s.block and os.clock() >= s.busyUntil and not handsFull(char) then
 			local t = os.clock()
 			Combat.SetSprint(player, false)
@@ -686,6 +724,7 @@ function Combat.Dodge(player, direction)
 	if t < s.stunned or t - s.lastDodge < C.DodgeCooldown then
 		return
 	end
+	s.queued = nil -- a dodge drops a queued swing
 	direction = Vector3.new(direction.X, 0, direction.Z)
 	if direction.Magnitude < 0.1 or not Combat.SpendStamina(char, C.DodgeCost) then
 		return

@@ -30,7 +30,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (120 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
+  `scenario` = Endeavor end to end (122 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
   Endeavor client boots. They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution (`ROBLOX_API_KEY` with Luau Execution Sessions: Write) runs a script
@@ -107,6 +107,12 @@ store `ConduitCharacter_v2`) is shared by both places.
   attribute (own and other players). Uploading Animation assets isn't possible through Open Cloud.
   Still placeholder: nothing major; everything below is polish and balance.
   Known limit: MeshPart CollisionFidelity can't be set from scripts, so collapsed stumps may collide as hulls.
+- Ported from `origin/claude/combat-feel` (the user's other session's branch; 69 commits, its own world and systems;
+  owner chose cherry-picking into this branch): attack input queue (`enqueue` in Combat, Config.Combat.InputQueue),
+  impact feel (client `impact()`: sparks/ring/shards/ghost + trauma camera shake + FOV hitstop, tuning in
+  Config.Impacts). Its tree is exported to the scratchpad `cf/` for reading; its owner checklist is
+  `production/qa/playtest-checklist-2026-10-25.md` there. Next ports: Aim stance, HUD v2 + nameplates, enemy turns +
+  pathfinding, launcher/juggle, full-body cybernetics, Autonet, cycle/clues/computer, contacts/raids, Verdant Reach.
 - Grid inventory (`src/server/Inventory.lua`, shapes in `Items.Shape`/`Items.Footprint`, `Config.Inventory`): profile.Grid.Items
   = { Id, X, Y, Rot, Count } is the truth, profile.Inventory the count cache (recount after every change). Add/Remove/
   AddAll keep their names; Add drops overflow through `Inventory.Overflow` (set by Loot) unless keepLeftover; placement

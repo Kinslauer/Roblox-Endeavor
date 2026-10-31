@@ -27,6 +27,11 @@ report). Versions: Endeavor v43, Front v19.
 - [ ] Your own hits float a damage number off the target (yellow normal, orange big, grey blocked, cyan arc) with a
       small camera nudge; nobody else sees your numbers.
 - [ ] Hostiles raise their arm for the whole telegraph (red glow) and slash when it lands; dodge/parry on the slash.
+- [ ] Input queue: click light, light, then heavy at a natural pace; no press is dropped, the heavy plays as soon as
+      the second light ends. A dodge, a block or getting staggered cancels a queued press.
+- [ ] Impact feel: hits spark orange and punch the FOV for a frame, heavies shake harder; blocks spark blue; a parry
+      throws a white ring and freezes the frame; a guard break scatters orange shards; a dodge leaves a cyan
+      after-image; explosions shake by distance. Too much or too little? (Config.Impacts)
 - [ ] Hitting a dummy or hostile thuds and flashes it red; parry (F just before impact) clangs and flashes white.
 - [ ] Guard break (blocking too long) plays the deep crack; posture bar empties.
 - [ ] Flicker (E just before your hit lands) ticks; three chained = BLACK FLASH banner, red shockwave, boom.

@@ -46,6 +46,22 @@ Config.Inventory = {
 	CarryPerPackLevel = 5, -- extra carry per bench upgrade of the worn pack (each level also adds a row)
 }
 
+-- Impact feel (client, ported from combat-feel's Presentation.Impacts): sparks, rings, shards, after-images,
+-- camera shake (0..1 trauma) and FOV hitstop per event kind.
+Config.Impacts = {
+	Hit = { Hitstop = 0.05, Shake = 0.35, Sparks = { Count = 14, Color = Color3.fromRGB(255, 120, 60), Size = 0.35, Speed = 18, Life = 0.3 }, HeavyAmount = 20 },
+	HeavyShakeMult = 1.8,
+	HeavyHitstopMult = 2,
+	Block = { Hitstop = 0, Shake = 0.15, Sparks = { Count = 8, Color = Color3.fromRGB(140, 170, 255), Size = 0.25, Speed = 12, Life = 0.25 } },
+	Parry = { Hitstop = 0.1, Shake = 0.5, Sparks = { Count = 18, Color = Color3.fromRGB(255, 255, 255), Size = 0.3, Speed = 22, Life = 0.3 }, Ring = { Color = Color3.fromRGB(255, 255, 255), Size = 9, Life = 0.3 } },
+	GuardBreak = { Hitstop = 0.12, Shake = 0.7, Shards = { Count = 16, Color = Color3.fromRGB(255, 170, 40), Size = 0.6, Speed = 26, Life = 0.6 } },
+	Dodged = { Ghost = 0.35, Color = Color3.fromRGB(80, 255, 230) },
+	BlackFlash = { Hitstop = 0.14, Shake = 1.0 },
+	Explosion = { Shake = 0.6, Radius = 40 },
+	Camera = { ShakeMagnitude = 0.6, ShakeDecay = 0.25, ShakeFrequency = 28, HitstopFov = -4 },
+	MaxInstances = 60, -- live FX parts in workspace.FX at once
+}
+
 Config.City = {
 	CacheRespawn = 240, -- seconds before an opened cache refills
 	-- standing hostiles per district Danger (server/Population.lua)
@@ -243,6 +259,7 @@ Config.Combat = {
 	ChargePerHit = 8,
 	MaxResist = 0.75,
 	HeavyCooldown = 1.2,
+	InputQueue = 0.4, -- an attack/heavy pressed this long (s) before you're free is held and played then
 	KillCreditSeconds = 15,
 }
 
