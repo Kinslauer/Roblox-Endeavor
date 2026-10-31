@@ -1,7 +1,7 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v22, Front v12.
+report). Versions: Endeavor v28, Front v15.
 
 ## Endeavor: first minutes
 - [ ] Spawn in the starting room on solid floor (no falling through, no black room). Returning players see
