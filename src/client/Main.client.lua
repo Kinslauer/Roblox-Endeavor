@@ -447,6 +447,14 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b, c)
 				end
 			end)
 		end
+	elseif kind == "Blackout" then
+		-- the grid is down: the sky goes near-black, neon is all that's left; restored after `a` seconds
+		local seconds = tonumber(a) or 60
+		local before = { Brightness = Lighting.Brightness, Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient }
+		TweenService:Create(Lighting, TweenInfo.new(2), { Brightness = 0.05, Ambient = Color3.fromRGB(8, 6, 14), OutdoorAmbient = Color3.fromRGB(10, 8, 18) }):Play()
+		task.delay(seconds, function()
+			TweenService:Create(Lighting, TweenInfo.new(4), before):Play()
+		end)
 	elseif kind == "Explosion" then
 		explosionFx(a, b)
 	elseif kind == "Break" then

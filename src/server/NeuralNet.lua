@@ -62,6 +62,7 @@ local function uplink(player)
 	Combat.Stun(char, W.UplinkSeconds + 1)
 	Combat.GrantIFrames(char, W.UplinkSeconds + 2)
 	Remotes.Uplink:FireClient(player, "Begin", W.UplinkSeconds, war.Faction)
+	require(script.Parent.Quests).Progress(player, "deploy", "Front", 1)
 	task.delay(W.UplinkSeconds, function()
 		uplinking[player] = nil
 		if not player.Parent then

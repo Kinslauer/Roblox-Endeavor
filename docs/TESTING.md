@@ -38,6 +38,16 @@ report). Versions: Endeavor v22, Front v12.
 - [ ] Buildings come from the kits (five district styles, intact and collapsed variants); props show A/B/C wear.
 - [ ] After a dematerialize cycle the world returns in a different condition.
 
+## Endeavor: random events (every 1 to 2.5 minutes once the world is open)
+- [ ] Supply drop: announced, a glowing crate lands; opening takes 3 s.
+- [ ] Raider ambush: "Raiders have found you", 2 to 4 hostiles close in.
+- [ ] Blackout: the city goes dark for a minute or two (neon stays), Shockers spawn; light returns afterwards.
+- [ ] Warden patrol: announced by district; a Warden walks there and drops Supply loot.
+- [ ] Salvage cache: intact props appear near you to break for salvage.
+- [ ] Dead drop: a purple stash at a numbered hideout site, announced to everyone.
+- [ ] Quests cycle through: scrap run, raiders, medkit, bounty, survey, brute, raid, wrecker (break 10), catcher,
+      black flash, tap in (deploy to the Front), shockers. Completing one assigns the next.
+
 ## Endeavor: hideouts and raids
 - [ ] Claim a site, open the bench (X). Bench model matches the tier (Tinkerer planks, Workshop steel, Foundry chrome).
 - [ ] Build Vault, Walls, Bunks, Generator, Turret, Forge, Medbay: each shows its model; prompts still work on them.

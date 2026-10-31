@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
@@ -16,6 +17,11 @@ Quests.Defs = {
 	{ Id = "survey", Title = "Survey: enter 3 districts", Kind = "explore", Target = "District", Count = 3, Reward = { Xp = 90, Items = { Ration = 2, Wire = 2 } } },
 	{ Id = "brute", Title = "Heavy Metal: bring down a Brute", Kind = "kill", Target = "Brute", Count = 1, Reward = { Xp = 150, Items = { Scrap = 8 } } },
 	{ Id = "raid", Title = "Breach: clear a Blackout raid", Kind = "raid", Target = "Any", Count = 1, Reward = { Xp = 300, Items = { Medkit = 2 } } },
+	{ Id = "wrecker", Title = "Wrecker: break 10 things", Kind = "break", Target = "Any", Count = 10, Reward = { Xp = 80, Items = { Scrap = 6 } } },
+	{ Id = "catcher", Title = "Catcher: catch something thrown at you", Kind = "feat", Target = "Catch", Count = 1, Reward = { Xp = 120, Items = { Battery = 1 } } },
+	{ Id = "blackflash", Title = "Black Flash: land one", Kind = "feat", Target = "BlackFlash", Count = 1, Reward = { Xp = 200, Items = { Wire = 4 } } },
+	{ Id = "tapin", Title = "Tap In: deploy to the Front", Kind = "deploy", Target = "Front", Count = 1, Reward = { Xp = 150, Items = { Ration = 3 } } },
+	{ Id = "shockers", Title = "Grid Work: drop 2 Shockers", Kind = "kill", Target = "Shocker", Count = 2, Reward = { Xp = 140, Items = { Battery = 1 } } },
 }
 
 local byId = {}
@@ -73,6 +79,19 @@ function Quests.Progress(player, kind, target, amount)
 end
 
 function Quests.Init()
+	local Combat = require(script.Parent.Combat)
+	local Destruction = require(script.Parent.Destruction)
+	Combat.Used.Event:Connect(function(name, player)
+		if typeof(player) == "Instance" and player:IsA("Player") then
+			Quests.Progress(player, "feat", name, 1)
+		end
+	end)
+	Destruction.Broken.Event:Connect(function(_, attackerChar)
+		local attacker = attackerChar and Players:GetPlayerFromCharacter(attackerChar)
+		if attacker then
+			Quests.Progress(attacker, "break", "Any", 1)
+		end
+	end)
 	Inventory.Added.Event:Connect(function(player, itemId, count)
 		Quests.Progress(player, "collect", itemId, count)
 	end)

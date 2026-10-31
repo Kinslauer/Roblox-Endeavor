@@ -491,6 +491,27 @@ check("sprint raises walk speed", pc.Humanoid.WalkSpeed > walk)
 Remotes.Sprint:FireServer(false); run(0.2)
 check("sprint releases", pc.Humanoid.WalkSpeed == walk)
 
+-- director events: every one runs without error and leaves something behind
+as(player)
+local Events = M.mockEnv.__require(SSS.Server.Events)
+local npcsBefore = #game_:GetService("CollectionService"):GetTagged("NPC")
+for name, fire in Events.Fire do
+	local ok, err = pcall(fire)
+	check("event " .. name .. " runs", ok, err)
+end
+run(0.5)
+check("events spawned hostiles", #game_:GetService("CollectionService"):GetTagged("NPC") > npcsBefore)
+local Quests = M.mockEnv.__require(SSS.Server.Quests)
+check("quest defs have real reward items", (function()
+	local Items = M.mockEnv.__require(RS.Shared.Items)
+	for _, def in Quests.Defs do
+		for id in def.Reward.Items do
+			if not Items.Defs[id] then return false end
+		end
+	end
+	return true
+end)())
+
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end
