@@ -6,6 +6,14 @@ Combat and progression are inspired by Cursed Gear and Deepwoken.
 
 See [docs/DESIGN.md](docs/DESIGN.md) for the design and roadmap.
 
+## Publishing
+Both places publish straight to the Endeavor experience (universe 10773835758) through Open Cloud:
+
+    ROBLOX_API_KEY=... tools/publish.sh          # builds and publishes both places (or: endeavor | front)
+
+The key is an Open Cloud API key with Place Management: Write on the experience. Never commit it. Start place
+120490278050491 is Endeavor (the city); 81481823786216 is the Front.
+
 ## Setup
 1. Install [Rojo](https://rojo.space) and the Rojo Studio plugin.
 2. `rojo serve` in this folder, then connect from Studio (File > New place first).
