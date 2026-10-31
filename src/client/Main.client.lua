@@ -685,6 +685,16 @@ Remotes.Hideout.OnClientEvent:Connect(function(state, open)
 	renderHideout()
 end)
 
+-- ===== Controls card (F1 toggles; shown for the first minute) =====
+local controls = label({ Size = UDim2.fromOffset(330, 230), Position = UDim2.new(1, -350, 1, -260), BackgroundTransparency = 0.35, BackgroundColor3 = Color3.new(0, 0, 0),
+	TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextSize = 14, Font = Enum.Font.Code,
+	Text = table.concat({ "CONTROLS  (F1 hides)", "LMB attack   RMB heavy   F block/parry", "Q dodge   Shift sprint   E flicker   Z feint",
+		"R / Y / V skills   G grab, hold to throw   H drop", "X interact / loot   M devour remains", "Tab inventory   L loadout   J attributes",
+		"O hideout   N recruit app   P helmetcam" }, "\n") })
+task.delay(60, function()
+	controls.Visible = false
+end)
+
 -- ===== Tutorial panel =====
 local tutorialPanel = make("Frame", { Size = UDim2.fromOffset(560, 112), Position = UDim2.new(0.5, -280, 0, 110), BackgroundColor3 = Color3.fromRGB(10, 14, 20), BackgroundTransparency = 0.15, Visible = false })
 make("UIStroke", { Color = Color3.fromRGB(0, 220, 255), Thickness = 1.5 }, tutorialPanel)
@@ -779,9 +789,29 @@ local function blackFlashFx(attacker, victim)
 	end
 end
 
+-- A swing has no animation yet: draw a quick arc in front of whoever swung and punch our camera.
+local function swingFx(char, label)
+	local root = typeof(char) == "Instance" and char:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	local heavy = label == "Heavy"
+	local arc = make("Part", { Shape = Enum.PartType.Cylinder, Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon,
+		Color = if heavy then Color3.fromRGB(255, 170, 60) else Color3.fromRGB(220, 230, 255), Transparency = 0.35,
+		Size = Vector3.new(0.15, if heavy then 9 else 7, if heavy then 9 else 7), CFrame = root.CFrame * CFrame.new(0, 0.5, -3) * CFrame.Angles(0, 0, math.pi / 2) }, workspace)
+	TweenService:Create(arc, TweenInfo.new(0.18), { Transparency = 1, Size = arc.Size + Vector3.new(0, 2, 2) }):Play()
+	Debris:AddItem(arc, 0.2)
+	if char == player.Character then
+		local cam = workspace.CurrentCamera
+		cam.CFrame = cam.CFrame * CFrame.Angles(math.rad(if heavy then -1.2 else -0.5), 0, 0)
+	end
+end
+
 Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if kind == "DodgeMove" or kind == "Knockback" then
+	if kind == "Swing" then
+		swingFx(a, b)
+	elseif kind == "DodgeMove" or kind == "Knockback" then
 		if root then
 			root.AssemblyLinearVelocity = a -- we own our character's physics
 		end
@@ -802,8 +832,23 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 	elseif FLASH[kind] then
 		flash(a, FLASH[kind])
 	end
-	-- TODO: kind == "Swing" -> play the weapon's animation (a = char, b = combo index / "Heavy" / skill name)
 end)
+
+-- Blocking shows as a steady blue outline on the character; sprinting dims the stamina bar label.
+local function bindStance(char)
+	local stance
+	local function update()
+		local blocking = char:GetAttribute("Blocking")
+		if blocking and not stance then
+			stance = make("Highlight", { FillTransparency = 1, OutlineColor = Color3.fromRGB(120, 160, 255), OutlineTransparency = 0 }, char)
+		elseif not blocking and stance then
+			stance:Destroy()
+			stance = nil
+		end
+	end
+	char:GetAttributeChangedSignal("Blocking"):Connect(update)
+	update()
+end
 
 local function bindBar(fill, char, valueAttr, maxAttr)
 	local function update()
@@ -815,6 +860,7 @@ local function bindBar(fill, char, valueAttr, maxAttr)
 	update()
 end
 local function onCharacter(char)
+	bindStance(char)
 	bindBar(staminaFill, char, "Stamina", "MaxStamina")
 	bindBar(postureFill, char, "Posture", "MaxPosture")
 	bindBar(chargeFill, char, "Charge", "MaxCharge")
@@ -844,6 +890,10 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		Remotes.Feint:FireServer()
 	elseif key == Enum.KeyCode.P then
 		setHelmetcam(not helmetcam)
+	elseif key == Enum.KeyCode.F1 then
+		controls.Visible = not controls.Visible
+	elseif key == Enum.KeyCode.LeftShift then
+		Remotes.Sprint:FireServer(true)
 	elseif key == Enum.KeyCode.G then
 		local char = player.Character
 		if char and char:GetAttribute("Holding") then
@@ -873,6 +923,8 @@ end)
 UserInputService.InputEnded:Connect(function(input)
 	if input.KeyCode == Enum.KeyCode.F then
 		Remotes.Block:FireServer(false)
+	elseif input.KeyCode == Enum.KeyCode.LeftShift then
+		Remotes.Sprint:FireServer(false)
 	elseif input.KeyCode == Enum.KeyCode.G and chargeStart then
 		local charge = math.clamp((os.clock() - chargeStart) / Config.Destruction.MaxChargeTime, 0, 1)
 		chargeStart = nil

@@ -477,6 +477,18 @@ local before = #game_:GetService("CollectionService"):GetTagged("NPC")
 Hideouts.NpcRaid(site); run(0.5)
 check("npc raid spawns raiders at the compound", #game_:GetService("CollectionService"):GetTagged("NPC") > before)
 
+
+-- sprint: faster while stamina lasts
+as(player)
+pc = player.Character
+local Stats = M.mockEnv.__require(SSS.Server.Stats)
+Stats.Apply(player, true); run(0.2)
+local walk = pc.Humanoid.WalkSpeed
+Remotes.Sprint:FireServer(true); run(0.2)
+check("sprint raises walk speed", pc.Humanoid.WalkSpeed > walk)
+Remotes.Sprint:FireServer(false); run(0.2)
+check("sprint releases", pc.Humanoid.WalkSpeed == walk)
+
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

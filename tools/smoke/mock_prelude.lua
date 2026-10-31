@@ -1,6 +1,7 @@
 -- Minimal Roblox mock, just enough to execute the game's server code and catch runtime errors.
 local G = _G
 local now, frame = 0, 0
+CLIENT_MODE = false
 M_UNPUBLISHED = true -- Studio on a file opened from disk: DataStores throw
 local task_
 local newInstance
@@ -174,7 +175,7 @@ function methods.FireClient(self, p, ...) local e = {self.Name, "client", ...}; 
 function methods.FireAllClients(self, ...) table.insert(FireLog, {self.Name, "all", ...}) end
 function methods.FireServer(self, ...) sig(self, "OnServerEvent"):Fire(Instance.CurrentPlayer, ...) end
 function methods.Fire(self, ...) sig(self, "Event"):Fire(...) end
-function methods.Play(self) end
+function methods.Play(self) local tgt, props = rawget(self, "_target"), rawget(self, "_props"); if tgt and props then for k, v in props do tgt[k] = v end end end
 function methods.Kick(self, msg) print("!! KICKED: " .. tostring(msg)) end
 function methods.Reconcile() end
 function methods.GetPartBoundsInRadius(self, origin, radius, params)
@@ -232,14 +233,14 @@ function methods.GetJoinData(self) return rawget(self, "_joinData") or {} end
 function methods.SetTeleportData(self, d) rawset(self, "_td", d) end
 function methods.TeleportAsync(self, placeId, players, options) table.insert(FireLog, { "Teleport", placeId, players, options }) end
 function methods.IsStudio() return true end
-function methods.IsServer() return true end
-function methods.IsClient() return false end
+function methods.IsServer() return not CLIENT_MODE end
+function methods.IsClient() return CLIENT_MODE == true end
 function methods.BindToClose() end
 function methods.SetNetworkOwner() end
 function methods.GetDebugId() return "id" end
 
 local DEFAULTS = {
-	Humanoid = function(i) rawset(i, "MaxHealth", 100); rawset(i, "_Health", 100); rawset(i, "WalkSpeed", 16); rawset(i, "HipHeight", 0) end,
+	Humanoid = function(i) rawset(i, "MaxHealth", 100); rawset(i, "_Health", 100); rawset(i, "WalkSpeed", 16); rawset(i, "HipHeight", 0); rawset(i, "MoveDirection", V3.zero) end,
 	Part = function(i) rawset(i, "_cf", mkcf(V3.zero)); rawset(i, "Size", V3.new(4,1,2)); rawset(i, "Anchored", false); rawset(i, "CanCollide", true) end,
 	MeshPart = function(i) rawset(i, "_cf", mkcf(V3.zero)); rawset(i, "Size", V3.new(4,1,2)) end,
 }
@@ -312,7 +313,7 @@ function methods.GetService(self, name)
 	elseif name == "Debris" and not s._init then
 		s._init = true; function s.AddItem(_, inst, t) task_.delay(t, function() if inst.Parent then inst:Destroy() end end) end
 	elseif name == "TweenService" and not s._init then
-		s._init = true; function s.Create() return newInstance("Tween") end
+		s._init = true; function s.Create(_, inst, info, props) local t = newInstance("Tween"); rawset(t, "_target", inst); rawset(t, "_props", props); return t end
 	elseif name == "DataStoreService" and not s._init then
 		s._init = true
 		function s.GetDataStore() if M_UNPUBLISHED then error("You must publish this place to the web to access DataStore") end local ds = {}; function ds.GetAsync() return nil end; function ds.SetAsync() end; function ds.UpdateAsync(_, k, f) return f(nil) end; function ds.RemoveAsync() end; return ds end
@@ -394,5 +395,5 @@ end
 return {
 	game = game_, workspace = workspace_, step = step, newInstance = newInstance, mkTree = mkTree, loadSource = loadSource, FireLog = FireLog,
 	setNow = function() return now end, mockEnv = mockEnv, runSafe = runSafe, V3 = V3, CF = CF, errors = spawnedErrors, task = task_,
-	setPlayer = function(p) Instance.CurrentPlayer = p end, sig = sig,
+	setPlayer = function(p) Instance.CurrentPlayer = p end, sig = sig, services = service,
 }

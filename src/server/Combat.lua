@@ -26,6 +26,7 @@ Combat.Resolved = Instance.new("BindableEvent") -- (attackerChar, victimChar, re
 Combat.Used = Instance.new("BindableEvent") -- (abilityName, player)
 
 local state = setmetatable({}, { __mode = "k" })
+local handsFull -- defined with weaponOf below
 
 local function st(char)
 	local s = state[char]
@@ -565,7 +566,7 @@ local function weaponOf(player)
 end
 
 -- Two-handed loads (Medium/Heavy chunks) stop you swinging and blocking.
-local function handsFull(char)
+function handsFull(char)
 	local class = char:GetAttribute("HoldClass")
 	return class == "Medium" or class == "Heavy"
 end
@@ -630,6 +631,24 @@ function Combat.Heavy(player)
 	Combat.Swing(char, weapon.Heavy, mods)
 end
 
+-- Sprint: faster while stamina lasts. Blocking, two-handed loads and stun end it.
+function Combat.SetSprint(player, on)
+	local char = player.Character
+	if not char or type(on) ~= "boolean" then
+		return
+	end
+	local s = st(char)
+	if on then
+		if not isAlive(char) or os.clock() < s.stunned or s.block or handsFull(char) or (char:GetAttribute("Stamina") or 0) < C.SprintMinStamina then
+			return
+		end
+	end
+	if (char:GetAttribute("Sprinting") == true) ~= on then
+		char:SetAttribute("Sprinting", on)
+		Stats.Apply(player, false)
+	end
+end
+
 function Combat.SetBlock(player, down)
 	local char = player.Character
 	if not char or type(down) ~= "boolean" then
@@ -639,6 +658,7 @@ function Combat.SetBlock(player, down)
 	if down then
 		if Combat.CanAct(char) and not s.block and os.clock() >= s.busyUntil and not handsFull(char) then
 			local t = os.clock()
+			Combat.SetSprint(player, false)
 			s.block = true
 			-- Tapping block repeatedly must not re-arm the parry window every press.
 			s.blockStart = if t - s.lastBlockRelease >= C.ParryRearm then t else -10
@@ -680,6 +700,7 @@ function Combat.Init()
 	Net.On("Feint", { rate = 6, burst = 8 }, Combat.Feint)
 	Net.On("Flicker", { rate = 8, burst = 12 }, Combat.Flicker)
 	Net.On("Block", { rate = 4, burst = 8, args = { "boolean" } }, Combat.SetBlock)
+	Net.On("Sprint", { rate = 4, burst = 8, args = { "boolean" } }, Combat.SetSprint)
 	Net.On("Dodge", { rate = 4, burst = 6, args = { "vector" } }, Combat.Dodge)
 
 	local accumulator = 0
@@ -701,7 +722,19 @@ function Combat.Init()
 					char:SetAttribute("Zone", false)
 				end
 				local maxStamina = char:GetAttribute("MaxStamina")
-				if maxStamina and not s.block and t - s.lastSpend > C.StaminaRegenDelay then
+				if char:GetAttribute("Sprinting") then
+					local hum = getHum(char)
+					if hum and hum.MoveDirection.Magnitude > 0.1 then
+						Combat.AddStamina(char, -C.SprintStaminaPerSecond * step)
+						s.lastSpend = t
+					end
+					if (char:GetAttribute("Stamina") or 0) <= 0 or t < s.stunned then
+						local player = Players:GetPlayerFromCharacter(char)
+						if player then
+							Combat.SetSprint(player, false)
+						end
+					end
+				elseif maxStamina and not s.block and t - s.lastSpend > C.StaminaRegenDelay then
 					Combat.AddStamina(char, C.StaminaRegenPerSecond * step)
 				end
 				if (char:GetAttribute("Posture") or 0) > 0 and t - s.lastPostureHit > C.PostureRegenDelay then

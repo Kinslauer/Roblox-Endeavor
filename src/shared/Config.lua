@@ -192,6 +192,9 @@ Config.Flicker = {
 }
 
 Config.Combat = {
+	SprintMult = 1.45,
+	SprintStaminaPerSecond = 9,
+	SprintMinStamina = 10,
 	FeintRecovery = 0.18, -- feint = cancel a swing during its windup
 	FeintRefund = 0.6, -- fraction of the swing's stamina you get back
 	CriticalPostureMult = 1.75, -- heavy attacks crush blocks

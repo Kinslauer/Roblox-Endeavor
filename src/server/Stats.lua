@@ -23,7 +23,8 @@ function Stats.Apply(player, fill)
 	-- another's modifier: held-chunk weight (Destruction) and stun (Combat).
 	local holdClass = char:GetAttribute("HoldClass")
 	local holdMult = if holdClass then Props.Weights[holdClass].SpeedMult else 1
-	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult
+	local sprintMult = if char:GetAttribute("Sprinting") then Config.Combat.SprintMult else 1
+	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult * sprintMult
 
 	char:SetAttribute("MaxStamina", d.MaxStamina)
 	char:SetAttribute("MaxPosture", d.MaxPosture)
