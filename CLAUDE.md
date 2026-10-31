@@ -30,7 +30,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (110 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
+  `scenario` = Endeavor end to end (115 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
   Endeavor client boots. They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution (`ROBLOX_API_KEY` with Luau Execution Sessions: Write) runs a script
@@ -114,7 +114,9 @@ store `ConduitCharacter_v2`) is shared by both places.
   grid via profile.Pack; EquipItem wears one, Unequip "Pack" takes it off (relayout, spill). Overweight -> Gear derived
   `Overweight` (stamina) + Stats walk speed + "Overweight" attribute. Remotes MoveItem(index,x,y,rot), DropItem(index,
   count?). Client: drag/drop grid in the Tab panel (`drawGrid`, R rotates). Hideout `Shelves` is a leveled module
-  (h.Modules.Shelves = level, VAULT_CAP adds PerLevel).
+  (h.Modules.Shelves = level, +RowsPerLevel rows). The vault is a box too: `Hideouts.VaultBox(h)` (h.VaultGrid.Items,
+  size = Tier.VaultGrid + shelving rows); VaultPut/VaultTake go through `Inventory.PlaceIn/RemoveFrom`, VaultMove through
+  `Inventory.MoveIn`; h.Vault stays the count cache. Client drags between the pack grid and the vault grid (`drawGridInto`).
 - Inventory icons: `tools/models/icons.py` -> `Assets.Icons` + `Assets.IconFor(itemId)` (falls back to weapon/worn models);
   `src/server/IconLibrary.lua` clones them into ReplicatedStorage.Icons at startup; the client's `itemIcon` renders a
   ViewportFrame per grid block with 1/2/3 copies by stack size, label fallback until icons arrive.

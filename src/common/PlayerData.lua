@@ -30,7 +30,7 @@ local TEMPLATE = {
 	Upgrades = {}, -- [itemId] = 0-3
 	-- The hideout is the conduit's claim on the city: it outlives the character (a crew keeps it),
 	-- but a raid can strip it. Plot 0 = none.
-	Hideout = { Plot = 0, Tier = 1, Modules = {}, Vault = {}, VaultCondition = {}, VaultUpgrades = {}, Members = {}, Name = "" },
+	Hideout = { Plot = 0, Tier = 1, Modules = {}, Vault = {}, VaultGrid = { Items = {} }, VaultCondition = {}, VaultUpgrades = {}, Members = {}, Name = "" },
 	-- The war world (a separate place, same universe) reads and writes this part of the profile.
 	-- A conduit is not reset by the recruit dying; the recruit's gear is.
 	War = {

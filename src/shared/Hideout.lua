@@ -6,9 +6,9 @@ local Hideout = {}
 -- Tiers. Each unlocks recipes, a max upgrade level, more modules and a bigger vault, and costs
 -- materials to reach. Raid pressure grows with tier too (big workshops are worth robbing).
 Hideout.Tiers = {
-	{ Name = "Tinkerer's Bench", MaxUpgrade = 1, Vault = 12, Modules = 3, RaidWeight = 1, Cost = {} },
-	{ Name = "Workshop", MaxUpgrade = 2, Vault = 24, Modules = 6, RaidWeight = 2, Cost = { Scrap = 40, SheetMetal = 10, Wire = 10 } },
-	{ Name = "Foundry", MaxUpgrade = 3, Vault = 48, Modules = 9, RaidWeight = 4, Cost = { Scrap = 120, SheetMetal = 30, Battery = 10, Powder = 6 } },
+	{ Name = "Tinkerer's Bench", MaxUpgrade = 1, Vault = 12, VaultGrid = { 6, 4 }, Modules = 3, RaidWeight = 1, Cost = {} },
+	{ Name = "Workshop", MaxUpgrade = 2, Vault = 24, VaultGrid = { 8, 6 }, Modules = 6, RaidWeight = 2, Cost = { Scrap = 40, SheetMetal = 10, Wire = 10 } },
+	{ Name = "Foundry", MaxUpgrade = 3, Vault = 48, VaultGrid = { 10, 8 }, Modules = 9, RaidWeight = 4, Cost = { Scrap = 120, SheetMetal = 30, Battery = 10, Powder = 6 } },
 }
 
 -- Modules you can build. Defense: which breach tier the walls use. Turret: damage per shot.
@@ -20,7 +20,7 @@ Hideout.Modules = {
 	Generator = { Name = "Generator", Desc = "Powers the turret and alarm. Without it they are scrap.", Cost = { Scrap = 15, Battery = 3, Wire = 4 }, Tier = 2 },
 	Forge = { Name = "Forge", Desc = "Needed for +2 and +3 upgrades.", Cost = { Scrap = 50, SheetMetal = 20, Powder = 4 }, Tier = 2 },
 	Bunks = { Name = "Bunks", Desc = "Your crew spawns here instead of the city.", Cost = { Cloth = 12, Scrap = 10 }, Tier = 1 },
-	Shelves = { Name = "Shelving", Desc = "+24 vault capacity per level, three levels. Build it again to add a level.", Cost = { Scrap = 20, SheetMetal = 6 }, Tier = 1, Levels = 3, PerLevel = 24 },
+	Shelves = { Name = "Shelving", Desc = "Two more rows of vault grid per level, three levels. Build it again to add a level.", Cost = { Scrap = 20, SheetMetal = 6 }, Tier = 1, Levels = 3, RowsPerLevel = 2 },
 	Medbay = { Name = "Medbay", Desc = "Slow healing while inside the compound.", Cost = { Cloth = 10, Wire = 4, Glass = 4 }, Tier = 2 },
 }
 Hideout.GateTier = { "Weak", "Standard", "Reinforced" } -- by workshop tier

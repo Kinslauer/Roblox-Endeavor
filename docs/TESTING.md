@@ -48,7 +48,10 @@ report). Versions: Endeavor v37, Front v19.
       9x6 and Frame Pack 11x7 likewise. "Take off" shrinks the grid; anything that no longer fits spills at your feet.
 - [ ] Weight shows as "Weight x / carry"; over the carry limit (15 pockets, 25/40/60 packs) you walk at 60% speed and
       stamina costs more; the row turns red and says OVERWEIGHT.
-- [ ] Hideout: build Shelving (20 scrap, 6 sheet metal) up to three times; each level adds 24 vault capacity.
+- [ ] Hideout vault (O) is a grid too: 6x4 at Tinkerer, 8x6 Workshop, 10x8 Foundry. Drag a stack from your pack onto
+      the vault grid to store it, from the vault onto your pack to take it, within the vault to rearrange (R rotates).
+      The server places stored items; a full vault refuses and says so.
+- [ ] Build Shelving (20 scrap, 6 sheet metal) up to three times; each level adds two rows to the vault grid.
 
 ## Endeavor: worn gear
 - [ ] Wearing armor from Tab shows it on your body: helms on the head (Scav cap with goggles, Plated with a red slit,

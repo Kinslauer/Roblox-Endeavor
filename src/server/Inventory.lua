@@ -39,14 +39,20 @@ local function cells(item)
 	return w, h
 end
 
--- true if `item` placed at x, y with rot overlaps nothing but itself and stays inside the grid
-local function fits(profile, item, x, y, rot, skip)
+-- A box is any grid: { Items = {...}, W = n, H = n }. The player's pack is one; a hideout vault is another.
+function Inventory.Box(profile)
 	local W, H = Inventory.GridSize(profile)
+	return { Items = profile.Grid.Items, W = W, H = H }
+end
+
+-- true if `item` placed at x, y with rot overlaps nothing but itself and stays inside the grid
+local function fits(box, item, x, y, rot, skip)
+	local W, H = box.W, box.H
 	local w, h = Items.Footprint(item.Id, rot)
 	if x < 1 or y < 1 or x + w - 1 > W or y + h - 1 > H then
 		return false
 	end
-	for _, other in profile.Grid.Items do
+	for _, other in box.Items do
 		if other ~= skip then
 			local ow, oh = cells(other)
 			if x < other.X + ow and other.X < x + w and y < other.Y + oh and other.Y < y + h then
@@ -57,13 +63,13 @@ local function fits(profile, item, x, y, rot, skip)
 	return true
 end
 
-local function firstFree(profile, id)
-	local W, H = Inventory.GridSize(profile)
+local function firstFree(box, id)
+	local W, H = box.W, box.H
 	local probe = { Id = id }
 	for y = 1, H do
 		for x = 1, W do
 			for _, rot in { 0, 1 } do
-				if fits(profile, probe, x, y, rot) then
+				if fits(box, probe, x, y, rot) then
 					return x, y, rot
 				end
 			end
@@ -90,8 +96,8 @@ end
 
 -- Lays `items` (stacks) out from scratch, biggest footprints first. Returns the new list or nil if
 -- something does not fit. Pure: does not touch the profile.
-local function layout(profile, items)
-	local W, H = Inventory.GridSize(profile)
+local function layout(box, items)
+	local W, H = box.W, box.H
 	local sorted = table.clone(items)
 	table.sort(sorted, function(a, b)
 		local sa, sb = Items.Shape(a.Id).Size, Items.Shape(b.Id).Size
@@ -99,7 +105,7 @@ local function layout(profile, items)
 		return if aa ~= ab then aa > ab else a.Id < b.Id
 	end)
 	local placed = {}
-	local scratch = { Grid = { Items = placed }, Pack = profile.Pack }
+	local scratch = { Items = placed, W = W, H = H }
 	for _, item in sorted do
 		local found = false
 		for y = 1, H do
@@ -119,11 +125,11 @@ local function layout(profile, items)
 	return placed
 end
 
--- Puts `count` of an item into the grid: tops up stacks, opens new ones, and if the grid is too
+-- Puts `count` of an item into a box: tops up stacks, opens new ones, and if the grid is too
 -- fragmented for a new stack, repacks everything to make room. Returns what did not fit.
-local function place(profile, id, count)
+local function placeIn(box, id, count)
 	local shape = Items.Shape(id)
-	for _, item in profile.Grid.Items do
+	for _, item in box.Items do
 		if count <= 0 then
 			break
 		end
@@ -135,21 +141,93 @@ local function place(profile, id, count)
 	end
 	while count > 0 do
 		local add = math.min(shape.Stack, count)
-		local x, y, rot = firstFree(profile, id)
+		local x, y, rot = firstFree(box, id)
 		if x then
-			table.insert(profile.Grid.Items, { Id = id, X = x, Y = y, Rot = rot, Count = add })
+			table.insert(box.Items, { Id = id, X = x, Y = y, Rot = rot, Count = add })
 		else
-			local wanted = table.clone(profile.Grid.Items)
+			local wanted = table.clone(box.Items)
 			table.insert(wanted, { Id = id, Count = add })
-			local repacked = layout(profile, wanted)
+			local repacked = layout(box, wanted)
 			if not repacked then
 				break
 			end
-			profile.Grid.Items = repacked
+			table.clear(box.Items)
+			for _, it in repacked do
+				table.insert(box.Items, it)
+			end
 		end
 		count -= add
 	end
 	return count
+end
+Inventory.PlaceIn = placeIn
+
+local function place(profile, id, count)
+	return placeIn(Inventory.Box(profile), id, count)
+end
+
+-- Takes `count` of an item out of a box, smallest stacks first. Returns how many were taken.
+function Inventory.RemoveFrom(box, id, count)
+	local stacks = {}
+	for _, item in box.Items do
+		if item.Id == id then
+			table.insert(stacks, item)
+		end
+	end
+	table.sort(stacks, function(a, b)
+		return a.Count < b.Count
+	end)
+	local taken = 0
+	for _, item in stacks do
+		if count <= 0 then
+			break
+		end
+		local take = math.min(item.Count, count)
+		item.Count -= take
+		count -= take
+		taken += take
+		if item.Count <= 0 then
+			table.remove(box.Items, table.find(box.Items, item))
+		end
+	end
+	return taken
+end
+
+-- Moves stack `index` within a box; onto a same-item stack merges. Returns true if anything changed.
+function Inventory.MoveIn(box, index, x, y, rot)
+	local item = box.Items[index]
+	if not item or (rot ~= 0 and rot ~= 1) then
+		return false
+	end
+	for i, other in box.Items do
+		if i ~= index and other.Id == item.Id and other.X == x and other.Y == y then
+			local stack = Items.Shape(item.Id).Stack
+			local add = math.min(stack - other.Count, item.Count)
+			if add > 0 then
+				other.Count += add
+				item.Count -= add
+				if item.Count <= 0 then
+					table.remove(box.Items, index)
+				end
+				return true
+			end
+			return false
+		end
+	end
+	if fits(box, item, x, y, rot, item) then
+		item.X, item.Y, item.Rot = x, y, rot
+		return true
+	end
+	return false
+end
+
+-- Counts per id in a box.
+function Inventory.CountsOf(box)
+	local counts = {}
+	for _, item in box.Items do
+		counts[item.Id] = (counts[item.Id] or 0) + item.Count
+	end
+	return counts
 end
 
 -- Older profiles have counts but no grid: lay them out once. Anything that does not fit is gone,
@@ -233,26 +311,7 @@ function Inventory.Remove(player, itemId, count)
 	if not profile or Inventory.Count(player, itemId) < count then
 		return false
 	end
-	local stacks = {}
-	for _, item in profile.Grid.Items do
-		if item.Id == itemId then
-			table.insert(stacks, item)
-		end
-	end
-	table.sort(stacks, function(a, b)
-		return a.Count < b.Count
-	end)
-	for _, item in stacks do
-		if count <= 0 then
-			break
-		end
-		local take = math.min(item.Count, count)
-		item.Count -= take
-		count -= take
-		if item.Count <= 0 then
-			table.remove(profile.Grid.Items, table.find(profile.Grid.Items, item))
-		end
-	end
+	Inventory.RemoveFrom(Inventory.Box(profile), itemId, count)
 	recount(profile)
 	if not profile.Inventory[itemId] then
 		profile.Condition[itemId], profile.Upgrades[itemId] = nil, nil
@@ -279,32 +338,11 @@ end
 -- Moves stack `index` to x, y with rotation rot. Dropping onto a same-item stack merges into it.
 function Inventory.Move(player, index, x, y, rot)
 	local profile = PlayerData.Get(player)
-	local item = profile and profile.Grid.Items[index]
-	if not item or (rot ~= 0 and rot ~= 1) then
+	if not profile then
 		return
 	end
-	local w, h = Items.Footprint(item.Id, rot)
-	for i, other in profile.Grid.Items do
-		if i ~= index and other.Id == item.Id and other.X == x and other.Y == y then
-			local stack = Items.Shape(item.Id).Stack
-			local add = math.min(stack - other.Count, item.Count)
-			if add > 0 then
-				other.Count += add
-				item.Count -= add
-				if item.Count <= 0 then
-					table.remove(profile.Grid.Items, index)
-				end
-				Inventory.Push(player)
-			end
-			return
-		end
-	end
-	if fits(profile, item, x, y, rot, item) then
-		item.X, item.Y, item.Rot = x, y, rot
-		Inventory.Push(player)
-	elseif w > 0 and h > 0 then
-		Inventory.Push(player) -- snap the client's ghost back
-	end
+	Inventory.MoveIn(Inventory.Box(profile), index, x, y, rot)
+	Inventory.Push(player) -- also snaps the client's ghost back on a refused move
 end
 
 -- Drops a stack (or part of one) at the player's feet.
@@ -333,7 +371,7 @@ end
 -- Re-lays every stack out in the current grid (after a pack change); what no longer fits drops.
 local function relayout(player, profile)
 	local old = profile.Grid.Items
-	local repacked = layout(profile, old)
+	local repacked = layout(Inventory.Box(profile), old)
 	if repacked then
 		profile.Grid.Items = repacked
 		recount(profile)

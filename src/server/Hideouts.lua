@@ -36,6 +36,8 @@ local function dataOf(player)
 	return PlayerData.Get(player)
 end
 
+local vaultBox -- defined with the vault code below; push() needs it earlier
+
 local function hideoutOf(player)
 	local data = dataOf(player)
 	return data and data.Hideout
@@ -124,7 +126,7 @@ local function push(player)
 	local h = if site then hideoutOf(ownerPlayer(site) or player) else nil
 	Remotes.Hideout:FireClient(player, {
 		Site = site and site.Index, Owned = owned == true, Tier = h and h.Tier, TierName = h and HideoutDefs.Tiers[h.Tier].Name, Modules = h and h.Modules,
-		Vault = h and h.Vault, VaultCondition = h and h.VaultCondition, VaultUpgrades = h and h.VaultUpgrades, Members = h and h.Members, Name = h and h.Name,
+		Vault = h and h.Vault, VaultGrid = h and h.Modules.Vault and vaultBox(h) or nil, VaultCondition = h and h.VaultCondition, VaultUpgrades = h and h.VaultUpgrades, Members = h and h.Members, Name = h and h.Name,
 		Condition = data.Condition, Upgrades = data.Upgrades, Defs = { Tiers = HideoutDefs.Tiers, Modules = HideoutDefs.Modules },
 	})
 end
@@ -238,9 +240,28 @@ function Hideouts.SpawnCFrame(player)
 end
 
 -- ===== the vault =====
-local VAULT_CAP = function(h)
+-- The vault is a grid like the pack: tier sets its size, each level of shelving adds rows.
+vaultBox = function(h)
+	if h.VaultGrid == nil then
+		h.VaultGrid = { Items = {} }
+	end
+	local tier = HideoutDefs.Tiers[h.Tier]
 	local shelves = tonumber(h.Modules.Shelves) or 0
-	return HideoutDefs.Tiers[h.Tier].Vault + shelves * (HideoutDefs.Modules.Shelves.PerLevel or 0)
+	local W, H = tier.VaultGrid[1], tier.VaultGrid[2] + shelves * (HideoutDefs.Modules.Shelves.RowsPerLevel or 0)
+	-- older profiles kept counts only: lay them out once
+	if #h.VaultGrid.Items == 0 and next(h.Vault or {}) then
+		local box = { Items = h.VaultGrid.Items, W = W, H = H }
+		for id, count in h.Vault do
+			Inventory.PlaceIn(box, id, count)
+		end
+		h.Vault = Inventory.CountsOf(box)
+	end
+	return { Items = h.VaultGrid.Items, W = W, H = H }
+end
+Hideouts.VaultBox = vaultBox
+local VAULT_CAP = function(h)
+	local box = vaultBox(h)
+	return box.W * box.H
 end
 Hideouts.VaultCap = VAULT_CAP
 
@@ -283,6 +304,7 @@ function Hideouts.StripVault(site, player)
 		table.insert(taken, ("%dx %s"):format(count, Items.Defs[id] and Items.Defs[id].Name or id))
 	end
 	h.Vault, h.VaultCondition, h.VaultUpgrades = {}, {}, {}
+	h.VaultGrid = { Items = {} }
 	Gear.Recompute(player)
 	if not isMember(site, player) then
 		Remotes.Announce:FireAllClients(("%s stripped %s's vault."):format(player.DisplayName, owner.DisplayName), "Kill")
@@ -305,15 +327,25 @@ local function vaultPut(player, id, count)
 		return
 	end
 	count = math.clamp(count, 1, Inventory.Count(player, id))
-	if count < 1 or vaultCount(h) + count > VAULT_CAP(h) then
-		Remotes.Announce:FireClient(player, "The vault is full.", "Info")
+	if count < 1 then
 		return
 	end
+	-- place into the vault grid first; only what fits leaves the pack
+	local box = vaultBox(h)
+	local left = Inventory.PlaceIn(box, id, count)
+	local moved = count - left
+	if moved <= 0 then
+		Remotes.Announce:FireClient(player, "No room in the vault for that.", "Info")
+		return
+	elseif left > 0 then
+		Remotes.Announce:FireClient(player, ("Only %d fit in the vault."):format(moved), "Info")
+	end
+	count = moved
 	-- the stack's condition/upgrade travels with it (kept at the worse condition if merging);
 	-- read them before the removal, which clears them when the last one leaves
 	local cond, up = data.Condition[id], data.Upgrades[id] or 0
 	Inventory.Remove(player, id, count)
-	h.Vault[id] = (h.Vault[id] or 0) + count
+	h.Vault = Inventory.CountsOf(box)
 	if cond then
 		h.VaultCondition[id] = math.min(h.VaultCondition[id] or 100, cond)
 	end
@@ -333,18 +365,38 @@ local function vaultTake(player, id, count)
 		return
 	end
 	count = math.clamp(count, 1, h.Vault[id])
-	Inventory.Add(player, id, count)
+	-- only what the pack takes leaves the vault
+	local box = vaultBox(h)
+	local _, left = Inventory.Add(player, id, count, true)
+	count -= (left or 0)
+	if count <= 0 then
+		Remotes.Announce:FireClient(player, "No room in your pack for that.", "Info")
+		return
+	end
+	Inventory.RemoveFrom(box, id, count)
 	if h.VaultCondition[id] then
 		data.Condition[id] = math.min(data.Condition[id] or 100, h.VaultCondition[id])
 	end
 	if h.VaultUpgrades[id] then
 		data.Upgrades[id] = math.max(data.Upgrades[id] or 0, h.VaultUpgrades[id])
 	end
-	h.Vault[id] -= count
-	if h.Vault[id] <= 0 then
-		h.Vault[id], h.VaultCondition[id], h.VaultUpgrades[id] = nil, nil, nil
+	h.Vault = Inventory.CountsOf(box)
+	if not h.Vault[id] then
+		h.VaultCondition[id], h.VaultUpgrades[id] = nil, nil
 	end
 	Gear.Recompute(player)
+	push(player)
+end
+
+-- Rearranging the vault grid (members only): the same rules as the pack.
+local function vaultMove(player, index, x, y, rot)
+	local site = siteOfPlayer(player)
+	local owner = site and ownerPlayer(site)
+	local h = owner and hideoutOf(owner)
+	if not (h and isMember(site, player)) then
+		return
+	end
+	Inventory.MoveIn(vaultBox(h), index, x, y, rot)
 	push(player)
 end
 
@@ -743,6 +795,7 @@ function Hideouts.Init()
 	Net.On("ItemUpgrade", { rate = 2, burst = 4, args = { "string" } }, upgrade)
 	Net.On("VaultPut", { rate = 4, burst = 8, args = { "string", "int" } }, vaultPut)
 	Net.On("VaultTake", { rate = 4, burst = 8, args = { "string", "int" } }, vaultTake)
+	Net.On("VaultMove", { rate = 10, burst = 20, args = { "int", "int", "int", "int" } }, vaultMove)
 	Net.On("HideoutInvite", { rate = 1, burst = 2, args = { "string" } }, invite)
 	Net.On("HideoutKick", { rate = 1, burst = 2, args = { "int" } }, kick)
 	Net.On("HideoutLeave", { rate = 1, burst = 2 }, leave)

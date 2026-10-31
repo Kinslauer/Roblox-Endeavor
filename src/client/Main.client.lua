@@ -205,33 +205,41 @@ local short = function(name)
 end
 local renderInventory -- forward
 
-local function cellAt(screenPos)
-	local rel = screenPos - gridFrame.AbsolutePosition
+local function cellAt(frame, screenPos)
+	if not frame or not frame.Parent or not frame.Visible then
+		return 0, 0, false
+	end
+	local rel = screenPos - frame.AbsolutePosition
 	local x, y = math.floor(rel.X / CELL) + 1, math.floor(rel.Y / CELL) + 1
-	return x, y, rel.X >= -CELL and rel.Y >= -CELL and rel.X <= gridFrame.AbsoluteSize.X + CELL and rel.Y <= gridFrame.AbsoluteSize.Y + CELL
+	return x, y, rel.X >= -CELL and rel.Y >= -CELL and rel.X <= frame.AbsoluteSize.X + CELL and rel.Y <= frame.AbsoluteSize.Y + CELL
 end
 
-local function drawGrid()
-	for _, c in gridFrame:GetChildren() do
+-- Draws any grid ({ W, H, Items }) into `frame`. `source` tags the stacks for drag/drop ("pack" or "vault").
+local vaultGridFrame -- the hideout panel's vault grid, when open
+local hideout -- the last hideout snapshot (set by Remotes.Hideout)
+local function drawGridInto(gridF, grid, source, holder)
+	for _, c in gridF:GetChildren() do
 		c:Destroy()
 	end
-	local W, H = lastGrid.W, lastGrid.H
-	gridFrame.Size = UDim2.fromOffset(W * CELL, H * CELL)
-	gridHolder.Size = UDim2.new(1, -8, 0, H * CELL + 4)
+	local W, H = grid.W, grid.H
+	gridF.Size = UDim2.fromOffset(W * CELL, H * CELL)
+	if holder then
+		holder.Size = UDim2.new(1, -8, 0, H * CELL + 4)
+	end
 	for y = 0, H - 1 do
 		for x = 0, W - 1 do
-			make("Frame", { Size = UDim2.fromOffset(CELL - 2, CELL - 2), Position = UDim2.fromOffset(x * CELL + 1, y * CELL + 1), BackgroundColor3 = Color3.fromRGB(36, 36, 48), BorderSizePixel = 0 }, gridFrame)
+			make("Frame", { Size = UDim2.fromOffset(CELL - 2, CELL - 2), Position = UDim2.fromOffset(x * CELL + 1, y * CELL + 1), BackgroundColor3 = if source == "vault" then Color3.fromRGB(40, 34, 48) else Color3.fromRGB(36, 36, 48), BorderSizePixel = 0 }, gridF)
 		end
 	end
-	for index, item in lastGrid.Items do
+	for index, item in grid.Items do
 		local def = Items.Defs[item.Id]
 		local w, h = Items.Footprint(item.Id, item.Rot)
 		local cond = lastCondition[item.Id]
 		local frame = make("TextButton", {
 			Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4), Position = UDim2.fromOffset((item.X - 1) * CELL + 2, (item.Y - 1) * CELL + 2),
-			BackgroundColor3 = TYPE_COLORS[def and def.Type] or Color3.fromRGB(90, 90, 90), BorderSizePixel = selected == index and 2 or 0, BorderColor3 = Color3.fromRGB(255, 230, 120),
+			BackgroundColor3 = TYPE_COLORS[def and def.Type] or Color3.fromRGB(90, 90, 90), BorderSizePixel = (source == "pack" and selected == index) and 2 or 0, BorderColor3 = Color3.fromRGB(255, 230, 120),
 			Text = "", AutoButtonColor = false,
-		}, gridFrame)
+		}, gridF)
 		if not itemIcon(frame, item.Id, item.Count) then
 			make("TextLabel", { Size = UDim2.new(1, -4, 1, -14), Position = UDim2.fromOffset(2, 2), BackgroundTransparency = 1, Text = short(def and def.Name or item.Id), TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top }, frame)
 		end
@@ -242,7 +250,7 @@ local function drawGrid()
 		end
 		frame.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				drag = { index = index, rot = item.Rot, startPos = input.Position, moved = false, size = Vector2.new(w, h) }
+				drag = { index = index, rot = item.Rot, startPos = input.Position, moved = false, size = Vector2.new(w, h), source = source, item = item }
 				drag.ghost = make("Frame", { Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4), Position = UDim2.fromOffset(input.Position.X - 10, input.Position.Y - 10), BackgroundColor3 = frame.BackgroundColor3, BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 50 }, gui)
 				make("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = short(def and def.Name or item.Id), TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 12, ZIndex = 51 }, drag.ghost)
 			end
@@ -260,21 +268,37 @@ local function endDrag(input)
 		d.ghost:Destroy()
 	end
 	if not d.moved then
-		selected = if selected == d.index then nil else d.index
-		renderInventory()
+		if d.source == "pack" then
+			selected = if selected == d.index then nil else d.index
+			renderInventory()
+		end
 		return
 	end
-	local x, y, inside = cellAt(input.Position)
-	if inside then
-		local item = lastGrid.Items[d.index]
-		if item then
+	local px, py, inPack = cellAt(gridFrame, input.Position)
+	local vx, vy, inVault = cellAt(vaultGridFrame, input.Position)
+	local item = d.item
+	local w, h = Items.Footprint(item.Id, d.rot)
+	if d.source == "pack" then
+		if inPack then
 			-- the ghost's top-left is what you drop; clamp into the grid so an edge drop still lands
-			local w, h = Items.Footprint(item.Id, d.rot)
-			x, y = math.clamp(x, 1, math.max(1, lastGrid.W - w + 1)), math.clamp(y, 1, math.max(1, lastGrid.H - h + 1))
-			Remotes.MoveItem:FireServer(d.index, x, y, d.rot)
+			px, py = math.clamp(px, 1, math.max(1, lastGrid.W - w + 1)), math.clamp(py, 1, math.max(1, lastGrid.H - h + 1))
+			Remotes.MoveItem:FireServer(d.index, px, py, d.rot)
+		elseif inVault then
+			Remotes.VaultPut:FireServer(item.Id, item.Count) -- into the vault: the server places it
+		else
+			Remotes.DropItem:FireServer(d.index)
 		end
-	else
-		Remotes.DropItem:FireServer(d.index)
+	else -- from the vault
+		if inVault then
+			local vg = hideout and hideout.VaultGrid
+			if vg then
+				vx, vy = math.clamp(vx, 1, math.max(1, vg.W - w + 1)), math.clamp(vy, 1, math.max(1, vg.H - h + 1))
+			end
+			Remotes.VaultMove:FireServer(d.index, vx, vy, d.rot)
+		elseif inPack then
+			Remotes.VaultTake:FireServer(item.Id, item.Count)
+		end
+		-- dropped anywhere else: nothing happens; the vault keeps it
 	end
 end
 UserInputService.InputChanged:Connect(function(input)
@@ -283,7 +307,7 @@ UserInputService.InputChanged:Connect(function(input)
 			drag.moved = true
 		end
 		local w, h = drag.size.X, drag.size.Y
-		if drag.rot ~= lastGrid.Items[drag.index].Rot then
+		if drag.rot ~= drag.item.Rot then
 			w, h = h, w
 		end
 		drag.ghost.Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4)
@@ -303,7 +327,7 @@ renderInventory = function()
 	local packName = if lastGrid.Pack ~= "" and Items.Defs[lastGrid.Pack] then Items.Defs[lastGrid.Pack].Name else "pockets"
 	local packButtons = if lastGrid.Pack ~= "" then { { text = "Take off", color = Color3.fromRGB(120, 70, 70), fn = function() Remotes.Unequip:FireServer("Pack") end } } else {}
 	addRow(invPanel, ("%s  (%dx%d)  %s  -  drag to move, R rotates, drop outside to drop"):format(packName, lastGrid.W, lastGrid.H, wt), packButtons, if (lastGrid.Weight or 0) > (lastGrid.Carry or 0) then Color3.fromRGB(255, 150, 120) else nil)
-	drawGrid()
+	drawGridInto(gridFrame, lastGrid, "pack", gridHolder)
 	gridHolder.Parent = invPanel
 	local item = selected and lastGrid.Items[selected]
 	if item then
@@ -848,7 +872,6 @@ end
 if Config.Dev.Enabled then
 	buildDevPanel()
 end
-local hideout
 local function costText(cost)
 	local parts = {}
 	for id, n in cost do
@@ -905,7 +928,12 @@ local function renderHideout()
 		end
 	end
 	if h.Modules and h.Modules.Vault then
-		addRow(hidePanel, "-- VAULT --", {})
+		addRow(hidePanel, ("-- VAULT --  %dx%d grid  (drag between your pack and the vault; R rotates)"):format(h.VaultGrid and h.VaultGrid.W or 0, h.VaultGrid and h.VaultGrid.H or 0), {})
+		if h.VaultGrid then
+			local holder = make("Frame", { Size = UDim2.new(1, -8, 0, h.VaultGrid.H * CELL + 4), BackgroundTransparency = 1 }, hidePanel)
+			vaultGridFrame = make("Frame", { Position = UDim2.fromOffset(4, 0), BackgroundColor3 = Color3.fromRGB(28, 22, 34), BorderSizePixel = 0 }, holder)
+			drawGridInto(vaultGridFrame, h.VaultGrid, "vault", holder)
+		end
 		for id, count in h.Vault or {} do
 			local def = Items.Defs[id] or { Name = id }
 			local c, u = (h.VaultCondition or {})[id], (h.VaultUpgrades or {})[id]

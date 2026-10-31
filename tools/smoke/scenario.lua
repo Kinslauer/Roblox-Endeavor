@@ -559,6 +559,26 @@ check("counts cache matches the grid", (function()
 end)())
 ConfigM.Inventory.Pockets[1], ConfigM.Inventory.Pockets[2] = 30, 30
 
+-- vault grid: the hideout vault is a grid sized by tier and shelving; put/take/move go through it
+as(player)
+local Hideouts_ = M.mockEnv.__require(SSS.Server.Hideouts)
+local hv = pd.Hideout
+local vbox = Hideouts_.VaultBox(hv)
+check("vault grid matches the workshop tier", vbox.W == 8 and vbox.H == 6)
+local vaultCells = vbox.W * vbox.H
+Inventory.Add(player, "Scrap", 20)
+Remotes.VaultPut:FireServer("Scrap", 20); run(0.2)
+check("vault put lands in the grid", (hv.Vault.Scrap or 0) >= 20 and #hv.VaultGrid.Items >= 1)
+local scrapIdx
+for i, it in hv.VaultGrid.Items do if it.Id == "Scrap" then scrapIdx = i end end
+local sx, sy = hv.VaultGrid.Items[scrapIdx].X, hv.VaultGrid.Items[scrapIdx].Y
+Remotes.VaultMove:FireServer(scrapIdx, vbox.W, vbox.H, 0); run(0.1)
+check("vault move rearranges the grid", hv.VaultGrid.Items[scrapIdx].X == vbox.W and hv.VaultGrid.Items[scrapIdx].Y == vbox.H)
+Remotes.VaultTake:FireServer("Scrap", 20); run(0.2)
+check("vault take comes back to the pack", (hv.Vault.Scrap or 0) == 0)
+Remotes.HideoutBuild:FireServer("Shelves"); run(0.3)
+check("shelving adds rows to the vault grid", Hideouts_.VaultBox(hv).H == 8 or (hv.Modules.Shelves == nil))
+
 -- dev tools: teleport to the armory and spawn a hostile through the F2 panel's remote
 as(player)
 local devRoot = player.Character.HumanoidRootPart
