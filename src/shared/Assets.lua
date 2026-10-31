@@ -70,7 +70,7 @@ Assets.Buildings = {
 
 -- Character rigs (R15 limb meshes, see server/Rigs.lua): [npcType] = assetId
 Assets.Rigs = {
-	Raider = 136143058086062,
+	Raider = 106712459976546,
 }
 
 -- Roblox drops Blender material colours on import, so every part is named "<Part>_<Material>"

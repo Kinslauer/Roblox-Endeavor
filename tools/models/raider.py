@@ -33,7 +33,7 @@ z_waist = z_hip + L["lowertorso"]
 z_neck = z_waist + L["uppertorso"]
 
 parts.append(part("LowerTorso", "Cloth", [((1.9, 1.0, L["lowertorso"]), (0, 0, z_hip + L["lowertorso"] / 2)), ((2.1, 1.15, 0.22), (0, 0, z_hip + 0.5))]))  # belt
-parts.append(part("Pouch", "Rust", [((0.7, 0.45, 0.6), (0.75, -0.65, z_hip + 0.45))]))
+parts.append(part("Pouch", "Rust", [((0.7, 0.45, 0.6), (-0.75, -0.65, z_hip + 0.45))]))
 parts.append(part("UpperTorso", "Jacket", [
     ((2.0, 1.1, L["uppertorso"]), (0, 0, z_waist + L["uppertorso"] / 2)),
     ((2.3, 1.3, 0.5), (0, 0, z_neck - 0.3)),                       # shoulder yoke
@@ -48,15 +48,15 @@ parts.append(part("Head", "Hood", [
     ((0.6, 0.6, 0.35), (0, -0.5, z_neck + 0.35)),                    # face mask
 ]))
 parts.append(part("Goggles", "Goggle", [((0.9, 0.25, 0.3), (0, -0.72, z_neck + 0.85))]))
-for side, sx in (("Left", -1), ("Right", 1)):
-    x = sx * 1.3
+for side, sx in (("Left", 1), ("Right", -1)):  # Blender +X exports to Roblox +X = the character's RIGHT; so Left gets -X... see note
+    x = -sx * 1.3  # Left -> -X in Roblox
     z_sh = z_neck - 0.25
     parts.append(part(f"{side}UpperArm", "Jacket", [((0.7, 0.7, L["upperarm"]), (x, 0, z_sh - L["upperarm"] / 2))]))
     z_el = z_sh - L["upperarm"]
     parts.append(part(f"{side}LowerArm", "Bandage", [((0.62, 0.62, L["lowerarm"]), (x, 0, z_el - L["lowerarm"] / 2)), ((0.7, 0.7, 0.18), (x, 0, z_el - 0.3)), ((0.7, 0.7, 0.18), (x, 0, z_el - 0.7))]))
     z_wr = z_el - L["lowerarm"]
     parts.append(part(f"{side}Hand", "Skin", [((0.55, 0.4, L["hand"]), (x, 0, z_wr - L["hand"] / 2))]))
-    lx = sx * 0.5
+    lx = -sx * 0.5
     parts.append(part(f"{side}UpperLeg", "Cloth", [((0.8, 0.85, L["upperleg"]), (lx, 0, z_hip - L["upperleg"] / 2))]))
     z_kn = z_hip - L["upperleg"]
     parts.append(part(f"{side}LowerLeg", "Cloth", [((0.72, 0.78, L["lowerleg"]), (lx, 0, z_kn - L["lowerleg"] / 2))]))

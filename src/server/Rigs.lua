@@ -126,6 +126,9 @@ function Rigs.Build(assetId, name)
 	hum.RigType = Enum.HumanoidRigType.R15
 	local soles = limbs.LeftFoot.Position.Y - limbs.LeftFoot.Size.Y / 2
 	hum.HipHeight = (root.Position.Y - root.Size.Y / 2) - soles
+	-- The Animator must exist BEFORE the model replicates: one created on the server afterwards
+	-- plays animations that clients never see (the character walks with stiff legs).
+	Instance.new("Animator").Parent = hum
 	hum.Parent = model
 	model.PrimaryPart = root
 	return model, hum, root
@@ -133,7 +136,7 @@ end
 
 -- Idle/walk animation playback for an NPC humanoid (server-side Animator works for NPCs).
 function Rigs.Animate(model, hum)
-	local animator = hum:FindFirstChildOfClass("Animator") or Instance.new("Animator", hum)
+	local animator = hum:FindFirstChildOfClass("Animator") or Instance.new("Animator", hum) -- created in Build; this is a fallback
 	local tracks = {}
 	for name, id in Rigs.Animations do
 		local anim = Instance.new("Animation")
