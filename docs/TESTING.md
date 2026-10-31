@@ -42,6 +42,9 @@ report). Versions: Endeavor v42, Front v19.
       stacks of 2+ show two copies, 10+ three. Icons may take a few seconds after joining to appear.
 - [ ] Drag a block to move it; press R while dragging to rotate; drop onto a same-item stack to merge; a drop that
       overlaps or leaves the grid snaps back. Dropping outside the grid drops the stack at your feet ("Dropped gear").
+- [ ] Hovering a block shows a tooltip: name, count, footprint, weight each, condition, and a pack's grid and carry.
+- [ ] While dragging, the cells under the ghost tint green where the stack would fit and red where it would not
+      (overlap, outside the grid, or an illegal move such as container to vault).
 - [ ] Click a block for actions (Use / Equip / Wear / Drop / Drop 1) and its size and weight.
 - [ ] Looting is a search: X on a crate, stash, corpse or salvage opens its own grid beside your pack. Drag items into
       your pack, double-click to quick-move, or Take all. The container closes and vanishes when empty; what does not

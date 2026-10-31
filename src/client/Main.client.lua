@@ -221,6 +221,67 @@ local container -- { key, grid, label }
 local lastClick = { index = nil, source = nil, t = 0 }
 local renderContainer -- defined with the container panel below
 local hideout -- the last hideout snapshot (set by Remotes.Hideout)
+-- Tooltip that follows the mouse over a block
+local tooltip = make("TextLabel", { Size = UDim2.fromOffset(220, 44), BackgroundColor3 = Color3.fromRGB(10, 10, 14), BackgroundTransparency = 0.15, TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.Gotham, TextSize = 13, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Visible = false, ZIndex = 60, BorderSizePixel = 0 }, gui)
+make("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6) }, tooltip)
+local function describe(item)
+	local def = Items.Defs[item.Id]
+	if not def then
+		return item.Id
+	end
+	local shape = Items.Shape(item.Id)
+	local line = ("%s  x%d\n%dx%d  %.1f kg each"):format(def.Name, item.Count, shape.Size[1], shape.Size[2], shape.Weight)
+	if def.Type == "Weapon" or def.Type == "Armor" or def.Type == "Cybernetic" or def.Type == "Pack" then
+		local cond, up = lastCondition[item.Id] or 100, lastUpgrades[item.Id] or 0
+		line ..= ("  %d%%%s"):format(cond, if up > 0 then " +" .. up else "")
+	end
+	if def.Type == "Pack" and def.Grid then
+		line ..= ("\ngrid %dx%d, carry %d"):format(def.Grid[1], def.Grid[2], def.Carry or 0)
+	end
+	return line
+end
+-- cells of every drawn grid, so a drag can preview where it would land: [gridF] = { cells = {[y][x] = frame}, grid = grid }
+local gridCells = setmetatable({}, { __mode = "k" })
+local lastPreview = {}
+local function clearPreview()
+	for _, c in lastPreview do
+		c.frame.BackgroundColor3 = c.color
+	end
+	table.clear(lastPreview)
+end
+local function preview(gridF, x, y, w, h, ok)
+	clearPreview()
+	local reg = gridCells[gridF]
+	if not reg then
+		return
+	end
+	for yy = y, y + h - 1 do
+		for xx = x, x + w - 1 do
+			local cell = reg.cells[yy] and reg.cells[yy][xx]
+			if cell then
+				table.insert(lastPreview, { frame = cell, color = cell.BackgroundColor3 })
+				cell.BackgroundColor3 = if ok then Color3.fromRGB(50, 110, 70) else Color3.fromRGB(120, 50, 50)
+			end
+		end
+	end
+end
+-- would a stack of footprint w x h fit at x, y in this grid, ignoring the dragged stack itself?
+local function wouldFit(grid, skipIndex, skipSource, source, x, y, w, h)
+	if x < 1 or y < 1 or x + w - 1 > grid.W or y + h - 1 > grid.H then
+		return false
+	end
+	for i, other in grid.Items do
+		if not (i == skipIndex and skipSource == source) then
+			local ow, oh = Items.Footprint(other.Id, other.Rot)
+			if x < other.X + ow and other.X < x + w and y < other.Y + oh and other.Y < y + h then
+				-- merging onto the same item at its top-left is fine
+				return other.Id == (drag and drag.item.Id) and other.X == x and other.Y == y
+			end
+		end
+	end
+	return true
+end
+
 local function drawGridInto(gridF, grid, source, holder)
 	for _, c in gridF:GetChildren() do
 		c:Destroy()
@@ -230,9 +291,12 @@ local function drawGridInto(gridF, grid, source, holder)
 	if holder then
 		holder.Size = UDim2.new(1, -8, 0, H * CELL + 4)
 	end
+	local reg = { cells = {}, grid = grid, source = source }
+	gridCells[gridF] = reg
 	for y = 0, H - 1 do
+		reg.cells[y + 1] = {}
 		for x = 0, W - 1 do
-			make("Frame", { Size = UDim2.fromOffset(CELL - 2, CELL - 2), Position = UDim2.fromOffset(x * CELL + 1, y * CELL + 1), BackgroundColor3 = if source == "vault" then Color3.fromRGB(40, 34, 48) else Color3.fromRGB(36, 36, 48), BorderSizePixel = 0 }, gridF)
+			reg.cells[y + 1][x + 1] = make("Frame", { Size = UDim2.fromOffset(CELL - 2, CELL - 2), Position = UDim2.fromOffset(x * CELL + 1, y * CELL + 1), BackgroundColor3 = if source == "vault" then Color3.fromRGB(40, 34, 48) else Color3.fromRGB(36, 36, 48), BorderSizePixel = 0 }, gridF)
 		end
 	end
 	for index, item in grid.Items do
@@ -258,6 +322,15 @@ local function drawGridInto(gridF, grid, source, holder)
 		if lastEquipped == item.Id or (def and def.Slot and (lastArmor[def.Slot] == item.Id or lastCyber[def.Slot] == item.Id)) then
 			make("Frame", { Size = UDim2.new(1, 0, 0, 3), BackgroundColor3 = Color3.fromRGB(120, 255, 200), BorderSizePixel = 0 }, frame)
 		end
+		frame.MouseEnter:Connect(function()
+			if not drag then
+				tooltip.Text = describe(item)
+				tooltip.Visible = true
+			end
+		end)
+		frame.MouseLeave:Connect(function()
+			tooltip.Visible = false
+		end)
 		frame.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 then
 				-- double-click: quick-move to the obvious other grid
@@ -273,6 +346,7 @@ local function drawGridInto(gridF, grid, source, holder)
 					return
 				end
 				lastClick.index, lastClick.source, lastClick.t = index, source, os.clock()
+				tooltip.Visible = false
 				drag = { index = index, rot = item.Rot, startPos = input.Position, moved = false, size = Vector2.new(w, h), source = source, item = item }
 				drag.ghost = make("Frame", { Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4), Position = UDim2.fromOffset(input.Position.X - 10, input.Position.Y - 10), BackgroundColor3 = frame.BackgroundColor3, BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 50 }, gui)
 				make("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = short(def and def.Name or item.Id), TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 12, ZIndex = 51 }, drag.ghost)
@@ -287,6 +361,7 @@ local function endDrag(input)
 	end
 	local d = drag
 	drag = nil
+	clearPreview()
 	if d.ghost then
 		d.ghost:Destroy()
 	end
@@ -340,6 +415,30 @@ UserInputService.InputChanged:Connect(function(input)
 		end
 		drag.ghost.Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4)
 		drag.ghost.Position = UDim2.fromOffset(input.Position.X - CELL / 2, input.Position.Y - CELL / 2)
+		-- preview: tint the cells under the ghost in the grid it is over
+		local target, tx, ty
+		for _, gf in { gridFrame, vaultGridFrame, containerGridFrame } do
+			local x, y, inside = cellAt(gf, input.Position)
+			if inside then
+				target, tx, ty = gf, x, y
+				break
+			end
+		end
+		if target and gridCells[target] then
+			local reg = gridCells[target]
+			tx, ty = math.clamp(tx, 1, math.max(1, reg.grid.W - w + 1)), math.clamp(ty, 1, math.max(1, reg.grid.H - h + 1))
+			local ok
+			if reg.source == drag.source then
+				ok = wouldFit(reg.grid, drag.index, drag.source, reg.source, tx, ty, w, h)
+			else
+				ok = not (drag.source == "container" and reg.source == "vault") and not (drag.source == "vault" and reg.source == "container") and reg.source ~= "container"
+			end
+			preview(target, tx, ty, w, h, ok)
+		else
+			clearPreview()
+		end
+	elseif not drag and input.UserInputType == Enum.UserInputType.MouseMovement and tooltip.Visible then
+		tooltip.Position = UDim2.fromOffset(input.Position.X + 16, input.Position.Y + 12)
 	end
 end)
 UserInputService.InputEnded:Connect(function(input)
@@ -1387,6 +1486,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	local key = input.KeyCode
 	if drag and key == Enum.KeyCode.R then
 		drag.rot = 1 - drag.rot -- rotate the stack you are carrying
+		clearPreview()
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then

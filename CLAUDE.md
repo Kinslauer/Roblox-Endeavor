@@ -125,6 +125,8 @@ store `ConduitCharacter_v2`) is shared by both places.
   (weak tables), reveal loop paced by Config.Inventory.SearchBase/PerCell, stops beyond SearchReach; snapshots mask
   unrevealed items as Hidden; `Loot.RevealAll(part, player)` for tests. Client: container
   panel beside the pack, drag/double-click/Take all. Remote "ContainerTake".
+- Grid UX (client): `tooltip` on MouseEnter via `describe(item)`; drop preview tints cells through `gridCells[gridF]`
+  (`preview`/`wouldFit`), cleared on drop, rotate and release.
 - Inventory icons: `tools/models/icons.py` -> `Assets.Icons` + `Assets.IconFor(itemId)` (falls back to weapon/worn models);
   `src/server/IconLibrary.lua` clones them into ReplicatedStorage.Icons at startup; the client's `itemIcon` renders a
   ViewportFrame per grid block with 1/2/3 copies by stack size, label fallback until icons arrive.
