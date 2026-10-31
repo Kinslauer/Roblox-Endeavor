@@ -16,6 +16,7 @@ local Stats = require(script.Parent.Stats)
 local WorldPhase = require(script.Parent.WorldPhase)
 local Assets = require(Shared.Assets)
 local ModelAssets = require(script.Parent.Common.ModelAssets)
+local Landmarks = require(script.Parent.Landmarks)
 
 local R = Config.Raid
 local Raids = {}
@@ -283,6 +284,7 @@ local function buildGate()
 	gate.Name = "RaidGate"
 	local frame = part(gate, { Size = Vector3.new(14, 16, 2), Position = Vector3.new(c.X, GROUND_TOP + 8, c.Z - 40), Color = Color3.fromRGB(20, 20, 26), Material = Enum.Material.Metal })
 	ModelAssets.Shell(Assets.Compound.RaidGate, frame, 14, gate)
+	Landmarks.Register("RaidGate", frame.Position + Vector3.new(0, 10, 0), "Blackout Gate (raid)", Color3.fromRGB(255, 60, 60))
 	local portal = part(gate, { Size = Vector3.new(10, 12, 0.5), Position = frame.Position, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 30, 30), Transparency = 0.3, CanCollide = false })
 	local light = Instance.new("PointLight")
 	light.Color, light.Range, light.Brightness = Color3.fromRGB(255, 40, 40), 50, 3

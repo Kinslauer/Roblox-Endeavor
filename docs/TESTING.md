@@ -57,6 +57,8 @@ report). Versions: Endeavor v32, Front v17.
 - [ ] After a dematerialize cycle the world returns in a different condition.
 
 ## Endeavor: random events (every 1 to 2.5 minutes once the world is open)
+- [ ] Landmarks are marked once the world opens: every Neural Net terminal (purple), the Blackout Gate (red) and the
+      Test Armory (magenta), with distance. They stay; they come back after a respawn.
 - [ ] Events put a marker in the world: a pulsing diamond with a label and distance in metres, visible through walls
       (supply drop yellow, Warden red, dead drop purple, your salvage cache green). It disappears when the event ends.
 - [ ] Supply drop: announced, a glowing crate lands; opening takes 3 s.

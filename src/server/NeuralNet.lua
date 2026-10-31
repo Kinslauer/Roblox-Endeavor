@@ -10,6 +10,7 @@ local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local Assets = require(Shared.Assets)
 local ModelAssets = require(script.Parent.Common.ModelAssets)
+local Landmarks = require(script.Parent.Landmarks)
 local Net = require(script.Parent.Common.Net)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local Recruit = require(script.Parent.Common.Recruit)
@@ -100,6 +101,7 @@ local function buildTerminal(position, label)
 	if ModelAssets.Spawn(Assets.Loot.Terminal, CFrame.new(position), "Shell", model) then
 		body.Transparency = 1
 	end
+	Landmarks.Register("Terminal_" .. label, position + Vector3.new(0, 8, 0), "Neural Net", Color3.fromRGB(170, 90, 255))
 	local screen = Instance.new("Part")
 	screen.Size, screen.Anchored, screen.CanCollide = Vector3.new(4, 3, 0.3), true, false
 	screen.Position = position + Vector3.new(0, 4.2, 1.3)

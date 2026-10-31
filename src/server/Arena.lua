@@ -19,6 +19,7 @@ local PlayerData = require(script.Parent.Common.PlayerData)
 local Stats = require(script.Parent.Stats)
 local Rigs = require(script.Parent.Rigs)
 local HeldWeapons = require(script.Parent.Common.HeldWeapons)
+local Landmarks = require(script.Parent.Landmarks)
 local Assets = require(Shared.Assets)
 
 local Arena = {}
@@ -226,6 +227,7 @@ end
 local function buildArmory()
 	local z = 132
 	local floorY = GROUND_TOP
+	Landmarks.Register("Armory", Vector3.new(0, floorY + 10, z), "Test Armory", Color3.fromRGB(255, 80, 220))
 	part({ Name = "ArmoryFloor", Size = Vector3.new(84, 1, 30), Position = Vector3.new(0, floorY + 0.5, z), Color = MID, Material = Enum.Material.Metal })
 	part({ Name = "ArmoryBackWall", Size = Vector3.new(84, 14, 2), Position = Vector3.new(0, floorY + 8, z + 15), Color = DARK, Material = Enum.Material.Concrete })
 	local sign = part({ Size = Vector3.new(40, 4, 0.5), Position = Vector3.new(0, floorY + 11, z + 13.8), Material = Enum.Material.Neon, Color = MAGENTA, CanCollide = false })
