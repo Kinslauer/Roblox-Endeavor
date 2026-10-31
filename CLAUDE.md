@@ -115,6 +115,9 @@ store `ConduitCharacter_v2`) is shared by both places.
   `Overweight` (stamina) + Stats walk speed + "Overweight" attribute. Remotes MoveItem(index,x,y,rot), DropItem(index,
   count?). Client: drag/drop grid in the Tab panel (`drawGrid`, R rotates). Hideout `Shelves` is a leveled module
   (h.Modules.Shelves = level, VAULT_CAP adds PerLevel).
+- Inventory icons: `tools/models/icons.py` -> `Assets.Icons` + `Assets.IconFor(itemId)` (falls back to weapon/worn models);
+  `src/server/IconLibrary.lua` clones them into ReplicatedStorage.Icons at startup; the client's `itemIcon` renders a
+  ViewportFrame per grid block with 1/2/3 copies by stack size, label fallback until icons arrive.
 - `src/server/DevTools.lua` + the client's F2 panel (Config.Dev.Enabled only): teleport to landmarks/districts/sites,
   spawn hostiles, fire events, heal, materials, open world, die. Remote "Dev".
 - `src/server/Population.lua`: standing hostile packs per district Danger (Config.City.Population: cap 36, respawn 150s,

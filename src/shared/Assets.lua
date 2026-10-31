@@ -175,6 +175,40 @@ Assets.Loot = {
 	Terminal = 83359264941281,
 }
 
+-- Inventory icons (tools/models/icons.py) for items without a world mesh; weapons and worn gear use their
+-- own models. Assets.IconFor(itemId) picks the right one. The server clones them into ReplicatedStorage.Icons.
+Assets.Icons = {
+	ArcCell = 120885267934580,
+	Battery = 115726961795602,
+	BreachingCharge = 78652282720972,
+	Cloth = 71682467205868,
+	FramePack = 72903198857313,
+	Glass = 88875630377470,
+	Medkit = 130060699441477,
+	Pipe = 116871910672691,
+	PipeGrenade = 78385289938011,
+	Powder = 114655843816962,
+	Ration = 95737291663305,
+	Rucksack = 131663879854883,
+	Satchel = 133696132290653,
+	Scrap = 94763134290357,
+	SheetMetal = 136803820316386,
+	SignPlating = 89360434017768,
+	Wire = 125102654490358,
+}
+function Assets.IconFor(itemId)
+	if Assets.Icons[itemId] then
+		return Assets.Icons[itemId]
+	end
+	if Assets.Weapons[itemId] then
+		return Assets.Weapons[itemId].Id
+	end
+	if Assets.Worn[itemId] then
+		return Assets.Worn[itemId].Id
+	end
+	return nil
+end
+
 -- Roblox drops Blender material colours on import, so every part is named "<Part>_<Material>"
 -- and the material is applied from this table when the model is loaded.
 Assets.Materials = {
@@ -236,6 +270,8 @@ Assets.Materials = {
 	Red = { Color = Color3.fromRGB(178, 30, 30), Material = Enum.Material.SmoothPlastic },
 	Hazard = { Color = Color3.fromRGB(216, 166, 26), Material = Enum.Material.Metal },
 	Flag = { Color = Color3.fromRGB(220, 220, 220), Material = Enum.Material.Fabric },
+	Copper = { Color = Color3.fromRGB(184, 108, 50), Material = Enum.Material.Metal },
+	Powder = { Color = Color3.fromRGB(52, 52, 58), Material = Enum.Material.Fabric },
 	Rubble = { Color = Color3.fromRGB(84, 82, 79), Material = Enum.Material.Concrete },
 }
 

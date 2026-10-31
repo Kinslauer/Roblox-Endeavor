@@ -162,6 +162,36 @@ local gridHolder = make("Frame", { Size = UDim2.new(1, -8, 0, 10), BackgroundTra
 local gridFrame = make("Frame", { Position = UDim2.fromOffset(4, 0), BackgroundColor3 = Color3.fromRGB(24, 24, 32), BorderSizePixel = 0 }, gridHolder)
 local selected -- index of the stack whose actions are shown
 local drag -- { index, rot, ghost, startPos, moved }
+local iconFolder = ReplicatedStorage:FindFirstChild("Icons")
+-- A 3D icon of the item in a ViewportFrame; stacks show up to three copies fanned out. nil if no model yet.
+local function itemIcon(parent, itemId, count)
+	iconFolder = iconFolder or ReplicatedStorage:FindFirstChild("Icons")
+	local template = iconFolder and iconFolder:FindFirstChild(itemId)
+	if not template then
+		return nil
+	end
+	local view = make("ViewportFrame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Ambient = Color3.fromRGB(160, 160, 180), LightColor = Color3.fromRGB(255, 245, 230), LightDirection = Vector3.new(-1, -2, -1) }, parent)
+	local world = Instance.new("WorldModel")
+	world.Parent = view
+	local copies = if count >= 10 then 3 elseif count >= 2 then 2 else 1
+	local size
+	for i = 1, copies do
+		local model = template:Clone()
+		model:PivotTo(CFrame.Angles(0, math.rad(-30), 0))
+		local cf, bbox = model:GetBoundingBox()
+		size = size or bbox
+		local offset = Vector3.new((i - 1) * bbox.X * 0.25, (i - 1) * bbox.Y * 0.12, -(i - 1) * bbox.Z * 0.3)
+		model:PivotTo(model:GetPivot() + (offset - cf.Position)) -- bounding-box centre on the offset
+		model.Parent = world
+	end
+	local camera = Instance.new("Camera")
+	local radius = math.max(size.X, size.Y, size.Z) * (0.9 + 0.15 * copies)
+	camera.CFrame = CFrame.lookAt(Vector3.new(radius * 0.9, radius * 0.8, radius * 1.2), Vector3.new(size.X * 0.1 * (copies - 1), size.Y * 0.05, 0))
+	camera.FieldOfView = 45
+	camera.Parent = view
+	view.CurrentCamera = camera
+	return view
+end
 local short = function(name)
 	local words = name:split(" ")
 	if #words == 1 then
@@ -202,7 +232,9 @@ local function drawGrid()
 			BackgroundColor3 = TYPE_COLORS[def and def.Type] or Color3.fromRGB(90, 90, 90), BorderSizePixel = selected == index and 2 or 0, BorderColor3 = Color3.fromRGB(255, 230, 120),
 			Text = "", AutoButtonColor = false,
 		}, gridFrame)
-		make("TextLabel", { Size = UDim2.new(1, -4, 1, -14), Position = UDim2.fromOffset(2, 2), BackgroundTransparency = 1, Text = short(def and def.Name or item.Id), TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top }, frame)
+		if not itemIcon(frame, item.Id, item.Count) then
+			make("TextLabel", { Size = UDim2.new(1, -4, 1, -14), Position = UDim2.fromOffset(2, 2), BackgroundTransparency = 1, Text = short(def and def.Name or item.Id), TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top }, frame)
+		end
 		local tag = if item.Count > 1 then tostring(item.Count) elseif cond and cond < 100 then cond .. "%" else ""
 		make("TextLabel", { Size = UDim2.new(1, -4, 0, 12), Position = UDim2.new(0, 2, 1, -14), BackgroundTransparency = 1, Text = tag, TextColor3 = if cond and cond <= 25 then Color3.fromRGB(255, 150, 120) else Color3.fromRGB(230, 230, 240), Font = Enum.Font.Gotham, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Right }, frame)
 		if lastEquipped == item.Id or (def and def.Slot and (lastArmor[def.Slot] == item.Id or lastCyber[def.Slot] == item.Id)) then

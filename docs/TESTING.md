@@ -37,6 +37,8 @@ report). Versions: Endeavor v37, Front v19.
 - [ ] Tab shows a grid (pockets 6x4 without a pack). Items are coloured blocks sized by footprint: materials 1x1 stacking
       to 20, a pipe club 1x3, a sledge 2x4, vests 3x3, sheet metal 2x1, a satchel 2x2. Stacks show their count, gear its
       condition %. Worn/held items have a green bar.
+- [ ] Blocks show the item as a small 3D model (scrap pile, wire coil, medkit, the actual weapon or armor piece);
+      stacks of 2+ show two copies, 10+ three. Icons may take a few seconds after joining to appear.
 - [ ] Drag a block to move it; press R while dragging to rotate; drop onto a same-item stack to merge; a drop that
       overlaps or leaves the grid snaps back. Dropping outside the grid drops the stack at your feet ("Dropped gear").
 - [ ] Click a block for actions (Use / Equip / Wear / Drop / Drop 1) and its size and weight.
