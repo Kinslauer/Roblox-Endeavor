@@ -121,6 +121,14 @@ server, cleared by dematerialization). `"Moderate"` keeps only a light distant s
 in the Roblox Creator Dashboard questionnaire** (Restricted = age-verified 18+ only, blocked in some regions, cannot be
 changed back - see the design doc, section 9); the code only makes the game match it.
 
+## The hideout computer
+Build the **Computer** module and log in (X). Three apps, each locked until you meet its contact somewhere in the
+world: the **Broker** (RAIDS: contracts on the frontier's sites, the named bounties and the Blackout raid, paid in war
+credits and gear, two held at once) in the Verdant Market, the **Fixer** (HOUSE: material lots delivered to your pack)
+under the Crossroads span, the **Dealer** (MARKET: the black market for cybernetics and heavy gear) on the Scarp
+Overlook. **Rival conduit crews** walk between the sites working the same contracts; a dead rival's intel can put a
+contract on your board. What the computer knows survives permadeath.
+
 ## Hideouts, wear and upgrades
 - **Wear**: every conduit weapon, armor piece and implant has a condition (shown in `Tab` and `L`). Landing hits wears
   your weapon; taking hits wears what you wear. Worn gear does less (down to half); at 0% a weapon swings as fists and

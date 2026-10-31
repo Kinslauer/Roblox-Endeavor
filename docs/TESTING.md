@@ -1,7 +1,7 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v59, Front v19.
+report). Versions: Endeavor v60, Front v19.
 
 ## Endeavor: first minutes
 - [ ] The starting room is a pod: dark panelled walls with cyan seams, diamond-plate floor, the console in a terminal
@@ -220,6 +220,22 @@ move; the city and the scarp overlook stay put. The server's seed is printed in 
 - [ ] The valley is dressed with real models: low-poly pines and broadleaf trees of varied size, bare dead trees on
       the scarp and in marshes, faceted rocks, canvas ridge tents at the camps, glass geodesic domes with white ribs
       and a door in the Reach, solar towers with a tilted blue panel. Trees stand on the ground, not in it or above it.
+
+## Endeavor: the hideout computer (contacts, contracts, rival crews)
+- [ ] Three contacts stand in the world with a Talk prompt (X) and cannot be hurt: the Broker by the trader in the
+      Verdant Market, the Fixer under the Crossroads span, the Dealer on the Scarp Overlook deck (the Gatekeeper's
+      ground). Talking banners their line; the first time also "RAIDS/HOUSE/MARKET unlocked on your hideout computer".
+- [ ] Hideout module "Computer" (4 Battery, 12 Wire, 3 Glass, 4 Sheet Metal): a terminal shell with a green screen in
+      the compound; "Log in" (X, members only) opens the computer panel; locked apps read "locked: find the Broker".
+- [ ] RAIDS: a contract per frontier site ("Clear Ridge Watch (Encampment)", needs every guard there), one per named
+      bounty, and the Blackout raid; Accept (two held at most), Drop. Kills at the site count ("Clear ...: 3/5");
+      the last one pays credits + items with a banner, and everyone sees "<you> completed a contract".
+- [ ] HOUSE: material lots (scrap, sheet, wire, cells, powder, glass, cloth) delivered to the pack for credits.
+- [ ] MARKET: cybernetics, riot plate, a sledge and breaching charges at black-market prices.
+- [ ] Rival conduit crews (2 crews of 3, purple-grey raider rigs named Rival, rebar blades) walk between the frontier's
+      sites and fight whoever they meet. Killing one drops rival loot and may put "Rival intel: <contract>" on your board
+      even without RAIDS.
+- [ ] Permadeath keeps the computer's knowledge: contacts met, contracts held, contracts completed.
 
 ## Endeavor: hideouts and raids
 - [ ] Claim a site, open the bench (X). Bench model matches the tier (Tinkerer planks, Workshop steel, Foundry chrome).

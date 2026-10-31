@@ -41,6 +41,9 @@ NPCs.Types = {
 		Color = Color3.fromRGB(90, 60, 30), Size = Vector3.new(3, 6.5, 1.6), Knockback = 40, Hyperarmor = true, Weapon = "Sledge" },
 	Shocker = { Health = 90, Speed = 15, Damage = 12, Posture = 8, Range = 9, Cooldown = 1.6, Telegraph = 0.5, Aggro = 110, Xp = 60, Loot = "Raider",
 		Color = Color3.fromRGB(40, 90, 140), Size = Vector3.new(2, 5, 1), Type = "Arc", Stun = 0.6, Weapon = "ShockBaton" },
+	-- rival conduits: a crew working the frontier's contracts; faster and meaner than raiders, and worth it
+	Rival = { Health = 170, Speed = 15, Damage = 15, Posture = 22, Range = 6.5, Cooldown = 1.25, Telegraph = 0.4, Aggro = 100, Xp = 140, Loot = "Rival",
+		Color = Color3.fromRGB(70, 60, 90), Size = Vector3.new(2, 5, 1), Weapon = "RebarBlade" },
 	Warden = { Health = 900, Speed = 11, Damage = 26, Posture = 35, Range = 8, Cooldown = 2.0, Telegraph = 0.7, Aggro = 140, Xp = 600, Loot = "Supply",
 		Color = Color3.fromRGB(150, 30, 60), Size = Vector3.new(3.5, 8, 2), Knockback = 45, Hyperarmor = true, Boss = true, Weapon = "RebarBlade",
 		Moves = {

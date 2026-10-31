@@ -60,7 +60,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   K artillery, F dig, V sandbags, M app.
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v59, Front v19). Front v10 verified on a real server:
+- Both places published and starting cleanly (Endeavor v60, Front v19). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.
@@ -119,7 +119,8 @@ store `ConduitCharacter_v2`) is shared by both places.
   in Combat on NPC-tagged non-player bodies, Juggled attribute, Enemy Step in Dodge, NPC strike lost when stunned
   mid-telegraph unless Hyperarmor). Its tree is exported to the scratchpad `cf/` for reading; its owner checklist is
   `production/qa/playtest-checklist-2026-10-25.md` there. Next ports: Aim stance, HUD v2 + nameplates, enemy turns +
-  pathfinding, launcher/juggle, full-body cybernetics, Autonet, cycle/clues/computer, contacts/raids, Verdant Reach.
+  pathfinding, launcher/juggle, full-body cybernetics, Autonet, cycle/clues/computer, contacts/raids, Verdant Reach
+  (all ported except the hourly cycle with clues/archive).
 - Full-body cybernetics (ported from combat-feel): `src/shared/Cybernetics.lua` (8 slots Eyes/Ears/Nose/Core/LeftArm/
   RightArm/LeftLeg/RightLeg, 13 pieces, Fits/SlotsFor/Fitted/Renamed), Gear derives JumpMult/Hearing/Scent/Track/Lift/
   Conversion with paired-copy counting (`Gear.CyberSlot`, EquipGear(player,id,slot), Validate drops extra copies) and
@@ -193,6 +194,17 @@ store `ConduitCharacter_v2`) is shared by both places.
   Bounty (named Brute, Relic hoard on death). Standing ones wake within WakeRadius and stand down after SleepSeconds
   with nobody near; capped by EncounterCap separately from the post Cap (bodies carry the `Encounter` attribute).
   `Frontier.Encounters()` for tests.
+
+- Hideout computer (ported from combat-feel Terminal/Contacts/Rivals, adapted): `src/shared/Terminal.lua` (Contacts
+  Broker/Fixer/Dealer -> apps RAIDS/HOUSE/MARKET, House lots, Market stock, Rewards), `src/server/Terminal.lua`
+  (`BuildBoard()` after Frontier.Init: Clear_<site> per site, Bounty_<name> per bounty cell, Raid; State/Push via World
+  "Terminal"/"TerminalClose"; Remote "Terminal"(Accept/Abandon/Order/Buy/Close); progress from NPCs.Killed via guard
+  attributes `Site`/`Bounty` and Raids.Completed; `Intel(player)` on a dead Rival), `src/server/Contacts.lua` (raider-rig
+  bodies, `Contact` attribute refused by Combat, Broker in the market, Fixer under the Crossroads span, Dealer on the
+  overlook deck), hideout module `Computer` (Terminal shell + prompt -> Terminal.Open, members only), NPCs.Types.Rival +
+  Items.LootTables.Rival + Assets.Rigs.Rival, rival crews spawned in Frontier.Populate (Config.Frontier.RivalCrews/
+  RivalCrewSize/RivalLeg, `Crew` attribute, Encounter-capped patrol between 3 sites). profile.Knowledge survives wipe.
+  Client: terminalPanel in MENUS.
 
 - The test arena (Arena.lua: the Pit, armory, mannequins, dummies) is built at `Config.Dev.ArenaOrigin` (3000, 0, 0),
   off the map, on its own slab; its pads are tagged ArenaSpawn, not CitySpawn. The city's centre is `City.buildCrossroads`

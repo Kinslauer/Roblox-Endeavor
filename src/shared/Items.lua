@@ -169,6 +169,10 @@ Items.LootTables = {
 	Car = { { "SheetMetal", 1, 2, 4 }, { "Scrap", 0.8, 2, 4 }, { "Battery", 0.3, 1, 1 } },
 	Window = { { "Glass", 0.8, 1, 2 } },
 	Slab = { { "Scrap", 0.5, 1, 2 } },
+	Rival = {
+		{ "Scrap", 0.8, 1, 3 }, { "Wire", 0.6, 1, 3 }, { "Medkit", 0.45, 1, 1 }, { "ArcCell", 0.5, 4, 8 }, { "Ration", 0.4, 1, 2 },
+		{ "RebarBlade", 0.1, 1, 1 }, { "PlatedHelm", 0.08, 1, 1 }, { "ConduitHarness", 0.05, 1, 1 }, { "ReflexOptic", 0.05, 1, 1 }, { "PipeGrenade", 0.2, 1, 1 },
+	},
 	Raider = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 },
 		{ "PipeClub", 0.1, 1, 1 }, { "ScavHelm", 0.08, 1, 1 }, { "ScrapVest", 0.08, 1, 1 }, { "ScrapGreaves", 0.08, 1, 1 },

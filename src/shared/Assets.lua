@@ -70,6 +70,7 @@ Assets.Buildings = {
 
 -- Character rigs (R15 limb meshes, see server/Rigs.lua): [npcType] = assetId
 Assets.Rigs = {
+	Rival = 106712459976546, -- the raider mesh in other colours (NPCs.Types.Rival)
 	Raider = 106712459976546,
 	Brute = 89905917757019,
 	Shocker = 117184966040084,

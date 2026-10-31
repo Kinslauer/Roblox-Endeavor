@@ -719,6 +719,9 @@ local function spawnGuard(typeName, anchor, radius, scale, bossName, opts)
 		if opts.Encounter then
 			model:SetAttribute("Encounter", true)
 		end
+		for k, v in opts.Attrs or {} do
+			model:SetAttribute(k, v)
+		end
 		if bossName then
 			model.Name = bossName
 		end
@@ -731,9 +734,9 @@ local function spawnGuard(typeName, anchor, radius, scale, bossName, opts)
 						i = (i % #opts.Patrol) + 1
 						local p = opts.Patrol[i]
 						model:SetAttribute("Investigate", Vector3.new(p.X, ground(p.X, p.Z), p.Z))
-						model:SetAttribute("InvestigateUntil", os.clock() + C.PatrolLeg)
+						model:SetAttribute("InvestigateUntil", os.clock() + (opts.Leg or C.PatrolLeg))
 					end
-					task.wait(C.PatrolLeg)
+					task.wait(opts.Leg or C.PatrolLeg)
 				end
 			end)
 			return model
@@ -812,6 +815,7 @@ local function startEncounter(cell)
 	elseif e.Kind == "Bounty" then
 		entry.models = spawnPack({ Guards = e.Guards, Scale = e.Scale, Boss = e.Boss }, anchor, 8, {
 			Encounter = true,
+			Attrs = { Bounty = true },
 			OnDied = function(_, position)
 				-- the bounty: relic-table spoils where it fell, announced to everyone
 				local spoils = Items.Roll("Relic")
@@ -1245,7 +1249,21 @@ function Frontier.Populate()
 		end
 	end
 	for _, site in F.Sites do
-		spawnPack(site, site.Ground or site.Position, 18)
+		spawnPack(site, site.Ground or site.Position, 18, { Attrs = { Site = site.Key } })
+	end
+	-- rival crews: other conduits working the same contracts, walking between the sites
+	for crew = 1, C.RivalCrews do
+		local points = {}
+		local order = table.clone(F.Sites)
+		for i = #order, 2, -1 do
+			local j = rng:NextInteger(1, i)
+			order[i], order[j] = order[j], order[i]
+		end
+		for i = 1, math.min(3, #order) do
+			table.insert(points, order[i].Position + Vector3.new(rng:NextNumber(-40, 40), 0, rng:NextNumber(-40, 40)))
+		end
+		local start = points[1]
+		spawnPack({ Guards = { { "Rival", C.RivalCrewSize } }, Scale = 1 }, start, 8, { Patrol = points, Leg = C.RivalLeg, Encounter = true, Attrs = { Crew = crew } })
 	end
 	local kinds = {}
 	for r = 2, F.Rows - 1 do

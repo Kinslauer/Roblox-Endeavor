@@ -198,6 +198,9 @@ Config.Frontier = {
 	WakeRadius = 420, -- a patrol, nest or bounty stands up once someone is this close to its cell
 	SleepSeconds = 90, -- with nobody within twice WakeRadius for this long, a woken encounter stands down
 	EncounterCap = 40, -- encounter bodies (patrols, nests, bounties, ambushes) alive at once
+	RivalCrews = 2, -- crews of rival conduits walking between the sites (server/Terminal.lua: their intel)
+	RivalCrewSize = 3,
+	RivalLeg = 45, -- seconds a crew walks toward its next site before picking the one after
 }
 
 Config.Raid = {

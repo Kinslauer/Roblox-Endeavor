@@ -241,6 +241,24 @@ local function build(site, h)
 		Autonet.Register(bay.Position)
 		site.AutonetAt = bay.Position
 	end
+	if h.Modules.Computer then
+		local console = dress(part(model, { Name = "Computer", Size = Vector3.new(5, 7, 2.5), Position = c + Vector3.new(-12, GROUND_TOP + 3.5, -10), Color = Color3.fromRGB(40, 40, 48), Material = Enum.Material.Metal }), Assets.Loot.Terminal)
+		local screen = part(model, { Name = "ComputerScreen", Size = Vector3.new(4, 3, 0.3), Position = c + Vector3.new(-12, GROUND_TOP + 4.2, -8.7), Color = Color3.fromRGB(40, 200, 120), Material = Enum.Material.Neon, CanCollide = false })
+		local lamp = Instance.new("PointLight")
+		lamp.Range, lamp.Brightness, lamp.Color = 12, 1, Color3.fromRGB(60, 220, 140)
+		lamp.Parent = screen
+		local cp = Instance.new("ProximityPrompt")
+		cp.ObjectText, cp.ActionText, cp.HoldDuration = "Computer", "Log in", 0.4
+		cp.MaxActivationDistance, cp.RequiresLineOfSight, cp.KeyboardKeyCode = 8, false, Enum.KeyCode.X
+		cp.Parent = console
+		cp.Triggered:Connect(function(player)
+			if isMember(site, player) then
+				require(script.Parent.Terminal).Open(player)
+			else
+				Remotes.Announce:FireClient(player, "Not your computer.", "Info")
+			end
+		end)
+	end
 	if h.Modules.Medbay then
 		dress(part(model, { Name = "Medbay", Size = Vector3.new(5, 3, 3), Position = c + Vector3.new(-12, GROUND_TOP + 2.5, 0), Color = Color3.fromRGB(200, 210, 220), Material = Enum.Material.SmoothPlastic }), Assets.Hideout.Medbay)
 	end

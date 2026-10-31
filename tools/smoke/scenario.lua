@@ -857,9 +857,76 @@ do
 		check("frontier: a sprung ambush rests", #CS:GetTagged("NPC") == sprung)
 		for _, m in e.models do m:Destroy() end
 	end
+	-- the hideout computer: contacts, contracts, intel, house and market
+	do
+		local Terminal = M.mockEnv.__require(SSS.Server.Terminal)
+		local Contacts = M.mockEnv.__require(SSS.Server.Contacts)
+		local Combat_ = M.mockEnv.__require(SSS.Server.Combat)
+		local standing = 0
+		for _, id in { "Broker", "Fixer", "Dealer" } do if Contacts.Get(id) and Contacts.Get(id).Parent then standing += 1 end end
+		check("computer: the three contacts stand in the world", standing == 3)
+		check("computer: a contact cannot be hurt", Combat_.Damage(player.Character, Contacts.Get("Fixer"), 50) == "none")
+		local board = Terminal.Board()
+		local clears = 0
+		for id in board do if id:sub(1, 6) == "Clear_" then clears += 1 end end
+		check("computer: the board has a contract per site and the raid", clears == #FS.Sites and board.Raid ~= nil)
+		local firstSite = FS.Sites[1]
+		local cid = "Clear_" .. firstSite.Key
+		pd.Knowledge = { Contacts = {}, Contracts = {}, Completed = 0 }
+		Terminal.Open(player)
+		check("computer: RAIDS is locked until the Broker is met", Terminal.Accept(player, cid) == false)
+		Terminal.Meet(player, "Broker"); run(0.1)
+		check("computer: meeting the Broker unlocks RAIDS", pd.Knowledge.Contacts.Broker == true and Terminal.Accept(player, cid) == true)
+		local second
+		for id in board do if id ~= cid and id ~= "Raid" then second = id break end end
+		check("computer: two contracts at most", Terminal.Accept(player, "Raid") == true and Terminal.Accept(player, second) == false)
+		Terminal.Abandon(player, "Raid")
+		-- kills at the site count; the last one pays
+		pd.War.Credits = 0
+		local need = board[cid].Need
+		local fake = M.newInstance("Model"); fake.Name = "Guard"; fake:SetAttribute("Site", firstSite.Key)
+		local NPCs_ = M.mockEnv.__require(SSS.Server.NPCs)
+		for _ = 1, need do NPCs_.Killed:Fire("Raider", fake, player) end
+		run(0.2)
+		check("computer: clearing the site completes the contract and pays", pd.Knowledge.Contracts[cid] == nil and pd.War.Credits == board[cid].Reward.Credits and pd.Knowledge.Completed == 1)
+		-- a dead rival's intel lands a contract on the board
+		local rival = M.newInstance("Model"); rival.Name = "Rival Conduit"
+		NPCs_.Killed:Fire("Rival", rival, player); run(0.1)
+		local held = 0
+		for _ in pd.Knowledge.Contracts do held += 1 end
+		check("computer: rival intel puts a contract on the board", held == 1)
+		-- house and market
+		check("computer: HOUSE is locked until the Fixer is met", Terminal.Order(player, "ScrapLot") == false)
+		Terminal.Meet(player, "Fixer"); Terminal.Meet(player, "Dealer"); run(0.1)
+		pd.War.Credits = 1000
+		local scrapBefore = Inventory.Count(player, "Scrap")
+		check("computer: a house order delivers for credits", Terminal.Order(player, "ScrapLot") == true and Inventory.Count(player, "Scrap") == scrapBefore + 12 and pd.War.Credits == 960)
+		check("computer: the black market sells for credits", Terminal.Buy(player, "ChemSniffer") == true and Inventory.Count(player, "ChemSniffer") >= 1 and pd.War.Credits == 460)
+		check("computer: no credits, no sale", Terminal.Buy(player, "NeuralCore") == false)
+		local pushed = false
+		for _, e in M.FireLog do if e[1] == "World" and e[3] == "Terminal" and type(e[4]) == "table" and e[4].Apps and e[4].Apps.MARKET then pushed = true end end
+		check("computer: the state reaches the client", pushed)
+		Terminal.Close(player)
+		-- rival crews walk the valley
+		local rivals = 0
+		for _, m in CS:GetTagged("NPC") do if m:GetAttribute("Crew") then rivals += 1 end end
+		print("rival conduits standing: " .. rivals)
+		check("computer: rival crews stand in the valley", rivals >= 3)
+		-- the Computer module stands in the hideout when there is room for it
+		Inventory.Add(player, "Battery", 6); Inventory.Add(player, "Wire", 20); Inventory.Add(player, "Glass", 6); Inventory.Add(player, "SheetMetal", 10)
+		Remotes.HideoutBuild:FireServer("Computer"); run(0.5)
+		local site2 = Hideouts_.Sites[pd.Hideout.Plot]
+		if pd.Hideout.Modules.Computer then
+			local console = site2 and site2.Built and site2.Built:FindFirstChild("Computer")
+			check("computer: the module builds a console with a login prompt", console ~= nil and console:FindFirstChildOfClass("ProximityPrompt") ~= nil)
+		else
+			print("computer: module not built (hideout full at this tier); console check skipped")
+		end
+	end
 	-- the crew remembers the way: route knowledge survives permadeath
 	local fresh = PlayerData.Reset(player)
 	check("frontier: the route survives permadeath", fresh.Frontier.Route == 1 and fresh.Frontier.Found[site.Key] == true)
+	check("computer: knowledge survives permadeath", fresh.Knowledge and fresh.Knowledge.Contacts.Broker == true and fresh.Knowledge.Completed == 1)
 end
 
 check("no script errors", #M.errors == 0)

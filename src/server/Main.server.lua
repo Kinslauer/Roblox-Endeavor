@@ -27,6 +27,8 @@ local ok, err = pcall(function()
 	local IconLibrary = require(Server.IconLibrary)
 	local Autonet = require(Server.Autonet)
 	local Frontier = require(Server.Frontier)
+	local Terminal = require(Server.Terminal)
+	local Contacts = require(Server.Contacts)
 	local ImplantLibrary = require(Server.ImplantLibrary)
 
 	Gore.Init()
@@ -60,6 +62,12 @@ local ok, err = pcall(function()
 	local frontierOk, frontierErr = pcall(Frontier.Init)
 	if not frontierOk then
 		warn("[Frontier] failed to build:", frontierErr)
+	end
+	Terminal.Init()
+	Terminal.BuildBoard() -- from the frontier layout
+	local contactsOk, contactsErr = pcall(Contacts.Init)
+	if not contactsOk then
+		warn("[Contacts] failed:", contactsErr)
 	end
 	DevTools.Init()
 	IconLibrary.Init()

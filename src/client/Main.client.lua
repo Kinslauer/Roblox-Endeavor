@@ -238,6 +238,7 @@ local container -- { key, grid, label }
 local lastClick = { index = nil, source = nil, t = 0 }
 local renderContainer -- defined with the container panel below
 local marketPanel, renderMarket -- defined with the market panel below
+local terminalPanel, renderTerminal -- the hideout computer
 local hideout -- the last hideout snapshot (set by Remotes.Hideout)
 -- Tooltip that follows the mouse over a block
 local tooltip = make("TextLabel", { Size = UDim2.fromOffset(220, 44), BackgroundColor3 = Color3.fromRGB(10, 10, 14), BackgroundTransparency = 0.15, TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.Gotham, TextSize = 13, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Visible = false, ZIndex = 60, BorderSizePixel = 0 }, gui)
@@ -1090,6 +1091,11 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b, c, d, e)
 		marketPanel.Visible = true
 	elseif kind == "MarketClose" then
 		marketPanel.Visible = false
+	elseif kind == "Terminal" and type(a) == "table" then
+		renderTerminal(a)
+		terminalPanel.Visible = true
+	elseif kind == "TerminalClose" then
+		terminalPanel.Visible = false
 	elseif kind == "Marker" and typeof(a) == "string" then
 		setMarker(a, b, c, d, e)
 	elseif kind == "MarkerClear" and typeof(a) == "string" then
@@ -1289,6 +1295,51 @@ renderMarket = function(m)
 		addRow(marketPanel, ("%s - %d cr"):format(name, item.Price), { { text = "Buy", color = Color3.fromRGB(50, 110, 70), fn = function() Remotes.Buy:FireServer(item.Id) end } }, if item.Price > (m.Credits or 0) then Color3.fromRGB(150, 150, 160) else nil)
 	end
 	addRow(marketPanel, "", { { text = "Close", color = Color3.fromRGB(90, 50, 50), fn = function() marketPanel.Visible = false end } })
+end
+
+-- ===== the hideout computer (World "Terminal" / "TerminalClose", Remotes.Terminal) =====
+terminalPanel = panel(UDim2.fromOffset(560, 470), UDim2.new(0.5, -280, 0.5, -235))
+local GREEN = Color3.fromRGB(80, 230, 140)
+local DIM = Color3.fromRGB(150, 150, 160)
+renderTerminal = function(t)
+	clear(terminalPanel)
+	local function send(action, arg)
+		return function() Remotes.Terminal:FireServer(action, arg) end
+	end
+	addRow(terminalPanel, ("HIDEOUT COMPUTER  -  %d credits  -  %d contracts done"):format(t.Credits or 0, t.Completed or 0), { { text = "Log out", color = Color3.fromRGB(90, 50, 50), fn = send("Close") } }, GREEN)
+	-- RAIDS
+	if not t.Apps.RAIDS then
+		addRow(terminalPanel, "RAIDS  -  locked: " .. (t.Locked.RAIDS or ""), {}, DIM)
+	else
+		local active = 0
+		for _, c in t.Contracts do if c.Active then active += 1 end end
+		addRow(terminalPanel, ("RAIDS  -  contracts on the board (%d/%d held)"):format(active, t.MaxActive or 2), {}, GREEN)
+		for _, c in t.Contracts do
+			if c.Active then
+				addRow(terminalPanel, ("  %s  -  %d/%d  -  %d cr"):format(c.Title, c.Done, c.Need, c.Credits), { { text = "Drop", color = Color3.fromRGB(110, 60, 40), fn = send("Abandon", c.Id) } }, Color3.fromRGB(255, 210, 120))
+			else
+				addRow(terminalPanel, ("  %s  -  %s  -  %d cr"):format(c.Title, c.Danger, c.Credits), { { text = "Accept", color = Color3.fromRGB(50, 110, 70), fn = send("Accept", c.Id) } })
+			end
+		end
+	end
+	-- HOUSE
+	if not t.Apps.HOUSE then
+		addRow(terminalPanel, "HOUSE  -  locked: " .. (t.Locked.HOUSE or ""), {}, DIM)
+	else
+		addRow(terminalPanel, "HOUSE  -  materials for the hideout, delivered to your pack", {}, GREEN)
+		for _, h in t.House do
+			addRow(terminalPanel, ("  %s  -  %d cr"):format(h.Name, h.Price), { { text = "Order", color = Color3.fromRGB(50, 110, 70), fn = send("Order", h.Id) } }, if h.Price > (t.Credits or 0) then DIM else nil)
+		end
+	end
+	-- MARKET
+	if not t.Apps.MARKET then
+		addRow(terminalPanel, "MARKET  -  locked: " .. (t.Locked.MARKET or ""), {}, DIM)
+	else
+		addRow(terminalPanel, "MARKET  -  the black market", {}, GREEN)
+		for _, m in t.Market do
+			addRow(terminalPanel, ("  %s  -  %d cr"):format(m.Name, m.Price), { { text = "Buy", color = Color3.fromRGB(50, 110, 70), fn = send("Buy", m.Id) } }, if m.Price > (t.Credits or 0) then DIM else nil)
+		end
+	end
 end
 renderContainer = function()
 	clear(containerPanel)
@@ -1866,7 +1917,7 @@ do
 AIM = Config.Aim
 local GameSettings = UserSettings():GetService("UserGameSettings")
 local aimOn = AIM.DefaultOn
-MENUS = { statsPanel, invPanel, loadoutPanel, app, hidePanel, containerPanel, marketPanel, devPanel, deathScreen }
+MENUS = { statsPanel, invPanel, loadoutPanel, app, hidePanel, containerPanel, marketPanel, terminalPanel, devPanel, deathScreen }
 menuOpen = function()
 	for _, m in MENUS do
 		if m.Visible then

@@ -34,6 +34,8 @@ local TEMPLATE = {
 	-- What the crew knows of the world north of the wall: the route's checkpoints reached, the sites
 	-- found, whether the Reach was ever seen. Survives permadeath (the hideout remembers the way).
 	Frontier = { Route = 0, Found = {}, Reached = false },
+	-- The hideout computer's knowledge: contacts met, contracts held. Uploaded consciousness: survives permadeath.
+	Knowledge = { Contacts = {}, Contracts = {}, Completed = 0 },
 	-- The war world (a separate place, same universe) reads and writes this part of the profile.
 	-- A conduit is not reset by the recruit dying; the recruit's gear is.
 	War = {
@@ -76,7 +78,7 @@ end
 -- Permadeath wipes the conduit; the war-world account (faction, credits, locker) survives it,
 -- because a recruit is a thing the conduit owns, not the conduit itself.
 local function wipe(data)
-	local war, hideout, frontier = data.War, data.Hideout, data.Frontier
+	local war, hideout, frontier, knowledge = data.War, data.Hideout, data.Frontier, data.Knowledge
 	for key in data do
 		data[key] = nil
 	end
@@ -86,6 +88,7 @@ local function wipe(data)
 	data.War = war or deepCopy(TEMPLATE.War)
 	data.Hideout = hideout or deepCopy(TEMPLATE.Hideout)
 	data.Frontier = frontier or deepCopy(TEMPLATE.Frontier)
+	data.Knowledge = knowledge or deepCopy(TEMPLATE.Knowledge)
 	newCharacter(data)
 end
 
