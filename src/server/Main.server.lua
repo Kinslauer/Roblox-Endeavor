@@ -23,6 +23,7 @@ local ok, err = pcall(function()
 	local Lifecycle = require(Server.Lifecycle)
 	local Landmarks = require(Server.Landmarks)
 	local Population = require(Server.Population)
+	local DevTools = require(Server.DevTools)
 
 	Gore.Init()
 	Destruction.Init() -- before City, which places props and breach points
@@ -49,6 +50,7 @@ local ok, err = pcall(function()
 	Lifecycle.Init()
 	Landmarks.Init()
 	Population.Init()
+	DevTools.Init()
 end)
 if not ok then
 	warn(("=============================\nENDEAVOR STARTUP FAILED: %s\n============================="):format(tostring(err)))

@@ -22,6 +22,10 @@ function Landmarks.Register(key, position, label, color)
 	end
 end
 
+function Landmarks.List()
+	return list
+end
+
 function Landmarks.Init()
 	WorldPhase.Changed.Event:Connect(function()
 		if WorldPhase.IsOpen() then

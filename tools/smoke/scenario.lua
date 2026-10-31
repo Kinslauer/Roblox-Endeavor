@@ -501,6 +501,15 @@ print("population: standing hostiles=" .. populated .. " alive=" .. Population.A
 check("population spawned district packs at world open", populated >= 8)
 check("population stays under its cap", populated <= 36)
 
+-- dev tools: teleport to the armory and spawn a hostile through the F2 panel's remote
+as(player)
+local devRoot = player.Character.HumanoidRootPart
+local devBefore = #game_:GetService("CollectionService"):GetTagged("NPC")
+Remotes.Dev:FireServer("Teleport", "Armory"); run(0.2)
+check("dev teleport moves the player", math.abs(devRoot.Position.Z - 132) < 40 and math.abs(devRoot.Position.X) < 40)
+Remotes.Dev:FireServer("Spawn", "Raider"); run(0.3)
+check("dev spawn adds a hostile", #game_:GetService("CollectionService"):GetTagged("NPC") > devBefore)
+
 -- director events: every one runs without error and leaves something behind
 as(player)
 local Events = M.mockEnv.__require(SSS.Server.Events)

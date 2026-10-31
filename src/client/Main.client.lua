@@ -664,6 +664,31 @@ end)
 
 -- ===== Hideout panel (X at your workbench, or O) =====
 local hidePanel = panel(UDim2.fromOffset(560, 460), UDim2.new(0.5, -280, 0.5, -230))
+
+-- F2: dev tools (only when Config.Dev.Enabled; the server refuses everything otherwise)
+local devPanel = panel(UDim2.fromOffset(420, 520), UDim2.new(1, -440, 0, 120))
+local function buildDevPanel()
+	clear(devPanel)
+	local function dev(action, arg)
+		return function()
+			Remotes.Dev:FireServer(action, arg)
+		end
+	end
+	addRow(devPanel, "DEV TOOLS (F2)", {}, Color3.fromRGB(255, 80, 220))
+	addRow(devPanel, "Me", { { text = "Heal", fn = dev("Heal") }, { text = "Mats", fn = dev("Materials") }, { text = "Die", fn = dev("Kill"), color = Color3.fromRGB(140, 40, 40) } })
+	addRow(devPanel, "World", { { text = "Open", fn = dev("Open") } })
+	addRow(devPanel, "Go to", { { text = "Armory", fn = dev("Teleport", "Armory") }, { text = "Gate", fn = dev("Teleport", "RaidGate") } })
+	for _, d in { "Transit Hub", "Corp Plaza", "The Sprawl", "Blackout Zone" } do
+		addRow(devPanel, d, { { text = "Go", fn = dev("Teleport", "District_" .. d) }, { text = "Net", fn = dev("Teleport", "Terminal_" .. d) } })
+	end
+	addRow(devPanel, "Hideout sites", { { text = "1", fn = dev("Teleport", "Site_1") }, { text = "2", fn = dev("Teleport", "Site_2") }, { text = "3", fn = dev("Teleport", "Site_3") } })
+	addRow(devPanel, "Spawn", { { text = "Raider", fn = dev("Spawn", "Raider") }, { text = "Brute", fn = dev("Spawn", "Brute") }, { text = "Shock", fn = dev("Spawn", "Shocker") }, { text = "Warden", fn = dev("Spawn", "Warden") } })
+	addRow(devPanel, "Event", { { text = "Drop", fn = dev("Event", "SupplyDrop") }, { text = "Ambush", fn = dev("Event", "RaiderAmbush") }, { text = "Dark", fn = dev("Event", "Blackout") } })
+	addRow(devPanel, "Event", { { text = "Warden", fn = dev("Event", "WardenPatrol") }, { text = "Salvage", fn = dev("Event", "SalvageCache") }, { text = "Drop2", fn = dev("Event", "DeadDrop") } })
+end
+if Config.Dev.Enabled then
+	buildDevPanel()
+end
 local hideout
 local function costText(cost)
 	local parts = {}
@@ -1119,6 +1144,8 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		setHelmetcam(not helmetcam)
 	elseif key == Enum.KeyCode.F1 then
 		controls.Visible = not controls.Visible
+	elseif key == Enum.KeyCode.F2 and Config.Dev.Enabled then
+		devPanel.Visible = not devPanel.Visible
 	elseif key == Enum.KeyCode.LeftShift then
 		Remotes.Sprint:FireServer(true)
 	elseif key == Enum.KeyCode.G then

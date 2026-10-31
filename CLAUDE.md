@@ -30,7 +30,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (94 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
+  `scenario` = Endeavor end to end (96 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
   Endeavor client boots. They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution (`ROBLOX_API_KEY` with Luau Execution Sessions: Write) runs a script
@@ -107,6 +107,8 @@ store `ConduitCharacter_v2`) is shared by both places.
   attribute (own and other players). Uploading Animation assets isn't possible through Open Cloud.
   Still placeholder: nothing major; everything below is polish and balance.
   Known limit: MeshPart CollisionFidelity can't be set from scripts, so collapsed stumps may collide as hulls.
+- `src/server/DevTools.lua` + the client's F2 panel (Config.Dev.Enabled only): teleport to landmarks/districts/sites,
+  spawn hostiles, fire events, heal, materials, open world, die. Remote "Dev".
 - `src/server/Population.lua`: standing hostile packs per district Danger (Config.City.Population: cap 36, respawn 150s,
   wander via the NPC Investigate attribute); on top of events, raids and hideout defenders.
 - `src/server/Landmarks.lua`: persistent markers (terminals, raid gate, armory) sent on world open and respawn.

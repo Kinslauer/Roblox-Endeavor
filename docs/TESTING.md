@@ -9,6 +9,8 @@ report). Versions: Endeavor v35, Front v18.
 - [ ] Spawn in the starting room on solid floor (no falling through, no black room). Returning players see
       "Welcome back, conduit" and the world opens at once.
 - [ ] Tutorial steps advance as you do them (move, sprint with Shift, swing, block, dodge, flicker).
+- [ ] F2 opens the dev panel (test build only): Heal, Mats, Die, Open world, Go to armory/gate/districts/terminals/
+      hideout sites, Spawn each hostile, fire each event. Use it to reach anything on this list quickly.
 - [ ] F1 shows the controls card. Tab inventory, L loadout, J attributes, O hideout, N recruit app all open and close.
 - [ ] City hum and wind are audible from the start (ambient loops).
 - [ ] The city reads as late night: purple haze, neon bloom, cold grade; you can still see where you're going.
