@@ -442,7 +442,9 @@ local function upgrade(player, id)
 	local h = owner and hideoutOf(owner)
 	local data = dataOf(player)
 	local kind = itemKind(id)
-	if not (h and data and kind and HideoutDefs.UpgradeCost[kind] and Inventory.Count(player, id) > 0) then
+	-- the worn pack is not in the grid but can be upgraded at the bench like anything else you own
+	local owned = Inventory.Count(player, id) > 0 or data.Pack == id
+	if not (h and data and kind and HideoutDefs.UpgradeCost[kind] and owned) then
 		return
 	end
 	local level = (data.Upgrades[id] or 0) + 1
@@ -464,6 +466,9 @@ local function upgrade(player, id)
 	spend(player, cost)
 	data.Upgrades[id] = level
 	Gear.Recompute(player)
+	if data.Pack == id then
+		Inventory.Push(player) -- the grid just grew a row
+	end
 	Remotes.Announce:FireClient(player, ("%s is now +%d."):format(Items.Defs[id].Name or id, level), "Info")
 	push(player)
 end

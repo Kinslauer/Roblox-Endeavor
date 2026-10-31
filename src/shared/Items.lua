@@ -88,7 +88,8 @@ function Items.GridWeight(profile)
 end
 function Items.Carry(profile)
 	local pack = profile.Pack and profile.Pack ~= "" and Items.Defs[profile.Pack]
-	return if pack and pack.Carry then pack.Carry else Config.Inventory.PocketCarry
+	local level = if pack and profile.Upgrades then (profile.Upgrades[profile.Pack] or 0) else 0
+	return if pack and pack.Carry then pack.Carry + level * Config.Inventory.CarryPerPackLevel else Config.Inventory.PocketCarry
 end
 -- footprint after rotation (rot 1 swaps width and height)
 function Items.Footprint(id, rot)

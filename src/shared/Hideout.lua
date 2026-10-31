@@ -42,6 +42,7 @@ Hideout.UpgradeCost = {
 	Weapon = { { Scrap = 15, Pipe = 2 }, { Scrap = 35, SheetMetal = 6, Powder = 1 }, { Scrap = 70, SheetMetal = 12, Battery = 3, Powder = 3 } },
 	Armor = { { SheetMetal = 6, Cloth = 4 }, { SheetMetal = 14, Scrap = 20 }, { SheetMetal = 28, Scrap = 40, Battery = 2 } },
 	Cybernetic = { { Wire = 8, Battery = 2 }, { Wire = 16, Battery = 5, Glass = 4 }, { Wire = 30, Battery = 10, Powder = 2 } },
+	Pack = { { Cloth = 4, Scrap = 4 }, { Cloth = 8, Wire = 4, SheetMetal = 2 }, { Wire = 8, SheetMetal = 4, Battery = 1 } }, -- each level: +1 row, +5 carry
 }
 Hideout.UpgradeBonus = { Weapon = 0.12, Armor = 0.04, Cybernetic = 0.15 } -- per level: +12% damage, +4 resist points, +15% implant bonuses
 Hideout.ClaimCost = { Scrap = 10 }

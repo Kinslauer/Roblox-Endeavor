@@ -21,17 +21,22 @@ Inventory.Crafted = Instance.new("BindableEvent") -- (player, itemId, count)
 
 -- ===== grid geometry =====
 
+-- A worn pack's bench upgrades (+1..+3) each add a row and some carry.
+local function packLevel(profile)
+	return if profile.Pack ~= "" then (profile.Upgrades and profile.Upgrades[profile.Pack]) or 0 else 0
+end
+
 function Inventory.GridSize(profile)
 	local pack = profile.Pack ~= "" and Items.Defs[profile.Pack]
 	if pack and pack.Grid then
-		return pack.Grid[1], pack.Grid[2]
+		return pack.Grid[1], pack.Grid[2] + packLevel(profile)
 	end
 	return I.Pockets[1], I.Pockets[2]
 end
 
 function Inventory.Carry(profile)
 	local pack = profile.Pack ~= "" and Items.Defs[profile.Pack]
-	return if pack then pack.Carry else I.PocketCarry
+	return if pack then pack.Carry + packLevel(profile) * I.CarryPerPackLevel else I.PocketCarry
 end
 
 local function cells(item)
@@ -313,7 +318,7 @@ function Inventory.Remove(player, itemId, count)
 	end
 	Inventory.RemoveFrom(Inventory.Box(profile), itemId, count)
 	recount(profile)
-	if not profile.Inventory[itemId] then
+	if not profile.Inventory[itemId] and profile.Pack ~= itemId then
 		profile.Condition[itemId], profile.Upgrades[itemId] = nil, nil
 	end
 	Gear.Validate(player) -- unequips anything no longer owned
@@ -426,6 +431,16 @@ function Inventory.EquipPack(player, itemId)
 	return true
 end
 
+-- Auto-sort: repack everything biggest-first (nothing is lost; the grid is the same size).
+function Inventory.Sort(player)
+	local profile = PlayerData.Get(player)
+	if not profile then
+		return
+	end
+	relayout(player, profile)
+	Inventory.Push(player)
+end
+
 function Inventory.UnequipPack(player)
 	local profile = PlayerData.Get(player)
 	if not profile or profile.Pack == "" then
@@ -509,6 +524,7 @@ function Inventory.Init()
 	Net.On("Craft", { rate = 3, burst = 4, args = { "string" } }, Inventory.Craft)
 	Net.On("MoveItem", { rate = 10, burst = 20, args = { "int", "int", "int", "int" } }, Inventory.Move)
 	Net.On("DropItem", { rate = 4, burst = 8, args = { "int", "int?" } }, Inventory.Drop)
+	Net.On("SortItems", { rate = 2, burst = 3 }, Inventory.Sort)
 end
 
 return Inventory

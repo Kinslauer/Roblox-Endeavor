@@ -50,6 +50,9 @@ report). Versions: Endeavor v40, Front v19.
 - [ ] Double-click moves a stack between your pack and the vault when the hideout panel is open.
 - [ ] Craft a Satchel (4 cloth, 1 scrap), click it, Wear: the grid becomes 7x5 and the satchel leaves the grid. Rucksack
       9x6 and Frame Pack 11x7 likewise. "Take off" shrinks the grid; anything that no longer fits spills at your feet.
+- [ ] Sort (Tab header) repacks the grid biggest-first without losing anything.
+- [ ] At the bench (O) the worn pack has a +1/+2/+3 row: each upgrade adds a row to the grid and 5 carry
+      (+1: 4 cloth 4 scrap; +2 needs a Forge like other gear).
 - [ ] Weight shows as "Weight x / carry"; over the carry limit (15 pockets, 25/40/60 packs) you walk at 60% speed and
       stamina costs more; the row turns red and says OVERWEIGHT.
 - [ ] Hideout vault (O) is a grid too: 6x4 at Tinkerer, 8x6 Workshop, 10x8 Foundry. Drag a stack from your pack onto

@@ -39,6 +39,7 @@ Config.Inventory = {
 	PocketCarry = 15, -- weight you move freely with without a pack
 	OverweightSpeedMult = 0.6, -- walk speed while over the carry limit
 	OverweightStaminaMult = 1.6, -- stamina costs while over
+	CarryPerPackLevel = 5, -- extra carry per bench upgrade of the worn pack (each level also adds a row)
 }
 
 Config.City = {

@@ -346,8 +346,12 @@ renderInventory = function()
 	gridHolder.Parent = nil -- clear() would destroy it
 	clear(invPanel)
 	local wt = ("Weight %.1f / %d%s"):format(lastGrid.Weight or 0, lastGrid.Carry or 0, if (lastGrid.Weight or 0) > (lastGrid.Carry or 0) then "  OVERWEIGHT" else "")
-	local packName = if lastGrid.Pack ~= "" and Items.Defs[lastGrid.Pack] then Items.Defs[lastGrid.Pack].Name else "pockets"
-	local packButtons = if lastGrid.Pack ~= "" then { { text = "Take off", color = Color3.fromRGB(120, 70, 70), fn = function() Remotes.Unequip:FireServer("Pack") end } } else {}
+	local packLevel = lastGrid.Pack ~= "" and (lastUpgrades[lastGrid.Pack] or 0) or 0
+	local packName = if lastGrid.Pack ~= "" and Items.Defs[lastGrid.Pack] then Items.Defs[lastGrid.Pack].Name .. (if packLevel > 0 then " +" .. packLevel else "") else "pockets"
+	local packButtons = { { text = "Sort", color = Color3.fromRGB(60, 100, 90), fn = function() Remotes.SortItems:FireServer() end } }
+	if lastGrid.Pack ~= "" then
+		table.insert(packButtons, { text = "Take off", color = Color3.fromRGB(120, 70, 70), fn = function() Remotes.Unequip:FireServer("Pack") end })
+	end
 	addRow(invPanel, ("%s  (%dx%d)  %s  -  drag to move, R rotates, drop outside to drop"):format(packName, lastGrid.W, lastGrid.H, wt), packButtons, if (lastGrid.Weight or 0) > (lastGrid.Carry or 0) then Color3.fromRGB(255, 150, 120) else nil)
 	drawGridInto(gridFrame, lastGrid, "pack", gridHolder)
 	gridHolder.Parent = invPanel
@@ -955,6 +959,11 @@ local function renderHideout()
 		end
 	end
 	addRow(hidePanel, "-- BENCH: repair and upgrade what you carry --", {})
+	if lastGrid.Pack ~= "" and Items.Defs[lastGrid.Pack] then
+		-- the worn pack: upgrade it at the bench for an extra row and carry per level
+		local up = lastUpgrades[lastGrid.Pack] or 0
+		addRow(hidePanel, ("%s (worn)  +%d  -  each level adds a row and 5 carry"):format(Items.Defs[lastGrid.Pack].Name, up), if up < 3 then { { text = ("+%d"):format(up + 1), color = Color3.fromRGB(60, 110, 80), fn = function() Remotes.ItemUpgrade:FireServer(lastGrid.Pack) end } } else {})
+	end
 	for id, count in lastInventory do
 		local def = Items.Defs[id]
 		if def and (def.Type == "Weapon" or def.Type == "Armor" or def.Type == "Cybernetic") then
