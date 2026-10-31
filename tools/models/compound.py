@@ -60,3 +60,10 @@ export("RaidGate", [mesh("Arch", "DarkMetal", [((2.0, 2.0, 16.0), T(-6, 0, 8)), 
                     mesh("Seam", "NeonRed", [((0.4, 2.2, 14.0), T(-6, 0, 7.5)), ((0.4, 2.2, 14.0), T(6, 0, 7.5)), ((12.0, 2.2, 0.4), T(0, 0, 14.2))]),
                     mesh("Cables", "Rust", [((0.3, 0.3, 6.0), T(-7.2, 0.5, 3) @ RY(8)), ((0.3, 0.3, 6.0), T(7.2, -0.5, 3) @ RY(-8))])])
 print("COMPOUND DONE")
+# Prologue pod wall 10 x 2 x 24: dark panels in a grid with cyan seams, for the room every conduit wakes in
+reset()
+panels = [((4.6, 0.6, 5.6), T(-2.5 + i * 5, 0, 3 + j * 6)) for i in range(2) for j in range(4)]
+export("PodWall", [mesh("Panels", "DarkMetal", panels, jit=0.02),
+                   mesh("Frame", "Steel", [((10.0, 1.0, 24.0), T(0, 0.4, 12))]),
+                   mesh("Seams", "Neon", [((0.12, 0.2, 24.0), T(0, -0.35, 12))] + [((10.0, 0.2, 0.12), T(0, -0.35, 6 + j * 6)) for j in range(3)])])
+print("PODWALL DONE")

@@ -60,7 +60,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   K artillery, F dig, V sandbags, M app.
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v30, Front v17). Front v10 verified on a real server:
+- Both places published and starting cleanly (Endeavor v31, Front v17). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.
@@ -88,6 +88,8 @@ store `ConduitCharacter_v2`) is shared by both places.
   medbay; each mesh sits inside its collider part (`dress()` in Hideouts.lua), prompts stay on the part.
   Sounds: 25 synthesized effects + 3 ambient loops (city hum, wind, Front wind with distant guns) (`tools/sounds/synth.py`, uploaded as Audio assets) in `src/shared/Sounds.lua`; both
   clients play them from their existing event handlers (`Sounds.Play(name, partOrPosition)`). Unheard by me: verify in-game.
+  Prologue pod: WorldPhase.buildPlot shells the slab walls with `Assets.Compound.PodWall`; the tutorial console wears
+  the Terminal shell and the supply locker is a crate.
   Barks: 12 synthesized hostile sounds (`Sounds.Ids.Bark<Type><Alert|Attack|Death>`), fired by NPCs.bark via World
   "Bark". City.Atmosphere sets Endeavor's night look (Atmosphere, bloom, grade) in City.Init; Arena defers to it.
   Loot meshes (`tools/models/loot.py` -> `Assets.Loot`): Loot.Spawn puts a crate/stash mesh inside the lootable part by

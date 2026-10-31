@@ -31,7 +31,7 @@ function Loot.Spawn(cframe, bundle, opts)
 	part:SetAttribute("Label", opts.Label or "Remains")
 	-- the look: crates for caches and drops, a stash bag for remains, spoils and salvage
 	local label = opts.Label or "Remains"
-	local meshId = if opts.Mesh then Assets.Loot[opts.Mesh] elseif label:find("Vault") then Assets.Loot.CrateB elseif label:find("Cache") or label:find("Crate") or label:find("Drop") then Assets.Loot.CrateA else Assets.Loot.Stash
+	local meshId = if opts.Mesh then Assets.Loot[opts.Mesh] elseif label:find("Vault") then Assets.Loot.CrateB elseif label:find("Cache") or label:find("Crate") or label:find("Drop") or label:find("Locker") then Assets.Loot.CrateA else Assets.Loot.Stash
 	if meshId and ModelAssets.Spawn(meshId, part.CFrame * CFrame.new(0, -part.Size.Y / 2, 0), "Mesh", part) then
 		part.Transparency = 1
 	end

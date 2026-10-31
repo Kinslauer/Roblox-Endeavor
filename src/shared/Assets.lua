@@ -132,6 +132,7 @@ Assets.Compound = {
 	ArenaWall = 133068520008602, -- 22 wide, 28 tall
 	ArenaPillar = 119840636382667,
 	RaidGate = 113137125539955,
+	PodWall = 80397059980222, -- 10 wide, 24 tall: the prologue room
 }
 
 -- The Front's faction bases (tools/models/base.py): bunker shell (hollow, door toward the grid), flagpole

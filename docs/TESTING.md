@@ -1,9 +1,11 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v30, Front v17.
+report). Versions: Endeavor v31, Front v17.
 
 ## Endeavor: first minutes
+- [ ] The starting room is a pod: dark panelled walls with cyan seams, diamond-plate floor, the console in a terminal
+      cabinet, the supply locker a crate.
 - [ ] Spawn in the starting room on solid floor (no falling through, no black room). Returning players see
       "Welcome back, conduit" and the world opens at once.
 - [ ] Tutorial steps advance as you do them (move, sprint with Shift, swing, block, dodge, flicker).

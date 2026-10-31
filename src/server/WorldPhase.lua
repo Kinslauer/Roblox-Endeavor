@@ -8,6 +8,8 @@ local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local PlayerData = require(script.Parent.Common.PlayerData)
+local Assets = require(Shared.Assets)
+local ModelAssets = require(script.Parent.Common.ModelAssets)
 
 local WorldPhase = {}
 WorldPhase.Changed = Instance.new("BindableEvent")
@@ -28,19 +30,25 @@ local function wall(parent, size, position)
 	p.Size, p.Position, p.Anchored = size, position, true
 	p.Color, p.Material = Color3.fromRGB(35, 38, 45), Enum.Material.Concrete
 	p.Parent = parent
+	return p
 end
 
--- Placeholder "apartment". Replace with a real tutorial interior later.
+-- The pod every conduit wakes in: slab walls shelled with dark panels and cyan seams.
 local function buildPlot(slot)
 	local model = Instance.new("Model")
 	model.Name = "Prologue_" .. slot
 	local o = plotCFrame(slot).Position
-	wall(model, Vector3.new(60, 2, 60), o) -- floor
+	local floor = wall(model, Vector3.new(60, 2, 60), o) -- floor
+	floor.Material, floor.Color = Enum.Material.DiamondPlate, Color3.fromRGB(40, 42, 50)
 	wall(model, Vector3.new(60, 2, 60), o + Vector3.new(0, 24, 0)) -- ceiling
-	wall(model, Vector3.new(60, 24, 2), o + Vector3.new(0, 12, 30))
-	wall(model, Vector3.new(60, 24, 2), o + Vector3.new(0, 12, -30))
-	wall(model, Vector3.new(2, 24, 60), o + Vector3.new(30, 12, 0))
-	wall(model, Vector3.new(2, 24, 60), o + Vector3.new(-30, 12, 0))
+	for _, w in {
+		wall(model, Vector3.new(60, 24, 2), o + Vector3.new(0, 12, 30)),
+		wall(model, Vector3.new(60, 24, 2), o + Vector3.new(0, 12, -30)),
+		wall(model, Vector3.new(2, 24, 60), o + Vector3.new(30, 12, 0)),
+		wall(model, Vector3.new(2, 24, 60), o + Vector3.new(-30, 12, 0)),
+	} do
+		ModelAssets.Shell(Assets.Compound.PodWall, w, 10, model)
+	end
 	local light = Instance.new("PointLight")
 	light.Range, light.Brightness, light.Color = 40, 2, Color3.fromRGB(120, 200, 255)
 	light.Parent = model:FindFirstChildWhichIsA("Part")

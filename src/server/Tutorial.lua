@@ -18,6 +18,8 @@ local Net = require(script.Parent.Common.Net)
 local NPCs = require(script.Parent.NPCs)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local WorldPhase = require(script.Parent.WorldPhase)
+local Assets = require(Shared.Assets)
+local ModelAssets = require(script.Parent.Common.ModelAssets)
 
 local T = Config.Tutorial
 local POLL = 0.25
@@ -87,6 +89,9 @@ local function buildProps(ctx)
 		Name = "Console", Size = Vector3.new(4, 5, 2), Position = origin + Vector3.new(20, 3.5, -20),
 		Material = Enum.Material.Neon, Color = Color3.fromRGB(0, 220, 255),
 	})
+	if ModelAssets.Spawn(Assets.Loot.Terminal, ctx.console.CFrame * CFrame.new(0, -2.5, 0), "Shell", plot) then
+		ctx.console.Transparency = 0.6 -- the neon core still glows through the cabinet's screen gap
+	end
 
 	ctx.locker = Loot.Spawn(CFrame.new(origin + Vector3.new(-20, 3.5, 12)), { Cloth = 2, Scrap = 1, ScrapVest = 1 }, {
 		Label = "Supply Locker", Action = "Open", Hold = 1, Lifetime = 7200,
