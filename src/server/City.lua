@@ -181,6 +181,52 @@ local function buildOutskirts()
 	end
 end
 
+-- The Crossroads: the city's heart, where the four districts' roads meet under a collapsed
+-- interchange. A ring road, a fallen overpass on cracked pillars, the old city's obelisk, wrecks,
+-- caches, and (Population) a standing pack: Medium danger, the first place every road leads.
+local CROSSROADS = { Name = "The Crossroads", Danger = "Medium", Neon = Color3.fromRGB(255, 230, 120) }
+City.Crossroads = CROSSROADS
+local function buildCrossroads()
+	local y = GROUND_TOP
+	-- ring road
+	local n = 36
+	for i = 0, n - 1 do
+		local a = (i + 0.5) / n * math.pi * 2
+		local p = Vector3.new(math.cos(a) * 96, y + 0.1, math.sin(a) * 96)
+		part({ Name = "RingRoad", Size = Vector3.new(2 * math.pi * 96 / n + 1, 0.3, 18), CFrame = CFrame.lookAt(p, Vector3.new(0, p.Y, 0)) * CFrame.Angles(0, math.pi / 2, 0), Color = Color3.fromRGB(52, 54, 60), Material = Enum.Material.Asphalt })
+	end
+	-- the obelisk at the centre: the old city's marker, lit from below
+	part({ Name = "ObeliskBase", Size = Vector3.new(18, 3, 18), Position = Vector3.new(0, y + 1.5, 0), Color = Color3.fromRGB(70, 70, 78), Material = Enum.Material.Concrete })
+	local obelisk = part({ Name = "Obelisk", Size = Vector3.new(5, 46, 5), Position = Vector3.new(0, y + 3 + 23, 0), Color = Color3.fromRGB(40, 40, 48), Material = Enum.Material.Slate })
+	local seam = part({ Name = "ObeliskSeam", Size = Vector3.new(0.4, 40, 5.3), Position = Vector3.new(0, y + 3 + 22, 0), Color = CROSSROADS.Neon, Material = Enum.Material.Neon, CanCollide = false })
+	local light = Instance.new("PointLight")
+	light.Color, light.Range, light.Brightness = CROSSROADS.Neon, 70, 1.5
+	light.Parent = seam
+	obelisk:SetAttribute("District", CROSSROADS.Name)
+	-- the fallen interchange: one span still up on pillars, one collapsed at an angle
+	for _, sx in { -1, 1 } do
+		for k = -2, 2 do
+			part({ Name = "Pillar", Size = Vector3.new(4, 24, 4), Position = Vector3.new(sx * 60, y + 12, k * 28), Color = Color3.fromRGB(80, 78, 76), Material = Enum.Material.Concrete })
+		end
+	end
+	part({ Name = "Overpass", Size = Vector3.new(14, 2, 130), Position = Vector3.new(-60, y + 25, 0), Color = Color3.fromRGB(64, 62, 60), Material = Enum.Material.Concrete })
+	part({ Name = "OverpassFallen", Size = Vector3.new(14, 2, 70), CFrame = CFrame.new(60, y + 14, 20) * CFrame.Angles(-0.35, 0, 0.08), Color = Color3.fromRGB(64, 62, 60), Material = Enum.Material.Concrete })
+	part({ Name = "OverpassStub", Size = Vector3.new(14, 2, 40), Position = Vector3.new(60, y + 25, -50), Color = Color3.fromRGB(64, 62, 60), Material = Enum.Material.Concrete })
+	-- wrecks and rubble where the roads meet, caches under the span
+	for i = 1, 10 do
+		local a, r = i / 10 * math.pi * 2 + 0.3, rng:NextNumber(24, 80)
+		local propId = ({ "CarWreck", "Slab", "Barrel", "Streetlight", "Crate" })[(i % 5) + 1]
+		Destruction.SpawnProp(propId, CFrame.new(math.cos(a) * r, y, math.sin(a) * r) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0))
+	end
+	cache(CROSSROADS, Vector3.new(-60, y + 1.5, 14))
+	cache(CROSSROADS, Vector3.new(54, y + 1.5, -70))
+	-- a spawn pad pair like the districts have
+	for k = 1, 2 do
+		local pad = part({ Name = "SpawnPad", Size = Vector3.new(6, 0.4, 6), Position = Vector3.new(k == 1 and -30 or 30, y + 0.2, 60), Material = Enum.Material.Neon, Color = CROSSROADS.Neon, Transparency = 0.6 })
+		CollectionService:AddTag(pad, "CitySpawn")
+	end
+end
+
 local function buildDistrict(district)
 	local c, size, blocks = district.Center, district.Size, district.Blocks
 	local pitch = size / blocks
@@ -229,7 +275,12 @@ local function buildDistrict(district)
 	end
 end
 
+-- The Crossroads counts as a district for banners and population (radius 110 around the origin).
+local CROSSROADS_RADIUS = 110
 function City.DistrictAt(position)
+	if Vector3.new(position.X, 0, position.Z).Magnitude <= CROSSROADS_RADIUS then
+		return CROSSROADS
+	end
 	for _, d in City.Districts do
 		if math.abs(position.X - d.Center.X) <= d.Size / 2 and math.abs(position.Z - d.Center.Z) <= d.Size / 2 then
 			return d
@@ -291,6 +342,7 @@ function City.Init()
 		buildDistrict(district)
 	end
 	buildOutskirts()
+	buildCrossroads()
 
 	-- district banners (1 Hz; cheap)
 	task.spawn(function()

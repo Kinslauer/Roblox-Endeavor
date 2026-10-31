@@ -710,7 +710,7 @@ as(player)
 local devRoot = player.Character.HumanoidRootPart
 local devBefore = #game_:GetService("CollectionService"):GetTagged("NPC")
 Remotes.Dev:FireServer("Teleport", "Armory"); run(0.2)
-check("dev teleport moves the player", math.abs(devRoot.Position.Z - 132) < 40 and math.abs(devRoot.Position.X) < 40)
+check("dev teleport moves the player to the off-map arena", math.abs(devRoot.Position.Z - 132) < 40 and math.abs(devRoot.Position.X - 3000) < 40)
 Remotes.Dev:FireServer("Spawn", "Raider"); run(0.3)
 check("dev spawn adds a hostile", #game_:GetService("CollectionService"):GetTagged("NPC") > devBefore)
 

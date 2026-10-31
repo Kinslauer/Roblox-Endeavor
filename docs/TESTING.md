@@ -1,7 +1,7 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v55, Front v19.
+report). Versions: Endeavor v56, Front v19.
 
 ## Endeavor: first minutes
 - [ ] The starting room is a pod: dark panelled walls with cyan seams, diamond-plate floor, the console in a terminal
@@ -159,6 +159,14 @@ report). Versions: Endeavor v55, Front v19.
 - [ ] Dead drop: a purple stash at a numbered hideout site, announced to everyone.
 - [ ] Quests cycle through: scrap run, raiders, medkit, bounty, survey, brute, raid, wrecker (break 10), catcher,
       black flash, tap in (deploy to the Front), shockers. Completing one assigns the next.
+
+## Endeavor: the Crossroads (the city's heart)
+- [ ] The centre of the city is no longer the test arena: it is the Crossroads, where the four districts meet. A ring
+      road, a 46-stud obelisk with a yellow seam lit from below, a collapsed interchange (one span up on pillars, one
+      fallen at an angle, a stub), wrecks and rubble, two caches under the span, two spawn pads, and a standing pack.
+- [ ] Walking into it banners "The Crossroads - danger: Medium"; it counts for the Survey quest.
+- [ ] The Pit and the Test Armory still exist, 3000 studs east off the map on their own slab; F2 "Go to: Armory" gets
+      there and back ("Go" on any district). Nobody spawns there any more.
 
 ## Endeavor: north of the wall (the frontier)
 Maps: `docs/maps/world_map_seed7919.png` and `world_map_seed23757.png` (two rolls). The valley is a 9x8 grid of

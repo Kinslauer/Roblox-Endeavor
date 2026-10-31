@@ -106,6 +106,18 @@ function Population.Populate()
 			end
 		end
 	end
+	-- the Crossroads: a Medium pack around the obelisk (every road in the city leads here)
+	local tier = P.Tiers[City.Crossroads.Danger]
+	if tier then
+		local angle = rng:NextNumber(0, math.pi * 2)
+		local anchor = Vector3.new(math.cos(angle) * 50, 0, math.sin(angle) * 50)
+		anchor = Vector3.new(anchor.X, groundAt(anchor.X, anchor.Z), anchor.Z)
+		for _ = 1, rng:NextInteger(tier.Size[1], tier.Size[2]) do
+			if spawnOne(tier.Types[rng:NextInteger(1, #tier.Types)], anchor, P.PackRadius, tier.Scale or 1) then
+				spawned += 1
+			end
+		end
+	end
 	return spawned
 end
 

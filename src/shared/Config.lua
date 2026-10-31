@@ -10,6 +10,7 @@ Config.Dev = {
 	PrologueSeconds = 15, -- only used when Config.Tutorial.Enabled = false
 	CycleSeconds = 600, -- faster dematerialization while testing
 	ArmoryPoints = 10, -- attribute points the arena instructor hands out per use
+	ArenaOrigin = Vector3.new(3000, 0, 0), -- the test arena (the Pit + armory) is built here, off the map; F2 "Armory" teleports
 }
 
 -- Prologue: every player is alone in a private plot far from everyone else.

@@ -43,7 +43,8 @@ every player has finished or skipped (and 30s have passed) the world opens early
 `Config.Tutorial.Enabled = false` restores the short timed prologue.
 
 ## The city, raids and devouring
-- **City** (`src/server/City.lua`, map: `docs/maps/conduit_map.png`): four generated districts around the Pit, with ruined outskirts filling the corners between them - Transit Hub (low danger), Corp Plaza and
+- **City** (`src/server/City.lua`, map: `docs/maps/conduit_map.png`): four generated districts around the Crossroads (the
+  city's heart: ring road, obelisk, a collapsed interchange, caches and a standing pack), with ruined outskirts filling the corners between them - Transit Hub (low danger), Corp Plaza and
   The Sprawl (medium), Blackout Zone (high). Ruined towers with ledges, rubble, neon signage, a pylon per district for
   navigation, refilling loot caches, and a banner when you cross into a district. Replace any district with hand-built
   art later; the generator is only there so the world exists now.
@@ -180,6 +181,7 @@ profile (same ProfileService store, same universe). Code lives in `src/war/` and
 - **Playtest checklist**: `docs/TESTING.md`.
 
 ## Test arena
+Built 3000 studs east of the city (`Config.Dev.ArenaOrigin`), off the map; F2 "Armory" teleports there.
 With `Config.Dev.Enabled = true` (default for now) the prologue is 15s and the world opens into a generated neon arena:
 ring with 4 gates, pillars, cover, a center platform and 8 spawn pads. The **Test Armory** outside the south gate has free
 weapons / armor / cybernetics / materials, an Instructor (+10 attribute points), Respec, Recharge (also on the center

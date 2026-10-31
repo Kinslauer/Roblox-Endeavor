@@ -101,7 +101,7 @@ for r in rows:
 # labels
 try: font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22); small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
 except Exception: font = small = ImageFont.load_default()
-labels = {"UNION BASE": (-310, 0), "PACT BASE": (310, 0), "THE FRONT": (0, -300)} if FRONT else {"TRANSIT HUB": (0, -420), "CORP PLAZA": (420, 0), "THE SPRAWL": (-420, 0), "BLACKOUT ZONE": (0, 420), "THE PIT (arena)": (0, 0), "Test Armory": (0, 132)}
+labels = {"UNION BASE": (-310, 0), "PACT BASE": (310, 0), "THE FRONT": (0, -300)} if FRONT else {"TRANSIT HUB": (0, -420), "CORP PLAZA": (420, 0), "THE SPRAWL": (-420, 0), "BLACKOUT ZONE": (0, 420)}
 if WORLD:
     labels.update({"THE SCARP": (120, 745), "SWITCHBACKS": (-420, 860), "THE PEAKS": (560, 2200)})
     if os.path.exists(sys.argv[1] + ".labels"):

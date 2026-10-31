@@ -34,6 +34,9 @@ local MAGENTA = Color3.fromRGB(255, 50, 160)
 
 local folder
 
+-- The arena is laid out around (0, 0) and shifted here as a whole: dev furniture lives off the map
+-- (the city's heart is a real place, City.buildCrossroads), reached by the F2 "Armory" teleport.
+local ORIGIN = Config.Dev.ArenaOrigin
 local function part(props)
 	local p = Instance.new("Part")
 	p.Anchored = true
@@ -41,6 +44,7 @@ local function part(props)
 	for k, v in props do
 		p[k] = v
 	end
+	p.CFrame = p.CFrame + ORIGIN
 	p.Parent = folder
 	return p
 end
@@ -129,7 +133,7 @@ local function buildRing()
 		local p = polar(68, a)
 		local pad = part({ Name = "SpawnPad", Size = Vector3.new(8, 0.4, 8), Position = p + Vector3.new(0, floorTop + 0.2, 0),
 			Material = Enum.Material.Neon, Color = CYAN, Transparency = 0.5 })
-		CollectionService:AddTag(pad, "CitySpawn")
+		CollectionService:AddTag(pad, "ArenaSpawn") -- not a city spawn: nobody wakes up in the test arena
 	end
 end
 
@@ -204,7 +208,7 @@ end
 local function dummy(position)
 	local model, hum, root = NPCs.BuildRig("Training Dummy", { Health = 1000, Speed = 0 })
 	root.Anchored = true
-	model:PivotTo(CFrame.lookAt(position, position + Vector3.new(0, 0, 10)))
+	model:PivotTo(CFrame.lookAt(position, position + Vector3.new(0, 0, 10)) + ORIGIN)
 	model.Parent = folder
 	local lastHit = 0
 	local previous = hum.Health
@@ -228,7 +232,7 @@ end
 local function buildArmory()
 	local z = 132
 	local floorY = GROUND_TOP
-	Landmarks.Register("Armory", Vector3.new(0, floorY + 10, z), "Test Armory", Color3.fromRGB(255, 80, 220))
+	Landmarks.Register("Armory", Vector3.new(0, floorY + 10, z) + ORIGIN, "Test Armory", Color3.fromRGB(255, 80, 220))
 	part({ Name = "ArmoryFloor", Size = Vector3.new(84, 1, 30), Position = Vector3.new(0, floorY + 0.5, z), Color = MID, Material = Enum.Material.Metal })
 	part({ Name = "ArmoryBackWall", Size = Vector3.new(84, 14, 2), Position = Vector3.new(0, floorY + 8, z + 15), Color = DARK, Material = Enum.Material.Concrete })
 	local sign = part({ Size = Vector3.new(40, 4, 0.5), Position = Vector3.new(0, floorY + 11, z + 13.8), Material = Enum.Material.Neon, Color = MAGENTA, CanCollide = false })
@@ -289,7 +293,7 @@ local function buildArmory()
 				k += 1
 				local pos = Vector3.new(44 + k * 8, floorY + 1 + hum.HipHeight + root.Size.Y / 2, 124)
 				part({ Name = "DisplayPad", Size = Vector3.new(6, 0.4, 6), Position = Vector3.new(pos.X, floorY + 1.2, pos.Z), Material = Enum.Material.Neon, Color = MAGENTA, Transparency = 0.5 })
-				model:PivotTo(CFrame.lookAt(pos, pos + Vector3.new(0, 0, -10)))
+				model:PivotTo(CFrame.lookAt(pos, pos + Vector3.new(0, 0, -10)) + ORIGIN)
 				model:SetAttribute("Display", true)
 				model.Parent = folder
 				root:SetNetworkOwner(nil)
@@ -316,6 +320,8 @@ function Arena.Init()
 	folder.Name = "Arena"
 	folder.Parent = workspace
 	atmosphere()
+	-- its own ground, since it sits off the city plateau
+	part({ Name = "ArenaGround", Size = Vector3.new(300, 4, 360), Position = Vector3.new(0, 0, 40), Color = Color3.fromRGB(42, 44, 50), Material = Enum.Material.Asphalt })
 	buildRing()
 	buildArmory()
 	-- a recharge pad on the center platform so flicker/charge testing is never blocked

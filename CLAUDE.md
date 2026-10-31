@@ -60,7 +60,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   K artillery, F dig, V sandbags, M app.
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v55, Front v19). Front v10 verified on a real server:
+- Both places published and starting cleanly (Endeavor v56, Front v19). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.
@@ -186,6 +186,10 @@ store `ConduitCharacter_v2`) is shared by both places.
   set Config.Frontier.Seed to draw a given roll). Live probe pattern: scratch `probe_frontier.lua` (City.Init +
   Frontier.Init + Populate, raycast heights vs Frontier.Height).
   Trees/rocks/tents/domes are parts (no Blender kit yet): the next art pass.
+
+- The test arena (Arena.lua: the Pit, armory, mannequins, dummies) is built at `Config.Dev.ArenaOrigin` (3000, 0, 0),
+  off the map, on its own slab; its pads are tagged ArenaSpawn, not CitySpawn. The city's centre is `City.buildCrossroads`
+  ("The Crossroads", Medium: `City.Crossroads`, `City.DistrictAt` returns it within 110 studs; Population adds a pack).
 
 ## Open items
 - Awaiting the user's in-game look at the rigs (animation playback can't be verified from the Luau execution API).
