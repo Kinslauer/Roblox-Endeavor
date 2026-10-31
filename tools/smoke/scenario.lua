@@ -620,6 +620,40 @@ run(1.5)
 check("the queued heavy plays once the swing ends", heavyFired)
 qconn:Disconnect()
 
+-- the Autonet: cybernetics go in only at the table, each rip costs health and takes time; all eight slots = machine
+as(player)
+local Voice_ = M.mockEnv.__require(RS.Shared.Voice)
+check("the machine voice flattens chat", Voice_.Machine("lol I'm sooooo done!!") == "I AM SO DONE.")
+Inventory.Add(player, "ReflexOptic", 1)
+Remotes.EquipItem:FireServer("ReflexOptic"); run(0.2)
+check("a cybernetic cannot be worn from the pack", pd.Cyber.Eyes == nil)
+Inventory.Add(player, "Glass", 6); Inventory.Add(player, "Battery", 6); Inventory.Add(player, "Wire", 20); Inventory.Add(player, "SheetMetal", 10)
+Remotes.HideoutBuild:FireServer("Autonet"); run(0.5)
+check("the hideout builds an Autonet", pd.Hideout.Modules.Autonet == true and site.AutonetAt ~= nil)
+root().CFrame = M.CF.new(site.AutonetAt + M.V3.new(3, 0, 0)); run(0.2)
+local bayPart = site.Built:FindFirstChild("Autonet")
+bayPart:FindFirstChildOfClass("ProximityPrompt").Triggered:Fire(player); run(0.1)
+check("stepping up marks you at the table", player:GetAttribute("AtAutonet") == true)
+local hpBefore = player.Character.Humanoid.Health
+Remotes.Autonet:FireServer("In", "ReflexOptic"); run(0.2)
+check("a rip costs health up front and holds you", player.Character.Humanoid.Health < hpBefore and player.Character.HumanoidRootPart.Anchored == true)
+run(4.5)
+check("the rip finishes: eyes are metal", pd.Cyber.Eyes == "ReflexOptic" and player.Character.HumanoidRootPart.Anchored == false)
+-- the rest of the body, two of each paired piece
+for _, id in { "AudioPickup", "ChemSniffer", "NeuralCore", "ServoArm", "ServoArm", "StriderLeg", "StriderLeg" } do Inventory.Add(player, id, 1) end
+for _, step in { { "AudioPickup" }, { "ChemSniffer" }, { "NeuralCore" }, { "ServoArm", "LeftArm" }, { "ServoArm", "RightArm" }, { "StriderLeg", "LeftLeg" }, { "StriderLeg", "RightLeg" } } do
+	player.Character.Humanoid.Health = player.Character.Humanoid.MaxHealth
+	Remotes.Autonet:FireServer("In", step[1], step[2]); run(4.6)
+end
+check("two Servo Arms fill both arms", pd.Cyber.LeftArm == "ServoArm" and pd.Cyber.RightArm == "ServoArm")
+check("all eight slots metal: the voice is gone", player:GetAttribute("Machine") == true and M.mockEnv.__require(SSS.Server.Gear).Get(player).Conversion >= 1)
+check("senses come from the pieces", (player:GetAttribute("Hearing") or 0) >= 60 and (player:GetAttribute("Scent") or 0) >= 45)
+check("the body carries its metal for every client", player.Character:GetAttribute("Cyber_LeftArm") == "ServoArm")
+player.Character.Humanoid.Health = player.Character.Humanoid.MaxHealth
+Remotes.Autonet:FireServer("Out", "Nose"); run(4.6)
+check("ripping one out brings the voice back", pd.Cyber.Nose == nil and player:GetAttribute("Machine") == false)
+player:SetAttribute("AtAutonet", nil)
+
 -- launcher: a light staggers a raider, a heavy started in the grace window sends it up (Juggled)
 as(player)
 Remotes.EquipItem:FireServer("PipeClub"); run(0.3)

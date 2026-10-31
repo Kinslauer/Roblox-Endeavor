@@ -20,6 +20,7 @@ local Stats = require(script.Parent.Stats)
 local Rigs = require(script.Parent.Rigs)
 local HeldWeapons = require(script.Parent.Common.HeldWeapons)
 local Landmarks = require(script.Parent.Landmarks)
+local Autonet = require(script.Parent.Autonet)
 local Assets = require(Shared.Assets)
 
 local Arena = {}
@@ -246,7 +247,19 @@ local function buildArmory()
 	end
 	console(spots[1], "Weapons Rack", "Take all weapons", CYAN, function(player) giveAll(player, Weapons.Defs, "Fists") end)
 	console(spots[2], "Armor Rack", "Take all armor", CYAN, function(player) giveAll(player, Armor.Pieces) end)
-	console(spots[3], "Cybernetics Bay", "Take all implants", MAGENTA, function(player) giveAll(player, Cybernetics.Pieces) end)
+	console(spots[3], "Cybernetics Bay", "Take all implants", MAGENTA, function(player)
+		giveAll(player, Cybernetics.Pieces)
+		giveAll(player, { ServoArm = Cybernetics.Pieces.ServoArm, ArcGauntlet = Cybernetics.Pieces.ArcGauntlet, StriderLeg = Cybernetics.Pieces.StriderLeg, PistonLeg = Cybernetics.Pieces.PistonLeg }) -- a second of each paired piece
+	end)
+	-- the arena's Autonet: a table beside the bay, so implants can be ripped in without a hideout
+	local tableAt = spots[3] + Vector3.new(0, 0, -8)
+	local bay = part({ Name = "ArenaAutonet", Size = Vector3.new(6, 3, 3), Position = tableAt + Vector3.new(0, 1.5, 0), Color = Color3.fromRGB(60, 30, 36), Material = Enum.Material.Metal })
+	local ap = Instance.new("ProximityPrompt")
+	ap.ObjectText, ap.ActionText, ap.HoldDuration = "Autonet", "Get on the table", 0.5
+	ap.MaxActivationDistance, ap.RequiresLineOfSight, ap.KeyboardKeyCode = 8, false, Enum.KeyCode.X
+	ap.Parent = bay
+	ap.Triggered:Connect(Autonet.Use)
+	Autonet.Register(bay.Position)
 	console(spots[4], "Supplies", "Take materials + meds", CYAN, function(player)
 		Inventory.Add(player, "Scrap", 10)
 		Inventory.Add(player, "Wire", 10)

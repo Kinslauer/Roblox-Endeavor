@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Cybernetics = require(ReplicatedStorage.Shared.Cybernetics)
 local Props = require(ReplicatedStorage.Shared.Props)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Gear = require(script.Parent.Gear)
@@ -36,10 +37,12 @@ function Stats.Apply(player, fill)
 	for _, id in PlayerData.Get(player).Armor do
 		table.insert(worn, id)
 	end
-	for _, id in PlayerData.Get(player).Cyber do
-		table.insert(worn, id)
+	WornGear.Apply(char, worn) -- armor only: implants are drawn client-side from the Cyber_<slot> attributes
+	hum.UseJumpPower = false
+	hum.JumpHeight = 7.2 * (d.JumpMult or 1)
+	for _, slot in Cybernetics.Slots do
+		char:SetAttribute("Cyber_" .. slot, PlayerData.Get(player).Cyber[slot])
 	end
-	WornGear.Apply(char, worn)
 	char:SetAttribute("MaxStamina", d.MaxStamina)
 	char:SetAttribute("MaxPosture", d.MaxPosture)
 	char:SetAttribute("MaxCharge", S.MaxCharge)

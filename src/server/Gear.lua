@@ -39,6 +39,7 @@ local DEFAULT = {
 	Stats = {}, Tags = {}, Resist = { Physical = 0, Arc = 0 }, MaxPosture = C.BasePosture, PostureRegen = C.PostureRegenPerSecond,
 	StaminaCostMult = 1, BlockReduction = C.BlockReduction, DodgeIFrames = C.DodgeIFrames, DamageMult = 1, WeaponBroken = false,
 	PostureDamageMult = 1, ChargeGain = 1, WeightScore = 0, FlickerRate = 1, FlashBonus = 0, ParryWindow = C.ParryWindow,
+	JumpMult = 1, Hearing = 0, Scent = 0, Track = false, Lift = 0, Conversion = 0,
 }
 for _, name in S.Names do
 	DEFAULT.Stats[name] = 0
@@ -48,12 +49,21 @@ local function compute(data)
 	local stats = table.clone(data.Stats)
 	local resist = { Physical = 0, Arc = 0 }
 	local tags = {}
-	local sum = { Posture = 0, Speed = 0, ChargeGain = 0, FlickerRate = 0, FlashBonus = 0, ParryBonus = 0, HealthPenalty = 0, Weight = 0 }
+	local sum = { Posture = 0, Speed = 0, ChargeGain = 0, FlickerRate = 0, FlashBonus = 0, ParryBonus = 0, HealthPenalty = 0, Weight = 0,
+		Jump = 0, DodgeBonus = 0, Hearing = 0, Scent = 0, Lift = 0 }
+	local track, fitted = false, 0
 
 	for field, source in SOURCES do
+		local used = {} -- copies counted so far: two Servo Arms need two in the inventory
 		for slot, id in data[field] do
 			local piece = source.defs[id]
-			if piece and piece.Slot == slot and (data.Inventory[id] or 0) > 0 then
+			local fits = piece and (if field == "Cyber" then Cybernetics.Fits(piece, slot) else piece.Slot == slot)
+			if fits and (data.Inventory[id] or 0) > (used[id] or 0) then
+				used[id] = (used[id] or 0) + 1
+				if field == "Cyber" then
+					fitted += 1
+					track = track or piece.Track == true
+				end
 				-- worn gear gives less; a broken piece gives nothing but its weight. Upgrades add on top.
 				local cond = Hideout.ConditionMult((data.Condition or {})[id])
 				local kind = if field == "Armor" then "Armor" else "Cybernetic"
@@ -99,7 +109,7 @@ local function compute(data)
 		PostureRegen = C.PostureRegenPerSecond * (1 + stats.Willpower * 0.01),
 		StaminaCostMult = 1 + 0.04 * weight,
 		BlockReduction = math.min(0.9, C.BlockReduction + 0.02 * weight),
-		DodgeIFrames = math.max(0.2, C.DodgeIFrames - 0.012 * weight + stats.Agility * 0.002),
+		DodgeIFrames = math.max(0.2, C.DodgeIFrames - 0.012 * weight + stats.Agility * 0.002) + sum.DodgeBonus,
 		-- the equipped weapon's condition and upgrade level (Fists never wear)
 		DamageMult = (1 + stats.Strength * S.DamagePerStrength) * (if data.Equipped == "Fists" then 1 else Hideout.ConditionMult((data.Condition or {})[data.Equipped]) * (1 + ((data.Upgrades or {})[data.Equipped] or 0) * Hideout.UpgradeBonus.Weapon)),
 		WeaponBroken = data.Equipped ~= "Fists" and Hideout.ConditionMult((data.Condition or {})[data.Equipped]) == 0,
@@ -109,6 +119,12 @@ local function compute(data)
 		FlickerRate = 1 + sum.FlickerRate + stats.Intelligence * F.RatePerIntelligence,
 		FlashBonus = sum.FlashBonus,
 		ParryWindow = C.ParryWindow + sum.ParryBonus,
+		JumpMult = 1 + sum.Jump,
+		Hearing = sum.Hearing, -- studs (client senses)
+		Scent = sum.Scent,
+		Track = track,
+		Lift = sum.Lift, -- arms that can take heavier debris
+		Conversion = fitted / #Cybernetics.Slots, -- 1 = all metal
 	}
 end
 
@@ -139,9 +155,51 @@ function Gear.Push(player)
 		Remotes.LoadoutChanged:FireClient(player, {
 			Stats = d.Stats, Tags = d.Tags, Resist = d.Resist, MaxPosture = d.MaxPosture, WeightScore = d.WeightScore,
 			FlickerRate = d.FlickerRate, FlashBonus = d.FlashBonus,
+			Hearing = d.Hearing, Scent = d.Scent, Track = d.Track, Lift = d.Lift, Conversion = d.Conversion, JumpMult = d.JumpMult,
 			Weapon = data.Equipped, Armor = data.Armor, Cyber = data.Cyber, Slots = data.SkillSlots, Condition = data.Condition, Upgrades = data.Upgrades,
 		})
+		-- senses and the voice are player attributes (the client draws them); what is in the body sits on the
+		-- character as Cyber_<slot> so every client can draw the metal
+		player:SetAttribute("Hearing", d.Hearing)
+		player:SetAttribute("Scent", d.Scent)
+		player:SetAttribute("Track", d.Track)
+		player:SetAttribute("Machine", d.Conversion >= 1)
+		local char = player.Character
+		if char then
+			for _, slot in Cybernetics.Slots do
+				char:SetAttribute("Cyber_" .. slot, data.Cyber[slot])
+			end
+		end
 	end
+end
+
+-- Where a cybernetic goes: the slot asked for if it fits, else the first empty slot of its kind, else the
+-- first of its kind (a swap). nil if it fits nowhere, or every copy you own is already in you elsewhere.
+function Gear.CyberSlot(data, itemId, want)
+	local piece = Cybernetics.Pieces[itemId]
+	if not piece then
+		return nil
+	end
+	local slots = Cybernetics.SlotsFor(piece)
+	local slot
+	if want ~= nil then
+		slot = if type(want) == "string" and table.find(slots, want) then want else nil
+	else
+		for _, s in slots do
+			if not data.Cyber[s] then
+				slot = s
+				break
+			end
+		end
+		slot = slot or slots[1]
+	end
+	if not slot or data.Cyber[slot] == itemId then
+		return nil
+	end
+	if Cybernetics.Fitted(data.Cyber, itemId) >= (data.Inventory[itemId] or 0) then
+		return nil -- no spare copy to put in
+	end
+	return slot
 end
 
 local function slotKey(i)
@@ -192,10 +250,20 @@ function Gear.EquipWeapon(player, itemId)
 end
 
 -- Armor or cybernetic piece (the item's own slot decides where it goes).
-function Gear.EquipGear(player, itemId)
+-- Armor or cybernetic piece (the item's own slot decides where it goes; a cybernetic may name its slot).
+function Gear.EquipGear(player, itemId, slot)
 	local data = PlayerData.Get(player)
 	if not data or type(itemId) ~= "string" or (data.Inventory[itemId] or 0) <= 0 then
 		return false
+	end
+	if Cybernetics.Pieces[itemId] then
+		local at = Gear.CyberSlot(data, itemId, slot)
+		if not at then
+			return false
+		end
+		data.Cyber[at] = itemId
+		Gear.Recompute(player)
+		return true
 	end
 	for field, source in SOURCES do
 		local piece = source.defs[itemId]
@@ -242,6 +310,17 @@ function Gear.Validate(player)
 		for slot, id in data[field] do
 			if (data.Inventory[id] or 0) <= 0 then
 				data[field][slot] = nil
+			end
+		end
+	end
+	-- fewer copies than fitted slots (a theft, a drop): the left side keeps the one that is left
+	local seen = {}
+	for _, slot in Cybernetics.Slots do
+		local id = data.Cyber[slot]
+		if id then
+			seen[id] = (seen[id] or 0) + 1
+			if seen[id] > (data.Inventory[id] or 0) or not Cybernetics.Fits(Cybernetics.Pieces[id], slot) then
+				data.Cyber[slot] = nil
 			end
 		end
 	end

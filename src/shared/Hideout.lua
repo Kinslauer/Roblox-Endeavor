@@ -20,6 +20,7 @@ Hideout.Modules = {
 	Generator = { Name = "Generator", Desc = "Powers the turret and alarm. Without it they are scrap.", Cost = { Scrap = 15, Battery = 3, Wire = 4 }, Tier = 2 },
 	Forge = { Name = "Forge", Desc = "Needed for +2 and +3 upgrades.", Cost = { Scrap = 50, SheetMetal = 20, Powder = 4 }, Tier = 2 },
 	Bunks = { Name = "Bunks", Desc = "Your crew spawns here instead of the city.", Cost = { Cloth = 12, Scrap = 10 }, Tier = 1 },
+	Autonet = { Name = "Autonet", Desc = "The table that rips cybernetics in and out of a body. Every rip costs a third of your health.", Cost = { SheetMetal = 6, Wire = 10, Battery = 3, Glass = 2 }, Tier = 1 },
 	Shelves = { Name = "Shelving", Desc = "Two more rows of vault grid per level, three levels. Build it again to add a level.", Cost = { Scrap = 20, SheetMetal = 6 }, Tier = 1, Levels = 3, RowsPerLevel = 2 },
 	Medbay = { Name = "Medbay", Desc = "Slow healing while inside the compound.", Cost = { Cloth = 10, Wire = 4, Glass = 4 }, Tier = 2 },
 }

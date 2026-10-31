@@ -46,6 +46,13 @@ Config.Inventory = {
 	CarryPerPackLevel = 5, -- extra carry per bench upgrade of the worn pack (each level also adds a row)
 }
 
+-- Cybernetics are ripped in at an Autonet and nowhere else (ported from combat-feel's cybernetics.md). It hurts.
+Config.Cyber = {
+	RipSeconds = 4, -- one rip (a swap is two)
+	RipHealthCost = 0.35, -- share of max health per rip, paid up front; never below 1 HP
+	Range = 12, -- studs from an Autonet
+}
+
 -- Momentum (ported from combat-feel's momentum.md 2.5): side-dodge i-frames, the launcher, juggles, Enemy Step.
 -- A melee heavy on an *open* hostile (staggered, or just out of its stagger) launches it: it is Juggled (helpless until
 -- it lands) and every hit while airborne pops it up again and hurts more. Players are never launched.

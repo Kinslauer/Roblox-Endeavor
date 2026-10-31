@@ -93,6 +93,16 @@ function PlayerData.Load(player)
 		return nil
 	end
 	profile:Reconcile()
+	-- saves from before the full body: Optic -> Eyes, Arm -> RightArm (shared/Cybernetics.Renamed)
+	do
+		local Cybernetics = require(ReplicatedStorage.Shared.Cybernetics)
+		for old, new in Cybernetics.Renamed do
+			if profile.Data.Cyber[old] ~= nil then
+				profile.Data.Cyber[new] = profile.Data.Cyber[new] or profile.Data.Cyber[old]
+				profile.Data.Cyber[old] = nil
+			end
+		end
+	end
 	profile:ListenToRelease(function()
 		profiles[player] = nil
 		player:Kick("Your character was loaded in another session.")

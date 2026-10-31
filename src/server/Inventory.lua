@@ -489,7 +489,10 @@ function Inventory.Equip(player, itemId)
 	local def = type(itemId) == "string" and Items.Defs[itemId]
 	if def and def.Type == "Weapon" then
 		Gear.EquipWeapon(player, itemId)
-	elseif def and (def.Type == "Armor" or def.Type == "Cybernetic") then
+	elseif def and def.Type == "Cybernetic" then
+		Remotes.Announce:FireClient(player, "Cybernetics are ripped in at an Autonet (build one in your hideout, or use the arena's).", "Info")
+		return
+	elseif def and def.Type == "Armor" then
 		Gear.EquipGear(player, itemId)
 	elseif def and def.Type == "Pack" then
 		Inventory.EquipPack(player, itemId)

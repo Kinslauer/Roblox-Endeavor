@@ -142,12 +142,14 @@ Items.LootTables = {
 		{ "RebarBlade", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 }, { "ScrapSpear", 0.12, 1, 1 }, { "Sledge", 0.06, 1, 1 }, { "ArcPistol", 0.05, 1, 1 },
 		{ "PlatedHelm", 0.1, 1, 1 }, { "RiotPlate", 0.06, 1, 1 }, { "ArcHood", 0.08, 1, 1 }, { "ConduitHarness", 0.04, 1, 1 }, { "ServoGreaves", 0.07, 1, 1 },
 		{ "ReflexOptic", 0.06, 1, 1 }, { "TargetingLens", 0.05, 1, 1 }, { "ServoArm", 0.05, 1, 1 }, { "ArcGauntlet", 0.04, 1, 1 }, { "NeuralCore", 0.04, 1, 1 }, { "OverclockCore", 0.02, 1, 1 },
+		{ "AudioPickup", 0.05, 1, 1 }, { "ChemSniffer", 0.05, 1, 1 }, { "StriderLeg", 0.05, 1, 1 }, { "PistonLeg", 0.03, 1, 1 }, { "PlatedCore", 0.03, 1, 1 },
 	},
 	Vault = {
 		{ "Scrap", 1, 6, 12 }, { "Wire", 1, 3, 6 }, { "Battery", 0.8, 1, 3 }, { "Powder", 0.7, 2, 4 }, { "ArcCell", 0.8, 6, 12 },
 		{ "Medkit", 0.8, 1, 3 }, { "BreachingCharge", 0.5, 1, 1 }, { "PipeGrenade", 0.5, 1, 3 },
 		{ "Sledge", 0.2, 1, 1 }, { "ArcPistol", 0.2, 1, 1 }, { "RiotPlate", 0.15, 1, 1 }, { "ConduitHarness", 0.12, 1, 1 },
 		{ "ReflexOptic", 0.12, 1, 1 }, { "ServoArm", 0.12, 1, 1 }, { "NeuralCore", 0.1, 1, 1 }, { "OverclockCore", 0.05, 1, 1 },
+		{ "EchoArray", 0.08, 1, 1 }, { "BloodTracer", 0.08, 1, 1 }, { "PistonLeg", 0.08, 1, 1 }, { "PlatedCore", 0.08, 1, 1 },
 	},
 	-- salvage from broken props
 	Streetlight = { { "Pipe", 1, 1, 2 }, { "Battery", 0.8, 1, 1 }, { "Glass", 0.6, 1, 2 } },
@@ -163,6 +165,7 @@ Items.LootTables = {
 	Raider = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 },
 		{ "PipeClub", 0.1, 1, 1 }, { "ScavHelm", 0.08, 1, 1 }, { "ScrapVest", 0.08, 1, 1 }, { "ScrapGreaves", 0.08, 1, 1 },
+		{ "ChemSniffer", 0.03, 1, 1 },
 	},
 }
 

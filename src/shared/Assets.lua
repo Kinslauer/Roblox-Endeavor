@@ -122,6 +122,7 @@ Assets.Hideout = {
 	Turret = 105708684013715,
 	Forge = 133914256901308,
 	Medbay = 104351297744980,
+	Autonet = 104351297744980, -- TODO: its own table model; the medbay cot stands in
 }
 
 -- Compound pieces (tools/models/compound.py): hideout wall panels tile along the generated wall parts,

@@ -555,8 +555,8 @@ function Destruction.Grab(player, part)
 		return
 	end
 	local w, class = weightOf(part)
-	if w.StrengthReq and Gear.Get(player).Stats.Strength < w.StrengthReq then
-		Remotes.Announce:FireClient(player, ("Too heavy. Needs Strength %d."):format(w.StrengthReq), "Info")
+	if w.StrengthReq and Gear.Get(player).Stats.Strength < w.StrengthReq and (Gear.Get(player).Lift or 0) < 2 then
+		Remotes.Announce:FireClient(player, ("Too heavy. Needs Strength %d, or two lifting arms."):format(w.StrengthReq), "Info")
 		return
 	end
 	if not Combat.CanAct(char) then

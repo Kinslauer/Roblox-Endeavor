@@ -21,6 +21,7 @@ local Inventory = require(script.Parent.Inventory)
 local NPCs = require(script.Parent.NPCs)
 local Assets = require(Shared.Assets)
 local ModelAssets = require(script.Parent.Common.ModelAssets)
+local Autonet = require(script.Parent.Autonet)
 
 local HC = Config.Hideouts
 local GROUND_TOP = 2
@@ -133,6 +134,10 @@ end
 
 -- ===== building the compound in the world =====
 local function clearBuilt(site)
+	if site.AutonetAt then
+		Autonet.Unregister(site.AutonetAt)
+		site.AutonetAt = nil
+	end
 	if site.Built then
 		site.Built:Destroy()
 		site.Built = nil
@@ -216,6 +221,25 @@ local function build(site, h)
 	end
 	if h.Modules.Forge then
 		dress(part(model, { Name = "Forge", Size = Vector3.new(5, 4, 5), Position = c + Vector3.new(0, GROUND_TOP + 3, 12), Color = Color3.fromRGB(90, 40, 30), Material = Enum.Material.Slate }), Assets.Hideout.Forge)
+	end
+	if h.Modules.Autonet then
+		local bay = dress(part(model, { Name = "Autonet", Size = Vector3.new(6, 3, 3), Position = c + Vector3.new(12, GROUND_TOP + 2.5, 0), Color = Color3.fromRGB(60, 30, 36), Material = Enum.Material.Metal }), Assets.Hideout.Autonet)
+		local lamp = Instance.new("PointLight")
+		lamp.Range, lamp.Brightness, lamp.Color = 14, 1.2, Color3.fromRGB(255, 40, 60)
+		lamp.Parent = bay
+		local ap = Instance.new("ProximityPrompt")
+		ap.ObjectText, ap.ActionText, ap.HoldDuration = "Autonet", "Get on the table", 0.5
+		ap.MaxActivationDistance, ap.RequiresLineOfSight, ap.KeyboardKeyCode = 8, false, Enum.KeyCode.X
+		ap.Parent = bay
+		ap.Triggered:Connect(function(player)
+			if isMember(site, player) then
+				Autonet.Use(player)
+			else
+				Remotes.Announce:FireClient(player, "Not your table.", "Info")
+			end
+		end)
+		Autonet.Register(bay.Position)
+		site.AutonetAt = bay.Position
 	end
 	if h.Modules.Medbay then
 		dress(part(model, { Name = "Medbay", Size = Vector3.new(5, 3, 3), Position = c + Vector3.new(-12, GROUND_TOP + 2.5, 0), Color = Color3.fromRGB(200, 210, 220), Material = Enum.Material.SmoothPlastic }), Assets.Hideout.Medbay)
