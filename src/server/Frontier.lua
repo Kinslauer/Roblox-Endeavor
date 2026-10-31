@@ -28,13 +28,15 @@ local Destruction = require(script.Parent.Destruction)
 local Inventory = require(script.Parent.Inventory)
 local Landmarks = require(script.Parent.Landmarks)
 local Loot = require(script.Parent.Loot)
+local Assets = require(Shared.Assets)
+local ModelAssets = require(Common.ModelAssets)
 local NPCs = require(script.Parent.NPCs)
 local Quests = require(script.Parent.Quests)
 local WorldPhase = require(script.Parent.WorldPhase)
 
 local Frontier = {}
 local C = Config.Frontier
-local rng = Random.new(20261031) -- the frontier is the same every server
+local rng = Random.new(20261031) -- reseeded from the layout seed in Init
 local folder
 local alive = 0
 local spawned = false
@@ -268,7 +270,7 @@ local function buildRoads()
 	label.Parent = gui
 end
 
--- ===== forest =====
+-- ===== chunks =====
 local function tree(x, z, y)
 	local h = rng:NextNumber(9, 16)
 	local trunk = part({ Name = "Trunk", Size = Vector3.new(1.4, h, 1.4), Position = Vector3.new(x, y + h / 2 - 0.5, z), Color = PAL.Trunk, Material = Enum.Material.Wood })
@@ -312,21 +314,179 @@ local function clearOf(x, z)
 	return true
 end
 
-local function buildForest()
-	local trees, rocks, dead = 0, 0, 0
-	local B = F.Bounds
-	for x = B.X0 + 20, B.X1 - 20, 30 do
-		for z = 930, B.Z1 - 20, 30 do
-			local px, pz = x + rng:NextNumber(-12, 12), z + rng:NextNumber(-12, 12)
-			local y, s = H(px, pz), slopeAt(px, pz)
-			local valley = (Vector3.new(px, 0, pz) - flat(F.Reach.Center)).Magnitude < 560
-			if y < 170 and s < 30 and rng:NextNumber() < (if valley then 0.6 else 0.3) and clearOf(px, pz) then
-				tree(px, pz, y)
-				trees += 1
-			elseif s >= 30 and y < 260 and rng:NextNumber() < 0.2 and clearOf(px, pz) then
-				rock(px, pz, y, rng:NextNumber(4, 11))
-				rocks += 1
+-- Scatter over a cell: calls fn(x, z, y, slope) at jittered grid points that are clear of the roads,
+-- the Reach and the sites. `pitch` studs between points, `chance` to place.
+local function scatter(cell, pitch, chance, fn)
+	local half = F.Cell / 2 - 6
+	local placed = 0
+	for x = cell.Center.X - half, cell.Center.X + half, pitch do
+		for z = cell.Center.Z - half, cell.Center.Z + half, pitch do
+			local px, pz = x + rng:NextNumber(-pitch * 0.4, pitch * 0.4), z + rng:NextNumber(-pitch * 0.4, pitch * 0.4)
+			if rng:NextNumber() < chance and clearOf(px, pz) then
+				if fn(px, pz, H(px, pz), slopeAt(px, pz)) then
+					placed += 1
+				end
 			end
+		end
+	end
+	return placed
+end
+
+local counts = { trees = 0, rocks = 0, dead = 0 }
+local function treeIf(px, pz, y, s)
+	if s < 30 and y < 170 then
+		tree(px, pz, y)
+		counts.trees += 1
+		return true
+	elseif s >= 30 and y < 260 and rng:NextNumber() < 0.4 then
+		rock(px, pz, y, rng:NextNumber(4, 11))
+		counts.rocks += 1
+		return true
+	end
+	return false
+end
+
+local function fallenLog(x, z, y)
+	part({ Name = "FallenLog", Shape = Enum.PartType.Cylinder, Size = Vector3.new(rng:NextNumber(9, 14), 1.6, 1.6), CFrame = CFrame.new(x, y + 0.8, z) * CFrame.Angles(0, rng:NextNumber(0, math.pi), 0), Color = PAL.Trunk, Material = Enum.Material.Wood })
+end
+
+local function flowers(x, z, y)
+	local c = ({ Color3.fromRGB(230, 200, 80), Color3.fromRGB(220, 120, 160), Color3.fromRGB(150, 180, 255) })[rng:NextInteger(1, 3)]
+	part({ Name = "Flowers", Size = Vector3.new(rng:NextNumber(3, 6), 0.8, rng:NextNumber(3, 6)), Position = Vector3.new(x, y + 0.3, z), Color = c, Material = Enum.Material.Grass, CanCollide = false })
+end
+
+-- The chunk templates. Each builds one 200-stud cell; the ground under it already carries the
+-- chunk's own shape (shared/Frontier raw()).
+local CHUNKS = {}
+function CHUNKS.Forest(cell)
+	scatter(cell, 27, 0.6, treeIf)
+end
+function CHUNKS.Glade(cell)
+	scatter(cell, 26, 0.3, function(px, pz, y, s)
+		if (Vector3.new(px, 0, pz) - cell.Center).Magnitude < 50 then
+			return false -- the open middle
+		end
+		return treeIf(px, pz, y, s)
+	end)
+	for _ = 1, 3 do
+		local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0, 40)
+		local p = cell.Center + Vector3.new(math.sin(a) * d, 0, math.cos(a) * d)
+		if clearOf(p.X, p.Z) then
+			if rng:NextNumber() < 0.5 then
+				fallenLog(p.X, p.Z, H(p.X, p.Z))
+			else
+				flowers(p.X, p.Z, H(p.X, p.Z))
+			end
+		end
+	end
+end
+function CHUNKS.Meadow(cell)
+	scatter(cell, 30, 0.18, treeIf)
+	scatter(cell, 40, 0.3, function(px, pz, y)
+		flowers(px, pz, y)
+		return true
+	end)
+end
+function CHUNKS.Boulders(cell)
+	scatter(cell, 22, 0.55, function(px, pz, y)
+		rock(px, pz, y, rng:NextNumber(5, 14))
+		counts.rocks += 1
+		return true
+	end)
+	scatter(cell, 36, 0.15, treeIf)
+end
+function CHUNKS.Marsh(cell)
+	-- a pond in the hollow: water over the lowered ground; dead trees around it
+	workspace.Terrain:FillBlock(CFrame.new(cell.Center.X, F.Floor - 5, cell.Center.Z), Vector3.new(120, 9, 120), Enum.Material.Water)
+	scatter(cell, 26, 0.45, function(px, pz, y)
+		if (Vector3.new(px, 0, pz) - cell.Center).Magnitude < 58 then
+			return false
+		end
+		deadTree(px, pz, y)
+		counts.dead += 1
+		return true
+	end)
+end
+function CHUNKS.Crater(cell)
+	-- a blast bowl: scorched rocks on the rim, what the blast left in the middle
+	for i = 1, 12 do
+		local a = i / 12 * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
+		local p = cell.Center + Vector3.new(math.sin(a) * 62, 0, math.cos(a) * 62)
+		local r = part({ Name = "Rock", Shape = Enum.PartType.Ball, Size = Vector3.new(7, 5, 6), CFrame = CFrame.new(p.X, H(p.X, p.Z) + 1, p.Z) * CFrame.Angles(0, a, 0), Color = Color3.fromRGB(50, 46, 46), Material = Enum.Material.Slate })
+		r.Name = "ScorchedRock"
+	end
+	scatter(cell, 30, 0.3, function(px, pz, y)
+		if (Vector3.new(px, 0, pz) - cell.Center).Magnitude < 75 then
+			return false
+		end
+		deadTree(px, pz, y)
+		counts.dead += 1
+		return true
+	end)
+	local spoils = Items.Roll("Supply")
+	if next(spoils) == nil then
+		spoils.Scrap = 4
+	end
+	Loot.Spawn(CFrame.new(cell.Center.X, H(cell.Center.X, cell.Center.Z) + 2, cell.Center.Z), spoils, { Label = "Blast Remains", Mesh = "Stash" })
+end
+function CHUNKS.Ruin(cell)
+	-- two collapsed buildings from the Sprawl kit, a loose yard of props
+	for k = 1, 2 do
+		local off = Vector3.new(k == 1 and -45 or 45, 0, k == 1 and 30 or -35)
+		local p = cell.Center + off
+		local entry = Assets.PickBuilding("Sprawl", 8, 22, 1, rng)
+		if entry and clearOf(p.X, p.Z) then
+			local y = H(p.X, p.Z)
+			ModelAssets.Spawn(entry.Id, CFrame.new(p.X, y, p.Z) * CFrame.Angles(0, cell.Rot + (k - 1) * math.pi / 2, 0), "Building", folder)
+		end
+	end
+	for _ = 1, 4 do
+		local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(10, 40)
+		local p = cell.Center + Vector3.new(math.sin(a) * d, 0, math.cos(a) * d)
+		if clearOf(p.X, p.Z) then
+			Destruction.SpawnProp(({ "Crate", "Barrel", "Slab", "CarWreck" })[rng:NextInteger(1, 4)], CFrame.new(p.X, H(p.X, p.Z), p.Z) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0))
+		end
+	end
+	scatter(cell, 30, 0.2, treeIf)
+end
+function CHUNKS.Peaks(cell)
+	scatter(cell, 34, 0.3, function(px, pz, y, s)
+		if s >= 25 and y < 260 then
+			rock(px, pz, y, rng:NextNumber(4, 12))
+			counts.rocks += 1
+			return true
+		elseif s < 25 and y < 150 then
+			tree(px, pz, y)
+			counts.trees += 1
+			return true
+		end
+		return false
+	end)
+end
+function CHUNKS.Scarp()
+	-- the face itself is handled once below (dead trees and boulders between the switchbacks)
+end
+-- site chunks: the site in the middle, thin woods around it
+for _, kind in { "Camp", "Logging", "Shack", "Pump", "Mast", "Dropship", "Mine" } do
+	CHUNKS[kind] = function(cell)
+		scatter(cell, 30, 0.3, function(px, pz, y, s)
+			if (Vector3.new(px, 0, pz) - cell.Center).Magnitude < 60 then
+				return false
+			end
+			return treeIf(px, pz, y, s)
+		end)
+	end
+end
+CHUNKS.Reach = function() end -- buildReach does it
+
+local function buildChunks()
+	local built = {}
+	for r = 1, F.Rows do
+		for c = 1, F.Cols do
+			local cell = F.L.Cells[r][c]
+			local builder = CHUNKS[cell.Type] or CHUNKS.Forest
+			builder(cell)
+			built[cell.Type] = (built[cell.Type] or 0) + 1
 		end
 	end
 	-- the scarp: dead trees and boulders on the face, between the switchbacks
@@ -335,14 +495,14 @@ local function buildForest()
 		if clearOf(px, pz) then
 			if rng:NextNumber() < 0.6 then
 				deadTree(px, pz, H(px, pz))
-				dead += 1
+				counts.dead += 1
 			else
 				rock(px, pz, H(px, pz), rng:NextNumber(3, 8))
-				rocks += 1
+				counts.rocks += 1
 			end
 		end
 	end
-	return trees, rocks, dead
+	return built
 end
 
 -- ===== Verdant Reach =====
@@ -360,23 +520,30 @@ local function buildReach()
 	local y = F.Floor
 	-- hedge ring with gates south (the trail) and north
 	local n = 40
+	local g = R.GateAngle or math.pi -- the trail's gate; the back gate is opposite
+	local function nearGate(a, width)
+		local d = math.abs(((a - g + math.pi) % (2 * math.pi)) - math.pi)
+		local d2 = math.abs(((a - g) % (2 * math.pi)) - math.pi)
+		return math.min(d, d2) < width
+	end
 	for i = 0, n - 1 do
 		local a = (i + 0.5) / n * math.pi * 2
-		local deg = math.deg(a) % 360
-		if math.abs(deg - 180) < 10 or deg < 8 or deg > 352 then
-			continue -- gates: south (the trail comes in at angle 180) and north
+		if nearGate(a, math.rad(9)) then
+			continue -- the two gates
 		end
 		local p = c + Vector3.new(math.sin(a) * R.Radius, 0, math.cos(a) * R.Radius)
 		part({ Name = "Hedge", Size = Vector3.new(2 * math.pi * R.Radius / n + 0.5, 5, 3), CFrame = CFrame.lookAt(Vector3.new(p.X, y + 2.5, p.Z), Vector3.new(c.X, y + 2.5, c.Z)) * CFrame.Angles(0, math.pi / 2, 0), Color = PAL.Hedge, Material = Enum.Material.Grass })
 	end
 	-- gate posts and lamps at the south gate
+	local gateDir = Vector3.new(math.sin(g), 0, math.cos(g)) -- from the centre to the gate
+	local gateSide = Vector3.new(-gateDir.Z, 0, gateDir.X)
 	for _, sx in { -1, 1 } do
-		part({ Name = "GatePost", Size = Vector3.new(1.5, 9, 1.5), Position = c + Vector3.new(sx * 10, 4.5, -R.Radius), Color = PAL.Frame, Material = Enum.Material.Concrete })
-		lamp(c + Vector3.new(sx * 12, 0, -R.Radius + 6), PAL.Lamp, true)
+		part({ Name = "GatePost", Size = Vector3.new(1.5, 9, 1.5), Position = c + gateDir * R.Radius + gateSide * (sx * 10) + Vector3.new(0, 4.5, 0), Color = PAL.Frame, Material = Enum.Material.Concrete })
+		lamp(c + gateDir * (R.Radius - 6) + gateSide * (sx * 12), PAL.Lamp, true)
 	end
-	-- sand paths: a cross and a ring
-	ribbon({ c + Vector3.new(0, 0, -R.Radius), c + Vector3.new(0, 0, R.Radius) }, 8, 0.6, PAL.Path, Enum.Material.Sand, "ReachPath", 0.05)
-	ribbon({ c + Vector3.new(-R.Radius, 0, 0), c + Vector3.new(R.Radius, 0, 0) }, 8, 0.6, PAL.Path, Enum.Material.Sand, "ReachPath", 0.05)
+	-- sand paths: a cross between the gates and a ring
+	ribbon({ c - gateDir * R.Radius, c + gateDir * R.Radius }, 8, 0.6, PAL.Path, Enum.Material.Sand, "ReachPath", 0.05)
+	ribbon({ c - gateSide * R.Radius, c + gateSide * R.Radius }, 8, 0.6, PAL.Path, Enum.Material.Sand, "ReachPath", 0.05)
 	local ringPts = {}
 	for i = 0, 24 do
 		local a = i / 24 * math.pi * 2
@@ -414,7 +581,7 @@ local function buildReach()
 	for _ = 1, 40 do
 		local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(40, R.Radius - 14)
 		local p = c + Vector3.new(math.sin(a) * d, 0, math.cos(a) * d)
-		if distTo({ c + Vector3.new(0, 0, -R.Radius), c + Vector3.new(0, 0, R.Radius) }, p.X, p.Z) > 8 and distTo({ c + Vector3.new(-R.Radius, 0, 0), c + Vector3.new(R.Radius, 0, 0) }, p.X, p.Z) > 8 and math.abs(d - 110) > 7 and math.abs(d - 148) > 14 then
+		if distTo({ c - gateDir * R.Radius, c + gateDir * R.Radius }, p.X, p.Z) > 8 and distTo({ c - gateSide * R.Radius, c + gateSide * R.Radius }, p.X, p.Z) > 8 and math.abs(d - 110) > 7 and math.abs(d - 148) > 14 then
 			tree(p.X, p.Z, y)
 		end
 	end
@@ -625,7 +792,7 @@ local function buildSite(site)
 			end
 		end
 	elseif site.Kind == "Stockpile" then
-		local cf = hut(base, math.rad(site.Angle + 180), 16, 12, 7)
+		local cf = hut(base, site.Rot or 0, 16, 12, 7)
 		addContainer(site, (cf * CFrame.new(0, 0.5, -2)).Position, site.Name .. " Store", "CrateB")
 		Destruction.SpawnProp("Crate", cf * CFrame.new(9, 0, 4))
 		Destruction.SpawnProp("Barrel", cf * CFrame.new(-9, 0, 5))
@@ -646,7 +813,7 @@ local function buildSite(site)
 			hut(base + Vector3.new(14, 0, 4), 0, 10, 8, 5)
 			addContainer(site, base + Vector3.new(14, 0.5, 2), "Relay Vault", "CrateB")
 		elseif site.Key == "Dropship" then
-			local cf = CFrame.new(base + Vector3.new(0, 3, 0)) * CFrame.Angles(0.15, math.rad(site.Angle + 90), 0.3)
+			local cf = CFrame.new(base + Vector3.new(0, 3, 0)) * CFrame.Angles(0.15, (site.Rot or 0) + 0.6, 0.3)
 			part({ Name = "Hull", Size = Vector3.new(28, 7, 10), CFrame = cf, Color = Color3.fromRGB(70, 74, 80), Material = Enum.Material.DiamondPlate })
 			part({ Name = "Wing", Size = Vector3.new(6, 0.8, 22), CFrame = cf * CFrame.new(-6, 2, 0), Color = Color3.fromRGB(70, 74, 80), Material = Enum.Material.DiamondPlate })
 			part({ Name = "WingBroken", Size = Vector3.new(6, 0.8, 12), CFrame = CFrame.new(base + Vector3.new(18, 1, -12)) * CFrame.Angles(0.4, 1.2, 0.5), Color = Color3.fromRGB(70, 74, 80), Material = Enum.Material.DiamondPlate })
@@ -655,8 +822,10 @@ local function buildSite(site)
 			addContainer(site, base + Vector3.new(0, 7, 0), "Dropship Cargo", "CrateB")
 			addContainer(site, base + Vector3.new(14, 0.5, 6), "Pilot's Locker", "Stash")
 		else -- OldMine: a timbered tunnel mouth into the mountain, the vault at its end
-			local yaw = math.rad(site.Angle + 180) -- the tunnel runs away from the Reach, into the slope
-			local cf = CFrame.new(base) * CFrame.Angles(0, yaw, 0)
+			-- the tunnel runs into the nearest wall of peaks
+			local cell = site.Cell
+			local dir = if cell and cell.Col == 2 then Vector3.new(-1, 0, 0) elseif cell and cell.Col == F.Cols - 1 then Vector3.new(1, 0, 0) else Vector3.new(0, 0, 1)
+			local cf = CFrame.lookAt(base, base + dir)
 			for i = 0, 5 do
 				local seg = cf * CFrame.new(0, 0, -i * 6 - 8)
 				part({ Name = "MineFloor", Size = Vector3.new(10, 1, 6.5), CFrame = seg * CFrame.new(0, 0.5, 0), Color = Color3.fromRGB(60, 56, 52), Material = Enum.Material.Slate })
@@ -751,7 +920,7 @@ end
 function Frontier.Stock(player)
 	local data = PlayerData.Get(player)
 	local list = {}
-	for _, s in F.Reach.Stock do
+	for _, s in F.Stock do
 		local def = Items.Defs[s.Id]
 		table.insert(list, { Id = s.Id, Name = def and def.Name or s.Id, Price = s.Price, Count = s.Count or 1 })
 	end
@@ -772,7 +941,7 @@ function Frontier.Buy(player, itemId)
 		return false, "You are not at the market"
 	end
 	local entry
-	for _, s in F.Reach.Stock do
+	for _, s in F.Stock do
 		if s.Id == itemId then
 			entry = s
 		end
@@ -875,15 +1044,24 @@ function Frontier.Containers()
 	return containers
 end
 
+function Frontier.Layout()
+	return F.L
+end
+
 function Frontier.Init()
+	local seed = if C.Seed and C.Seed ~= 0 then C.Seed else Random.new():NextInteger(1, 2 ^ 30)
+	F.Generate(seed)
+	rng = Random.new(seed)
 	folder = Instance.new("Folder")
 	folder.Name = "Frontier"
+	folder:SetAttribute("Seed", seed)
 	folder.Parent = workspace
 	local t0 = os.clock()
 	local chunks, voxels = writeTerrain()
 	local t1 = os.clock()
 	buildRoads()
-	local trees, rocks, dead = buildForest()
+	local built = buildChunks()
+	local trees, rocks, dead = counts.trees, counts.rocks, counts.dead
 	buildReach()
 	for _, site in F.Sites do
 		buildSite(site)
@@ -891,8 +1069,14 @@ function Frontier.Init()
 	for i in F.Route do
 		buildCheckpoint(i)
 	end
-	print(("[Frontier] terrain %d chunks / %d voxels in %.1fs; %d trees, %d rocks, %d dead trees, %d sites, %d checkpoints, %d containers; total %.1fs"):format(
-		chunks, voxels, t1 - t0, trees, rocks, dead, #F.Sites, #F.Route - 1, #containers, os.clock() - t0))
+	local kinds = {}
+	for kind, n in built do
+		table.insert(kinds, kind .. "=" .. n)
+	end
+	table.sort(kinds)
+	print(("[Frontier] seed %d: terrain %d chunks / %d voxels in %.1fs; cells %s; %d trees, %d rocks, %d dead trees, %d sites, %d checkpoints, %d containers; Reach at (%d, %d); total %.1fs"):format(
+		seed, chunks, voxels, t1 - t0, table.concat(kinds, " "), trees, rocks, dead, #F.Sites, #F.Route - 1, #containers, F.Reach.Center.X, F.Reach.Center.Z, os.clock() - t0))
+	folder:SetAttribute("Built", true)
 
 	Net.On("Buy", { rate = 4, burst = 6, args = { "string" } }, function(player, itemId)
 		local ok, why = Frontier.Buy(player, itemId)

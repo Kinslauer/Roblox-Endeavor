@@ -1,7 +1,7 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v53, Front v19.
+report). Versions: Endeavor v55, Front v19.
 
 ## Endeavor: first minutes
 - [ ] The starting room is a pod: dark panelled walls with cyan seams, diamond-plate floor, the console in a terminal
@@ -161,11 +161,18 @@ report). Versions: Endeavor v53, Front v19.
       black flash, tap in (deploy to the Front), shockers. Completing one assigns the next.
 
 ## Endeavor: north of the wall (the frontier)
-Map: `docs/maps/world_map.png`. The route winds through the city to the north edge, down the scarp, through the valley.
-- [ ] A hazard-orange "Route north 1/11: Rail Yard" marker shows after spawning into the open world. Standing at it
-      banners "Checkpoint 1/11" and the marker jumps to the next one (Sprawl Market, Canal Bridge, Blackout Toll,
-      North Gate, Scarp Overlook, Second Hairpin, Scarp Foot, Valley Ford, Reach Gate, Verdant Reach). It is never a
-      straight line.
+Maps: `docs/maps/world_map_seed7919.png` and `world_map_seed23757.png` (two rolls). The valley is a 9x8 grid of
+200-stud chunks dealt by a seed each server: the Reach, the sites, the hairpins, the trail and the checkpoints all
+move; the city and the scarp overlook stay put. The server's seed is printed in the F9 log ("[Frontier] seed ...").
+- [ ] Two servers (or a server restart) give a different valley: the Reach somewhere else, sites in other cells.
+- [ ] A hazard-orange "Route north 1/N: Rail Yard" marker shows after spawning into the open world. Standing at it
+      banners "Checkpoint 1/N" and the marker jumps to the next one (Sprawl Market, Canal Bridge, Blackout Toll,
+      North Gate, Scarp Overlook, Second Hairpin, Scarp Foot, then rolled valley stops such as Valley Ford, Fallen
+      Bridge, Dead Crossing, Burnt Clearing, Stone Steps, then Reach Gate, Verdant Reach). It is never a straight line.
+- [ ] Chunks read as places: forest (dense trees), glade (open middle, fallen logs, flowers), boulders (rock field on
+      bumpy ground), ruin (two collapsed Sprawl buildings and a yard of breakable props), marsh (a pond in a hollow,
+      dead trees), crater (a bowl ringed by scorched rocks with "Blast Remains" loot in the middle), meadow (flowers
+      around the Reach). The border cells are the peaks.
 - [ ] Each checkpoint has a numbered sign on a post with an orange light, a barricade of breakable props facing the
       way you come, and a pack behind it that gets nastier north of the Blackout Zone (Brutes, Shockers, scaled).
 - [ ] The North Gate (x 120, past the Blackout Zone) leads to the Scarp Overlook: a railed deck and a "CITY LIMITS -
@@ -177,7 +184,7 @@ Map: `docs/maps/world_map.png`. The route winds through the city to the north ed
       An ambush pack waits at the second hairpin, another at the foot.
 - [ ] The valley is forest (trees you can walk between, rocks on the slopes) on smooth terrain; a dirt trail winds from
       the scarp foot to the Reach's south gate with Shockers at the ford and a pack at the gate.
-- [ ] Verdant Reach: hedge ring with south and north gates, sand paths (cross + ring), glass greenhouse domes with pink
+- [ ] Verdant Reach: hedge ring with a gate where the trail arrives and one opposite, sand paths (cross + ring), glass greenhouse domes with pink
       grow light, solar towers, planter beds, trees, warm lamps. The green ring at the centre is the market.
 - [ ] Inside the green ring nobody can hurt you and you cannot hit anyone (PvP and hostiles both). Leaving it, you can.
 - [ ] Trader counter (X "Browse wares") opens the Verdant Market panel: prices in war credits (the Front's pay). Buying

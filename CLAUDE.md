@@ -60,7 +60,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   K artillery, F dig, V sandbags, M app.
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v53, Front v19). Front v10 verified on a real server:
+- Both places published and starting cleanly (Endeavor v55, Front v19). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.
@@ -166,17 +166,25 @@ store `ConduitCharacter_v2`) is shared by both places.
   kill/craft/explore/raid/break/feat/deploy (feats come from Combat.Used, breaks from Destruction.Broken).
 - All balance numbers are first guesses pending the user's playtest checklist.
 
-- Frontier (the world north of the wall; user directive 2026-10-31): `src/shared/Frontier.lua` is the layout (bounds,
-  Reach, Scarp, Switchbacks, Trail, Route = 11 checkpoints with guards, Sites = 7 ring sites polar around the Reach,
-  `Frontier.Height(x,z)` pure ground function with road/Reach/site flattening, `RegionAt`, `InMarket`);
+- Frontier (the world north of the wall; user directives 2026-10-31: winding route, 4 quadrants, then "procedural
+  generation of prebuilt chunks, the Reach need not be central"): `src/shared/Frontier.lua` = `Frontier.Generate(seed)`
+  rolls a layout `Frontier.L`: a 9x8 grid of 200-stud cells (row 1 Scarp, border Peaks, interior valley chunk types
+  Forest/Glade/Boulders/Ruin/Marsh/Crater/Meadow + the 7 site chunks + the Reach cell in rows 4-6 cols 3-7), rolled
+  switchback hairpins, a weighted random walk for the trail (6+ cells, checkpoints every 3rd point from TRAIL_STOPS),
+  the Reach gate facing the trail (`Reach.GateAngle`); `Frontier.Height(x,z)` is the ground (seeded noise, border
+  peaks, scarp, chunk modifiers, flattening for road/Reach/sites), `RegionAt`, `InMarket`, `Site`, `CellAt`.
+  Config.Frontier.Seed = 0 -> random per server (folder attribute `Seed`; the mock's Random honours seeds).
   `src/server/Frontier.lua` writes smooth terrain in 128-stud chunks (`Terrain:WriteVoxels`, 4-stud voxels, air under the
-  city plateau), builds roads (ribbon slabs on the height function), forest, the Reach, the sites, the checkpoints,
+  city plateau, occupancy filled 2 studs low because the live surface renders a half voxel high), builds roads (ribbon
+  slabs on the height function), one `CHUNKS[type](cell)` builder per cell, the Reach, the sites, the checkpoints,
   spawns guards at world open (own cap Config.Frontier.Cap, respawn), refills containers, and runs a 1 Hz watch: region
   banners (kind "District"), `Safe` player attribute inside the market (Combat.applyDamage refuses both ways), route
   progress (profile.Frontier.Route, marker "Route"), site discovery (profile.Frontier.Found, markers "Site_<key>"),
   trader (Remote "Buy", World "Market"/"MarketClose", paid from profile.War.Credits). profile.Frontier survives
   permadeath (PlayerData.wipe keeps it). Items.LootTables.Relic; quest "northbound". Map: `tools/smoke/dumpworld.lua`
-  emits a heightmap, `map.py world.json out.png world` draws city + frontier (`docs/maps/world_map.png`).
+  emits a heightmap + labels, `map.py world.json out.png world` draws city + frontier (`docs/maps/world_map_seed*.png`;
+  set Config.Frontier.Seed to draw a given roll). Live probe pattern: scratch `probe_frontier.lua` (City.Init +
+  Frontier.Init + Populate, raycast heights vs Frontier.Height).
   Trees/rocks/tents/domes are parts (no Blender kit yet): the next art pass.
 
 ## Open items

@@ -47,9 +47,11 @@ every player has finished or skipped (and 30s have passed) the world opens early
   The Sprawl (medium), Blackout Zone (high). Ruined towers with ledges, rubble, neon signage, a pylon per district for
   navigation, refilling loot caches, and a banner when you cross into a district. Replace any district with hand-built
   art later; the generator is only there so the world exists now.
-- **The frontier** (`src/shared/Frontier.lua` = layout + ground height, `src/server/Frontier.lua` = builder, map:
-  `docs/maps/world_map.png`): the map is four quadrants; the city fills the two southern ones. A winding route of 11
-  held checkpoints (barricade, sign, pack of rising tier; the next is marked for you, and the crew remembers how far
+- **The frontier** (`src/shared/Frontier.lua` = seeded layout + ground height, `src/server/Frontier.lua` = chunk
+  builders, maps: `docs/maps/world_map_seed*.png`): the map is four quadrants; the city fills the two southern ones.
+  The north is a 9x8 grid of 200-stud prebuilt chunks (forest, glade, boulders, ruin, marsh, crater, meadow, peaks,
+  the seven sites, the Reach) dealt by a seed each server, so every server's valley is a different hack-and-slash run
+  over the same kit. A winding route of held checkpoints (barricade, sign, pack of rising tier; the next is marked for you, and the crew remembers how far
   you got through permadeath) leads through the city to the North Gate and the **Scarp**: the city limits, an overlook
   above a valley. Switchbacks zigzag down the cliff into a forest **valley** (smooth terrain, trees, a winding trail with
   ambushes) to **Verdant Reach**, a green terrace at the map's centre-north: hedge ring, greenhouse domes, solar towers,

@@ -190,6 +190,7 @@ Config.Frontier = {
 	Refill = 600, -- seconds before an emptied site container is restocked
 	CheckpointReach = 45, -- studs from a checkpoint that counts as reaching it
 	DiscoverRadius = 150, -- studs from a site that marks it on your map for good
+	Seed = 0, -- 0 = a new layout every server; any other number = always that layout
 }
 
 Config.Raid = {

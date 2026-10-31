@@ -406,7 +406,19 @@ local mockEnv = {
 	ColorSequence = { new = function(...) return { ... } end }, NumberRange = { new = function(...) return { ... } end },
 	UserSettings = function() return { GetService = function() return { RotationType = nil } end } end,
 	TweenInfo = { new = function() return {} end }, OverlapParams = { new = function() return {} end }, RaycastParams = { new = function() return {} end },
-	Random = { new = function() local r = {}; function r:NextNumber(a, b) return (a or 0) + math.random() * ((b or 1) - (a or 0)) end; function r:NextInteger(a, b) return math.random(a, b) end return r end },
+	-- Random: a seeded generator keeps a seeded layout the same across calls (unseeded = math.random)
+	Random = { new = function(seed)
+		local r = {}
+		local state = seed and (math.floor(seed) % 2147483647) or nil
+		local function unit()
+			if not state then return math.random() end
+			state = (state * 48271) % 2147483647
+			return state / 2147483647
+		end
+		function r:NextNumber(a, b) return (a or 0) + unit() * ((b or 1) - (a or 0)) end
+		function r:NextInteger(a, b) return a + math.floor(unit() * (b - a + 1)) end
+		return r
+	end },
 	typeof = function(v)
 		if type(v) == "table" then
 			local mt = getmetatable(v)

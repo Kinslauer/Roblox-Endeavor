@@ -743,9 +743,35 @@ do
 	local Combat = M.mockEnv.__require(SSS.Server.Combat)
 	local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
 	local CS = game_:GetService("CollectionService")
-	check("frontier: the Reach sits on the valley floor", math.abs(FS.Height(0, 1550) - FS.Floor) < 0.5)
+	local RC = FS.Reach.Center
+	print("frontier seed " .. tostring(workspace_.Frontier:GetAttribute("Seed")) .. ", Reach at " .. RC.X .. "," .. RC.Z .. ", route " .. #FS.Route .. " checkpoints, trail " .. #FS.Trail .. " points")
+	check("frontier: the Reach sits on the valley floor", math.abs(FS.Height(RC.X, RC.Z) - FS.Floor) < 0.5)
 	check("frontier: the city edge is the plateau", FS.Height(0, 760) == FS.CityTop and FS.RegionAt(M.V3.new(0, 2, 600)) == nil)
-	check("frontier: regions answer", FS.RegionAt(M.V3.new(0, 0, 1550)) == "Reach" and FS.RegionAt(M.V3.new(120, 2, 745)) == "Scarp" and FS.RegionAt(M.V3.new(0, 0, 2200)) == "Ridge")
+	check("frontier: regions answer", FS.RegionAt(RC) == "Reach" and FS.RegionAt(M.V3.new(120, 2, 745)) == "Scarp" and FS.RegionAt(M.V3.new(0, 0, 2250)) == "Ridge")
+	check("frontier: the Reach landed inside the valley grid", RC.X > -500 and RC.X < 500 and RC.Z > 1100 and RC.Z < 1900)
+	check("frontier: the route is rolled and never straight", #FS.Route >= 10 and #FS.Trail >= 5 and (function()
+		local turns = 0
+		for i = 2, #FS.Trail - 1 do
+			local a = (FS.Trail[i] - FS.Trail[i - 1]).Unit
+			local b = (FS.Trail[i + 1] - FS.Trail[i]).Unit
+			if a:Dot(b) < 0.9 then turns += 1 end
+		end
+		return turns >= 1
+	end)())
+	check("frontier: the sites each have a cell of their own", (function()
+		local seen = {}
+		for _, site in FS.Sites do
+			if not site.Cell or seen[site.Cell] then return false end
+			seen[site.Cell] = true
+		end
+		return #FS.Sites == 7
+	end)())
+	check("frontier: another seed rolls another map", (function()
+		local a = FS.Generate(1234).Reach.Center
+		local b = FS.Generate(5678).Reach.Center
+		FS.Generate(workspace_.Frontier:GetAttribute("Seed")) -- back to the server's layout
+		return (a - b).Magnitude > 1
+	end)())
 	local sites, posts, guards = 0, 0, 0
 	for _, d in workspace_.Frontier:GetDescendants() do
 		if d.Name == "SitePole" then sites += 1 elseif d.Name == "CheckpointPost" then posts += 1 end

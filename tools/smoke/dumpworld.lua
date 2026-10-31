@@ -41,6 +41,12 @@ do
 	print("HEIGHT_BEGIN " .. B.X0 .. " " .. B.Z0 .. " 8")
 	print(table.concat(lines, "\n"))
 	print("HEIGHT_END")
+	local labels = { ("[\"VERDANT REACH\",%d,%d]"):format(FS.Reach.Center.X, FS.Reach.Center.Z) }
+	for _, site in FS.Sites do table.insert(labels, ("[%q,%d,%d]"):format(site.Name, site.Position.X, site.Position.Z)) end
+	for r = 1, FS.Rows do for c = 1, FS.Cols do local cell = FS.L.Cells[r][c]; if cell.Zone == "Valley" and not cell.Site and cell.Type ~= "Reach" then table.insert(labels, ("[%q,%d,%d]"):format(cell.Type:lower(), cell.Center.X, cell.Center.Z)) end end end
+	print("LABELS_BEGIN")
+	print("[" .. table.concat(labels, ",") .. "]")
+	print("LABELS_END")
 end
 print("JSON_BEGIN")
 print("[" .. table.concat(rows, ",\n") .. "]")

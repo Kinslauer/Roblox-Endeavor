@@ -103,10 +103,12 @@ try: font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold
 except Exception: font = small = ImageFont.load_default()
 labels = {"UNION BASE": (-310, 0), "PACT BASE": (310, 0), "THE FRONT": (0, -300)} if FRONT else {"TRANSIT HUB": (0, -420), "CORP PLAZA": (420, 0), "THE SPRAWL": (-420, 0), "BLACKOUT ZONE": (0, 420), "THE PIT (arena)": (0, 0), "Test Armory": (0, 132)}
 if WORLD:
-    labels.update({"THE SCARP": (120, 745), "SWITCHBACKS": (-420, 860), "THE VALLEY": (-300, 1150), "VERDANT REACH": (0, 1550), "THE RIDGE": (560, 1900),
-                   "Ridge Watch": (329, 1826), "Old Mine": (0, 2070), "Signal Mast": (-396, 1945), "Pump Station": (-399, 1515), "Crashed Dropship": (423, 1475), "Logging Camp": (-258, 1243), "Hunter's Shack": (244, 1258)})
+    labels.update({"THE SCARP": (120, 745), "SWITCHBACKS": (-420, 860), "THE PEAKS": (560, 2200)})
+    if os.path.exists(sys.argv[1] + ".labels"):
+        for name, x, z in json.load(open(sys.argv[1] + ".labels")): labels[name] = (x, z)
 for name, (x, z) in labels.items():
-    p = px(x, z); d.text((p[0] - 60, p[1] - 12), name, fill=(255, 255, 255), font=font if ("Armory" not in name and not (WORLD and not name.isupper())) else small)
+    big = "Armory" not in name and not (WORLD and not name.isupper())
+    p = px(x, z); d.text((p[0] - (60 if big else len(name) * 3), p[1] - 12), name, fill=(255, 255, 255) if (big or name[0].isupper()) else (170, 190, 170), font=font if big else small)
 legend = ["brown blocks = structures (4 stages)", "dark strips = trenches, tan = sandbags", "yellow ring = the hill (hot sector)", "grey = faction bases"] if FRONT else ["tower (lighter = taller)", "neon signage / pylon", "lockup + breach door: brown Weak, grey Standard, blue Reinforced, red Sealed", "tan = breakable props", "gold = loot caches", "red gate = Blackout raid gate"]
 y = 10
 for t in legend:
