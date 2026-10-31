@@ -107,6 +107,8 @@ store `ConduitCharacter_v2`) is shared by both places.
   attribute (own and other players). Uploading Animation assets isn't possible through Open Cloud.
   Still placeholder: nothing major; everything below is polish and balance.
   Known limit: MeshPart CollisionFidelity can't be set from scripts, so collapsed stumps may collide as hulls.
+- World markers: World "Marker"(key, position, label, seconds, color) / "MarkerClear"(key) -> client beacon with live
+  distance (Endeavor client `setMarker`); the director marks drops, Wardens and salvage. Front client has a kill feed.
 - Director events (`src/server/Events.lua`): supply drop, raider ambush, blackout (client dims Lighting), Warden
   patrol, salvage cache (Destruction.SpawnProp cluster), dead drop at a hideout site. Quests: 13 defs, kinds collect/
   kill/craft/explore/raid/break/feat/deploy (feats come from Combat.Used, breaks from Destruction.Broken).

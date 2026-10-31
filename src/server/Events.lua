@@ -35,6 +35,7 @@ local function supplyDrop()
 	local offset = Vector3.new(rng:NextNumber(-250, 250), 150, rng:NextNumber(-250, 250))
 	local pos = pick.root.Position + offset
 	Remotes.Announce:FireAllClients("A supply drop is falling near the old transit hub.", "Event")
+	Remotes.World:FireAllClients("Marker", "SupplyDrop", pos, "Supply drop", 240, Color3.fromRGB(255, 200, 60))
 	local crate = Loot.Spawn(CFrame.new(pos), Items.Roll("Supply"), {
 		Label = "Supply Crate", Action = "Open", Hold = 3, Lifetime = 240,
 		Color = Color3.fromRGB(230, 170, 40), Size = Vector3.new(4, 4, 4),
@@ -80,6 +81,7 @@ local function wardenPatrol()
 	local c = district.Center
 	local pos = Vector3.new(c.X + rng:NextNumber(-80, 80), 6, c.Z + rng:NextNumber(-80, 80))
 	Remotes.Announce:FireAllClients(("A Warden is patrolling %s."):format(district.Name), "Event")
+	Remotes.World:FireAllClients("Marker", "Warden", pos, "Warden", 150, Color3.fromRGB(255, 60, 80))
 	NPCs.Spawn("Warden", pos)
 end
 
@@ -103,6 +105,7 @@ local function salvageCache()
 	end
 	if count > 0 then
 		Remotes.Announce:FireClient(pick.player, "Salvage nearby: a cache of intact gear fell off a convoy.", "Event")
+		Remotes.World:FireClient(pick.player, "Marker", "Salvage", Vector3.new(base.X, y + 4, base.Z), "Salvage", 120, Color3.fromRGB(120, 230, 160))
 	end
 end
 
@@ -115,6 +118,7 @@ local function deadDrop()
 	local site = sites[rng:NextInteger(1, #sites)]
 	local cf = CFrame.new(site.Position + Vector3.new(rng:NextNumber(-20, 20), 3, rng:NextNumber(-20, 20)))
 	Remotes.Announce:FireAllClients(("A dead conduit's drop was spotted at hideout site %d."):format(site.Index), "Event")
+	Remotes.World:FireAllClients("Marker", "DeadDrop", cf.Position, "Dead drop", 180, Color3.fromRGB(190, 90, 255))
 	Loot.Spawn(cf, Items.Roll("Supply"), { Label = "Dead Drop", Action = "Claim", Hold = 2, Lifetime = 180, Color = Color3.fromRGB(120, 40, 160), Size = Vector3.new(3, 2, 3) })
 end
 

@@ -118,7 +118,36 @@ local hurtFrame = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3
 
 local KIND_COLORS = { Event = Color3.fromRGB(255, 200, 60), Kill = Color3.fromRGB(230, 230, 230), Info = Color3.fromRGB(120, 220, 255), Emergence = Color3.fromRGB(255, 90, 90) }
 local bannerToken = 0
+-- kill feed: the last few kills stack top-right and fade
+local feedLines = {}
+local function feed(text)
+	local line = make("TextLabel", { Size = UDim2.new(0, 420, 0, 22), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 0.5, BackgroundColor3 = Color3.new(0, 0, 0),
+		Text = text, TextColor3 = Color3.fromRGB(255, 120, 120), Font = Enum.Font.Gotham, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Right, BorderSizePixel = 0 }, gui)
+	table.insert(feedLines, 1, line)
+	while #feedLines > 5 do
+		local oldLine = table.remove(feedLines)
+		oldLine:Destroy()
+	end
+	for i, l in feedLines do
+		l.Position = UDim2.new(1, -12, 0, 12 + (i - 1) * 26)
+	end
+	task.delay(7, function()
+		local i = table.find(feedLines, line)
+		if i then
+			table.remove(feedLines, i)
+		end
+		TweenService:Create(line, TweenInfo.new(0.5), { TextTransparency = 1, BackgroundTransparency = 1 }):Play()
+		Debris:AddItem(line, 0.6)
+	end)
+end
+
 local function announce(text, kind, seconds)
+	if kind == "Kill" then
+		feed(text)
+		if not seconds then
+			return
+		end
+	end
 	bannerToken += 1
 	local token = bannerToken
 	banner.Text, banner.TextColor3, banner.TextTransparency = text, KIND_COLORS[kind] or Color3.new(1, 1, 1), 0

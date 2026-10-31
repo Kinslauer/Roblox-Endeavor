@@ -57,6 +57,8 @@ report). Versions: Endeavor v32, Front v17.
 - [ ] After a dematerialize cycle the world returns in a different condition.
 
 ## Endeavor: random events (every 1 to 2.5 minutes once the world is open)
+- [ ] Events put a marker in the world: a pulsing diamond with a label and distance in metres, visible through walls
+      (supply drop yellow, Warden red, dead drop purple, your salvage cache green). It disappears when the event ends.
 - [ ] Supply drop: announced, a glowing crate lands; opening takes 3 s.
 - [ ] Raider ambush: "Raiders have found you", 2 to 4 hostiles close in.
 - [ ] Blackout: the city goes dark for a minute or two (neon stays), Shockers spawn; light returns afterwards.
@@ -95,6 +97,7 @@ report). Versions: Endeavor v32, Front v17.
 - [ ] Wind with distant guns is audible as ambience.
 - [ ] The hill is marked by a column of yellow light from ground to sky with the beacon on top; it moves with the hill.
 - [ ] Hill moves, tickets tip the scales HUD, income only while deployed.
+- [ ] Kills show in a feed at the top right (last five, fading after 7 s); your own death still banners.
 - [ ] Recruit death drops damaged gear that anyone can loot; conscript bodies give nothing.
 
 ## Known / expected

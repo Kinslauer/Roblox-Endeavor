@@ -414,7 +414,45 @@ local function bloodPool(position, size)
 end
 
 local dematerializing = false
-Remotes.World.OnClientEvent:Connect(function(kind, a, b, c)
+-- World markers: a beacon you can see through everything, with a label and the distance to it.
+local markers = {}
+local function setMarker(key, position, label, seconds, color)
+	local old = markers[key]
+	if old then
+		old.anchor:Destroy()
+		markers[key] = nil
+	end
+	if not position then
+		return
+	end
+	local anchor = Instance.new("Attachment")
+	anchor.WorldPosition = position
+	anchor.Parent = workspace.Terrain
+	local billboard = make("BillboardGui", { Size = UDim2.fromOffset(160, 44), AlwaysOnTop = true, MaxDistance = 2000, StudsOffset = Vector3.new(0, 4, 0) }, anchor)
+	local dot = make("Frame", { Size = UDim2.fromOffset(10, 10), Position = UDim2.new(0.5, -5, 0, 0), BackgroundColor3 = color or Color3.new(1, 1, 1), Rotation = 45, BorderSizePixel = 0 }, billboard)
+	local text = make("TextLabel", { Size = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 14), BackgroundTransparency = 1, Text = label or key, TextColor3 = color or Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 14, TextStrokeTransparency = 0.3 }, billboard)
+	markers[key] = { anchor = anchor, text = text, label = label or key, position = position, dot = dot }
+	if seconds then
+		task.delay(seconds, function()
+			if markers[key] and markers[key].anchor == anchor then
+				setMarker(key, nil)
+			end
+		end)
+	end
+end
+RunService.Heartbeat:Connect(function()
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	for _, m in markers do
+		local d = (m.position - root.Position).Magnitude
+		m.text.Text = ("%s  %dm"):format(m.label, math.floor(d / 3.5)) -- 3.5 studs to the metre
+		m.dot.BackgroundTransparency = 0.3 + 0.3 * math.sin(os.clock() * 4)
+	end
+end)
+
+Remotes.World.OnClientEvent:Connect(function(kind, a, b, c, d, e)
 	if kind == "Blood" then
 		bloodSpray(a, b, c)
 		if c then
@@ -448,6 +486,10 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b, c)
 				end
 			end)
 		end
+	elseif kind == "Marker" and typeof(a) == "string" then
+		setMarker(a, b, c, d, e)
+	elseif kind == "MarkerClear" and typeof(a) == "string" then
+		setMarker(a, nil)
 	elseif kind == "Bark" and typeof(a) == "Instance" then
 		Sounds.Play("Bark" .. tostring(b) .. tostring(c), a)
 	elseif kind == "Blackout" then
