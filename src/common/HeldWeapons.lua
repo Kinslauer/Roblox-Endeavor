@@ -2,11 +2,12 @@
 -- right hand. Models are authored in Blender with the grip at the origin and the business end along
 -- Blender +Y, which the FBX import turns into Roblox +Z (Blender +Z becomes Roblox +Y); a Weld maps
 -- that onto the hand so the weapon points out of the fist. Works for players and for
--- any NPC rig that has a RightHand (the box rig has none and is left alone).
+-- any NPC rig that has a RightHand (the box rig has none and is left alone). Shared by both places:
+-- Endeavor melee and the Front's firearms are all in Assets.Weapons.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Assets = require(ReplicatedStorage.Shared.Assets)
-local ModelAssets = require(script.Parent.Common.ModelAssets)
+local ModelAssets = require(script.Parent.ModelAssets)
 
 local HeldWeapons = {}
 
@@ -15,6 +16,8 @@ local GRIPS = {
 	Melee = CFrame.new(0, -0.2, -0.3) * CFrame.Angles(0, math.pi, 0),
 	-- barrel (+Y) -> forward, grip (-Z) -> down the hand
 	Pistol = CFrame.new(0, -0.1, 0) * CFrame.Angles(-math.pi / 2, 0, 0),
+	-- firearms: barrel (+Z) -> forward, grip in the palm, held a little high so the sights sit near eye line
+	Rifle = CFrame.new(0, -0.1, -0.3) * CFrame.Angles(0, math.pi, 0),
 }
 
 function HeldWeapons.Clear(char)

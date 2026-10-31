@@ -13,7 +13,7 @@ local Quests = require(script.Parent.Quests)
 local Stats = require(script.Parent.Stats)
 local Gore = require(script.Parent.Gore)
 local Rigs = require(script.Parent.Rigs)
-local HeldWeapons = require(script.Parent.HeldWeapons)
+local HeldWeapons = require(script.Parent.Common.HeldWeapons)
 local Assets = require(Shared.Assets)
 
 local NPCs = {}

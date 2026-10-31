@@ -85,6 +85,14 @@ Assets.Weapons = {
 	ScrapSpear = { Id = 103214457247078 },
 	Sledge = { Id = 140412858794705 },
 	ArcPistol = { Id = 137041276570028, Grip = "Pistol" },
+	-- the Front's firearms (tools/models/firearms.py): grip at the origin, barrel along Roblox +Z
+	AKM = { Id = 92592283500275, Grip = "Rifle" },
+	M16A1 = { Id = 75033829373197, Grip = "Rifle" },
+	SKS = { Id = 113075471282186, Grip = "Rifle" },
+	M14 = { Id = 95671280962993, Grip = "Rifle" },
+	Mosin = { Id = 75786990315304, Grip = "Rifle" },
+	Makarov = { Id = 132304088878022, Grip = "Rifle" },
+	M1911 = { Id = 79755833559332, Grip = "Rifle" },
 }
 
 -- The Front's battlefield props (see war/server/Battlefield.lua and Soldiers.lua), tools/models/front.py.

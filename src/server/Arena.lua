@@ -18,7 +18,7 @@ local NPCs = require(script.Parent.NPCs)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local Stats = require(script.Parent.Stats)
 local Rigs = require(script.Parent.Rigs)
-local HeldWeapons = require(script.Parent.HeldWeapons)
+local HeldWeapons = require(script.Parent.Common.HeldWeapons)
 local Assets = require(Shared.Assets)
 
 local Arena = {}

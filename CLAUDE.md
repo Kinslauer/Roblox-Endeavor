@@ -76,8 +76,9 @@ store `ConduitCharacter_v2`) is shared by both places.
   Enemy rigs (Raider/Brute/Shocker/Warden, `tools/models/raider.py` + `enemies.py`) are R15 limb meshes jointed by
   `src/server/Rigs.lua` (Motor6Ds from limb positions, Animator created before replication, Roblox's public R15
   idle/walk anims). Left limbs must be at -X. Display mannequins stand on magenta pads by the test armory.
-  Weapons in hand: `tools/models/weapons.py` -> `Assets.Weapons` (6 ids), welded into RightHand by `src/server/HeldWeapons.lua`
-  (players on every Stats.Apply, NPCs via `NPCs.Types[t].Weapon`, arena mannequins too). Grip offsets unverified in-game.
+  Weapons in hand: `tools/models/weapons.py` + `firearms.py` -> `Assets.Weapons` (6 melee + 7 firearms), welded into
+  RightHand by `src/common/HeldWeapons.lua` (Endeavor: every Stats.Apply, NPCs via `NPCs.Types[t].Weapon`, arena
+  mannequins; Front: Soldiers.pushWeapon on deploy/switch). Grip offsets unverified in-game.
   Front props (`tools/models/front.py` -> `Assets.Front`): sandbag nests A/B tile the trench lips and nests, trucks A/B,
   hedgehogs on sector edges, ammo crates; a soldier's stacked sandbags carry the LowSandbags mesh inside the collider
   part. Everything falls back to the old generated boxes when an asset fails to load.

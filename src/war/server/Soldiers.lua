@@ -9,6 +9,7 @@ local Config = require(Shared.Config)
 local Firearms = require(Shared.Firearms)
 local Remotes = require(Shared.Remotes)
 local Net = require(script.Parent.Common.Net)
+local HeldWeapons = require(script.Parent.Common.HeldWeapons)
 local ModelAssets = require(script.Parent.Common.ModelAssets)
 local Assets = require(Shared.Assets)
 local PlayerData = require(script.Parent.Common.PlayerData)
@@ -37,6 +38,11 @@ local function warOf(player)
 end
 
 local function pushWeapon(player)
+	local held = soldiers[player]
+	if player.Character and held then
+		local w = held.Weapons[held.Active]
+		HeldWeapons.Attach(player.Character, w and w.Id)
+	end
 	local s = soldiers[player]
 	if s then
 		Remotes.Weapon:FireClient(player, "State", Guns.Snapshot(s.Weapons[s.Active]), s.Active, { Grenades = s.Grenades, Medkits = s.Medkits, Sandbags = s.Sandbags,

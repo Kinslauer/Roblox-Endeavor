@@ -4,7 +4,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Props = require(ReplicatedStorage.Shared.Props)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Gear = require(script.Parent.Gear)
-local HeldWeapons = require(script.Parent.HeldWeapons)
+local HeldWeapons = require(script.Parent.Common.HeldWeapons)
 local Net = require(script.Parent.Common.Net)
 local PlayerData = require(script.Parent.Common.PlayerData)
 
