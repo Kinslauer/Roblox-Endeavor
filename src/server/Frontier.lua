@@ -908,6 +908,19 @@ function Frontier.Encounters()
 	return encounters
 end
 
+-- The cycle: every woken encounter stands down and every sprung ambush may spring again.
+function Frontier.StandDownAll()
+	local n = 0
+	for _, entry in encounters do
+		if entry.started then
+			standDown(entry)
+			n += 1
+		end
+		entry.restUntil = nil
+	end
+	return n
+end
+
 -- ===== sites =====
 local containers = {} -- { site, position, label, mesh, part, emptiedAt }
 

@@ -118,7 +118,7 @@ function Signal:Fire(...)
 end
 
 -------------------------------------------------- instances
-local EVENTS = { Changed=1, Triggered=1, Died=1, HealthChanged=1, Touched=1, AncestryChanged=1, OnServerEvent=1, OnClientEvent=1,
+local EVENTS = { ChildAdded = true, DescendantAdded = true, Changed=1, Triggered=1, Died=1, HealthChanged=1, Touched=1, AncestryChanged=1, OnServerEvent=1, OnClientEvent=1,
 	PlayerAdded=1, PlayerRemoving=1, CharacterAdded=1, CharacterRemoving=1, Event=1, Heartbeat=1, RenderStepped=1, Destroying=1, Activated=1, InputBegan=1, InputEnded=1, InputChanged=1, MouseEnter=1, MouseLeave=1 }
 local Instance, new = {}, nil
 local methods = {}

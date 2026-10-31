@@ -29,6 +29,8 @@ local ok, err = pcall(function()
 	local Frontier = require(Server.Frontier)
 	local Terminal = require(Server.Terminal)
 	local Contacts = require(Server.Contacts)
+	local CluesServer = require(Server.CluesServer)
+	local Cycle = require(Server.Cycle)
 	local ImplantLibrary = require(Server.ImplantLibrary)
 
 	Gore.Init()
@@ -69,6 +71,8 @@ local ok, err = pcall(function()
 	if not contactsOk then
 		warn("[Contacts] failed:", contactsErr)
 	end
+	CluesServer.Init()
+	Cycle.Init()
 	DevTools.Init()
 	IconLibrary.Init()
 	Autonet.Init()

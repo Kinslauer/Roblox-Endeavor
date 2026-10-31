@@ -60,7 +60,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   K artillery, F dig, V sandbags, M app.
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v60, Front v19). Front v10 verified on a real server:
+- Both places published and starting cleanly (Endeavor v61, Front v19). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.
@@ -120,7 +120,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   mid-telegraph unless Hyperarmor). Its tree is exported to the scratchpad `cf/` for reading; its owner checklist is
   `production/qa/playtest-checklist-2026-10-25.md` there. Next ports: Aim stance, HUD v2 + nameplates, enemy turns +
   pathfinding, launcher/juggle, full-body cybernetics, Autonet, cycle/clues/computer, contacts/raids, Verdant Reach
-  (all ported except the hourly cycle with clues/archive).
+  (all ported; the port list is done).
 - Full-body cybernetics (ported from combat-feel): `src/shared/Cybernetics.lua` (8 slots Eyes/Ears/Nose/Core/LeftArm/
   RightArm/LeftLeg/RightLeg, 13 pieces, Fits/SlotsFor/Fitted/Renamed), Gear derives JumpMult/Hearing/Scent/Track/Lift/
   Conversion with paired-copy counting (`Gear.CyberSlot`, EquipGear(player,id,slot), Validate drops extra copies) and
@@ -205,6 +205,17 @@ store `ConduitCharacter_v2`) is shared by both places.
   Items.LootTables.Rival + Assets.Rigs.Rival, rival crews spawned in Frontier.Populate (Config.Frontier.RivalCrews/
   RivalCrewSize/RivalLeg, `Crew` attribute, Encounter-capped patrol between 3 sites). profile.Knowledge survives wipe.
   Client: terminalPanel in MENUS.
+
+- The cycle (ported from combat-feel Cycle/Clues): `src/server/Cycle.lua` owns the dematerialization clock (period
+  Config.Destruction.CycleSeconds / Dev.CycleSeconds, warning CycleWarning, Config.Cycle.FlickerSeconds/WhiteoutSeconds;
+  World "DematerializeWarning"/"Flicker"/"Dematerialize"); `Cycle.Run()` = Destruction.Reset + clear loose Lootables by
+  Label + `Frontier.StandDownAll()` + `Contacts.Place(rng)` (3 spots each, `Spot` attr) + contact lines (workspace attr
+  `CycleLine_<id>`, used by Terminal.Meet) + `CluesServer.Draw(index, rng)`; first draw at world open; `Cycle.Trigger()`
+  (Dev action "Cycle"). `src/shared/Clues.lua` = Lines + 8 Fragments (Where/Rule/Anomaly/Text), `src/server/CluesServer.lua`
+  places pickup + anomaly parts (folder workspace.Clues, tag "Anomaly", "Scent"), `Take` -> profile.Knowledge.Fragments
+  [id] = order (ARCHIVE in Terminal.State), World "Clues"(visible ids)/"Fragment"(id,name,text). Client: anomaly flicker
+  loop, LocalTransparencyModifier hides unreadable fragments, Flicker/white-out FX, fragment card, ARCHIVE rows.
+  Destruction no longer runs its own cycle loop.
 
 - The test arena (Arena.lua: the Pit, armory, mannequins, dummies) is built at `Config.Dev.ArenaOrigin` (3000, 0, 0),
   off the map, on its own slab; its pads are tagged ArenaSpawn, not CitySpawn. The city's centre is `City.buildCrossroads`

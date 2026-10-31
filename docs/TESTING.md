@@ -1,7 +1,7 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v60, Front v19.
+report). Versions: Endeavor v61, Front v19.
 
 ## Endeavor: first minutes
 - [ ] The starting room is a pod: dark panelled walls with cyan seams, diamond-plate floor, the console in a terminal
@@ -236,6 +236,21 @@ move; the city and the scarp overlook stay put. The server's seed is printed in 
       sites and fight whoever they meet. Killing one drops rival loot and may put "Rival intel: <contract>" on your board
       even without RAIDS.
 - [ ] Permadeath keeps the computer's knowledge: contacts met, contracts held, contracts completed.
+
+## Endeavor: the cycle and the clues
+- [ ] Every hour (10 minutes while Dev is on) the city warns "dematerializing in 60s", debris flickers, colour drains
+      over the last 5 s, then a second of white: broken props, breaches and structures are back, loose remains and
+      dropped gear nobody looted are gone, woken valley encounters are gone, and "The ruins rematerialize". You stay
+      where you stand with what you carry; the hideout is untouched. F2 "Cycle: Run now" does it on demand.
+- [ ] After a cycle the contacts have moved: the Broker to one of three spots in the Reach (by the trader, inside the
+      gate, by a dome), the Fixer (under the span, Transit Hub plaza, Sprawl plaza), the Dealer (overlook deck, second
+      hairpin, scarp foot). Their Talk line changes with the cycle; a few lines slip.
+- [ ] Fragments lie at anomalies: a glitching cube, a flickering silhouette, a sign that reads wrong (they stutter
+      in and out). "Read" (X) shows the text on screen for 12 s and files it in the ARCHIVE app on the computer.
+      Hour Zero and Lamp Count every cycle; the Ledger, the Gatekeeper and the Dispatch on even cycles; Seed Packet
+      and Uplink every third; The Door every fourth. A fragment whose prerequisites you have not read is invisible to
+      you and "means nothing to you. Not yet." A nose implant scents fragments.
+- [ ] The archive survives permadeath and lists fragments in the order read.
 
 ## Endeavor: hideouts and raids
 - [ ] Claim a site, open the bench (X). Bench model matches the tier (Tinkerer planks, Workshop steel, Foundry chrome).

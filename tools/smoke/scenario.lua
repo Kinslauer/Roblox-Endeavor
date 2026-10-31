@@ -923,6 +923,59 @@ do
 			print("computer: module not built (hideout full at this tier); console check skipped")
 		end
 	end
+	-- the cycle: the world resets and the draw redeals contacts, lines and fragments
+	do
+		local Cycle = M.mockEnv.__require(SSS.Server.Cycle)
+		local CluesS = M.mockEnv.__require(SSS.Server.CluesServer)
+		local SC = M.mockEnv.__require(RS.Shared.Clues)
+		local Contacts = M.mockEnv.__require(SSS.Server.Contacts)
+		local before = Cycle.Index()
+		check("cycle: the world opening was the first draw", before >= 1 and workspace_:GetAttribute("Cycle") == before)
+		-- break something, drop something, wake an encounter; the cycle undoes all of it
+		local dfolder = workspace_.Destruction
+		local intactBefore = 0
+		for _, m in dfolder:GetChildren() do if m:GetAttribute("Prop") then intactBefore += 1 end end
+		local result = Cycle.Trigger()
+		run(0.3)
+		local intactAfter = 0
+		for _, m in dfolder:GetChildren() do if m:GetAttribute("Prop") then intactAfter += 1 end end
+		check("cycle: a run advances the index and restores the props", result and result.Index == before + 1 and intactAfter >= intactBefore)
+		check("cycle: every contact stands at one of its spots", (function()
+			for _, id in { "Broker", "Fixer", "Dealer" } do
+				local m = Contacts.Get(id)
+				if not m or not m:GetAttribute("Spot") or m:GetAttribute("Spot") < 1 or m:GetAttribute("Spot") > #Contacts.Spots(id) then return false end
+			end
+			return true
+		end)())
+		check("cycle: every contact has a line this cycle", workspace_:GetAttribute("CycleLine_Broker") ~= nil and workspace_:GetAttribute("CycleLine_Dealer") ~= nil)
+		local live = CluesS.Live()
+		local nLive = 0
+		for _ in live do nLive += 1 end
+		check("cycle: fragments lie in the world with anomalies", nLive >= 2 and live.HourZero ~= nil and live.HourZero.Anomaly ~= nil)
+		local whited = false
+		for _, e in M.FireLog do if e[1] == "World" and e[3] == "Dematerialize" then whited = true end end
+		check("cycle: the white-out reaches every client", whited)
+		-- reading: a prerequisite hides the deeper fragment until the first is read
+		pd.Knowledge.Fragments = {}
+		local idx = Cycle.Index()
+		local ledgerOut = live.Ledger ~= nil
+		if ledgerOut then
+			check("cycle: a fragment you lack the prerequisites for cannot be read", CluesS.Take(player, "Ledger") == false)
+		end
+		check("cycle: reading Hour Zero adds it to the archive", CluesS.Take(player, "HourZero") == true and pd.Knowledge.Fragments.HourZero == 1)
+		if ledgerOut then
+			check("cycle: the prerequisite read, the deeper fragment opens", CluesS.Take(player, "Ledger") == true and pd.Knowledge.Fragments.Ledger == 2)
+		end
+		check("cycle: a fragment reads once", CluesS.Take(player, "HourZero") == false)
+		local Terminal = M.mockEnv.__require(SSS.Server.Terminal)
+		local state = Terminal.State(player)
+		check("cycle: the archive lists what was read, in order", state and state.Archive[1] and state.Archive[1].Id == "HourZero")
+		local visible = false
+		for _, e in M.FireLog do if e[1] == "World" and e[3] == "Clues" and type(e[4]) == "table" then visible = true end end
+		check("cycle: the client is told which fragments it may see", visible)
+		local fresh2 = PlayerData.Reset(player)
+		check("cycle: the archive survives permadeath", fresh2.Knowledge.Fragments.HourZero == 1)
+	end
 	-- the crew remembers the way: route knowledge survives permadeath
 	local fresh = PlayerData.Reset(player)
 	check("frontier: the route survives permadeath", fresh.Frontier.Route == 1 and fresh.Frontier.Found[site.Key] == true)

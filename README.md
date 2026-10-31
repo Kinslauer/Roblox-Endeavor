@@ -129,6 +129,13 @@ under the Crossroads span, the **Dealer** (MARKET: the black market for cybernet
 Overlook. **Rival conduit crews** walk between the sites working the same contracts; a dead rival's intel can put a
 contract on your board. What the computer knows survives permadeath.
 
+## The cycle and the clues
+Every hour the world dematerializes and comes back exactly as it was: everything broken is restored, everything loose
+is gone, the valley's woken encounters vanish, and the draw moves the three contacts between their spots and changes
+their lines. **Fragments** of the truth lie at anomalies (a glitching cube, a flickering silhouette, a sign that reads
+wrong); reading one files it in the computer's **ARCHIVE**. Some only appear on certain cycles, some only make sense
+once you have read others. The conduits suspect the world is a simulation; the cycle is the evidence.
+
 ## Hideouts, wear and upgrades
 - **Wear**: every conduit weapon, armor piece and implant has a condition (shown in `Tab` and `L`). Landing hits wears
   your weapon; taking hits wears what you wear. Worn gear does less (down to half); at 0% a weapon swings as fists and

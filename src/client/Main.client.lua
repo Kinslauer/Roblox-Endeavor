@@ -1010,6 +1010,48 @@ end
 local dematerializing = false
 -- World markers: a beacon you can see through everything, with a label and the distance to it.
 local markers = {}
+-- ===== clues: anomalies flicker, fragments you cannot read yet are hidden =====
+local visibleClues = nil -- nil = nothing known yet (show everything); set by World "Clues"
+local function applyClueVisibility()
+	local folder = workspace:FindFirstChild("Clues")
+	if not folder then
+		return
+	end
+	for _, part in folder:GetChildren() do
+		local id = part:GetAttribute("FragmentId")
+		local hidden = visibleClues ~= nil and id ~= nil and not visibleClues[id]
+		part.LocalTransparencyModifier = if hidden then 1 else 0
+		local prompt = part:FindFirstChildOfClass("ProximityPrompt")
+		if prompt then
+			prompt.Enabled = not hidden
+		end
+	end
+end
+task.spawn(function()
+	-- a glitching cube, a flickering silhouette, a sign that reads wrong: all of them stutter in and out
+	local rng = Random.new()
+	while true do
+		task.wait(0.12)
+		for _, part in CollectionService:GetTagged("Anomaly") do
+			if part.Parent and part.LocalTransparencyModifier < 1 then
+				local kind = part:GetAttribute("Kind")
+				local base = if kind == "Echo" then 0.35 elseif kind == "Wrong" then 0.2 else 0.5
+				part.Transparency = math.clamp(base + rng:NextNumber(-0.3, 0.4), 0, 0.95)
+				if kind == "Static" and rng:NextNumber() < 0.2 then
+					part.CFrame = part.CFrame * CFrame.Angles(rng:NextNumber(-0.2, 0.2), rng:NextNumber(-0.4, 0.4), 0)
+				end
+			end
+		end
+	end
+end)
+workspace.ChildAdded:Connect(function(child)
+	if child.Name == "Clues" then
+		child.ChildAdded:Connect(function()
+			task.defer(applyClueVisibility)
+		end)
+	end
+end)
+
 local function setMarker(key, position, label, seconds, color)
 	local old = markers[key]
 	if old then
@@ -1128,6 +1170,37 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b, c, d, e)
 		dematerializing = true
 		task.delay(a, function()
 			dematerializing = false
+		end)
+	elseif kind == "Flicker" then
+		-- the last seconds before the reset: colour drains, the world hums
+		local cc = make("ColorCorrectionEffect", { Saturation = 0, Contrast = 0 }, Lighting)
+		TweenService:Create(cc, TweenInfo.new(tonumber(a) or 5), { Saturation = -0.9, Contrast = 0.3 }):Play()
+		task.delay((tonumber(a) or 5) + 1.5, function()
+			cc:Destroy()
+		end)
+	elseif kind == "Dematerialize" then
+		-- a second of white, then the world is back as it was
+		local white = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, ZIndex = 50 }, gui)
+		TweenService:Create(white, TweenInfo.new(0.15), { BackgroundTransparency = 0 }):Play()
+		task.delay(tonumber(a) or 1, function()
+			TweenService:Create(white, TweenInfo.new(0.8), { BackgroundTransparency = 1 }):Play()
+			task.delay(1, function()
+				white:Destroy()
+			end)
+		end)
+	elseif kind == "Clues" and type(a) == "table" then
+		-- which fragments this conduit may see; the rest are hidden locally until the prerequisites are read
+		visibleClues = {}
+		for _, id in a do
+			visibleClues[id] = true
+		end
+		applyClueVisibility()
+	elseif kind == "Fragment" and typeof(a) == "string" then
+		-- read: the text lingers on screen longer than a banner would
+		local card = make("TextLabel", { Size = UDim2.new(0, 520, 0, 90), Position = UDim2.new(0.5, -260, 0.72, 0), BackgroundColor3 = Color3.fromRGB(10, 12, 20), BackgroundTransparency = 0.2,
+			Text = tostring(b) .. "\n" .. tostring(c), TextColor3 = Color3.fromRGB(210, 220, 255), TextWrapped = true, TextSize = 15, Font = Enum.Font.Code, ZIndex = 20 }, gui)
+		task.delay(12, function()
+			card:Destroy()
 		end)
 	end
 end)
@@ -1331,6 +1404,11 @@ renderTerminal = function(t)
 			addRow(terminalPanel, ("  %s  -  %d cr"):format(h.Name, h.Price), { { text = "Order", color = Color3.fromRGB(50, 110, 70), fn = send("Order", h.Id) } }, if h.Price > (t.Credits or 0) then DIM else nil)
 		end
 	end
+	-- ARCHIVE: what you have read; it needs no contact, only eyes
+	addRow(terminalPanel, ("ARCHIVE  -  %d fragments read"):format(#(t.Archive or {})), {}, GREEN)
+	for _, f in t.Archive or {} do
+		addRow(terminalPanel, ("  %s: %s"):format(f.Name, f.Text), {}, Color3.fromRGB(210, 220, 255))
+	end
 	-- MARKET
 	if not t.Apps.MARKET then
 		addRow(terminalPanel, "MARKET  -  locked: " .. (t.Locked.MARKET or ""), {}, DIM)
@@ -1382,6 +1460,7 @@ local function buildDevPanel()
 	addRow(devPanel, "Spawn", { { text = "Raider", fn = dev("Spawn", "Raider") }, { text = "Brute", fn = dev("Spawn", "Brute") }, { text = "Shock", fn = dev("Spawn", "Shocker") }, { text = "Warden", fn = dev("Spawn", "Warden") } })
 	addRow(devPanel, "Event", { { text = "Drop", fn = dev("Event", "SupplyDrop") }, { text = "Ambush", fn = dev("Event", "RaiderAmbush") }, { text = "Dark", fn = dev("Event", "Blackout") } })
 	addRow(devPanel, "Event", { { text = "Warden", fn = dev("Event", "WardenPatrol") }, { text = "Salvage", fn = dev("Event", "SalvageCache") }, { text = "Drop2", fn = dev("Event", "DeadDrop") } })
+	addRow(devPanel, "Cycle", { { text = "Run now", fn = dev("Cycle") } })
 end
 if Config.Dev.Enabled then
 	buildDevPanel()

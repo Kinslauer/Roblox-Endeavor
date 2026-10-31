@@ -35,7 +35,7 @@ local TEMPLATE = {
 	-- found, whether the Reach was ever seen. Survives permadeath (the hideout remembers the way).
 	Frontier = { Route = 0, Found = {}, Reached = false },
 	-- The hideout computer's knowledge: contacts met, contracts held. Uploaded consciousness: survives permadeath.
-	Knowledge = { Contacts = {}, Contracts = {}, Completed = 0 },
+	Knowledge = { Contacts = {}, Contracts = {}, Completed = 0, Fragments = {} },
 	-- The war world (a separate place, same universe) reads and writes this part of the profile.
 	-- A conduit is not reset by the recruit dying; the recruit's gear is.
 	War = {

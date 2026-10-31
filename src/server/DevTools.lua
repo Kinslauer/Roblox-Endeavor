@@ -75,6 +75,11 @@ function actions.Spawn(player, arg)
 	end
 end
 
+function actions.Cycle(player)
+	local result = require(script.Parent.Cycle).Trigger()
+	Remotes.Announce:FireClient(player, if result then ("Cycle %d ran."):format(result.Index) else "A cycle is already running.", "Info")
+end
+
 function actions.Event(player, arg)
 	local fire = Events.Fire[tostring(arg)]
 	if fire then

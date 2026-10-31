@@ -11,6 +11,7 @@ local F = require(Shared.Frontier)
 local Items = require(Shared.Items)
 local Remotes = require(Shared.Remotes)
 local T = require(Shared.Terminal)
+local SC = require(Shared.Clues)
 local Common = script.Parent.Common
 local Net = require(Common.Net)
 local PlayerData = require(Common.PlayerData)
@@ -99,7 +100,18 @@ function Terminal.State(player)
 		local def = Items.Defs[m.Id]
 		table.insert(market, { Id = m.Id, Name = (def and def.Name or m.Id) .. (if (m.Count or 1) > 1 then (" x%d"):format(m.Count) else ""), Price = m.Price })
 	end
-	return { Apps = apps, Contracts = contracts, House = house, Market = market, Credits = data.War.Credits or 0, Completed = k.Completed or 0, MaxActive = T.MaxActive,
+	-- ARCHIVE: what this conduit has read, in the order read
+	local archive = {}
+	for id, order in k.Fragments or {} do
+		local def = SC.Fragments[id]
+		if def then
+			table.insert(archive, { Id = id, Name = def.Name, Text = def.Text, Order = order })
+		end
+	end
+	table.sort(archive, function(a, b)
+		return a.Order < b.Order
+	end)
+	return { Apps = apps, Contracts = contracts, House = house, Market = market, Archive = archive, Credits = data.War.Credits or 0, Completed = k.Completed or 0, MaxActive = T.MaxActive,
 		Locked = { RAIDS = "find the Broker", HOUSE = "find the Fixer", MARKET = "find the Dealer" } }
 end
 
@@ -129,7 +141,10 @@ function Terminal.Meet(player, contactId)
 	if not c or not k then
 		return
 	end
-	announce(player, ("%s: \"%s\""):format(c.Name, c.Line), "Info")
+	-- the line is the cycle's draw (server/Cycle.lua), the fixed one until the first draw
+	local i = workspace:GetAttribute("CycleLine_" .. contactId)
+	local line = (SC.Lines[contactId] and SC.Lines[contactId][i or 0] and SC.Lines[contactId][i][1]) or c.Line
+	announce(player, ("%s: \"%s\""):format(c.Name, line), "Info")
 	if not k.Contacts[contactId] then
 		k.Contacts[contactId] = true
 		task.delay(3, function()

@@ -879,18 +879,7 @@ function Destruction.Init()
 		end
 	end)
 
-	-- dematerialization cycle
-	task.spawn(function()
-		local cycle = if Config.Dev.Enabled then Config.Dev.CycleSeconds else D.CycleSeconds
-		while true do
-			task.wait(cycle - D.CycleWarning)
-			Remotes.Announce:FireAllClients(("The city is dematerializing in %ds."):format(D.CycleWarning), "Emergence")
-			world("DematerializeWarning", D.CycleWarning)
-			task.wait(D.CycleWarning)
-			Destruction.Reset()
-			Remotes.Announce:FireAllClients("The ruins rematerialize.", "Info")
-		end
-	end)
+	-- the dematerialization cycle itself is server/Cycle.lua (it calls Destruction.Reset)
 end
 
 return Destruction

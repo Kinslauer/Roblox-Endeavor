@@ -203,6 +203,12 @@ Config.Frontier = {
 	RivalLeg = 45, -- seconds a crew walks toward its next site before picking the one after
 }
 
+-- the cycle (server/Cycle.lua): period and warning are Config.Destruction.CycleSeconds/CycleWarning
+Config.Cycle = {
+	FlickerSeconds = 5, -- colour drains for this long before the white-out
+	WhiteoutSeconds = 1,
+}
+
 Config.Raid = {
 	JoinWindow = 20, -- seconds the gate stays open after someone starts a raid
 	MaxPlayers = 6,
