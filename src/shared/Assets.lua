@@ -104,6 +104,18 @@ Assets.FrontBuildings = {
 	Hall = { Width = 24, Depth = 20, Height = 12, Stages = { 72519396548568, 83800228553052, 94898623532790, 99432007888838 } },
 }
 
+-- Hideout modules (tools/models/hideout.py, server/Hideouts.lua): the mesh rides inside the module's
+-- collider part, which turns invisible. Bench[tier] follows the hideout tier.
+Assets.Hideout = {
+	Bench = { 103394639391010, 139720531727657, 91895806024932 },
+	Vault = 105765126742613,
+	Bunks = 103383159042765,
+	Generator = 117479185712477,
+	Turret = 105708684013715,
+	Forge = 133914256901308,
+	Medbay = 104351297744980,
+}
+
 -- Roblox drops Blender material colours on import, so every part is named "<Part>_<Material>"
 -- and the material is applied from this table when the model is loaded.
 Assets.Materials = {
@@ -157,6 +169,12 @@ Assets.Materials = {
 	NeonRed = { Color = Color3.fromRGB(255, 30, 30), Material = Enum.Material.Neon, Light = Color3.fromRGB(255, 50, 50) },
 	SootBrick = { Color = Color3.fromRGB(58, 42, 36), Material = Enum.Material.Brick },
 	Plaster = { Color = Color3.fromRGB(158, 148, 128), Material = Enum.Material.Concrete },
+	Canvas = { Color = Color3.fromRGB(92, 97, 76), Material = Enum.Material.Fabric },
+	Mattress = { Color = Color3.fromRGB(140, 128, 108), Material = Enum.Material.Fabric },
+	Yellow = { Color = Color3.fromRGB(178, 152, 38), Material = Enum.Material.Metal },
+	White = { Color = Color3.fromRGB(216, 222, 224), Material = Enum.Material.SmoothPlastic },
+	Ember = { Color = Color3.fromRGB(255, 115, 25), Material = Enum.Material.Neon, Light = Color3.fromRGB(255, 120, 30) },
+	Red = { Color = Color3.fromRGB(178, 30, 30), Material = Enum.Material.SmoothPlastic },
 	Rubble = { Color = Color3.fromRGB(84, 82, 79), Material = Enum.Material.Concrete },
 }
 

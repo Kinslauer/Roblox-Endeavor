@@ -19,6 +19,8 @@ local Destruction = require(script.Parent.Destruction)
 local Gear = require(script.Parent.Gear)
 local Inventory = require(script.Parent.Inventory)
 local NPCs = require(script.Parent.NPCs)
+local Assets = require(Shared.Assets)
+local ModelAssets = require(script.Parent.Common.ModelAssets)
 
 local HC = Config.Hideouts
 local GROUND_TOP = 2
@@ -52,6 +54,15 @@ local function part(parent, props)
 		p[k] = v
 	end
 	p.Parent = parent
+	return p
+end
+
+-- Puts an uploaded module mesh inside its collider part (same footprint, bottom on the slab) and
+-- hides the part; prompts and physics stay on the part, so nothing else has to know.
+local function dress(p, assetId)
+	if ModelAssets.Spawn(assetId, p.CFrame * CFrame.new(0, -p.Size.Y / 2, 0), "Mesh", p) then
+		p.Transparency = 1
+	end
 	return p
 end
 
@@ -135,7 +146,7 @@ local function build(site, h)
 	local c, r = site.Position, HC.Radius
 	-- floor slab and the bench: the bench is the interaction point for everything
 	part(model, { Name = "Slab", Size = Vector3.new(r * 2, 1, r * 2), Position = c + Vector3.new(0, GROUND_TOP + 0.5, 0), Color = Color3.fromRGB(70, 70, 76), Material = Enum.Material.Concrete })
-	local bench = part(model, { Name = "Bench", Size = Vector3.new(6, 3, 2.5), Position = c + Vector3.new(0, GROUND_TOP + 2.5, 0), Color = Color3.fromRGB(110, 90, 60), Material = Enum.Material.WoodPlanks })
+	local bench = dress(part(model, { Name = "Bench", Size = Vector3.new(6, 3, 2.5), Position = c + Vector3.new(0, GROUND_TOP + 2.5, 0), Color = Color3.fromRGB(110, 90, 60), Material = Enum.Material.WoodPlanks }), Assets.Hideout.Bench[h.Tier] or Assets.Hideout.Bench[1])
 	local sign = part(model, { Size = Vector3.new(6, 1, 0.3), Position = c + Vector3.new(0, GROUND_TOP + 5, -1.5), Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 170, 40), CanCollide = false })
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Front
@@ -171,7 +182,7 @@ local function build(site, h)
 		site.Gate:SetAttribute("Hideout", site.Index)
 	end
 	if h.Modules.Vault then
-		local vault = part(model, { Name = "Vault", Size = Vector3.new(5, 5, 4), Position = c + Vector3.new(12, GROUND_TOP + 3.5, 10), Color = Color3.fromRGB(40, 44, 60), Material = Enum.Material.DiamondPlate })
+		local vault = dress(part(model, { Name = "Vault", Size = Vector3.new(5, 5, 4), Position = c + Vector3.new(12, GROUND_TOP + 3.5, 10), Color = Color3.fromRGB(40, 44, 60), Material = Enum.Material.DiamondPlate }), Assets.Hideout.Vault)
 		local vp = Instance.new("ProximityPrompt")
 		vp.ObjectText, vp.ActionText, vp.HoldDuration = "Vault", "Strip the vault", Config.LootHold * 3
 		vp.MaxActivationDistance, vp.RequiresLineOfSight, vp.KeyboardKeyCode = 8, false, Enum.KeyCode.X
@@ -182,26 +193,26 @@ local function build(site, h)
 		site.Vault = vault
 	end
 	if h.Modules.Bunks then
-		part(model, { Name = "Bunks", Size = Vector3.new(8, 3, 4), Position = c + Vector3.new(-12, GROUND_TOP + 2.5, 10), Color = Color3.fromRGB(90, 80, 70), Material = Enum.Material.Fabric })
+		dress(part(model, { Name = "Bunks", Size = Vector3.new(8, 3, 4), Position = c + Vector3.new(-12, GROUND_TOP + 2.5, 10), Color = Color3.fromRGB(90, 80, 70), Material = Enum.Material.Fabric }), Assets.Hideout.Bunks)
 	end
 	if h.Modules.Generator then
-		local gen = part(model, { Name = "Generator", Size = Vector3.new(4, 3, 3), Position = c + Vector3.new(-12, GROUND_TOP + 2.5, -8), Color = Color3.fromRGB(120, 110, 40), Material = Enum.Material.Metal })
+		local gen = dress(part(model, { Name = "Generator", Size = Vector3.new(4, 3, 3), Position = c + Vector3.new(-12, GROUND_TOP + 2.5, -8), Color = Color3.fromRGB(120, 110, 40), Material = Enum.Material.Metal }), Assets.Hideout.Generator)
 		local light = Instance.new("PointLight")
 		light.Range, light.Brightness, light.Color = 20, 1, Color3.fromRGB(255, 220, 120)
 		light.Parent = gen
 	end
 	if h.Modules.Turret and h.Modules.Generator then
-		local turret = part(model, { Name = "Turret", Size = Vector3.new(2, 4, 2), Position = c + Vector3.new(12, GROUND_TOP + 3, -8), Color = Color3.fromRGB(40, 90, 140), Material = Enum.Material.Metal })
+		local turret = dress(part(model, { Name = "Turret", Size = Vector3.new(2, 4, 2), Position = c + Vector3.new(12, GROUND_TOP + 3, -8), Color = Color3.fromRGB(40, 90, 140), Material = Enum.Material.Metal }), Assets.Hideout.Turret)
 		local glow = Instance.new("PointLight")
 		glow.Range, glow.Brightness, glow.Color = 14, 1.5, Color3.fromRGB(0, 220, 255)
 		glow.Parent = turret
 		site.Turret = turret
 	end
 	if h.Modules.Forge then
-		part(model, { Name = "Forge", Size = Vector3.new(5, 4, 5), Position = c + Vector3.new(0, GROUND_TOP + 3, 12), Color = Color3.fromRGB(90, 40, 30), Material = Enum.Material.Slate })
+		dress(part(model, { Name = "Forge", Size = Vector3.new(5, 4, 5), Position = c + Vector3.new(0, GROUND_TOP + 3, 12), Color = Color3.fromRGB(90, 40, 30), Material = Enum.Material.Slate }), Assets.Hideout.Forge)
 	end
 	if h.Modules.Medbay then
-		part(model, { Name = "Medbay", Size = Vector3.new(5, 3, 3), Position = c + Vector3.new(-12, GROUND_TOP + 2.5, 0), Color = Color3.fromRGB(200, 210, 220), Material = Enum.Material.SmoothPlastic })
+		dress(part(model, { Name = "Medbay", Size = Vector3.new(5, 3, 3), Position = c + Vector3.new(-12, GROUND_TOP + 2.5, 0), Color = Color3.fromRGB(200, 210, 220), Material = Enum.Material.SmoothPlastic }), Assets.Hideout.Medbay)
 	end
 	model.Parent = folder
 	site.Built = model

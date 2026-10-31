@@ -9,6 +9,7 @@ The game loads them by asset ID (`src/shared/Assets.lua`) and falls back to gene
     $BLENDER -b --python tools/models/weapons.py          # the six held weapons (grip at origin, blade along +Y)
     $BLENDER -b --python tools/models/front.py            # the Front's props: sandbags A/B, low sandbags, trucks A/B, hedgehog, ammo crate
     $BLENDER -b --python tools/models/front_buildings.py  # Farmhouse/Hall x 4 stages (intact, damaged, ruined, rubble)
+    $BLENDER -b --python tools/models/hideout.py          # hideout modules: bench x3 tiers, vault, bunks, generator, turret, forge, medbay
     python3 tools/models/preview.py out/X_preview.obj out/X.png   # software preview (Pillow), no OpenGL needed
     ROBLOX_API_KEY=... python3 tools/models/upload.py Name out/Name.fbx [...]   # prints "Name assetId"; key needs Assets: Write
 
