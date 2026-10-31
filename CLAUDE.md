@@ -1,0 +1,76 @@
+# Endeavor — project memory
+
+Read this first in every session. It is the short, current state of the project; docs/ has the long form.
+
+## What this is
+A Roblox experience ("Endeavor", universe 10773835758) with two places:
+- **Endeavor** (start place 120490278050491, built from `default.project.json`): permadeath, always-on PvP open world
+  in a ruined cyberpunk megacity. Melee combat inspired by Cursed Gear (flickering cursed energy / Black Flash,
+  cybernetics, raids, devour) and Deepwoken (posture, parry, feint, stat-gated skills). Destruction & salvage,
+  hideouts with wear/repair/upgrade economy, raids on compounds.
+- **Front** (place 81481823786216, built from `war.project.json`): the war world. Cold War era, TTK/Tarkov-style
+  simulated firearms, factions Union vs Pact, a moving hill, global ever-tipping ticket scales, recruits ordered from a
+  conduit's locker, permadeath recruits whose gear drops damaged, entrenching, staged structures, artillery.
+Conduits "tap in" from Neural Net terminals in Endeavor and are teleported to the Front; the profile (ProfileService
+store `ConduitCharacter_v2`) is shared by both places.
+
+## Layout
+- `src/shared` → ReplicatedStorage.Shared (Config = every tunable; Weapons, Armor, Cybernetics, Skills, Items, Props,
+  Firearms, Hideout, Remotes). `src/common` → ServerScriptService.Server.Common in both places (Net, PlayerData,
+  ProfileService, Recruit). `src/server` = Endeavor systems, `src/war/server` = Front systems, `src/client` and
+  `src/war/client` = the two clients (one LocalScript each).
+- Every client->server remote goes through `Net.On` (rate limit + arg types). Clients only send intent.
+- Entry points (`Main.server.lua`) wrap everything in pcall and print `STARTUP FAILED: ...` on error.
+- Docs: `README.md` (features + controls), `docs/DESIGN.md`, `docs/systems/destruction-and-salvage.md`,
+  `docs/maps/*.png` (generated top-down maps), `vendor/combat-system` (reference code the combat was ported from).
+
+## How to work
+- Tools live outside the repo in this cloud env: Luau CLI at `/home/user/scratch-luau/{luau,luau-compile,luau-analyze}`,
+  Rojo at `/home/user/scratch-rojo/rojo`. If missing: Luau from github.com/luau-lang/luau releases (luau-ubuntu.zip),
+  Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
+- **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
+- **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
+  `scenario` = Endeavor end to end (84 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
+  Endeavor client boots. They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
+  the mock is lenient about property names, so a real-Roblox error can still slip through.
+- **Real-server check**: Open Cloud Luau execution (`ROBLOX_API_KEY` with Luau Execution Sessions: Write) runs a script
+  on a real server of the published place: see the pattern in this session's scratch `run_luau.py` (POST
+  `cloud/v2/universes/{u}/places/{p}/luau-execution-session-tasks`, poll, read `/logs`). Use it to reproduce errors.
+- **Publish**: `ROBLOX_API_KEY=... ROJO=/home/user/scratch-rojo/rojo tools/publish.sh [endeavor|front|all]`.
+  The key is an Open Cloud key the user created (Place Management: Write + Luau Execution: Write on Endeavor).
+  It is NOT in the repo; a new session must ask the user for it again (or they store it as an environment secret).
+  Roblox sometimes answers 409 "server busy" on the start place; the script retries, and a later retry works.
+- Maps: `tools/smoke/dumpworld.lua` / `dumpfront.lua` + `tools/smoke/map.py` draw the generated worlds.
+- Commit style: one commit per round, push to `claude/roblox-permadeath-openworld-cj3jfk` (the only branch; no PRs).
+- The user tests in Studio (File → Open from Roblox, so DataStores work) or the Roblox app; Studio's Play button
+  cannot teleport between places. They cannot see logs easily: ask for F9 → Server/Client tab screenshots.
+
+## Decisions the user made (do not relitigate)
+- No classes: weapon = moveset; skills unlock from effective stats + worn armor/cyber tags.
+- Flickering cursed energy = Black Flash timing mechanic (tap E before impact; 3 chained = Black Flash + Zone).
+- Catching thrown chunks is timing-based (grab press within 0.25s of impact).
+- Gore level Restricted (label set in Creator Dashboard, not code); dismemberment, pools, persistent corpses.
+- Hideout outlives permadeath; raids can strip it. Compound only stands while the owner is online.
+- Front: separate place; realistic weapon handling with every part simulated; moving hill awards tickets; no rounds;
+  recruit permadeath drops everything damaged; conscript bodies are not loot; income only while deployed.
+- Entrenching: foxholes and low sandbags only, on open ground.
+- Controls are the Cursed Gear layout: E flicker, F block/parry, Q dodge, X interact, M devour/app, R/Y/V skills,
+  Z feint, G grab/throw, H drop, Shift sprint, Tab inventory, L loadout, J attributes, O hideout, N recruit app,
+  P helmetcam. Front: LMB fire, RMB aim, R reload, T rack/unjam, B selector, 1/2 switch, G frag, H dressing, Q/E lean,
+  K artillery, F dig, V sandbags, M app.
+
+## State (2026-10-31)
+- Both places published and starting cleanly (Endeavor v16, Front v9). Spawn fall-through fixed by anchoring the
+  character for Config.SpawnSettle after placing it.
+- User reported keys not working in Studio before v16; v16 adds visible swing arcs, block outline, sprint and a
+  controls card. If keys still do nothing, get the F9 Client tab log.
+- Everything is placeholder geometry: no models, rigs, animations or sounds. The user will model in Blender, import
+  via Studio, **Save to Roblox as assets**, and send asset IDs; wire them by ID (never into the place file, which
+  publishing overwrites). First prop agreed: a streetlight.
+- All balance numbers are first guesses pending the user's playtest checklist.
+
+## Open items
+- Wire Blender assets (props, rigs, weapons, animations) by asset ID; animation hooks exist (`CombatEvent` "Swing").
+- The user's playtest checklist (pending).
+- Front: real 20-player frame-rate test; war world art; vehicles are intentionally absent.
+- Experience internal name is still "Conduit" (cosmetic; rename in Configurations → Basic Settings).
