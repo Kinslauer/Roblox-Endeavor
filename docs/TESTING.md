@@ -1,7 +1,7 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v28, Front v15.
+report). Versions: Endeavor v30, Front v17.
 
 ## Endeavor: first minutes
 - [ ] Spawn in the starting room on solid floor (no falling through, no black room). Returning players see
@@ -9,6 +9,7 @@ report). Versions: Endeavor v28, Front v15.
 - [ ] Tutorial steps advance as you do them (move, sprint with Shift, swing, block, dodge, flicker).
 - [ ] F1 shows the controls card. Tab inventory, L loadout, J attributes, O hideout, N recruit app all open and close.
 - [ ] City hum and wind are audible from the start (ambient loops).
+- [ ] The city reads as late night: purple haze, neon bloom, cold grade; you can still see where you're going.
 
 ## Endeavor: combat
 - [ ] Light swing (LMB) and heavy swing (RMB/hold) show an arc and make a whoosh (heavy is deeper).
@@ -38,6 +39,8 @@ report). Versions: Endeavor v28, Front v15.
 ## Endeavor: enemies and rigs
 - [ ] Mannequins on the magenta pads by the test armory: Raider, Brute, Shocker, Warden. Limbs in the right place
       (left arm on the character's left), idle animation playing, weapon in the right hand.
+- [ ] Hostiles bark: a shout when they first spot you, another on each attack windup, a death cry. Raiders shout,
+      Brutes roar low, Shockers crackle, the Warden sounds a horn.
 - [ ] Live hostiles walk with moving legs, telegraph attacks, and die with gore (dismemberment, pools, corpse stays).
 - [ ] Loot looks right: caches and supply drops are olive crates with a hazard stripe, vault caches dark with a cyan
       lock, remains/spoils/salvage a canvas stash bag; the prompt still works on each.

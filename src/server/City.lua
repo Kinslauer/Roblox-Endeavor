@@ -255,7 +255,33 @@ function City.ResetVisits(player)
 	current[player] = nil
 end
 
+-- The look of the megacity: late night, dense haze that neon cuts through, a little bloom, cold grade.
+function City.Atmosphere()
+	local Lighting = game:GetService("Lighting")
+	Lighting.ClockTime = 22.5
+	Lighting.Brightness = 1.1
+	Lighting.Ambient, Lighting.OutdoorAmbient = Color3.fromRGB(38, 36, 62), Color3.fromRGB(42, 40, 70)
+	Lighting.FogEnd, Lighting.FogColor = 1400, Color3.fromRGB(26, 22, 44)
+	if not Lighting:FindFirstChildOfClass("Atmosphere") then
+		local atmo = Instance.new("Atmosphere")
+		atmo.Density, atmo.Offset, atmo.Glare, atmo.Haze = 0.42, 0.35, 0.25, 2.2
+		atmo.Color, atmo.Decay = Color3.fromRGB(120, 90, 160), Color3.fromRGB(60, 40, 90)
+		atmo.Parent = Lighting
+	end
+	if not Lighting:FindFirstChild("CityBloom") then
+		local bloom = Instance.new("BloomEffect")
+		bloom.Name, bloom.Intensity, bloom.Size, bloom.Threshold = "CityBloom", 0.8, 32, 1.4
+		bloom.Parent = Lighting
+	end
+	if not Lighting:FindFirstChild("CityGrade") then
+		local cc = Instance.new("ColorCorrectionEffect")
+		cc.Name, cc.Contrast, cc.Saturation, cc.TintColor = "CityGrade", 0.12, -0.08, Color3.fromRGB(225, 235, 255)
+		cc.Parent = Lighting
+	end
+end
+
 function City.Init()
+	City.Atmosphere()
 	folder = Instance.new("Folder")
 	folder.Name = "City"
 	folder.Parent = workspace

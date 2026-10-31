@@ -448,6 +448,8 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b, c)
 				end
 			end)
 		end
+	elseif kind == "Bark" and typeof(a) == "Instance" then
+		Sounds.Play("Bark" .. tostring(b) .. tostring(c), a)
 	elseif kind == "Blackout" then
 		-- the grid is down: the sky goes near-black, neon is all that's left; restored after `a` seconds
 		local seconds = tonumber(a) or 60

@@ -62,6 +62,9 @@ local function glow(p, color)
 end
 
 local function atmosphere()
+	if Lighting:FindFirstChildOfClass("Atmosphere") then
+		return -- City.Atmosphere already dressed the sky
+	end
 	Lighting.ClockTime = 23
 	Lighting.Ambient = Color3.fromRGB(45, 45, 70)
 	Lighting.OutdoorAmbient = Color3.fromRGB(45, 45, 70)

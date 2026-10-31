@@ -94,7 +94,17 @@ local function nearestTarget(root, aggro, filter)
 	return target, best
 end
 
+-- a bark everyone nearby hears: kind is "Alert", "Attack" or "Death"; the client picks the sound by type
+local function bark(model, kind)
+	local root = model and model:FindFirstChild("HumanoidRootPart")
+	if root then
+		Remotes.World:FireAllClients("Bark", root, model:GetAttribute("NPC"), kind)
+	end
+end
+NPCs.Bark = bark
+
 local function telegraph(model, seconds, color)
+	bark(model, "Attack")
 	Combat.FX("Windup", model, seconds)
 	local warn = Instance.new("Highlight")
 	warn.FillColor, warn.OutlineColor = color, color
@@ -133,6 +143,7 @@ function NPCs.Spawn(typeName, position, opts)
 	local alive = true
 	hum.Died:Connect(function()
 		alive = false
+		bark(model, "Death")
 		Gore.OnDied(model)
 		local _, killer = Combat.GetKiller(model)
 		if killer then
@@ -193,8 +204,13 @@ function NPCs.Spawn(typeName, position, opts)
 	task.spawn(function()
 		local lastAttack = 0
 		local basic = { Telegraph = def.Telegraph, Damage = def.Damage, Posture = def.Posture, Range = def.Range }
+		local hadTarget = false
 		while alive and model.Parent and hum.Health > 0 do
 			local target, dist = nearestTarget(root, def.Aggro, opts.Filter)
+			if target and not hadTarget then
+				bark(model, "Alert") -- first sight of prey
+			end
+			hadTarget = target ~= nil
 			if target then
 				local troot = target.HumanoidRootPart
 				local t = os.clock()
