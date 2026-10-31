@@ -35,6 +35,17 @@ Config.CityFallbackHeight = 10
 
 Config.City = {
 	CacheRespawn = 240, -- seconds before an opened cache refills
+	-- standing hostiles per district Danger (server/Population.lua)
+	Population = {
+		Cap = 28, -- hostiles alive at once from all sources, before Population stops adding
+		Respawn = 150, -- seconds before a dead pack member returns
+		PackRadius = 35, -- how far a pack wanders from its anchor
+		Tiers = {
+			Low = { Packs = 2, Size = { 2, 3 }, Types = { "Raider" } },
+			Medium = { Packs = 3, Size = { 2, 4 }, Types = { "Raider", "Raider", "Shocker", "Brute" } },
+			High = { Packs = 4, Size = { 3, 4 }, Types = { "Raider", "Shocker", "Shocker", "Brute" }, Scale = 1.15, Boss = 0.35 },
+		},
+	},
 }
 
 Config.Raid = {

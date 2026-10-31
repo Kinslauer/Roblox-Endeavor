@@ -491,6 +491,16 @@ check("sprint raises walk speed", pc.Humanoid.WalkSpeed > walk)
 Remotes.Sprint:FireServer(false); run(0.2)
 check("sprint releases", pc.Humanoid.WalkSpeed == walk)
 
+-- population: Main's Population.Init populated the districts when the world opened earlier in this run
+local Population = M.mockEnv.__require(SSS.Server.Population)
+local populated = 0
+for _, m in game_:GetService("CollectionService"):GetTagged("NPC") do
+	if m:GetAttribute("Population") then populated += 1 end
+end
+print("population: standing hostiles=" .. populated .. " alive=" .. Population.Alive())
+check("population spawned district packs at world open", populated >= 8)
+check("population stays under its cap", populated <= 28)
+
 -- director events: every one runs without error and leaves something behind
 as(player)
 local Events = M.mockEnv.__require(SSS.Server.Events)

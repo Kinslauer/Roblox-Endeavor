@@ -39,6 +39,9 @@ report). Versions: Endeavor v32, Front v17.
 - [ ] Nothing floats off the body or clips badly through the head; say which piece if one does.
 
 ## Endeavor: enemies and rigs
+- [ ] The city has standing hostiles: Raider packs in the Transit Hub, mixed packs (Shockers, Brutes) in Corp Plaza and
+      the Sprawl, tougher packs and sometimes a Warden in the Blackout Zone. They wander near where they spawned,
+      chase on sight and come back a couple of minutes after dying.
 - [ ] Mannequins on the magenta pads by the test armory: Raider, Brute, Shocker, Warden. Limbs in the right place
       (left arm on the character's left), idle animation playing, weapon in the right hand.
 - [ ] Hostiles bark: a shout when they first spot you, another on each attack windup, a death cry. Raiders shout,
