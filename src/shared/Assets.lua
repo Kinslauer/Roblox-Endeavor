@@ -71,6 +71,9 @@ Assets.Buildings = {
 -- Character rigs (R15 limb meshes, see server/Rigs.lua): [npcType] = assetId
 Assets.Rigs = {
 	Raider = 106712459976546,
+	Brute = 89905917757019,
+	Shocker = 117184966040084,
+	Warden = 80181254073544,
 }
 
 -- Roblox drops Blender material colours on import, so every part is named "<Part>_<Material>"
@@ -103,6 +106,13 @@ Assets.Materials = {
 	Boot = { Color = Color3.fromRGB(26, 23, 23), Material = Enum.Material.Leather },
 	Goggle = { Color = Color3.fromRGB(255, 115, 38), Material = Enum.Material.Neon, Light = Color3.fromRGB(255, 120, 40) },
 	Strap = { Color = Color3.fromRGB(31, 28, 26), Material = Enum.Material.Leather },
+	Plate = { Color = Color3.fromRGB(71, 76, 84), Material = Enum.Material.DiamondPlate },
+	ArcCoil = { Color = Color3.fromRGB(25, 204, 255), Material = Enum.Material.Neon, Light = Color3.fromRGB(40, 200, 255) },
+	Chrome = { Color = Color3.fromRGB(140, 145, 158), Material = Enum.Material.Metal },
+	WardenRed = { Color = Color3.fromRGB(140, 20, 36), Material = Enum.Material.Fabric },
+	Visor = { Color = Color3.fromRGB(255, 25, 25), Material = Enum.Material.Neon, Light = Color3.fromRGB(255, 40, 40) },
+	Coat = { Color = Color3.fromRGB(33, 31, 38), Material = Enum.Material.Fabric },
+	Rubber = { Color = Color3.fromRGB(23, 23, 26), Material = Enum.Material.Rubber },
 	-- buildings
 	DarkConcrete = { Color = Color3.fromRGB(44, 44, 51), Material = Enum.Material.Concrete },
 	Panel = { Color = Color3.fromRGB(66, 69, 84), Material = Enum.Material.Metal },
