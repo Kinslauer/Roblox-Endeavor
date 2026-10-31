@@ -60,7 +60,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   K artillery, F dig, V sandbags, M app.
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v20, Front v10). Front v10 verified on a real server:
+- Both places published and starting cleanly (Endeavor v22, Front v12). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Endeavor v20 predates the Animator fix, mirrored Raider, three new enemies, returning-player fast path, weapons in
   hand: publish it (`tools/publish.sh endeavor`) once the user has closed Studio (409 until then). Spawn fall-through fixed by anchoring the
