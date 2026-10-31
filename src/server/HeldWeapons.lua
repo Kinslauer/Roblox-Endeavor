@@ -1,6 +1,7 @@
 -- Puts the equipped weapon's model (Blender-built, see tools/models/weapons.py) into a character's
--- right hand. Models are authored with the grip at the origin and the business end along +Y; a
--- Weld maps that onto the hand so the weapon points out of the fist. Works for players and for
+-- right hand. Models are authored in Blender with the grip at the origin and the business end along
+-- Blender +Y, which the FBX import turns into Roblox +Z (Blender +Z becomes Roblox +Y); a Weld maps
+-- that onto the hand so the weapon points out of the fist. Works for players and for
 -- any NPC rig that has a RightHand (the box rig has none and is left alone).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -10,10 +11,10 @@ local ModelAssets = require(script.Parent.ModelAssets)
 local HeldWeapons = {}
 
 local GRIPS = {
-	-- weapon +Y -> hand forward (-Z), grip centre sits in the palm
-	Melee = CFrame.new(0, -0.2, -0.3) * CFrame.Angles(-math.pi / 2, 0, 0),
-	-- grip stays along the hand, barrel (+Z) points forward
-	Pistol = CFrame.new(0, -0.3, -0.2) * CFrame.Angles(0, math.pi, 0),
+	-- weapon +Z -> hand forward (-Z), grip centre in the palm
+	Melee = CFrame.new(0, -0.2, -0.3) * CFrame.Angles(0, math.pi, 0),
+	-- barrel (+Y) -> forward, grip (-Z) -> down the hand
+	Pistol = CFrame.new(0, -0.1, 0) * CFrame.Angles(-math.pi / 2, 0, 0),
 }
 
 function HeldWeapons.Clear(char)

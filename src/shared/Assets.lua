@@ -77,7 +77,7 @@ Assets.Rigs = {
 }
 
 -- Weapons held in the right hand (see server/HeldWeapons.lua): [weaponId] = { Id, Grip }
--- Grip "Melee" (default): modelled along +Y from the grip; "Pistol": grip along Y, barrel along +Z.
+-- Grip "Melee" (default): business end along Roblox +Z from the grip; "Pistol": grip along -Z, barrel along +Y.
 Assets.Weapons = {
 	PipeClub = { Id = 98352702068074 },
 	RebarBlade = { Id = 109978068606651 },

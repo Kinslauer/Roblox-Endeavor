@@ -17,5 +17,6 @@ Rules that matter:
 - Conditions: `<Prop>_A` intact, `_B` worn, `_C` wrecked. `Assets.PickProp` rolls one on spawn and on rematerialize.
 - Loaded models are dressed, anchored, and pivoted to their bounding-box bottom so they sit on the ground.
 - Chunks (`Chunk_*`) are single meshes used as the physical debris piece; `Props.Defs[...].Chunks[i].Asset` names them.
-- Weapons (`Wpn_*`): grip at the origin, business end along +Y (pistols: grip along Y, barrel along +Z).
+- Weapons (`Wpn_*`): grip at the origin, business end along Blender +Y (pistols: grip along Y, barrel along +Z).
+  Verified on a real server: the FBX import maps Blender +Y -> Roblox +Z and Blender +Z -> Roblox +Y.
   `server/HeldWeapons.lua` welds them into RightHand with `Assets.Weapons[id].Grip` picking the hand offset.
