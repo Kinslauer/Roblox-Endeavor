@@ -21,6 +21,7 @@ Quests.Defs = {
 	{ Id = "catcher", Title = "Catcher: catch something thrown at you", Kind = "feat", Target = "Catch", Count = 1, Reward = { Xp = 120, Items = { Battery = 1 } } },
 	{ Id = "blackflash", Title = "Black Flash: land one", Kind = "feat", Target = "BlackFlash", Count = 1, Reward = { Xp = 200, Items = { Wire = 4 } } },
 	{ Id = "tapin", Title = "Tap In: deploy to the Front", Kind = "deploy", Target = "Front", Count = 1, Reward = { Xp = 150, Items = { Ration = 3 } } },
+	{ Id = "northbound", Title = "Northbound: reach Verdant Reach", Kind = "explore", Target = "Reach", Count = 1, Reward = { Xp = 400, Items = { Medkit = 2, ArcCell = 10 } } },
 	{ Id = "shockers", Title = "Grid Work: drop 2 Shockers", Kind = "kill", Target = "Shocker", Count = 2, Reward = { Xp = 140, Items = { Battery = 1 } } },
 }
 

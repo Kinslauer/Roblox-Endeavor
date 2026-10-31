@@ -31,6 +31,9 @@ local TEMPLATE = {
 	-- The hideout is the conduit's claim on the city: it outlives the character (a crew keeps it),
 	-- but a raid can strip it. Plot 0 = none.
 	Hideout = { Plot = 0, Tier = 1, Modules = {}, Vault = {}, VaultGrid = { Items = {} }, VaultCondition = {}, VaultUpgrades = {}, Members = {}, Name = "" },
+	-- What the crew knows of the world north of the wall: the route's checkpoints reached, the sites
+	-- found, whether the Reach was ever seen. Survives permadeath (the hideout remembers the way).
+	Frontier = { Route = 0, Found = {}, Reached = false },
 	-- The war world (a separate place, same universe) reads and writes this part of the profile.
 	-- A conduit is not reset by the recruit dying; the recruit's gear is.
 	War = {
@@ -73,7 +76,7 @@ end
 -- Permadeath wipes the conduit; the war-world account (faction, credits, locker) survives it,
 -- because a recruit is a thing the conduit owns, not the conduit itself.
 local function wipe(data)
-	local war, hideout = data.War, data.Hideout
+	local war, hideout, frontier = data.War, data.Hideout, data.Frontier
 	for key in data do
 		data[key] = nil
 	end
@@ -82,6 +85,7 @@ local function wipe(data)
 	end
 	data.War = war or deepCopy(TEMPLATE.War)
 	data.Hideout = hideout or deepCopy(TEMPLATE.Hideout)
+	data.Frontier = frontier or deepCopy(TEMPLATE.Frontier)
 	newCharacter(data)
 end
 

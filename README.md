@@ -47,6 +47,15 @@ every player has finished or skipped (and 30s have passed) the world opens early
   The Sprawl (medium), Blackout Zone (high). Ruined towers with ledges, rubble, neon signage, a pylon per district for
   navigation, refilling loot caches, and a banner when you cross into a district. Replace any district with hand-built
   art later; the generator is only there so the world exists now.
+- **The frontier** (`src/shared/Frontier.lua` = layout + ground height, `src/server/Frontier.lua` = builder, map:
+  `docs/maps/world_map.png`): the map is four quadrants; the city fills the two southern ones. A winding route of 11
+  held checkpoints (barricade, sign, pack of rising tier; the next is marked for you, and the crew remembers how far
+  you got through permadeath) leads through the city to the North Gate and the **Scarp**: the city limits, an overlook
+  above a valley. Switchbacks zigzag down the cliff into a forest **valley** (smooth terrain, trees, a winding trail with
+  ambushes) to **Verdant Reach**, a green terrace at the map's centre-north: hedge ring, greenhouse domes, solar towers,
+  and a covered market that is a safe zone with a trader who sells for war credits. Around the valley is the **Ridge**:
+  a mountain range and forest with encampments, stockpiles and relic sites (Signal Mast, Crashed Dropship, Old Mine)
+  whose guarded containers hold gear the city rarely drops, refilling over time.
 - **Raids** (`src/server/Raids.lua`): the Blackout Gate opens a 20s join window for up to 6 players, teleports them to
   a sealed arena and runs four waves (Raiders, Shockers, a Brute, then the **Warden** boss with a telegraphed slam and
   lunge). Enemies scale with party size. Clearing it drops a vault (3x supply rolls + a guaranteed implant) and 400 xp,

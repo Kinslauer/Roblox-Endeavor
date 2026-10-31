@@ -26,6 +26,22 @@ for _, d in workspace_:GetDescendants() do
 			tostring(model and model:GetAttribute("Tier") or ""), tostring(model and model:GetAttribute("Prop") or ""), tostring(d:GetAttribute("Label") or "")))
 	end
 end
+-- the frontier's ground: Frontier.Height sampled every 8 studs over its bounds (map.py shades it)
+do
+	local FS = M.mockEnv.__require(RS.Shared.Frontier)
+	local B = FS.Bounds
+	local lines = {}
+	for z = B.Z0, B.Z1, 8 do
+		local row = {}
+		for x = B.X0, B.X1, 8 do
+			table.insert(row, string.format("%.0f", if FS.InCity(x, z) then FS.CityTop else FS.Height(x, z)))
+		end
+		table.insert(lines, table.concat(row, ","))
+	end
+	print("HEIGHT_BEGIN " .. B.X0 .. " " .. B.Z0 .. " 8")
+	print(table.concat(lines, "\n"))
+	print("HEIGHT_END")
+end
 print("JSON_BEGIN")
 print("[" .. table.concat(rows, ",\n") .. "]")
 print("JSON_END")

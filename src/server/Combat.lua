@@ -437,6 +437,9 @@ local function applyDamage(attacker, victim, amount, opts)
 	if ap and vp and not WorldPhase.IsOpen() then
 		return "none" -- no PvP during the prologue (they should never meet anyway)
 	end
+	if (vp and vp:GetAttribute("Safe")) or (ap and ap:GetAttribute("Safe")) then
+		return "none" -- the Verdant Market is a safe zone: nobody is hurt in it, nobody strikes from it
+	end
 
 	local vs, t, vd = st(victim), os.clock(), Gear.OfChar(victim)
 	if t < vs.iframes then

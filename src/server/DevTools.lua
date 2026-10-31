@@ -47,6 +47,20 @@ function actions.Teleport(player, arg)
 			return teleport(player, d.Center + Vector3.new(0, 4, 30))
 		end
 	end
+	local fkey = arg:match("^Frontier_(.+)$")
+	if fkey then
+		local Frontier = require(ReplicatedStorage.Shared.Frontier)
+		local s = Frontier.Site(fkey)
+		if s then
+			return teleport(player, Vector3.new(s.Position.X, Frontier.Height(s.Position.X, s.Position.Z) + 4, s.Position.Z))
+		end
+		for _, cp in Frontier.Route do
+			if cp.Key == fkey then
+				local y = if cp.Position.Z > Frontier.CityEdge then Frontier.Height(cp.Position.X, cp.Position.Z) else Frontier.CityTop
+				return teleport(player, Vector3.new(cp.Position.X, y + 4, cp.Position.Z))
+			end
+		end
+	end
 	local site = tonumber(arg:match("^Site_(%d+)$"))
 	if site and Hideouts.Sites[site] then
 		return teleport(player, Hideouts.Sites[site].Position + Vector3.new(0, 4, 0))

@@ -12,6 +12,7 @@ local V3 = {}
 V3.__index = function(t, k)
 	if k == "Magnitude" then return math.sqrt(t.X*t.X + t.Y*t.Y + t.Z*t.Z) end
 	if k == "Unit" then local m = t.Magnitude; if m == 0 then return t end; return V3.new(t.X/m, t.Y/m, t.Z/m) end
+	if k == "Lerp" then return function(a, b, f) return V3.new(a.X + (b.X-a.X)*f, a.Y + (b.Y-a.Y)*f, a.Z + (b.Z-a.Z)*f) end end
 	return V3[k]
 end
 function V3.new(x, y, z) return setmetatable({X = x or 0, Y = y or 0, Z = z or 0}, V3) end
@@ -36,6 +37,7 @@ CF.__index = function(t, k)
 	if k == "LookVector" then return V3.new(-t.r[3], -t.r[6], -t.r[9]) end
 	if k == "RightVector" then return V3.new(t.r[1], t.r[4], t.r[7]) end
 	if k == "UpVector" then return V3.new(t.r[2], t.r[5], t.r[8]) end
+	if k == "Rotation" then return setmetatable({Position = V3.new(0,0,0), r = t.r}, CF) end
 	return CF[k]
 end
 local ID = {1,0,0, 0,1,0, 0,0,1}
@@ -370,6 +372,9 @@ end
 game_.GetService = methods.GetService
 local workspace_ = game_:GetService("Workspace")
 workspace_.Name = "Workspace"
+-- Terrain: voxel writes are accepted and dropped (the smoke tests only need the calls to succeed)
+local terrain_ = newInstance("Terrain"); terrain_.Name = "Terrain"; terrain_.Parent = workspace_
+rawset(terrain_, "WriteVoxels", function() end); rawset(terrain_, "FillBlock", function() end); rawset(terrain_, "FillBall", function() end); rawset(terrain_, "Clear", function() end)
 
 -------------------------------------------------- scheduler
 task_ = {}
@@ -397,6 +402,7 @@ local mockEnv = {
 	game = game_, workspace = workspace_, Instance = Instance, Vector3 = V3, CFrame = CF, Color3 = Color3, UDim = UDim, UDim2 = UDim2,
 	Vector2 = Vector2, Enum = Enum, task = task_,
 	NumberSequence = { new = function(...) return { ... } end }, NumberSequenceKeypoint = { new = function(...) return { ... } end },
+	Region3 = { new = function(a, b) return { CFrame = CF.new((a + b) / 2), Size = b - a, ExpandToGrid = function(self) return self end } end },
 	ColorSequence = { new = function(...) return { ... } end }, NumberRange = { new = function(...) return { ... } end },
 	UserSettings = function() return { GetService = function() return { RotationType = nil } end } end,
 	TweenInfo = { new = function() return {} end }, OverlapParams = { new = function() return {} end }, RaycastParams = { new = function() return {} end },

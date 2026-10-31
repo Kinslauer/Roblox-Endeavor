@@ -183,6 +183,15 @@ Config.City = {
 	},
 }
 
+-- the world north of the city wall (shared/Frontier.lua, server/Frontier.lua)
+Config.Frontier = {
+	Cap = 64, -- frontier guards alive at once (checkpoints + sites), on top of the city's population
+	Respawn = 240, -- seconds before a dead guard returns to its post
+	Refill = 600, -- seconds before an emptied site container is restocked
+	CheckpointReach = 45, -- studs from a checkpoint that counts as reaching it
+	DiscoverRadius = 150, -- studs from a site that marks it on your map for good
+}
+
 Config.Raid = {
 	JoinWindow = 20, -- seconds the gate stays open after someone starts a raid
 	MaxPlayers = 6,

@@ -237,6 +237,7 @@ local containerGridFrame -- the open loot container's grid, when open
 local container -- { key, grid, label }
 local lastClick = { index = nil, source = nil, t = 0 }
 local renderContainer -- defined with the container panel below
+local marketPanel, renderMarket -- defined with the market panel below
 local hideout -- the last hideout snapshot (set by Remotes.Hideout)
 -- Tooltip that follows the mouse over a block
 local tooltip = make("TextLabel", { Size = UDim2.fromOffset(220, 44), BackgroundColor3 = Color3.fromRGB(10, 10, 14), BackgroundTransparency = 0.15, TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.Gotham, TextSize = 13, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Visible = false, ZIndex = 60, BorderSizePixel = 0 }, gui)
@@ -1084,6 +1085,11 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b, c, d, e)
 	elseif kind == "ContainerClose" and container and container.key == a then
 		container = nil
 		renderContainer()
+	elseif kind == "Market" and type(a) == "table" then
+		renderMarket(a)
+		marketPanel.Visible = true
+	elseif kind == "MarketClose" then
+		marketPanel.Visible = false
 	elseif kind == "Marker" and typeof(a) == "string" then
 		setMarker(a, b, c, d, e)
 	elseif kind == "MarkerClear" and typeof(a) == "string" then
@@ -1271,6 +1277,19 @@ local hidePanel = panel(UDim2.fromOffset(560, 460), UDim2.new(0.5, -280, 0.5, -2
 
 -- Loot containers: searching a crate, stash or corpse opens its grid here; drag out or Take all.
 local containerPanel = panel(UDim2.fromOffset(280, 300), UDim2.new(0.5, -480, 0.5, -150))
+
+-- ===== Verdant Market (the Reach's trader; World "Market" / "MarketClose", Remotes.Buy) =====
+marketPanel = panel(UDim2.fromOffset(340, 360), UDim2.new(1, -360, 0.5, -180))
+renderMarket = function(m)
+	clear(marketPanel)
+	addRow(marketPanel, ("VERDANT MARKET  -  %d credits"):format(m.Credits or 0), {}, Color3.fromRGB(170, 255, 170))
+	addRow(marketPanel, "Paid in war credits: the Front's pay buys the Reach's wares", {}, Color3.fromRGB(150, 150, 160))
+	for _, item in m.Stock or {} do
+		local name = if (item.Count or 1) > 1 then ("%s x%d"):format(item.Name, item.Count) else item.Name
+		addRow(marketPanel, ("%s - %d cr"):format(name, item.Price), { { text = "Buy", color = Color3.fromRGB(50, 110, 70), fn = function() Remotes.Buy:FireServer(item.Id) end } }, if item.Price > (m.Credits or 0) then Color3.fromRGB(150, 150, 160) else nil)
+	end
+	addRow(marketPanel, "", { { text = "Close", color = Color3.fromRGB(90, 50, 50), fn = function() marketPanel.Visible = false end } })
+end
 renderContainer = function()
 	clear(containerPanel)
 	containerGridFrame = nil
@@ -1306,6 +1325,8 @@ local function buildDevPanel()
 	for _, d in { "Transit Hub", "Corp Plaza", "The Sprawl", "Blackout Zone" } do
 		addRow(devPanel, d, { { text = "Go", fn = dev("Teleport", "District_" .. d) }, { text = "Net", fn = dev("Teleport", "Terminal_" .. d) } })
 	end
+	addRow(devPanel, "North", { { text = "Scarp", fn = dev("Teleport", "Scarp") }, { text = "Hairpin", fn = dev("Teleport", "Frontier_Hairpin") }, { text = "Reach", fn = dev("Teleport", "Reach") } })
+	addRow(devPanel, "Sites", { { text = "Ridge", fn = dev("Teleport", "Frontier_RidgeWatch") }, { text = "Mast", fn = dev("Teleport", "Frontier_SignalMast") }, { text = "Mine", fn = dev("Teleport", "Frontier_OldMine") }, { text = "Ship", fn = dev("Teleport", "Frontier_Dropship") } })
 	addRow(devPanel, "Hideout sites", { { text = "1", fn = dev("Teleport", "Site_1") }, { text = "2", fn = dev("Teleport", "Site_2") }, { text = "3", fn = dev("Teleport", "Site_3") } })
 	addRow(devPanel, "Spawn", { { text = "Raider", fn = dev("Spawn", "Raider") }, { text = "Brute", fn = dev("Spawn", "Brute") }, { text = "Shock", fn = dev("Spawn", "Shocker") }, { text = "Warden", fn = dev("Spawn", "Warden") } })
 	addRow(devPanel, "Event", { { text = "Drop", fn = dev("Event", "SupplyDrop") }, { text = "Ambush", fn = dev("Event", "RaiderAmbush") }, { text = "Dark", fn = dev("Event", "Blackout") } })
@@ -1845,7 +1866,7 @@ do
 AIM = Config.Aim
 local GameSettings = UserSettings():GetService("UserGameSettings")
 local aimOn = AIM.DefaultOn
-MENUS = { statsPanel, invPanel, loadoutPanel, app, hidePanel, containerPanel, devPanel, deathScreen }
+MENUS = { statsPanel, invPanel, loadoutPanel, app, hidePanel, containerPanel, marketPanel, devPanel, deathScreen }
 menuOpen = function()
 	for _, m in MENUS do
 		if m.Visible then

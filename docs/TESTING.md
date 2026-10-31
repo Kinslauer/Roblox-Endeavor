@@ -1,7 +1,7 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v51, Front v19.
+report). Versions: Endeavor v53, Front v19.
 
 ## Endeavor: first minutes
 - [ ] The starting room is a pod: dark panelled walls with cyan seams, diamond-plate floor, the console in a terminal
@@ -159,6 +159,42 @@ report). Versions: Endeavor v51, Front v19.
 - [ ] Dead drop: a purple stash at a numbered hideout site, announced to everyone.
 - [ ] Quests cycle through: scrap run, raiders, medkit, bounty, survey, brute, raid, wrecker (break 10), catcher,
       black flash, tap in (deploy to the Front), shockers. Completing one assigns the next.
+
+## Endeavor: north of the wall (the frontier)
+Map: `docs/maps/world_map.png`. The route winds through the city to the north edge, down the scarp, through the valley.
+- [ ] A hazard-orange "Route north 1/11: Rail Yard" marker shows after spawning into the open world. Standing at it
+      banners "Checkpoint 1/11" and the marker jumps to the next one (Sprawl Market, Canal Bridge, Blackout Toll,
+      North Gate, Scarp Overlook, Second Hairpin, Scarp Foot, Valley Ford, Reach Gate, Verdant Reach). It is never a
+      straight line.
+- [ ] Each checkpoint has a numbered sign on a post with an orange light, a barricade of breakable props facing the
+      way you come, and a pack behind it that gets nastier north of the Blackout Zone (Brutes, Shockers, scaled).
+- [ ] The North Gate (x 120, past the Blackout Zone) leads to the Scarp Overlook: a railed deck and a "CITY LIMITS -
+      VERDANT REACH 1.2 km" sign, with a view down over the valley. A boss Warden named Gatekeeper holds it.
+- [ ] Banners: "The Scarp - danger: High" past the wall, "The Valley", "The Ridge - danger: Severe" in the mountains,
+      "Verdant Reach - safe haven" inside the hedge.
+- [ ] The switchback road zigzags down the cliff face: asphalt with a faded centre line, hazard lamps (half dead),
+      wrecks on the verge, dead trees and boulders between the hairpins. The ground under it is flattened to the road.
+      An ambush pack waits at the second hairpin, another at the foot.
+- [ ] The valley is forest (trees you can walk between, rocks on the slopes) on smooth terrain; a dirt trail winds from
+      the scarp foot to the Reach's south gate with Shockers at the ford and a pack at the gate.
+- [ ] Verdant Reach: hedge ring with south and north gates, sand paths (cross + ring), glass greenhouse domes with pink
+      grow light, solar towers, planter beds, trees, warm lamps. The green ring at the centre is the market.
+- [ ] Inside the green ring nobody can hurt you and you cannot hit anyone (PvP and hostiles both). Leaving it, you can.
+- [ ] Trader counter (X "Browse wares") opens the Verdant Market panel: prices in war credits (the Front's pay). Buying
+      with too few credits warns; with enough it takes the credits and the item lands in the pack (overflow drops).
+      Stock: Medkit, Ration, Arc Cells x5, Pipe Grenade, Breaching Charge, Rucksack, Frame Pack, Arc Pistol, Plated
+      Helm, Servo Greaves, Reflex Optic, Audio Pickup.
+- [ ] Reaching the Reach completes the "Northbound" quest when it is active.
+- [ ] Ring sites, found by walking within 150 studs (banner + a marker that stays, even after permadeath): Ridge Watch
+      and Logging Camp (encampments: tents, campfire, fence barricade, a stockpile crate), Hunter's Shack and Pump
+      Station (concrete huts with a store crate), Signal Mast (70-stud mast with a red beacon on the mountain, relay
+      vault), Crashed Dropship (hull, broken wing, fire, cargo + pilot's locker, a boss Warden "Pilot"), Old Mine
+      (timbered tunnel into the mountain with lamps, vault at the end + a miner's cache).
+- [ ] Relic sites' containers hold cybernetics, armor and weapons the city rarely drops (and one guaranteed: Echo Array,
+      Conduit Harness, Overclock Core); emptied containers refill after 10 minutes.
+- [ ] Site guards return to their posts 4 minutes after dying.
+- [ ] Dev panel (F2): "North" row (Scarp, Hairpin, Reach) and "Sites" row (Ridge, Mast, Mine, Ship) teleports.
+- [ ] Nothing falls through the terrain: walk the switchbacks, the trail and a mountain slope.
 
 ## Endeavor: hideouts and raids
 - [ ] Claim a site, open the bench (X). Bench model matches the tier (Tinkerer planks, Workshop steel, Foundry chrome).

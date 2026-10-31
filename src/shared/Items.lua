@@ -151,6 +151,13 @@ Items.LootTables = {
 		{ "ReflexOptic", 0.12, 1, 1 }, { "ServoArm", 0.12, 1, 1 }, { "NeuralCore", 0.1, 1, 1 }, { "OverclockCore", 0.05, 1, 1 },
 		{ "EchoArray", 0.08, 1, 1 }, { "BloodTracer", 0.08, 1, 1 }, { "PistonLeg", 0.08, 1, 1 }, { "PlatedCore", 0.08, 1, 1 },
 	},
+	-- the frontier's relic sites: the only place some gear turns up reliably (server/Frontier.lua)
+	Relic = {
+		{ "ArcCell", 1, 10, 20 }, { "Medkit", 1, 2, 3 }, { "BreachingCharge", 0.6, 1, 2 }, { "PipeGrenade", 0.6, 2, 3 },
+		{ "ArcPistol", 0.5, 1, 1 }, { "Sledge", 0.3, 1, 1 }, { "RiotPlate", 0.35, 1, 1 }, { "ConduitHarness", 0.4, 1, 1 }, { "PlatedHelm", 0.35, 1, 1 },
+		{ "NeuralCore", 0.4, 1, 1 }, { "OverclockCore", 0.3, 1, 1 }, { "PistonLeg", 0.4, 1, 1 }, { "PlatedCore", 0.4, 1, 1 }, { "EchoArray", 0.3, 1, 1 },
+		{ "BloodTracer", 0.3, 1, 1 }, { "TargetingLens", 0.35, 1, 1 }, { "ArcGauntlet", 0.35, 1, 1 }, { "FramePack", 0.15, 1, 1 },
+	},
 	-- salvage from broken props
 	Streetlight = { { "Pipe", 1, 1, 2 }, { "Battery", 0.8, 1, 1 }, { "Glass", 0.6, 1, 2 } },
 	Sign = { { "SheetMetal", 1, 1, 2 }, { "Pipe", 0.6, 1, 1 } },

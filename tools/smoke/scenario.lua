@@ -735,6 +735,70 @@ check("quest defs have real reward items", (function()
 	return true
 end)())
 
+-- frontier: the world north of the wall (shared/Frontier.lua + server/Frontier.lua)
+do
+	local FS = M.mockEnv.__require(RS.Shared.Frontier)
+	local Frontier = M.mockEnv.__require(SSS.Server.Frontier)
+	local Loot = M.mockEnv.__require(SSS.Server.Loot)
+	local Combat = M.mockEnv.__require(SSS.Server.Combat)
+	local Inventory = M.mockEnv.__require(SSS.Server.Inventory)
+	local CS = game_:GetService("CollectionService")
+	check("frontier: the Reach sits on the valley floor", math.abs(FS.Height(0, 1550) - FS.Floor) < 0.5)
+	check("frontier: the city edge is the plateau", FS.Height(0, 760) == FS.CityTop and FS.RegionAt(M.V3.new(0, 2, 600)) == nil)
+	check("frontier: regions answer", FS.RegionAt(M.V3.new(0, 0, 1550)) == "Reach" and FS.RegionAt(M.V3.new(120, 2, 745)) == "Scarp" and FS.RegionAt(M.V3.new(0, 0, 2200)) == "Ridge")
+	local sites, posts, guards = 0, 0, 0
+	for _, d in workspace_.Frontier:GetDescendants() do
+		if d.Name == "SitePole" then sites += 1 elseif d.Name == "CheckpointPost" then posts += 1 end
+	end
+	for _, m in CS:GetTagged("NPC") do if m:GetAttribute("Frontier") then guards += 1 end end
+	check("frontier: every site and checkpoint is built", sites == #FS.Sites and posts == #FS.Route - 1)
+	print("frontier guards standing: " .. guards)
+	check("frontier: guards stand at the checkpoints and sites", guards >= 40 and guards <= 64)
+	local stocked = 0
+	for _, c in Frontier.Containers() do
+		if c.part and c.part.Parent and next(Loot.Contents(c.part)) ~= nil then stocked += 1 end
+	end
+	check("frontier: every site container is stocked", stocked == #Frontier.Containers())
+	-- the route: stand at the first checkpoint and the next is marked
+	as(player)
+	local pd = PlayerData.Get(player)
+	pd.Frontier = { Route = 0, Found = {}, Reached = false }
+	player.Character:PivotTo(M.CF.new(FS.Route[1].Position + M.V3.new(0, 3, 0)))
+	run(1.6)
+	check("frontier: reaching a checkpoint advances the route", pd.Frontier.Route == 1)
+	local marked = false
+	for _, e in M.FireLog do if e[1] == "World" and e[3] == "Marker" and e[4] == "Route" and tostring(e[6]):find("2/") then marked = true end end
+	check("frontier: the next checkpoint is marked", marked)
+	-- a site is found by walking near it
+	local site = FS.Sites[1]
+	player.Character:PivotTo(M.CF.new(site.Position.X, 0, site.Position.Z))
+	run(1.6)
+	check("frontier: walking near a site discovers it", pd.Frontier.Found[site.Key] == true)
+	-- the market: safe, and the trader sells for war credits
+	player.Character:PivotTo(M.CF.new(FS.Reach.Center + M.V3.new(0, 3, 0)))
+	run(1.6)
+	check("frontier: the market is a safe zone", player:GetAttribute("Safe") == true and pd.Frontier.Reached == true)
+	local victim = makePlayer("Shopper", 124)
+	Players.PlayerAdded:Fire(victim); run(0.3)
+	victim.Character:PivotTo(M.CF.new(FS.Reach.Center + M.V3.new(4, 3, 0)))
+	run(1.6)
+	check("frontier: nobody is hurt in the market", Combat.Damage(player.Character, victim.Character, 20) == "none")
+	pd.War.Credits = 0
+	local ok = Frontier.Buy(player, "Medkit")
+	check("frontier: no credits, no purchase", ok == false)
+	pd.War.Credits = 100
+	local before = Inventory.Count(player, "Medkit")
+	ok = Frontier.Buy(player, "Medkit")
+	check("frontier: credits buy from the trader", ok == true and pd.War.Credits == 70 and Inventory.Count(player, "Medkit") == before + 1)
+	player.Character:PivotTo(M.CF.new(0, 5, 0))
+	run(1.6)
+	check("frontier: leaving the market drops the protection", player:GetAttribute("Safe") == nil)
+	check("frontier: buying away from the market is refused", Frontier.Buy(player, "Medkit") == false)
+	-- the crew remembers the way: route knowledge survives permadeath
+	local fresh = PlayerData.Reset(player)
+	check("frontier: the route survives permadeath", fresh.Frontier.Route == 1 and fresh.Frontier.Found[site.Key] == true)
+end
+
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

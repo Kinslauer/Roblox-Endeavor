@@ -26,6 +26,7 @@ local ok, err = pcall(function()
 	local DevTools = require(Server.DevTools)
 	local IconLibrary = require(Server.IconLibrary)
 	local Autonet = require(Server.Autonet)
+	local Frontier = require(Server.Frontier)
 	local ImplantLibrary = require(Server.ImplantLibrary)
 
 	Gore.Init()
@@ -54,6 +55,12 @@ local ok, err = pcall(function()
 	Lifecycle.Init()
 	Landmarks.Init()
 	Population.Init()
+	-- the world north of the wall: terrain, the route, the Reach and the ring sites. Isolated like
+	-- the arena: a bad voxel write must not keep the city from starting.
+	local frontierOk, frontierErr = pcall(Frontier.Init)
+	if not frontierOk then
+		warn("[Frontier] failed to build:", frontierErr)
+	end
 	DevTools.Init()
 	IconLibrary.Init()
 	Autonet.Init()
