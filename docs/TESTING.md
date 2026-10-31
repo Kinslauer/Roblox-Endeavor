@@ -67,6 +67,8 @@ report). Versions: Endeavor v22, Front v12.
       with its door toward the front line, a flag in your faction's colour, and a locker terminal (X opens the app).
 - [ ] Your rifle or pistol shows in your right hand (AKM, M16A1, SKS, M14, Mosin, Makarov, M1911); switching (1/2)
       swaps the model; other soldiers' guns are visible too. Note if the barrel points the wrong way or the gun floats.
+- [ ] Soldiers hold their rifle with both hands (not arms hanging); each shot kicks the arms; reloading (R) drops the
+      left hand to the magazine and brings it back.
 - [ ] Sectors have farmhouse/hall buildings, sandbag nests, trucks, tank traps, ammo crates. No floating or sunken props.
 - [ ] Explosives degrade buildings through four stages (intact → damaged → ruined → rubble).
 - [ ] Shots crack nearby, roll in the distance; dry click on empty; rack (T) clicks; impacts puff dirt or blood.

@@ -88,6 +88,8 @@ store `ConduitCharacter_v2`) is shared by both places.
   medbay; each mesh sits inside its collider part (`dress()` in Hideouts.lua), prompts stay on the part.
   Sounds: 25 synthesized effects + 3 ambient loops (city hum, wind, Front wind with distant guns) (`tools/sounds/synth.py`, uploaded as Audio assets) in `src/shared/Sounds.lua`; both
   clients play them from their existing event handlers (`Sounds.Play(name, partOrPosition)`). Unheard by me: verify in-game.
+  Front soldier poses (war client): two-handed rifle hold on every character, kick on "Shot", left hand to the mag while
+  the State snapshot says Reloading.
   Faction bases (`tools/models/base.py` -> `Assets.Base`): hollow bunker facing the grid, flag recoloured per faction,
   locker terminal with a recruit-app prompt (`Battlefield.Lockers`, prompt added in Soldiers.Init).
   Compound shells (`tools/models/compound.py` -> `Assets.Compound`): `ModelAssets.Shell(id, part, pitch)` tiles panel

@@ -51,7 +51,7 @@ function Guns.Snapshot(w)
 	if not w then
 		return nil
 	end
-	return { Id = w.Id, Name = w.Def.Name, Mode = w.Mode, Chamber = w.Chamber, BoltOpen = w.BoltOpen, Jammed = w.Jammed, Mag = w.Mag,
+	return { Id = w.Id, Name = w.Def.Name, Mode = w.Mode, Chamber = w.Chamber, BoltOpen = w.BoltOpen, Jammed = w.Jammed, Reloading = w.Reloading, Mag = w.Mag,
 		MagSize = w.Def.MagSize, Spare = #w.Spare, Parts = w.Parts, Attachments = w.Attachments, Busy = math.max(0, w.Busy - os.clock()),
 		Zoom = (w.Attachments.Optic and Firearms.Attachments[w.Attachments.Optic.Id] and Firearms.Attachments[w.Attachments.Optic.Id].Zoom) or 1 }
 end

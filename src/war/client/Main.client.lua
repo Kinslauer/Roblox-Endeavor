@@ -14,6 +14,60 @@ local Remotes = require(Shared:WaitForChild("Remotes"))
 local Sounds = require(Shared:WaitForChild("Sounds"))
 Sounds.Loop("AmbFront", 0.4) -- wind over the mud and guns on the horizon
 
+-- Procedural soldier poses: Motor6D C0 offsets under the walk/idle animations. Every soldier holds
+-- the rifle with both hands; shots kick the right arm; a reload drops the left hand to the magazine.
+local baseC0 = setmetatable({}, { __mode = "k" })
+local jointTweens = setmetatable({}, { __mode = "k" })
+local function pose(char, name, offset, seconds)
+	local m = typeof(char) == "Instance" and char:FindFirstChild(name, true)
+	if not (m and m:IsA("Motor6D")) then
+		return
+	end
+	if baseC0[m] == nil then
+		baseC0[m] = m.C0
+	end
+	if jointTweens[m] then
+		jointTweens[m]:Cancel()
+	end
+	local tw = TweenService:Create(m, TweenInfo.new(seconds, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { C0 = baseC0[m] * offset })
+	jointTweens[m] = tw
+	tw:Play()
+end
+local function holdPose(char, seconds)
+	pose(char, "RightShoulder", CFrame.Angles(math.rad(78), 0, math.rad(-12)), seconds or 0.2)
+	pose(char, "RightElbow", CFrame.Angles(math.rad(55), 0, 0), seconds or 0.2)
+	pose(char, "LeftShoulder", CFrame.Angles(math.rad(68), 0, math.rad(38)), seconds or 0.2)
+	pose(char, "LeftElbow", CFrame.Angles(math.rad(75), 0, 0), seconds or 0.2)
+end
+local function kickPose(char)
+	pose(char, "RightShoulder", CFrame.Angles(math.rad(90), 0, math.rad(-14)), 0.04)
+	pose(char, "LeftShoulder", CFrame.Angles(math.rad(78), 0, math.rad(36)), 0.04)
+	task.delay(0.06, function()
+		holdPose(char, 0.14)
+	end)
+end
+local function reloadPose(char)
+	pose(char, "LeftShoulder", CFrame.Angles(math.rad(35), 0, math.rad(15)), 0.15)
+	pose(char, "LeftElbow", CFrame.Angles(math.rad(95), 0, 0), 0.15)
+	pose(char, "RightShoulder", CFrame.Angles(math.rad(65), 0, math.rad(-8)), 0.15)
+end
+local function bindSoldier(char)
+	task.spawn(function()
+		char:WaitForChild("RightUpperArm", 10)
+		task.wait(0.2)
+		holdPose(char, 0.3)
+	end)
+end
+for _, other in Players:GetPlayers() do
+	if other.Character then
+		bindSoldier(other.Character)
+	end
+	other.CharacterAdded:Connect(bindSoldier)
+end
+Players.PlayerAdded:Connect(function(other)
+	other.CharacterAdded:Connect(bindSoldier)
+end)
+
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local gui = Instance.new("ScreenGui")
@@ -105,7 +159,15 @@ local function describe()
 end
 Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c, d)
 	if kind == "State" then
+		local wasReloading = weapon and weapon.Reloading
 		weapon, slotName, kit = a, b, c or kit
+		if player.Character then
+			if weapon and weapon.Reloading and not wasReloading then
+				reloadPose(player.Character)
+			elseif wasReloading and not (weapon and weapon.Reloading) then
+				holdPose(player.Character, 0.2)
+			end
+		end
 		describe()
 	elseif kind == "Recoil" then
 		recoilPitch += a * (if aiming then 0.7 else 1)
@@ -115,6 +177,7 @@ Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c, d)
 		crosshair.Text = if a == "dry" then "click" elseif a == "safe" then "SAFE" elseif a == "jam" then "JAM" else "+"
 		task.delay(0.4, function() crosshair.Text = "+" end)
 	elseif kind == "Shot" and typeof(a) == "Instance" then
+		kickPose(a)
 		-- near shots crack, far ones roll; loudness comes from the weapon's attachments (suppressors)
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		local far = root and (root.Position - b).Magnitude > 180

@@ -501,6 +501,7 @@ function Soldiers.Init()
 			pushWeapon(player)
 			task.delay(0.5, function() pushWeapon(player) end)
 			task.delay(2.5, function() pushWeapon(player) end)
+			task.delay(4.0, function() pushWeapon(player) end)
 		end
 	end)
 	Net.On("Rack", { rate = 3, burst = 4 }, function(player)
