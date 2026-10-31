@@ -108,8 +108,9 @@ report). Versions: Endeavor v48, Front v19.
       Getting hurt during a rip cancels it (the cost stays). Fighting (recent combat) refuses the table.
 - [ ] L loadout: eight slots (Eyes, Ears, Nose, Core, Left/Right arm, Left/Right leg), each "flesh" until filled,
       and "Body: N% metal". Two Servo Arms need two in the pack; the row says "in you (left arm, right arm)".
-- [ ] Implants show on the body for everyone: metal shells with a lit seam on arms and legs, small lit parts on the
-      head and chest (optic lenses, ear pods, nose piece, core). Say which look wrong.
+- [ ] Implants show on the body for everyone, using the generated implant meshes (a Servo Arm's upper arm,
+      forearm and hand replace the flesh; optics, ear pods, nose pieces and cores sit on the head and chest).
+      If a mesh fails to load, that piece falls back to a plain metal shell with a lit seam. Say which look wrong.
 - [ ] Audio Pickup (ears): a moving raider behind you or behind a wall puts a pip on the ring around the screen
       centre pointing at it; it goes quiet when the raider stands still or you can see it.
 - [ ] Chem Sniffer (nose): loot containers within ~45 studs get a green dot through walls. Blood Tracer: hurt a

@@ -26,6 +26,7 @@ local ok, err = pcall(function()
 	local DevTools = require(Server.DevTools)
 	local IconLibrary = require(Server.IconLibrary)
 	local Autonet = require(Server.Autonet)
+	local ImplantLibrary = require(Server.ImplantLibrary)
 
 	Gore.Init()
 	Destruction.Init() -- before City, which places props and breach points
@@ -56,6 +57,7 @@ local ok, err = pcall(function()
 	DevTools.Init()
 	IconLibrary.Init()
 	Autonet.Init()
+	ImplantLibrary.Init()
 end)
 if not ok then
 	warn(("=============================\nENDEAVOR STARTUP FAILED: %s\n============================="):format(tostring(err)))

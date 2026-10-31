@@ -1944,10 +1944,28 @@ end
 local function scaledV(v, size)
 	return Vector3.new(v.X * size.X, v.Y * size.Y, v.Z * size.Z)
 end
+-- the generated implant model (ReplicatedStorage.Implants, server/ImplantLibrary.lua), else the icon model
+local implantFolder
 local function implantArt(itemId)
+	implantFolder = implantFolder or ReplicatedStorage:FindFirstChild("Implants")
+	local a = implantFolder and implantFolder:FindFirstChild(itemId)
+	if a then
+		return a, true
+	end
 	iconFolder = iconFolder or ReplicatedStorage:FindFirstChild("Icons")
-	local a = iconFolder and iconFolder:FindFirstChild(itemId)
-	return a
+	return iconFolder and iconFolder:FindFirstChild(itemId), false
+end
+-- which limb part (1 upper, 2 lower, 3 hand/foot) a generated model part belongs on, from its name
+local SEGMENTS = { upperarm = 1, forearm = 2, lowerarm = 2, hand = 3, thigh = 1, upperleg = 1, shin = 2, lowerleg = 2, foot = 3 }
+local function segmentOf(name)
+	local key = string.gsub(string.lower(name), "[^%a]", "")
+	local best, bestLen = nil, 0
+	for k, i in SEGMENTS do
+		if string.find(key, k, 1, true) and #k > bestLen then
+			best, bestLen = i, #k
+		end
+	end
+	return best
 end
 -- fit a clone's parts into a box (cf at the centre, size in studs)
 local function fitInto(clone, cf, size)
@@ -2007,8 +2025,37 @@ local function implantDraw(model, slot)
 		part.Parent = model
 		table.insert(parts, part)
 	end
-	local art = implantArt(itemId)
-	if spec.Shell then
+	local art, generated = implantArt(itemId)
+	if spec.Shell and art and generated then
+		-- a limb with a generated model: each named segment sized onto its body part, the flesh hidden
+		local limb, bySeg = {}, {}
+		for i, name in spec.Shell do
+			limb[i] = model:FindFirstChild(name)
+		end
+		for _, part in art:GetChildren() do
+			local seg = part:IsA("BasePart") and segmentOf(part.Name)
+			if seg and limb[seg] and not bySeg[seg] then
+				bySeg[seg] = part
+			end
+		end
+		local left = string.sub(slot, 1, 4) == "Left"
+		local turn = if left then CFrame.Angles(0, math.pi, 0) else CFrame.identity
+		if bySeg[1] and bySeg[2] and bySeg[3] then
+			hidden = {}
+			for i, src in bySeg do
+				local copy = src:Clone()
+				copy.Size = limb[i].Size * IM.ArtGrow
+				copy.CFrame = limb[i].CFrame * turn
+				copy.Name = "ImplantArt"
+				add(copy, limb[i])
+				hidden[limb[i]] = limb[i].Transparency
+				limb[i].Transparency = 1
+			end
+		else
+			art, generated = nil, false
+		end
+	end
+	if spec.Shell and not (art and generated) then
 		-- a limb: metal shells over the body parts plus a lit seam at the joint
 		for _, name in spec.Shell do
 			local bp = model:FindFirstChild(name)
@@ -2035,7 +2082,7 @@ local function implantDraw(model, slot)
 		end
 	end
 	for _, b in spec.Bits or {} do
-		if spec.Shell or not art then
+		if (spec.Shell and not (art and generated)) or not art then
 			local onto = model:FindFirstChild(b.Part)
 			if onto and onto:IsA("BasePart") then
 				local part = Instance.new("Part")

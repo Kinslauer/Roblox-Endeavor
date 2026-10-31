@@ -128,8 +128,9 @@ store `ConduitCharacter_v2`) is shared by both places.
   Inventory.Equip refuses cybernetics; PlayerData.Load migrates Optic->Eyes, Arm->RightArm; Stats sets JumpHeight;
   WornGear no longer draws cyber (client implants do: `implantDraw` shells/bits/icon-model fit, Config.Implants);
   client senses (hearing pips, scent markers; Loot parts carry the "Scent" tag), machine voice via TextChatService
-  (`src/shared/Voice.lua`, Config.Voice). The 13 Studio-generated implant meshes from combat-feel are listed in its
-  `design/art/implant-models.md` (mesh/texture ids) - not wired yet (would need AssetService:CreateMeshPartAsync).
+  (`src/shared/Voice.lua`, Config.Voice). The 13 Studio-generated implant meshes from combat-feel are rebuilt at startup by
+  `src/server/ImplantLibrary.lua` (AssetService:CreateMeshPartAsync, verified live) into ReplicatedStorage.Implants;
+  the client fits limb segments by part name (UpperArm/Forearm/Hand, Thigh/Shin/Foot) and hides the flesh.
 - Grid inventory (`src/server/Inventory.lua`, shapes in `Items.Shape`/`Items.Footprint`, `Config.Inventory`): profile.Grid.Items
   = { Id, X, Y, Rot, Count } is the truth, profile.Inventory the count cache (recount after every change). Add/Remove/
   AddAll keep their names; Add drops overflow through `Inventory.Overflow` (set by Loot) unless keepLeftover; placement
