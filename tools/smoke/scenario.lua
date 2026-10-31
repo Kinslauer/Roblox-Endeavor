@@ -64,7 +64,14 @@ check("step 3 after spending 5 points", step() == 3)
 -- 3 loot
 local locker = plot:FindFirstChild("Lootable", true)
 check("locker exists", locker ~= nil)
-locker:FindFirstChildOfClass("ProximityPrompt").Triggered:Fire(player)
+locker:FindFirstChildOfClass("ProximityPrompt").Triggered:Fire(player); run(0.1)
+check("the locker opens as a container with its items", (function()
+	local Loot_ = M.mockEnv.__require(SSS.Server.Loot)
+	local c = Loot_.Contents(locker)
+	return (c.ScrapVest or 0) == 1 and (c.Cloth or 0) == 2
+end)())
+root().CFrame = M.CF.new(locker.Position + M.V3.new(3, 0, 0)); run(0.1) -- taking needs you within reach
+Remotes.ContainerTake:FireServer(locker:GetAttribute("ContainerKey"), 0); run(0.2)
 run(1)
 check("step 4 after looting", step() == 4)
 

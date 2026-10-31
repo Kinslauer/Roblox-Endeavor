@@ -8,7 +8,8 @@ report). Versions: Endeavor v39, Front v19.
       cabinet, the supply locker a crate.
 - [ ] Spawn in the starting room on solid floor (no falling through, no black room). Returning players see
       "Welcome back, conduit" and the world opens at once.
-- [ ] Tutorial steps advance as you do them (move, sprint with Shift, swing, block, dodge, flicker).
+- [ ] Tutorial steps advance as you do them (move, sprint with Shift, swing, block, dodge, flicker). The locker step
+      completes once the locker's grid is emptied.
 - [ ] F2 opens the dev panel (test build only): Heal, Mats, Die, Open world, Go to armory/gate/districts/terminals/
       hideout sites, Spawn each hostile, fire each event. Use it to reach anything on this list quickly.
 - [ ] F1 shows the controls card. Tab inventory, L loadout, J attributes, O hideout, N recruit app all open and close.
@@ -42,8 +43,11 @@ report). Versions: Endeavor v39, Front v19.
 - [ ] Drag a block to move it; press R while dragging to rotate; drop onto a same-item stack to merge; a drop that
       overlaps or leaves the grid snaps back. Dropping outside the grid drops the stack at your feet ("Dropped gear").
 - [ ] Click a block for actions (Use / Equip / Wear / Drop / Drop 1) and its size and weight.
-- [ ] Picking up more than fits: what fits comes in, the rest stays in the container ("No room for the rest").
-      Crafting or looting into a full grid drops the result at your feet.
+- [ ] Looting is a search: X on a crate, stash, corpse or salvage opens its own grid beside your pack. Drag items into
+      your pack, double-click to quick-move, or Take all. The container closes and vanishes when empty; what does not
+      fit stays in it ("No room in your pack for the rest"). You must stay within reach to take.
+- [ ] Crafting into a full grid drops the result at your feet.
+- [ ] Double-click moves a stack between your pack and the vault when the hideout panel is open.
 - [ ] Craft a Satchel (4 cloth, 1 scrap), click it, Wear: the grid becomes 7x5 and the satchel leaves the grid. Rucksack
       9x6 and Frame Pack 11x7 likewise. "Take off" shrinks the grid; anything that no longer fits spills at your feet.
 - [ ] Weight shows as "Weight x / carry"; over the carry limit (15 pockets, 25/40/60 packs) you walk at 60% speed and

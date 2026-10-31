@@ -216,6 +216,10 @@ end
 
 -- Draws any grid ({ W, H, Items }) into `frame`. `source` tags the stacks for drag/drop ("pack" or "vault").
 local vaultGridFrame -- the hideout panel's vault grid, when open
+local containerGridFrame -- the open loot container's grid, when open
+local container -- { key, grid, label }
+local lastClick = { index = nil, source = nil, t = 0 }
+local renderContainer -- defined with the container panel below
 local hideout -- the last hideout snapshot (set by Remotes.Hideout)
 local function drawGridInto(gridF, grid, source, holder)
 	for _, c in gridF:GetChildren() do
@@ -250,6 +254,19 @@ local function drawGridInto(gridF, grid, source, holder)
 		end
 		frame.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				-- double-click: quick-move to the obvious other grid
+				if lastClick.index == index and lastClick.source == source and os.clock() - lastClick.t < 0.35 then
+					lastClick.t = 0
+					if source == "container" and container then
+						Remotes.ContainerTake:FireServer(container.key, index)
+					elseif source == "vault" then
+						Remotes.VaultTake:FireServer(item.Id, item.Count)
+					elseif source == "pack" and hideout and hideout.VaultGrid and hidePanel.Visible then
+						Remotes.VaultPut:FireServer(item.Id, item.Count)
+					end
+					return
+				end
+				lastClick.index, lastClick.source, lastClick.t = index, source, os.clock()
 				drag = { index = index, rot = item.Rot, startPos = input.Position, moved = false, size = Vector2.new(w, h), source = source, item = item }
 				drag.ghost = make("Frame", { Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4), Position = UDim2.fromOffset(input.Position.X - 10, input.Position.Y - 10), BackgroundColor3 = frame.BackgroundColor3, BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 50 }, gui)
 				make("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = short(def and def.Name or item.Id), TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 12, ZIndex = 51 }, drag.ghost)
@@ -288,6 +305,11 @@ local function endDrag(input)
 		else
 			Remotes.DropItem:FireServer(d.index)
 		end
+	elseif d.source == "container" then
+		if inPack and container then
+			Remotes.ContainerTake:FireServer(container.key, d.index)
+		end
+		-- anywhere else: it stays in the container
 	else -- from the vault
 		if inVault then
 			local vg = hideout and hideout.VaultGrid
@@ -669,6 +691,12 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b, c, d, e)
 				end
 			end)
 		end
+	elseif kind == "Container" and typeof(a) == "string" and type(b) == "table" then
+		container = { key = a, grid = b, label = tostring(c) }
+		renderContainer()
+	elseif kind == "ContainerClose" and container and container.key == a then
+		container = nil
+		renderContainer()
 	elseif kind == "Marker" and typeof(a) == "string" then
 		setMarker(a, b, c, d, e)
 	elseif kind == "MarkerClear" and typeof(a) == "string" then
@@ -847,6 +875,25 @@ end)
 
 -- ===== Hideout panel (X at your workbench, or O) =====
 local hidePanel = panel(UDim2.fromOffset(560, 460), UDim2.new(0.5, -280, 0.5, -230))
+
+-- Loot containers: searching a crate, stash or corpse opens its grid here; drag out or Take all.
+local containerPanel = panel(UDim2.fromOffset(280, 300), UDim2.new(0.5, -480, 0.5, -150))
+renderContainer = function()
+	clear(containerPanel)
+	containerGridFrame = nil
+	if not container then
+		containerPanel.Visible = false
+		return
+	end
+	addRow(containerPanel, container.label, { { text = "Take all", fn = function() Remotes.ContainerTake:FireServer(container.key, 0) end },
+		{ text = "Close", color = Color3.fromRGB(90, 90, 100), fn = function() container = nil; renderContainer() end } })
+	local holder = make("Frame", { Size = UDim2.new(1, -8, 0, container.grid.H * CELL + 4), BackgroundTransparency = 1 }, containerPanel)
+	containerGridFrame = make("Frame", { Position = UDim2.fromOffset(4, 0), BackgroundColor3 = Color3.fromRGB(30, 26, 22), BorderSizePixel = 0 }, holder)
+	drawGridInto(containerGridFrame, container.grid, "container", holder)
+	addRow(containerPanel, "Drag into your pack (Tab), or double-click.", {})
+	containerPanel.Visible = true
+	invPanel.Visible = true -- you need to see where it goes
+end
 
 -- F2: dev tools (only when Config.Dev.Enabled; the server refuses everything otherwise)
 local devPanel = panel(UDim2.fromOffset(420, 520), UDim2.new(1, -440, 0, 120))

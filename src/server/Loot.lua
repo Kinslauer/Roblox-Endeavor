@@ -6,6 +6,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Inventory = require(script.Parent.Inventory)
+local Net = require(script.Parent.Common.Net)
+local Items = require(ReplicatedStorage.Shared.Items)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local Stats = require(script.Parent.Stats)
 
@@ -15,6 +17,101 @@ local Assets = require(ReplicatedStorage.Shared.Assets)
 local ModelAssets = require(script.Parent.Common.ModelAssets)
 
 local Loot = {}
+
+-- Every lootable is a container: a small grid the looter searches and drags from. Keyed by a
+-- counter; the part carries the key as an attribute.
+local containers = {} -- [key] = { Part, Box, Meta, Opts }
+local nextKey = 0
+
+local function containerFor(bundle)
+	local cellsNeeded = 0
+	for id, count in bundle do
+		local shape = Items.Shape(id)
+		cellsNeeded += math.ceil(count / shape.Stack) * shape.Size[1] * shape.Size[2]
+	end
+	local W = 6
+	local H = math.max(2, math.ceil(cellsNeeded / W) + 1)
+	for _ = 1, 6 do
+		local box = { Items = {}, W = W, H = H }
+		local ok = true
+		for id, count in bundle do
+			if Inventory.PlaceIn(box, id, count) > 0 then
+				ok = false
+			end
+		end
+		if ok then
+			return box
+		end
+		H += 2
+	end
+	return { Items = {}, W = W, H = H }
+end
+
+local function snapshot(box)
+	return { W = box.W, H = box.H, Items = box.Items }
+end
+
+-- Takes stack `index` (0 = everything) from container `key` into the player's pack, what fits.
+function Loot.Take(player, key, index)
+	local c = containers[key]
+	if not c or not c.Part.Parent then
+		return
+	end
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root or (root.Position - c.Part.Position).Magnitude > 14 or not c.CanTake(player) then
+		return
+	end
+	local profile = PlayerData.Get(player)
+	local function applyMeta(id)
+		if c.Meta and c.Meta.Condition and profile and profile.Inventory[id] then
+			profile.Condition[id] = math.min(profile.Condition[id] or 100, c.Meta.Condition)
+			if c.Meta.Upgrades then
+				profile.Upgrades[id] = math.max(profile.Upgrades[id] or 0, c.Meta.Upgrades)
+			end
+		end
+	end
+	local indices = {}
+	if index == 0 then
+		for i = #c.Box.Items, 1, -1 do
+			table.insert(indices, i)
+		end
+	elseif c.Box.Items[index] then
+		table.insert(indices, index)
+	end
+	local blocked = false
+	for _, i in indices do
+		local item = c.Box.Items[i]
+		if item then
+			local _, left = Inventory.Add(player, item.Id, item.Count, true)
+			local taken = item.Count - (left or 0)
+			if taken > 0 then
+				applyMeta(item.Id)
+				item.Count -= taken
+				if item.Count <= 0 then
+					table.remove(c.Box.Items, i)
+				end
+			else
+				blocked = true
+			end
+		end
+	end
+	if blocked then
+		Remotes.Announce:FireClient(player, "No room in your pack for the rest.", "Info")
+	end
+	if #c.Box.Items == 0 then
+		containers[key] = nil
+		Remotes.World:FireClient(player, "ContainerClose", key)
+		c.Part:Destroy()
+	else
+		Remotes.World:FireClient(player, "Container", key, snapshot(c.Box), c.Opts.Label or "Remains")
+	end
+end
+
+-- What is left in a container, as counts (the tutorial and tests read this).
+function Loot.Contents(part)
+	local c = containers[part:GetAttribute("ContainerKey")]
+	return c and Inventory.CountsOf(c.Box) or {}
+end
 
 -- What the grid cannot hold lands at the player's feet as a small stash.
 Inventory.Overflow = function(player, bundle, meta)
@@ -68,30 +165,21 @@ function Loot.Spawn(cframe, bundle, opts)
 		return true
 	end
 
+	-- the container: searching opens its grid on the looter's screen; they drag out what they want
+	nextKey += 1
+	local key = tostring(nextKey)
+	part:SetAttribute("ContainerKey", key)
+	containers[key] = { Part = part, Box = containerFor(bundle), Meta = opts.Meta, Opts = opts, CanTake = canTake }
+	part.Destroying:Connect(function()
+		containers[key] = nil
+	end)
 	prompt.Triggered:Connect(function(looter)
 		if not canTake(looter) then
 			return
 		end
-		part.Parent = nil
-		local left = Inventory.AddAll(looter, bundle, true)
-		if opts.Meta and opts.Meta.Condition then
-			-- dropped gear keeps its wear: the worse of what you had and what you picked up
-			local profile = PlayerData.Get(looter)
-			for id in bundle do
-				if profile and profile.Inventory[id] and not left[id] then
-					profile.Condition[id] = math.min(profile.Condition[id] or 100, opts.Meta.Condition)
-					if opts.Meta.Upgrades then
-						profile.Upgrades[id] = math.max(profile.Upgrades[id] or 0, opts.Meta.Upgrades)
-					end
-				end
-			end
-		end
-		if next(left) then
-			bundle = left -- the rest stays here for later, or for someone with room
-			part.Parent = workspace
-			Remotes.Announce:FireClient(looter, "No room for the rest. It stays here.", "Info")
-		else
-			part:Destroy()
+		local c = containers[key]
+		if c then
+			Remotes.World:FireClient(looter, "Container", key, snapshot(c.Box), opts.Label or "Remains")
 		end
 	end)
 
@@ -123,6 +211,10 @@ function Loot.Spawn(cframe, bundle, opts)
 	part:SetNetworkOwner(nil) -- clients must not be able to drag loot around
 	Debris:AddItem(part, opts.Lifetime or Config.CorpseLifetime)
 	return part
+end
+
+function Loot.Init()
+	Net.On("ContainerTake", { rate = 10, burst = 20, args = { "string", "int" } }, Loot.Take)
 end
 
 return Loot

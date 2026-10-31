@@ -6,7 +6,7 @@ local NAMES = {
 	-- client -> server
 	"Attack", "Heavy", "Feint", "Flicker", "Block", "Sprint", "Dodge", "UseSkill", "SetSkill", "Allocate", "UseItem", "EquipItem", "Unequip", "Craft", "TutorialSkip", "Grab", "Throw", "Drop", "WarBuy", "WarRepair", "WarOrder", "HideoutClaim", "HideoutBuild", "HideoutUpgrade", "HideoutRepair", "ItemUpgrade", "VaultPut", "VaultTake", "HideoutInvite", "HideoutKick", "HideoutLeave",
 	-- Front (war world) client -> server
-	"Dev", "MoveItem", "DropItem", "VaultMove",
+	"Dev", "MoveItem", "DropItem", "VaultMove", "ContainerTake",
 	"Fire", "Reload", "Rack", "Mode", "Switch", "Unjam", "Aim", "Lean", "Grenade", "Heal", "Artillery", "Deploy", "Entrench",
 	-- server -> client
 	"CombatEvent", "StatsChanged", "InventoryChanged", "LoadoutChanged", "QuestChanged", "Announce", "PhaseChanged", "Died", "Tutorial", "Raid", "World", "Uplink", "RecruitApp", "Hideout", "Scales", "Hill", "Weapon", "Soldier",

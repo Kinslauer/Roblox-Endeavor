@@ -173,7 +173,7 @@ local STEPS = {
 	},
 	{
 		Title = "Loot",
-		Text = "Hold X on the supply locker to open it. Interact is X because E is for flicking.",
+		Text = "Hold X on the supply locker to open it, then drag everything into your pack (or Take all). Interact is X because E is for flicking.",
 		Setup = function(ctx) highlight(ctx, ctx.locker) end,
 		Done = function(ctx) return ctx.locker.Parent == nil end,
 	},

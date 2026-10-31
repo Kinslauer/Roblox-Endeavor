@@ -62,7 +62,7 @@ every player has finished or skipped (and 30s have passed) the world opens early
 A grid, Tarkov-style (`src/server/Inventory.lua`, `Items.Shape`): every item has a footprint, a weight and a stack size;
 the grid is your pockets (6x4) or the pack you wear (Satchel 7x5, Rucksack 9x6, Frame Pack 11x7, all craftable). Drag to
 move, `R` to rotate while dragging, drop onto a matching stack to merge, drop outside the grid to drop it on the ground.
-What does not fit stays in the container or lands at your feet; placing into a fragmented grid repacks it. Carrying more
+Looting is a search: a container opens as its own grid to drag from. What does not fit stays in the container or lands at your feet; placing into a fragmented grid repacks it. Carrying more
 than the pack's limit slows you to 60% and raises stamina costs. Hideout Shelving (three levels) extends the vault.
 `profile.Inventory` stays a plain id→count cache rebuilt from the grid, so crafting, equipping, quests and the vault read
 counts as before.
