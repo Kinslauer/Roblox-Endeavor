@@ -313,7 +313,8 @@ function Tutorial.Start(player)
 		return
 	end
 	if data.TutorialDone then
-		WorldPhase.MarkReady(player) -- returning player: nothing to teach
+		Remotes.Announce:FireClient(player, "Welcome back, conduit. Tapping into the city...", "Info")
+		WorldPhase.MarkReady(player, "returning") -- nothing to teach; the city opens as soon as everyone here is ready
 		return
 	end
 	local ctx = { player = player, alive = true, index = 1, counts = {}, heavyUntil = 0 }

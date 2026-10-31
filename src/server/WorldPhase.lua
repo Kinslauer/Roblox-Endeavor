@@ -86,12 +86,18 @@ function WorldPhase.CheckReady()
 	if phase == Config.Phases.Open or emerging or not startedAt then
 		return
 	end
+	local anyoneLearning = false
 	for _, player in Players:GetPlayers() do
 		if not ready[player] then
 			return
 		end
+		if ready[player] ~= "returning" then
+			anyoneLearning = true
+		end
 	end
-	local remaining = startedAt + Config.PrologueMinSeconds - os.clock()
+	-- the minimum prologue only matters when someone actually went through the tutorial;
+	-- a server of returning conduits opens at once
+	local remaining = if anyoneLearning then startedAt + Config.PrologueMinSeconds - os.clock() else 0
 	if remaining > 0 then
 		task.delay(remaining, WorldPhase.CheckReady)
 		return
@@ -99,8 +105,9 @@ function WorldPhase.CheckReady()
 	task.spawn(WorldPhase.Emerge)
 end
 
-function WorldPhase.MarkReady(player)
-	ready[player] = true
+-- kind: nil (finished or skipped the tutorial) or "returning" (nothing to teach)
+function WorldPhase.MarkReady(player, kind)
+	ready[player] = kind or true
 	WorldPhase.CheckReady()
 end
 
