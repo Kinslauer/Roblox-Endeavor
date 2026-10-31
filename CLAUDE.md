@@ -60,17 +60,21 @@ store `ConduitCharacter_v2`) is shared by both places.
   K artillery, F dig, V sandbags, M app.
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v16, Front v9). Spawn fall-through fixed by anchoring the
+- Both places published and starting cleanly (Endeavor v17, Front v9). Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.
 - User reported keys not working in Studio before v16; v16 adds visible swing arcs, block outline, sprint and a
   controls card. If keys still do nothing, get the F9 Client tab log.
-- Everything is placeholder geometry: no models, rigs, animations or sounds. The user will model in Blender, import
-  via Studio, **Save to Roblox as assets**, and send asset IDs; wire them by ID (never into the place file, which
-  publishing overwrites). First prop agreed: a streetlight.
+- **Models are made here, not by the user** (they are "just a gamer"): Blender 4.2 runs headless in this env
+  (`/home/user/scratch-blender/...`), props are built by script (`tools/models/`, see its README), previewed with a
+  software rasterizer, uploaded as Model assets via Open Cloud (`tools/models/upload.py`, key needs Assets: Write,
+  key user id 3155619052), and wired by ID in `src/shared/Assets.lua` with A/B/C condition variants. The nine street
+  props + streetlight + 3 chunks are done (Endeavor v17). Still placeholder: buildings, NPC rigs, weapons,
+  animations, sounds, the Front's props.
 - All balance numbers are first guesses pending the user's playtest checklist.
 
 ## Open items
-- Wire Blender assets (props, rigs, weapons, animations) by asset ID; animation hooks exist (`CombatEvent` "Swing").
+- Next art: building facades/district kits, enemy rigs (Raider/Brute/Shocker/Warden), weapons, Front props,
+  animations (hooks exist: `CombatEvent` "Swing"). Rig import for animated characters is untested.
 - The user's playtest checklist (pending).
 - Front: real 20-player frame-rate test; war world art; vehicles are intentionally absent.
 - Experience internal name is still "Conduit" (cosmetic; rename in Configurations → Basic Settings).

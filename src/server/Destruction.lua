@@ -102,23 +102,28 @@ end
 function Destruction.SpawnProp(propId, cframe)
 	local def = Props.Defs[propId]
 	assert(def, "unknown prop " .. tostring(propId))
-	local template = loadAsset(Assets.Props[propId] or 0)
+	local template = loadAsset(Assets.PickProp(propId, rng) or 0)
 	local model
 	if template then
-		-- Blender-built model: a Model of MeshParts (or a single MeshPart). Anchor it and set it down.
+		-- Blender-built model: a Model of MeshParts (or a single MeshPart). Dress it, anchor it,
+		-- and set it down so its bottom sits on the given point.
 		model = template:Clone()
 		if model:IsA("BasePart") then
 			local holder = Instance.new("Model")
 			model.Parent = holder
 			model = holder
 		end
+		Assets.Dress(model)
 		for _, p in model:GetDescendants() do
 			if p:IsA("BasePart") then
 				p.Anchored = true
+				p.CanQuery = true
 			end
 		end
 		model.Name = propId
 		model.PrimaryPart = model:FindFirstChildWhichIsA("BasePart")
+		local bboxCF, bboxSize = model:GetBoundingBox()
+		model.WorldPivot = CFrame.new(bboxCF.Position - Vector3.new(0, bboxSize.Y / 2, 0))
 		model:PivotTo(cframe)
 	else
 		model = Instance.new("Model")
@@ -162,6 +167,13 @@ local function spawnChunk(chunkDef, cframe, impulse)
 		-- a Blender chunk: use its mesh (first part of the model) as the physical piece
 		local mesh = if template:IsA("BasePart") then template:Clone() else (template:FindFirstChildWhichIsA("BasePart") and template:FindFirstChildWhichIsA("BasePart"):Clone())
 		p = mesh or Instance.new("Part")
+		if mesh then
+			local holder = Instance.new("Model")
+			p.Parent = holder
+			Assets.Dress(holder)
+			p.Parent = nil
+			holder:Destroy()
+		end
 	else
 		p = Instance.new("Part")
 		p.Size, p.Color, p.Material = chunkDef.Size, chunkDef.Color, chunkDef.Material or Enum.Material.Metal
@@ -793,11 +805,12 @@ function Destruction.Reset()
 	for _, remains in CollectionService:GetTagged("Salvage") do
 		remains:Destroy()
 	end
-	for model, entry in props do
+	for model, entry in table.clone(props) do
 		if not entry.intact then
-			entry.intact, entry.health = true, entry.def.Health
-			model:SetAttribute("Health", entry.def.Health)
-			model.Parent = folder
+			-- rematerialize as a fresh spawn: the condition (A/B/C) is rolled again
+			props[model] = nil
+			model:Destroy()
+			Destruction.SpawnProp(entry.id, entry.cframe)
 		end
 	end
 	local pending = {}

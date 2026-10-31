@@ -391,7 +391,9 @@ check("arc pistol spends a cell per shot", Inventory.Count(player, "ArcCell") ==
 
 -- dematerialization brings everything back
 Destruction.Reset(); run(1)
-check("rematerialize restores the streetlight and the door", lamp.Parent ~= nil and door.Parent ~= nil)
+local lampBack = false
+for _, m in dfolder:GetChildren() do if m:GetAttribute("Prop") == "Streetlight" and m.PrimaryPart and (m.PrimaryPart.Position - lampPos).Magnitude < 8 then lampBack = true end end
+check("rematerialize restores the streetlight (as a fresh condition) and the door", lampBack and door.Parent ~= nil)
 local chunksLeft = 0
 for _, d in dfolder:GetChildren() do if d:GetAttribute("Chunk") then chunksLeft += 1 end end
 check("rematerialize clears loose chunks", chunksLeft == 0)

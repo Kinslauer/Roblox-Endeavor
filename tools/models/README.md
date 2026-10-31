@@ -1,0 +1,18 @@
+# Models (Blender -> Roblox)
+
+Props are built by script in Blender (no GPU needed) and uploaded to Roblox as Model assets through Open Cloud.
+The game loads them by asset ID (`src/shared/Assets.lua`) and falls back to generated blocks for anything missing.
+
+    BLENDER=/home/user/scratch-blender/blender-4.2.3-linux-x64/blender   # 4.2 LTS linux tarball from download.blender.org
+    $BLENDER -b --python tools/models/streetlight.py      # -> tools/models/out/*.fbx (+ *_preview.obj)
+    $BLENDER -b --python tools/models/props.py            # nine props x conditions A/B/C
+    python3 tools/models/preview.py out/X_preview.obj out/X.png   # software preview (Pillow), no OpenGL needed
+    ROBLOX_API_KEY=... python3 tools/models/upload.py Name out/Name.fbx [...]   # prints "Name assetId"; key needs Assets: Write
+
+Rules that matter:
+- `lib.export_fbx` uses `global_scale=0.01` so 1 Blender unit = 1 stud. Without it models import 100x too big.
+- Roblox drops Blender material colours. Every object is named `<Part>_<Material>` (lib does this) and
+  `Assets.Materials` applies colour / material / glow from the suffix when a model loads.
+- Conditions: `<Prop>_A` intact, `_B` worn, `_C` wrecked. `Assets.PickProp` rolls one on spawn and on rematerialize.
+- Loaded models are dressed, anchored, and pivoted to their bounding-box bottom so they sit on the ground.
+- Chunks (`Chunk_*`) are single meshes used as the physical debris piece; `Props.Defs[...].Chunks[i].Asset` names them.

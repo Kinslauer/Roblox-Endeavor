@@ -25,7 +25,9 @@ def obj_from_bmesh(name, bm, mat, location=(0, 0, 0)):
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()
-    ob = bpy.data.objects.new(name, me)
+    # Roblox drops Blender material colours on import, so the material rides in the part name:
+    # "<Part>_<Material>"; the game reads the suffix (see shared/Assets.lua).
+    ob = bpy.data.objects.new(f"{name}_{mat.name}", me)
     ob.location = location
     me.materials.append(mat)
     bpy.context.collection.objects.link(ob)
@@ -74,7 +76,7 @@ def export_fbx(path, objs):
     bpy.ops.object.select_all(action="DESELECT")
     for o in objs:
         o.select_set(True)
-    bpy.ops.export_scene.fbx(filepath=path, use_selection=True, apply_unit_scale=True, global_scale=1.0,
+    bpy.ops.export_scene.fbx(filepath=path, use_selection=True, apply_unit_scale=True, global_scale=0.01, # Blender metres -> FBX cm; 0.01 makes 1 unit = 1 stud in Roblox
         bake_space_transform=True, axis_forward="-Z", axis_up="Y", object_types={"MESH"}, mesh_smooth_type="FACE",
         use_mesh_modifiers=True, path_mode="COPY", embed_textures=True)
 

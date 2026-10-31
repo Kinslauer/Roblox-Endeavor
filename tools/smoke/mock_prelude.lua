@@ -151,10 +151,31 @@ function methods.SetAttribute(self, k, v) local a = self._attrs; if a[k] ~= v th
 function methods.GetAttribute(self, k) return self._attrs[k] end
 function methods.GetAttributeChangedSignal(self, k) return sig(self, "attr:" .. k) end
 function methods.PivotTo(self, cf)
+	local current = rawget(self, "WorldPivot") or rawget(self, "_pivot")
+	if current and current ~= cf and not self:FindFirstChild("HumanoidRootPart") then
+		-- rigid move: keep every part's offset from the pivot
+		local delta = cf.Position - current.Position
+		for _, d in descendants(self, {}) do if d:IsA("BasePart") and d.Position then d.CFrame = mkcf(d.Position + delta, d.CFrame.r) end end
+		rawset(self, "_pivot", cf); rawset(self, "WorldPivot", cf)
+		return
+	end
 	rawset(self, "_pivot", cf)
 	local root = self.PrimaryPart or self:FindFirstChild("HumanoidRootPart")
 	if root then root.CFrame = cf end
 	for _, c in self._children do if c:IsA("BasePart") and c ~= root then c.CFrame = cf end end
+end
+function methods.GetBoundingBox(self)
+	local minv, maxv
+	for _, d in descendants(self, {}) do
+		if d:IsA("BasePart") and d.Position then
+			local p, h = d.Position, d.Size / 2
+			local lo, hi = p - h, p + h
+			minv = minv and V3.new(math.min(minv.X, lo.X), math.min(minv.Y, lo.Y), math.min(minv.Z, lo.Z)) or lo
+			maxv = maxv and V3.new(math.max(maxv.X, hi.X), math.max(maxv.Y, hi.Y), math.max(maxv.Z, hi.Z)) or hi
+		end
+	end
+	if not minv then return mkcf(V3.zero), V3.zero end
+	return mkcf((minv + maxv) / 2), maxv - minv
 end
 function methods.GetPivot(self)
 	local root = self.PrimaryPart or self:FindFirstChild("HumanoidRootPart") or self:FindFirstChildWhichIsA("BasePart")
@@ -317,6 +338,16 @@ function methods.GetService(self, name)
 	elseif name == "DataStoreService" and not s._init then
 		s._init = true
 		function s.GetDataStore() if M_UNPUBLISHED then error("You must publish this place to the web to access DataStore") end local ds = {}; function ds.GetAsync() return nil end; function ds.SetAsync() end; function ds.UpdateAsync(_, k, f) return f(nil) end; function ds.RemoveAsync() end; return ds end
+	elseif name == "InsertService" and not s._init then
+		s._init = true
+		function s.LoadAsset(_, id)
+			local container = newInstance("Model"); container.Name = "Container"
+			local m = newInstance("Model"); m.Name = "Asset" .. id
+			local part = newInstance("Part"); part.Name = "Pole_Steel"; part.Size = V3.new(1, 12, 1); part.CFrame = mkcf(V3.new(0, 6, 0)); part.Parent = m
+			local lens = newInstance("Part"); lens.Name = "Lens_Lens"; lens.Size = V3.new(2, 0.2, 1); lens.CFrame = mkcf(V3.new(3, 12, 0)); lens.Parent = m
+			m.Parent = container
+			return container
+		end
 	elseif name == "RunService" and not s._init then
 		s._init = true; s.Heartbeat = sig(s, "Heartbeat"); s.RenderStepped = sig(s, "RenderStepped")
 	end
