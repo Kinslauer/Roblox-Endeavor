@@ -9,6 +9,8 @@ local Config = require(Shared.Config)
 local Firearms = require(Shared.Firearms)
 local Remotes = require(Shared.Remotes)
 local Net = require(script.Parent.Common.Net)
+local ModelAssets = require(script.Parent.Common.ModelAssets)
+local Assets = require(Shared.Assets)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local Recruit = require(script.Parent.Common.Recruit)
 local Battlefield = require(script.Parent.Battlefield)
@@ -375,6 +377,10 @@ local function sandbag(player, position, look)
 	bag.CFrame = CFrame.lookAt(Vector3.new(position.X, 2 + 0.8, position.Z), Vector3.new(position.X + look.X, 2 + 0.8, position.Z + look.Z))
 	bag.Color, bag.Material, bag.Anchored = Color3.fromRGB(140, 125, 90), Enum.Material.Fabric, true
 	bag.Parent = workspace
+	-- the uploaded sandbag model rides inside the collider; the plain part stays as the fallback look
+	if ModelAssets.Spawn(Assets.Front.LowSandbags, bag.CFrame * CFrame.new(0, -0.8, 0), "Mesh", bag) then
+		bag.Transparency = 1
+	end
 	registerWork(bag)
 	return bag
 end

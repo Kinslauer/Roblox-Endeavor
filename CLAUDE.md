@@ -16,8 +16,8 @@ store `ConduitCharacter_v2`) is shared by both places.
 
 ## Layout
 - `src/shared` → ReplicatedStorage.Shared (Config = every tunable; Weapons, Armor, Cybernetics, Skills, Items, Props,
-  Firearms, Hideout, Remotes). `src/common` → ServerScriptService.Server.Common in both places (Net, PlayerData,
-  ProfileService, Recruit). `src/server` = Endeavor systems, `src/war/server` = Front systems, `src/client` and
+  Firearms, Hideout, Remotes, Assets = every uploaded model id). `src/common` → ServerScriptService.Server.Common in both
+  places (Net, PlayerData, ProfileService, Recruit, ModelAssets = asset loader/cache/spawner). `src/server` = Endeavor systems, `src/war/server` = Front systems, `src/client` and
   `src/war/client` = the two clients (one LocalScript each).
 - Every client->server remote goes through `Net.On` (rate limit + arg types). Clients only send intent.
 - Entry points (`Main.server.lua`) wrap everything in pcall and print `STARTUP FAILED: ...` on error.
@@ -70,18 +70,21 @@ store `ConduitCharacter_v2`) is shared by both places.
   key user id 3155619052), and wired by ID in `src/shared/Assets.lua` with A/B/C condition variants. The nine street
   props + streetlight + 3 chunks, and the building kits (5 district styles x 3 heights x intact/collapsed,
   `tools/models/buildings.py`, bmesh-merged to ~7 MeshParts each, `Assets.Buildings` + `Assets.PickBuilding`) are
-  done (Endeavor v18). Model loading is in `src/server/ModelAssets.lua` (cache, dress, anchor, bottom pivot).
+  done (Endeavor v18). Model loading is in `src/common/ModelAssets.lua` (cache, dress, anchor, bottom pivot).
   Enemy rigs (Raider/Brute/Shocker/Warden, `tools/models/raider.py` + `enemies.py`) are R15 limb meshes jointed by
   `src/server/Rigs.lua` (Motor6Ds from limb positions, Animator created before replication, Roblox's public R15
   idle/walk anims). Left limbs must be at -X. Display mannequins stand on magenta pads by the test armory.
   Weapons in hand: `tools/models/weapons.py` -> `Assets.Weapons` (6 ids), welded into RightHand by `src/server/HeldWeapons.lua`
   (players on every Stats.Apply, NPCs via `NPCs.Types[t].Weapon`, arena mannequins too). Grip offsets unverified in-game.
-  Still placeholder: custom animations, sounds, the Front's props, hideout/arena/raid geometry.
+  Front props (`tools/models/front.py` -> `Assets.Front`): sandbag nests A/B tile the trench lips and nests, trucks A/B,
+  hedgehogs on sector edges, ammo crates; a soldier's stacked sandbags carry the LowSandbags mesh inside the collider
+  part. Everything falls back to the old generated boxes when an asset fails to load.
+  Still placeholder: custom animations, sounds, hideout/arena/raid geometry, the Front's staged buildings.
   Known limit: MeshPart CollisionFidelity can't be set from scripts, so collapsed stumps may collide as hulls.
 - All balance numbers are first guesses pending the user's playtest checklist.
 
 ## Open items
-- Next art: Front props (sandbags, wrecked trucks, staged structures), hideout geometry,
+- Next art: the Front's staged buildings (4 stages), hideout geometry,
   animations (hooks exist: `CombatEvent` "Swing"). Awaiting the user's in-game look at the rigs (animation playback can't be verified from the Luau execution API).
 - The user's playtest checklist (pending).
 - Front: real 20-player frame-rate test; war world art; vehicles are intentionally absent.

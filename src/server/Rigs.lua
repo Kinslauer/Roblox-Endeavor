@@ -7,7 +7,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Assets = require(ReplicatedStorage.Shared.Assets)
-local ModelAssets = require(script.Parent.ModelAssets)
+local ModelAssets = require(script.Parent.Common.ModelAssets)
 
 local Rigs = {}
 local warned = {} -- asset ids already reported as unusable

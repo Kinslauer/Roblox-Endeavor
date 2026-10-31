@@ -1,5 +1,6 @@
 -- Loads uploaded models (Blender-built, see tools/models) once, caches them, and spawns dressed,
--- anchored copies set down on a point. Used by Destruction (props) and City (buildings).
+-- anchored copies set down on a point. Shared by both places (Endeavor props, buildings, weapons;
+-- the Front's battlefield props).
 local InsertService = game:GetService("InsertService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 

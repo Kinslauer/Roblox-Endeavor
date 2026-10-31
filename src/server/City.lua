@@ -14,7 +14,7 @@ local Items = require(Shared.Items)
 local Remotes = require(Shared.Remotes)
 local Assets = require(Shared.Assets)
 local Destruction = require(script.Parent.Destruction)
-local ModelAssets = require(script.Parent.ModelAssets)
+local ModelAssets = require(script.Parent.Common.ModelAssets)
 local Loot = require(script.Parent.Loot)
 local Quests = require(script.Parent.Quests)
 

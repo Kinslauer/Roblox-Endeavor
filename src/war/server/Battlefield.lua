@@ -7,6 +7,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
+local Assets = require(Shared.Assets)
+local ModelAssets = require(script.Parent.Common.ModelAssets)
 
 local W = Config.War
 local H = W.Hill
@@ -19,10 +21,24 @@ local sectors = {} -- [index] = { Center, Structures = {}, Rebuilt = os.clock() 
 local structures = {} -- [model] = { stages = {...}, stage = 1, health, maxHealth, sector }
 local rng = Random.new(42)
 
+local part
 local MUD = Color3.fromRGB(70, 60, 45)
 local CONCRETE = Color3.fromRGB(120, 115, 105)
 
-local function part(parent, props)
+-- An uploaded prop set down on the ground at (x, GROUND_TOP, z) facing `yaw` degrees, or the
+-- generated box in `fallback` (a props table for part()) when the asset is missing.
+local function prop(parent, assetId, position, yaw, name, fallback)
+	local cf = CFrame.new(position.X, GROUND_TOP, position.Z) * CFrame.Angles(0, math.rad(yaw or 0), 0)
+	local model = ModelAssets.Spawn(assetId, cf, name, parent)
+	if model then
+		return model
+	end
+	fallback.Name = name
+	fallback.Orientation = Vector3.new(0, yaw or 0, 0)
+	return part(parent, fallback)
+end
+
+function part(parent, props)
 	local p = Instance.new("Part")
 	p.Anchored = true
 	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
@@ -180,7 +196,13 @@ local function buildSector(index)
 		part(folder, { Name = "TrenchFloor", Size = Vector3.new(size.X, 1, size.Z), Position = center + Vector3.new(0, GROUND_TOP - 3.5, 0), Color = MUD, Material = Enum.Material.Mud })
 		for side = -1, 1, 2 do
 			local lip = if horizontal then Vector3.new(0, 0, side * 3.8) else Vector3.new(side * 3.8, 0, 0)
-			part(folder, { Name = "Sandbags", Size = if horizontal then Vector3.new(length, 2, 1.5) else Vector3.new(1.5, 2, length), Position = center + lip + Vector3.new(0, GROUND_TOP + 1, 0), Color = Color3.fromRGB(140, 125, 90), Material = Enum.Material.Fabric })
+			local n = math.floor(length / 6)
+			for i = 1, n do
+				local along = (i - 0.5) * 6 - length / 2
+				local at = center + lip + (if horizontal then Vector3.new(along, 0, 0) else Vector3.new(0, 0, along))
+				prop(folder, if rng:NextNumber() < 0.3 then Assets.Front.Sandbags.B else Assets.Front.Sandbags.A, at, if horizontal then 0 else 90, "Sandbags",
+					{ Size = Vector3.new(6, 2, 1.5), Position = at + Vector3.new(0, GROUND_TOP + 1, 0), Color = Color3.fromRGB(140, 125, 90), Material = Enum.Material.Fabric })
+			end
 		end
 	end
 	trench(Vector3.new(c.X, 0, c.Z + rng:NextNumber(-s * 0.35, s * 0.35)), s * 0.7, true)
@@ -190,11 +212,28 @@ local function buildSector(index)
 		part(folder, { Name = "Berm", Size = Vector3.new(rng:NextNumber(10, 18), 2.5, 4), Position = c + Vector3.new(rng:NextNumber(-s * 0.45, s * 0.45), GROUND_TOP + 1.2, rng:NextNumber(-s * 0.45, s * 0.45)), Color = MUD, Material = Enum.Material.Ground, Orientation = Vector3.new(0, rng:NextNumber(0, 180), 0) })
 	end
 	for _ = 1, 7 do
-		part(folder, { Name = "Sandbags", Size = Vector3.new(6, 2, 1.5), Position = c + Vector3.new(rng:NextNumber(-s * 0.45, s * 0.45), GROUND_TOP + 1, rng:NextNumber(-s * 0.45, s * 0.45)), Color = Color3.fromRGB(140, 125, 90), Material = Enum.Material.Fabric, Orientation = Vector3.new(0, rng:NextNumber(0, 180), 0) })
+		local at = c + Vector3.new(rng:NextNumber(-s * 0.45, s * 0.45), 0, rng:NextNumber(-s * 0.45, s * 0.45))
+		prop(folder, if rng:NextNumber() < 0.4 then Assets.Front.Sandbags.B else Assets.Front.Sandbags.A, at, rng:NextNumber(0, 180), "Sandbags",
+			{ Size = Vector3.new(6, 2, 1.5), Position = at + Vector3.new(0, GROUND_TOP + 1, 0), Color = Color3.fromRGB(140, 125, 90), Material = Enum.Material.Fabric })
+	end
+	-- tank traps along the sector's edges and ammo crates by the nests
+	for _ = 1, rng:NextInteger(3, 5) do
+		local edge = rng:NextInteger(1, 4)
+		local u = rng:NextNumber(-s * 0.45, s * 0.45)
+		local at = c + (if edge == 1 then Vector3.new(u, 0, s * 0.46) elseif edge == 2 then Vector3.new(u, 0, -s * 0.46) elseif edge == 3 then Vector3.new(s * 0.46, 0, u) else Vector3.new(-s * 0.46, 0, u))
+		prop(folder, Assets.Front.Hedgehog, at, rng:NextNumber(0, 360), "Hedgehog",
+			{ Size = Vector3.new(4, 4, 4), Position = at + Vector3.new(0, GROUND_TOP + 2, 0), Color = Color3.fromRGB(96, 54, 32), Material = Enum.Material.CorrodedMetal })
+	end
+	for _ = 1, 3 do
+		local at = c + Vector3.new(rng:NextNumber(-s * 0.4, s * 0.4), 0, rng:NextNumber(-s * 0.4, s * 0.4))
+		prop(folder, Assets.Front.AmmoCrate, at, rng:NextNumber(0, 360), "AmmoCrate",
+			{ Size = Vector3.new(2, 1.3, 1.2), Position = at + Vector3.new(0, GROUND_TOP + 0.65, 0), Color = Color3.fromRGB(70, 78, 46), Material = Enum.Material.Metal })
 	end
 	-- wrecks: a burnt-out truck or two per sector
 	for _ = 1, rng:NextInteger(1, 2) do
-		part(folder, { Name = "Wreck", Size = Vector3.new(7, 4, 14), Position = c + Vector3.new(rng:NextNumber(-s * 0.4, s * 0.4), GROUND_TOP + 2, rng:NextNumber(-s * 0.4, s * 0.4)), Color = Color3.fromRGB(50, 45, 40), Material = Enum.Material.CorrodedMetal, Orientation = Vector3.new(0, rng:NextNumber(0, 180), 0) })
+		local at = c + Vector3.new(rng:NextNumber(-s * 0.4, s * 0.4), 0, rng:NextNumber(-s * 0.4, s * 0.4))
+		prop(folder, if rng:NextNumber() < 0.5 then Assets.Front.Truck.B else Assets.Front.Truck.A, at, rng:NextNumber(0, 180), "Wreck",
+			{ Size = Vector3.new(7, 4, 14), Position = at + Vector3.new(0, GROUND_TOP + 2, 0), Color = Color3.fromRGB(50, 45, 40), Material = Enum.Material.CorrodedMetal })
 	end
 end
 

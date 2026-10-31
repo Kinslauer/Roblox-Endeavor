@@ -87,6 +87,16 @@ Assets.Weapons = {
 	ArcPistol = { Id = 137041276570028, Grip = "Pistol" },
 }
 
+-- The Front's battlefield props (see war/server/Battlefield.lua and Soldiers.lua), tools/models/front.py.
+-- Sandbags/Truck have condition variants A (fresh) / B (torn, gutted); the rest are single models.
+Assets.Front = {
+	Sandbags = { A = 95928144285816, B = 132747554423751 },
+	LowSandbags = 98333994567972,
+	Truck = { A = 100644987503518, B = 98573307241675 },
+	Hedgehog = 102101837213656,
+	AmmoCrate = 89789308888628,
+}
+
 -- Roblox drops Blender material colours on import, so every part is named "<Part>_<Material>"
 -- and the material is applied from this table when the model is loaded.
 Assets.Materials = {
@@ -124,6 +134,10 @@ Assets.Materials = {
 	WardenRed = { Color = Color3.fromRGB(140, 20, 36), Material = Enum.Material.Fabric },
 	Visor = { Color = Color3.fromRGB(255, 25, 25), Material = Enum.Material.Neon, Light = Color3.fromRGB(255, 40, 40) },
 	Coat = { Color = Color3.fromRGB(33, 31, 38), Material = Enum.Material.Fabric },
+	Sandbag = { Color = Color3.fromRGB(150, 132, 92), Material = Enum.Material.Fabric },
+	SandbagDark = { Color = Color3.fromRGB(112, 96, 62), Material = Enum.Material.Fabric },
+	Char = { Color = Color3.fromRGB(28, 26, 25), Material = Enum.Material.CorrodedMetal },
+	Olive = { Color = Color3.fromRGB(70, 78, 46), Material = Enum.Material.Metal },
 	Rubber = { Color = Color3.fromRGB(23, 23, 26), Material = Enum.Material.Rubber },
 	-- buildings
 	DarkConcrete = { Color = Color3.fromRGB(44, 44, 51), Material = Enum.Material.Concrete },

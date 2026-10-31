@@ -7,6 +7,7 @@ The game loads them by asset ID (`src/shared/Assets.lua`) and falls back to gene
     $BLENDER -b --python tools/models/streetlight.py      # -> tools/models/out/*.fbx (+ *_preview.obj)
     $BLENDER -b --python tools/models/props.py            # nine props x conditions A/B/C
     $BLENDER -b --python tools/models/weapons.py          # the six held weapons (grip at origin, blade along +Y)
+    $BLENDER -b --python tools/models/front.py            # the Front's props: sandbags A/B, low sandbags, trucks A/B, hedgehog, ammo crate
     python3 tools/models/preview.py out/X_preview.obj out/X.png   # software preview (Pillow), no OpenGL needed
     ROBLOX_API_KEY=... python3 tools/models/upload.py Name out/Name.fbx [...]   # prints "Name assetId"; key needs Assets: Write
 
