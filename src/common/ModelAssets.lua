@@ -61,4 +61,25 @@ function ModelAssets.Spawn(id, cframe, name, parent)
 	return model, bboxSize
 end
 
+-- Tiles `pitch`-wide panel models along the long horizontal axis of a wall part (bottom on the
+-- part's bottom), parented to `parent`, and hides the part when at least one panel loaded. The
+-- part keeps doing the physics. Returns how many panels were placed.
+function ModelAssets.Shell(id, part, pitch, parent)
+	local alongX = part.Size.X >= part.Size.Z
+	local length = if alongX then part.Size.X else part.Size.Z
+	local n = math.max(1, math.floor(length / pitch + 0.5))
+	local placed = 0
+	for i = 1, n do
+		local along = (i - 0.5) * (length / n) - length / 2
+		local cf = part.CFrame * CFrame.new(if alongX then along else 0, -part.Size.Y / 2, if alongX then 0 else along) * CFrame.Angles(0, if alongX then 0 else math.pi / 2, 0)
+		if ModelAssets.Spawn(id, cf, "Shell", parent or part) then
+			placed += 1
+		end
+	end
+	if placed > 0 then
+		part.Transparency = 1
+	end
+	return placed
+end
+
 return ModelAssets

@@ -62,8 +62,7 @@ store `ConduitCharacter_v2`) is shared by both places.
 ## State (2026-10-31)
 - Both places published and starting cleanly (Endeavor v22, Front v12). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
-  Endeavor v20 predates the Animator fix, mirrored Raider, three new enemies, returning-player fast path, weapons in
-  hand: publish it (`tools/publish.sh endeavor`) once the user has closed Studio (409 until then). Spawn fall-through fixed by anchoring the
+  Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.
 - User reported keys not working in Studio before v16; v16 adds visible swing arcs, block outline, sprint and a
   controls card. If keys still do nothing, get the F9 Client tab log.
@@ -88,13 +87,14 @@ store `ConduitCharacter_v2`) is shared by both places.
   medbay; each mesh sits inside its collider part (`dress()` in Hideouts.lua), prompts stay on the part.
   Sounds: 25 synthesized effects + 3 ambient loops (city hum, wind, Front wind with distant guns) (`tools/sounds/synth.py`, uploaded as Audio assets) in `src/shared/Sounds.lua`; both
   clients play them from their existing event handlers (`Sounds.Play(name, partOrPosition)`). Unheard by me: verify in-game.
-  Still placeholder: custom animations, arena/raid geometry, hideout walls (generated slabs).
+  Compound shells (`tools/models/compound.py` -> `Assets.Compound`): `ModelAssets.Shell(id, part, pitch)` tiles panel
+  models along a wall part and hides it; used for hideout walls + gate frame and the raid arena walls/pillars/gate.
+  Still placeholder: custom animations.
   Known limit: MeshPart CollisionFidelity can't be set from scripts, so collapsed stumps may collide as hulls.
 - All balance numbers are first guesses pending the user's playtest checklist.
 
 ## Open items
-- Next art: hideout walls/gate,
-  animations (hooks exist: `CombatEvent` "Swing"). Awaiting the user's in-game look at the rigs (animation playback can't be verified from the Luau execution API).
-- The user's playtest checklist (pending).
+- Next art: animations (hooks exist: `CombatEvent` "Swing"). Awaiting the user's in-game look at the rigs (animation playback can't be verified from the Luau execution API).
+- The playtest checklist is `docs/TESTING.md`: add a line for every feature that lands; the user ticks it.
 - Front: real 20-player frame-rate test; war world art; vehicles are intentionally absent.
 - Experience internal name is still "Conduit" (cosmetic; rename in Configurations → Basic Settings).

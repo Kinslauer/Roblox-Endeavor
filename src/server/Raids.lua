@@ -14,6 +14,8 @@ local NPCs = require(script.Parent.NPCs)
 local Quests = require(script.Parent.Quests)
 local Stats = require(script.Parent.Stats)
 local WorldPhase = require(script.Parent.WorldPhase)
+local Assets = require(Shared.Assets)
+local ModelAssets = require(script.Parent.Common.ModelAssets)
 
 local R = Config.Raid
 local Raids = {}
@@ -42,12 +44,14 @@ local function buildArena()
 	for i = 0, segments - 1 do
 		local a = (i / segments) * math.pi * 2
 		local pos = o + Vector3.new(math.cos(a) * (R.Radius + 8), 12, math.sin(a) * (R.Radius + 8))
-		part(folder, { Name = "Wall", Size = Vector3.new(2 * math.pi * (R.Radius + 8) / segments + 1, 28, 3), CFrame = CFrame.lookAt(pos, Vector3.new(o.X, 12, o.Z)), Color = Color3.fromRGB(20, 20, 26), Material = Enum.Material.Concrete })
+		local wall = part(folder, { Name = "Wall", Size = Vector3.new(2 * math.pi * (R.Radius + 8) / segments + 1, 28, 3), CFrame = CFrame.lookAt(pos, Vector3.new(o.X, 12, o.Z)), Color = Color3.fromRGB(20, 20, 26), Material = Enum.Material.Concrete })
+		ModelAssets.Shell(Assets.Compound.ArenaWall, wall, 22, folder)
 	end
 	for i = 1, 6 do
 		local a = (i / 6) * math.pi * 2
 		local pos = o + Vector3.new(math.cos(a) * 32, 5, math.sin(a) * 32)
-		part(folder, { Name = "Pillar", Size = Vector3.new(6, 14, 6), Position = pos, Color = Color3.fromRGB(40, 36, 48), Material = Enum.Material.Metal })
+		local pillar = part(folder, { Name = "Pillar", Size = Vector3.new(6, 14, 6), Position = pos, Color = Color3.fromRGB(40, 36, 48), Material = Enum.Material.Metal })
+		ModelAssets.Shell(Assets.Compound.ArenaPillar, pillar, 6, folder)
 		local strip = part(folder, { Size = Vector3.new(6.3, 0.5, 6.3), Position = pos + Vector3.new(0, 7.2, 0), Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 30, 30), CanCollide = false })
 		local light = Instance.new("PointLight")
 		light.Color, light.Range, light.Brightness = Color3.fromRGB(255, 40, 40), 30, 1.5
@@ -278,6 +282,7 @@ local function buildGate()
 	local gate = Instance.new("Model")
 	gate.Name = "RaidGate"
 	local frame = part(gate, { Size = Vector3.new(14, 16, 2), Position = Vector3.new(c.X, GROUND_TOP + 8, c.Z - 40), Color = Color3.fromRGB(20, 20, 26), Material = Enum.Material.Metal })
+	ModelAssets.Shell(Assets.Compound.RaidGate, frame, 14, gate)
 	local portal = part(gate, { Size = Vector3.new(10, 12, 0.5), Position = frame.Position, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 30, 30), Transparency = 0.3, CanCollide = false })
 	local light = Instance.new("PointLight")
 	light.Color, light.Range, light.Brightness = Color3.fromRGB(255, 40, 40), 50, 3

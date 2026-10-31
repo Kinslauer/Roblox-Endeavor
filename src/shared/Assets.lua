@@ -116,6 +116,16 @@ Assets.Hideout = {
 	Medbay = 104351297744980,
 }
 
+-- Compound pieces (tools/models/compound.py): hideout wall panels tile along the generated wall parts,
+-- a gate frame stands over the breach panel, and the raid arena's walls, pillars and gate get shells.
+Assets.Compound = {
+	WallPanel = 90340909566537, -- 10 wide, 9 tall
+	GateFrame = 77590307627537,
+	ArenaWall = 133068520008602, -- 22 wide, 28 tall
+	ArenaPillar = 119840636382667,
+	RaidGate = 113137125539955,
+}
+
 -- Roblox drops Blender material colours on import, so every part is named "<Part>_<Material>"
 -- and the material is applied from this table when the model is loaded.
 Assets.Materials = {
@@ -175,6 +185,7 @@ Assets.Materials = {
 	White = { Color = Color3.fromRGB(216, 222, 224), Material = Enum.Material.SmoothPlastic },
 	Ember = { Color = Color3.fromRGB(255, 115, 25), Material = Enum.Material.Neon, Light = Color3.fromRGB(255, 120, 30) },
 	Red = { Color = Color3.fromRGB(178, 30, 30), Material = Enum.Material.SmoothPlastic },
+	Hazard = { Color = Color3.fromRGB(216, 166, 26), Material = Enum.Material.Metal },
 	Rubble = { Color = Color3.fromRGB(84, 82, 79), Material = Enum.Material.Concrete },
 }
 

@@ -172,12 +172,16 @@ local function build(site, h)
 		local gateTier = HideoutDefs.GateTier[h.Tier]
 		local hgt = 9
 		for _, side in { { Vector3.new(0, 0, r), Vector3.new(r * 2, hgt, 1.5) }, { Vector3.new(r, 0, 0), Vector3.new(1.5, hgt, r * 2) }, { Vector3.new(-r, 0, 0), Vector3.new(1.5, hgt, r * 2) } } do
-			part(model, { Name = "Wall", Size = side[2], Position = c + side[1] + Vector3.new(0, GROUND_TOP + hgt / 2, 0), Color = Color3.fromRGB(60, 62, 70), Material = Enum.Material.Concrete })
+			local wall = part(model, { Name = "Wall", Size = side[2], Position = c + side[1] + Vector3.new(0, GROUND_TOP + hgt / 2, 0), Color = Color3.fromRGB(60, 62, 70), Material = Enum.Material.Concrete })
+			ModelAssets.Shell(Assets.Compound.WallPanel, wall, 10, model)
 		end
 		-- front wall with a gate opening
 		local gw = 8
-		part(model, { Name = "Wall", Size = Vector3.new(r - gw / 2, hgt, 1.5), Position = c + Vector3.new(-(gw / 2 + (r - gw / 2) / 2), GROUND_TOP + hgt / 2, -r), Color = Color3.fromRGB(60, 62, 70), Material = Enum.Material.Concrete })
-		part(model, { Name = "Wall", Size = Vector3.new(r - gw / 2, hgt, 1.5), Position = c + Vector3.new(gw / 2 + (r - gw / 2) / 2, GROUND_TOP + hgt / 2, -r), Color = Color3.fromRGB(60, 62, 70), Material = Enum.Material.Concrete })
+		for _, sign in { -1, 1 } do
+			local wall = part(model, { Name = "Wall", Size = Vector3.new(r - gw / 2, hgt, 1.5), Position = c + Vector3.new(sign * (gw / 2 + (r - gw / 2) / 2), GROUND_TOP + hgt / 2, -r), Color = Color3.fromRGB(60, 62, 70), Material = Enum.Material.Concrete })
+			ModelAssets.Shell(Assets.Compound.WallPanel, wall, 10, model)
+		end
+		ModelAssets.Spawn(Assets.Compound.GateFrame, CFrame.new(c + Vector3.new(0, GROUND_TOP, -r)), "GateFrame", model)
 		site.Gate = Destruction.SpawnBreach(gateTier, CFrame.new(c + Vector3.new(0, GROUND_TOP + hgt / 2, -r)), Vector3.new(gw, hgt, 1.5))
 		site.Gate:SetAttribute("Hideout", site.Index)
 	end
