@@ -14,6 +14,8 @@ report). Versions: Endeavor v22, Front v12.
 - [ ] Light swing (LMB) and heavy swing (RMB/hold) show an arc and make a whoosh (heavy is deeper).
 - [ ] Swings animate: the arm winds up and back, the torso twists, then the arm snaps down through the arc.
       Heavy swings wind up higher and slower. Other conduits' swings animate too.
+- [ ] Each weapon family swings differently: fists jab, blades/batons/clubs cut across, the sledge comes overhead,
+      the spear thrusts, the arc pistol aims and kicks. Brutes (sledge) and Wardens (blade) use theirs too.
 - [ ] Blocking (F) raises both arms into a guard (yours and other players'); a blocked or parried hit jolts the guard.
 - [ ] Getting hit flinches head and torso; a guard break staggers harder.
 - [ ] Hostiles raise their arm for the whole telegraph (red glow) and slash when it lands; dodge/parry on the slash.

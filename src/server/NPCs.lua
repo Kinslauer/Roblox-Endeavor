@@ -126,6 +126,7 @@ function NPCs.Spawn(typeName, position, opts)
 	root:SetNetworkOwner(nil)
 	if model:GetAttribute("Rigged") then
 		Rigs.Animate(model, hum)
+		model:SetAttribute("Weapon", def.Weapon)
 		HeldWeapons.Attach(model, def.Weapon)
 	end
 

@@ -27,6 +27,7 @@ function Stats.Apply(player, fill)
 	local sprintMult = if char:GetAttribute("Sprinting") then Config.Combat.SprintMult else 1
 	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult * sprintMult
 
+	char:SetAttribute("Weapon", PlayerData.Get(player).Equipped)
 	HeldWeapons.Attach(char, PlayerData.Get(player).Equipped)
 	char:SetAttribute("MaxStamina", d.MaxStamina)
 	char:SetAttribute("MaxPosture", d.MaxPosture)

@@ -16,6 +16,7 @@ local HideoutDefs = require(Shared:WaitForChild("Hideout"))
 local Items = require(Shared:WaitForChild("Items"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local Sounds = require(Shared:WaitForChild("Sounds"))
+local Weapons = require(Shared:WaitForChild("Weapons"))
 -- Sounds for combat events, played at the character they happened to.
 local SOUND = { Hit = "HitFlesh", Block = "BlockThud", Parry = "HitClang", GuardBreak = "GuardBreak", Devour = "Devour", Flick = "FlickerTick" }
 -- Sounds for props breaking, by prop id; anything else is metal. Chunks hitting the ground thud.
@@ -844,20 +845,37 @@ local function relax(char, seconds)
 		pose(char, name, CFrame.identity, seconds or 0.3)
 	end
 end
--- raise the weapon arm up and back, twist the torso; `seconds` is how long the windup is held
-local function windupAnim(char, seconds, heavy)
-	local lift = if heavy then math.rad(175) else math.rad(150)
-	pose(char, "RightShoulder", CFrame.Angles(lift, 0, math.rad(if heavy then 35 else 20)), math.max(0.08, seconds * 0.8))
-	pose(char, "RightElbow", CFrame.Angles(math.rad(40), 0, 0), seconds * 0.8)
-	pose(char, "Waist", CFrame.Angles(0, math.rad(if heavy then 35 else 20), 0), seconds * 0.8)
-	pose(char, "LeftShoulder", CFrame.Angles(math.rad(40), 0, math.rad(-15)), seconds * 0.8)
+-- Each weapon family swings its own way. Angles in degrees: shoulder (lift, twist), elbow bend,
+-- waist (bend, turn). Windup is where the arm waits during the telegraph; slash is where it ends.
+local r = math.rad
+local FAMILY_POSE = {
+	-- default: a horizontal cut from over the shoulder
+	Blade = { windup = { 150, 20, 40, 0, 20 }, slash = { 55, -10, 0, 0, -20 } },
+	Fists = { windup = { -25, 10, 90, 0, 10 }, slash = { 95, 0, 0, 5, -12 } }, -- jab: straight out
+	Hammer = { windup = { 195, 30, 30, -10, 15 }, slash = { 70, 0, 0, 25, -10 } }, -- overhead: down and through
+	Spear = { windup = { -45, 15, 100, 0, 25 }, slash = { 90, 0, 0, 10, -25 } }, -- thrust: pulled back, driven forward
+	Sidearm = { windup = { 85, 0, 10, 0, 10 }, slash = { 100, 0, 0, -4, 8 } }, -- aim then recoil
+}
+FAMILY_POSE.Baton, FAMILY_POSE.Blunt = FAMILY_POSE.Blade, FAMILY_POSE.Blade
+local function familyOf(char)
+	local id = typeof(char) == "Instance" and char:GetAttribute("Weapon")
+	local def = id and Weapons.Defs[id]
+	return FAMILY_POSE[def and def.Family] or FAMILY_POSE.Blade
 end
--- the slash itself: arm snaps forward-down, torso untwists past centre, then everything settles
+local function applyPose(char, p, seconds, style, heavyScale)
+	local k = heavyScale or 1
+	pose(char, "RightShoulder", CFrame.Angles(r(p[1] * k), 0, r(p[2])), seconds, style)
+	pose(char, "RightElbow", CFrame.Angles(r(p[3]), 0, 0), seconds, style)
+	pose(char, "Waist", CFrame.Angles(r(p[4]), r(p[5] * k), 0), seconds, style)
+	pose(char, "LeftShoulder", CFrame.Angles(r(if p[1] > 90 then 40 else 15), 0, r(-15)), seconds, style)
+end
+-- the arm waits in the family's windup for `seconds` (the telegraph), torso twisted
+local function windupAnim(char, seconds, heavy)
+	applyPose(char, familyOf(char).windup, math.max(0.08, seconds * 0.8), nil, if heavy then 1.15 else 1)
+end
+-- the strike: snap to the family's end pose, then settle
 local function slashAnim(char, heavy)
-	pose(char, "RightShoulder", CFrame.Angles(math.rad(if heavy then 35 else 55), 0, math.rad(-10)), if heavy then 0.12 else 0.08, Enum.EasingStyle.Quart)
-	pose(char, "RightElbow", CFrame.identity, 0.1)
-	pose(char, "Waist", CFrame.Angles(0, math.rad(if heavy then -30 else -20), 0), 0.1, Enum.EasingStyle.Quart)
-	pose(char, "LeftShoulder", CFrame.Angles(math.rad(-20), 0, math.rad(-10)), 0.1)
+	applyPose(char, familyOf(char).slash, if heavy then 0.12 else 0.08, Enum.EasingStyle.Quart, if heavy then 1.1 else 1)
 	task.delay(if heavy then 0.3 else 0.18, function()
 		relax(char, if heavy then 0.45 else 0.3)
 	end)
