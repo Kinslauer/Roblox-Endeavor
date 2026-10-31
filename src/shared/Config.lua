@@ -57,6 +57,18 @@ Config.Aim = {
 	Ranged = { Distance = 9, ShoulderOffset = Vector3.new(1.75, 0.5, 0) },
 }
 
+-- HUD v2 (client, ported from combat-feel): bottom-centre bars, floating words, reticle, damage vignette, nameplates.
+Config.Hud = {
+	BarWidth = 480,
+	DamageNumbers = { Life = 0.9, Rise = 3.5, Spread = 1.2, TextSize = 26, HeavyTextSize = 34, HeavyAmount = 20, MaxLive = 24,
+		Colors = { Taken = Color3.fromRGB(255, 80, 80), Block = Color3.fromRGB(150, 170, 255), Parry = Color3.fromRGB(255, 255, 255),
+			GuardBreak = Color3.fromRGB(255, 160, 0), Dodged = Color3.fromRGB(80, 255, 230) } },
+	Reticle = { Size = 6, Gap = 5, Thickness = 2, Color = Color3.fromRGB(235, 235, 240), HitColor = Color3.fromRGB(255, 90, 60), HitSeconds = 0.12, HitScale = 1.8 },
+	DamageFlash = { Color = Color3.fromRGB(200, 30, 30), Seconds = 0.35, MaxTransparency = 0.55 },
+	Nameplates = { Offset = Vector3.new(-1.2, -0.6, 0), Size = UDim2.fromOffset(120, 16), TextSize = 12,
+		Color = Color3.fromRGB(225, 225, 232), NpcColor = Color3.fromRGB(255, 150, 130), FadeStart = 30, FadeEnd = 70 },
+}
+
 -- Impact feel (client, ported from combat-feel's Presentation.Impacts): sparks, rings, shards, after-images,
 -- camera shake (0..1 trauma) and FOV hitstop per event kind.
 Config.Impacts = {

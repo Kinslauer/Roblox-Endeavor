@@ -410,7 +410,7 @@ local function applyDamage(attacker, victim, amount, opts)
 		end
 	end
 	if result == "hit" then
-		fx("Hit", victim)
+		fx("Hit", victim, amount)
 	end
 	return result
 end

@@ -12,6 +12,14 @@ report). Versions: Endeavor v43, Front v19.
       completes once the locker's grid is emptied.
 - [ ] F2 opens the dev panel (test build only): Heal, Mats, Die, Open world, Go to armory/gate/districts/terminals/
       hideout sites, Spawn each hostile, fire each event. Use it to reach anything on this list quickly.
+- [ ] HUD v2: one composite at the bottom centre - a thin charge strip, HEALTH | STAMINA with numbers, a thin posture
+      strip, the R/Y/V skill slots under it; level and FLICKER text above it. The Roblox health bar and player list
+      are gone. Anything you miss from the old top-left stack?
+- [ ] A small reticle sits at the screen centre while the stance is on; it flares orange when your hit lands.
+- [ ] Taking damage: a red "-N" floats off you and the screen edges flash red (stronger for bigger hits). Over
+      whoever is hit the words BLOCKED / PARRIED / GUARD BREAK / DODGED float up.
+- [ ] Nameplates: no Roblox name or health bar over anyone; a small plate at hip height, lower-left (white for
+      players, red for hostiles), fading out past about 30 studs. Do bodies read first?
 - [ ] F1 shows the controls card. Tab inventory, L loadout, J attributes, O hideout, N recruit app all open and close.
 - [ ] City hum and wind are audible from the start (ambient loops).
 - [ ] The city reads as late night: purple haze, neon bloom, cold grade; you can still see where you're going.

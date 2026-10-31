@@ -64,16 +64,32 @@ local function flash(char, color)
 	end)
 end
 
-local function bar(y, color)
-	local back = make("Frame", { Size = UDim2.fromOffset(240, 12), Position = UDim2.new(0, 20, 1, y), BackgroundColor3 = Color3.fromRGB(20, 20, 24) })
-	return make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = color }, back)
+-- HUD v2 (ported from combat-feel): one composite at the bottom centre - a charge strip above, HEALTH | STAMINA
+-- with numbers, a posture strip below, the skill slots under it. A bar's value label is kept in barValue[fill].
+local HUD = Config.Hud
+local BAR_W = HUD.BarWidth
+local barValue = {}
+local function bar(pos, size, color, name)
+	local back = make("Frame", { Size = size, Position = pos, BackgroundColor3 = Color3.fromRGB(20, 20, 24), BackgroundTransparency = 0.25, BorderSizePixel = 0 })
+	local fill = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = color, BorderSizePixel = 0 }, back)
+	if name then
+		label({ Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.fromOffset(4, 0), Text = name, TextSize = 11, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(235, 235, 240), ZIndex = 2, Parent = back })
+		barValue[fill] = label({ Size = UDim2.new(0.5, -4, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), Text = "", TextSize = 11, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(235, 235, 240), ZIndex = 2, Parent = back })
+	end
+	return fill
 end
-
-local staminaFill = bar(-80, Color3.fromRGB(90, 200, 120))
-local postureFill = bar(-60, Color3.fromRGB(240, 150, 60))
-local chargeFill = bar(-40, Color3.fromRGB(80, 170, 255))
-local levelLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0, 20, 1, -104), TextXAlignment = Enum.TextXAlignment.Left, Text = "" })
-local flickerLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0, 20, 1, -124), TextXAlignment = Enum.TextXAlignment.Left, Text = "", TextColor3 = Color3.fromRGB(255, 80, 80) })
+local half = BAR_W / 2 - 2
+local chargeFill = bar(UDim2.new(0.5, -BAR_W / 2, 1, -126), UDim2.fromOffset(BAR_W, 4), Color3.fromRGB(80, 170, 255))
+local healthFill = bar(UDim2.new(0.5, -BAR_W / 2, 1, -120), UDim2.fromOffset(half, 14), Color3.fromRGB(220, 70, 70), "HEALTH")
+local staminaFill = bar(UDim2.new(0.5, 2, 1, -120), UDim2.fromOffset(half, 14), Color3.fromRGB(90, 200, 120), "STAMINA")
+local postureFill = bar(UDim2.new(0.5, -BAR_W / 2, 1, -104), UDim2.fromOffset(BAR_W, 5), Color3.fromRGB(240, 150, 60))
+local levelLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0.5, -BAR_W / 2, 1, -146), TextXAlignment = Enum.TextXAlignment.Left, TextSize = 13, Text = "" })
+local flickerLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0.5, 0, 1, -146), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 13, Text = "", TextColor3 = Color3.fromRGB(255, 80, 80) })
+pcall(function() -- our own health bar replaces Roblox's; no player list (Tab is the inventory)
+	local StarterGui = game:GetService("StarterGui")
+	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+end)
 local banner = label({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 60), TextSize = 26, Text = "", TextTransparency = 1 })
 local questLabel = label({ Size = UDim2.fromOffset(360, 24), Position = UDim2.new(1, -380, 0, 20), TextXAlignment = Enum.TextXAlignment.Right, Text = "" })
 
@@ -521,7 +537,7 @@ local cooldowns = {} -- skillId -> os.clock() when ready
 local hotbar = {}
 local SLOT_KEYS = { "R", "Y", "V" }
 for i = 1, Skills.SlotCount do
-	local box = make("Frame", { Size = UDim2.fromOffset(110, 46), Position = UDim2.new(0.5, -170 + (i - 1) * 116, 1, -66), BackgroundColor3 = Color3.fromRGB(15, 15, 20) })
+	local box = make("Frame", { Size = UDim2.fromOffset(110, 44), Position = UDim2.new(0.5, -170 + (i - 1) * 116, 1, -94), BackgroundColor3 = Color3.fromRGB(15, 15, 20), BackgroundTransparency = 0.25, BorderSizePixel = 0 })
 	hotbar[i] = label({ Size = UDim2.fromScale(1, 1), TextSize = 13, TextWrapped = true, Text = SLOT_KEYS[i], Parent = box })
 end
 
@@ -672,6 +688,71 @@ local function debris(position, color, count, size)
 		end)
 	end
 end
+
+-- ===== Combat readout (ported from combat-feel's HudCombat): words over victims, reticle, damage vignette =====
+local liveNumbers = 0
+local function floatWord(char, text, color, big)
+	local D = HUD.DamageNumbers
+	local anchor = typeof(char) == "Instance" and (char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart"))
+	if not anchor or liveNumbers >= D.MaxLive then
+		return
+	end
+	local bb = make("BillboardGui", { Name = "DamageNumber", AlwaysOnTop = true, Size = UDim2.fromOffset(200, 50), MaxDistance = 80, Adornee = anchor,
+		StudsOffsetWorldSpace = Vector3.new((math.random() * 2 - 1) * D.Spread, 1.5, (math.random() * 2 - 1) * D.Spread) }, anchor)
+	local lbl = make("TextLabel", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Font = Enum.Font.GothamBlack, TextSize = if big then D.HeavyTextSize else D.TextSize,
+		TextColor3 = color, TextStrokeTransparency = 0.2, TextStrokeColor3 = Color3.new(0, 0, 0), Text = text }, bb)
+	liveNumbers += 1
+	Debris:AddItem(bb, D.Life)
+	task.delay(D.Life, function()
+		liveNumbers -= 1
+	end)
+	TweenService:Create(bb, TweenInfo.new(D.Life, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { StudsOffsetWorldSpace = bb.StudsOffsetWorldSpace + Vector3.new(0, D.Rise, 0) }):Play()
+	TweenService:Create(lbl, TweenInfo.new(D.Life * 0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, D.Life * 0.6), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+end
+-- red vignette when I take damage
+local damageFlash = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = HUD.DamageFlash.Color, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 0 })
+make("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.35, 1), NumberSequenceKeypoint.new(0.65, 1), NumberSequenceKeypoint.new(1, 0) }) }, damageFlash)
+local function flashDamage(strength)
+	local F = HUD.DamageFlash
+	damageFlash.BackgroundTransparency = 1 - F.MaxTransparency * math.clamp(strength or 1, 0, 1)
+	TweenService:Create(damageFlash, TweenInfo.new(F.Seconds, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 }):Play()
+end
+-- reticle: four ticks and a dot, shown while the stance steers the camera; it blinks when my hit lands
+local reticle = make("Frame", { Name = "Reticle", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, Visible = false })
+local reticleParts = {}
+do
+	local R = HUD.Reticle
+	for _, d in { { Vector2.new(0, -1), UDim2.fromOffset(R.Thickness, R.Size) }, { Vector2.new(0, 1), UDim2.fromOffset(R.Thickness, R.Size) }, { Vector2.new(-1, 0), UDim2.fromOffset(R.Size, R.Thickness) }, { Vector2.new(1, 0), UDim2.fromOffset(R.Size, R.Thickness) } } do
+		local tick = make("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), BorderSizePixel = 0, BackgroundColor3 = R.Color, Size = d[2] }, reticle)
+		table.insert(reticleParts, { frame = tick, dir = d[1] })
+	end
+	table.insert(reticleParts, { frame = make("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(R.Thickness, R.Thickness), BorderSizePixel = 0, BackgroundColor3 = R.Color }, reticle) })
+end
+local reticleHitUntil = 0
+local function hitMarker()
+	reticleHitUntil = os.clock() + HUD.Reticle.HitSeconds
+end
+local reticleActive = function() return false end -- rebound once the stance exists below
+RunService.Heartbeat:Connect(function()
+	reticle.Visible = reticleActive()
+	if not reticle.Visible then
+		return
+	end
+	local R = HUD.Reticle
+	local left = reticleHitUntil - os.clock()
+	local scale, color = 1, R.Color
+	if left > 0 then
+		local t = left / R.HitSeconds
+		scale, color = 1 + (R.HitScale - 1) * t, R.HitColor:Lerp(R.Color, 1 - t)
+	end
+	local gap = (R.Gap + R.Size / 2) * scale
+	for _, part in reticleParts do
+		part.frame.BackgroundColor3 = color
+		if part.dir then
+			part.frame.Position = UDim2.fromOffset(part.dir.X * gap, part.dir.Y * gap)
+		end
+	end
+end)
 
 -- ===== Impact feel (ported from combat-feel): camera shake, FOV hitstop, sparks, rings, shards, ghosts =====
 local IMP = Config.Impacts
@@ -1560,6 +1641,7 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 			TweenService:Create(billboard, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { StudsOffset = billboard.StudsOffset + Vector3.new(0, 3, 0) }):Play()
 			TweenService:Create(text, TweenInfo.new(0.9), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
 			local heavy = amount >= IMP.Hit.HeavyAmount
+			hitMarker()
 			shake((if result == "blocked" then IMP.Block.Shake else IMP.Hit.Shake) * (if heavy then IMP.HeavyShakeMult else 1))
 			hitstop((if result == "blocked" then 0 else IMP.Hit.Hitstop) * (if heavy then IMP.HeavyHitstopMult else 1))
 		end
@@ -1571,17 +1653,30 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 	elseif FLASH[kind] then
 		flash(a, FLASH[kind])
 	end
+	local WORDS = { Block = "BLOCKED", Parry = "PARRIED", GuardBreak = "GUARD BREAK", Dodged = "DODGED" }
 	if kind == "Hit" then
 		staggerAnim(a, false)
 		impact("Hit", a, nil, false)
+		if a == player.Character then
+			local amount = tonumber(b) or 0
+			floatWord(a, ("-%d"):format(math.floor(amount + 0.5)), HUD.DamageNumbers.Colors.Taken, amount >= HUD.DamageNumbers.HeavyAmount)
+			local hum = a:FindFirstChildOfClass("Humanoid")
+			flashDamage(if hum then math.clamp(amount / math.max(hum.MaxHealth, 1) * 3, 0.35, 1) else 0.6)
+		end
 	elseif kind == "GuardBreak" then
 		staggerAnim(a, true)
 		impact("GuardBreak", a, nil, true)
+		if a == player.Character then
+			flashDamage(0.5)
+		end
 	elseif kind == "Parry" or kind == "Block" then
 		guardHitAnim(a)
 		impact(kind, a, nil, false)
 	elseif kind == "Dodged" then
 		impact("Dodged", a, nil, false)
+	end
+	if WORDS[kind] and typeof(a) == "Instance" then
+		floatWord(a, WORDS[kind], HUD.DamageNumbers.Colors[kind], false)
 	end
 	if SOUND[kind] and typeof(a) == "Instance" then
 		Sounds.Play(SOUND[kind], a:FindFirstChild("HumanoidRootPart") or a)
@@ -1609,9 +1704,25 @@ local function bindBar(fill, char, valueAttr, maxAttr)
 	local function update()
 		local v, m = char:GetAttribute(valueAttr) or 0, char:GetAttribute(maxAttr) or 1
 		fill.Size = UDim2.fromScale(math.clamp(v / m, 0, 1), 1)
+		if barValue[fill] then
+			barValue[fill].Text = ("%d / %d"):format(math.floor(v + 0.5), math.floor(m + 0.5))
+		end
 	end
 	char:GetAttributeChangedSignal(valueAttr):Connect(update)
 	char:GetAttributeChangedSignal(maxAttr):Connect(update)
+	update()
+end
+local function bindHealth(char)
+	local hum = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid", 5)
+	if not hum then
+		return
+	end
+	local function update()
+		healthFill.Size = UDim2.fromScale(math.clamp(hum.Health / math.max(hum.MaxHealth, 1), 0, 1), 1)
+		barValue[healthFill].Text = ("%d / %d"):format(math.floor(hum.Health + 0.5), math.floor(hum.MaxHealth + 0.5))
+	end
+	hum.HealthChanged:Connect(update)
+	hum:GetPropertyChangedSignal("MaxHealth"):Connect(update)
 	update()
 end
 -- other conduits' guards are posed too (their Blocking attribute replicates)
@@ -1634,6 +1745,7 @@ end)
 
 local function onCharacter(char)
 	bindStance(char)
+	bindHealth(char)
 	bindBar(staminaFill, char, "Stamina", "MaxStamina")
 	bindBar(postureFill, char, "Posture", "MaxPosture")
 	bindBar(chargeFill, char, "Charge", "MaxCharge")
@@ -1741,6 +1853,82 @@ player.CharacterAdded:Connect(bindAim)
 if player.Character then
 	bindAim(player.Character)
 end
+reticleActive = aimActive
+
+-- ===== Nameplates (ported from combat-feel): bodies read first =====
+-- Roblox's over-head name and health bar are switched off locally for every humanoid we plate; a small
+-- plate sits at hip height, lower-left, fading with distance. Players white, hostiles red; never my own.
+local NP = HUD.Nameplates
+local plates = {}
+local function plate(model)
+	if typeof(model) ~= "Instance" or not model:IsA("Model") or plates[model] or model == player.Character then
+		return
+	end
+	task.spawn(function()
+		local hum = model:FindFirstChildOfClass("Humanoid") or model:WaitForChild("Humanoid", 5)
+		local anchor = model:FindFirstChild("LowerTorso") or model:FindFirstChild("HumanoidRootPart") or model:WaitForChild("HumanoidRootPart", 5)
+		if not (hum and anchor) or plates[model] or not model.Parent then
+			return
+		end
+		hum.NameDisplayDistance = 0
+		hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+		local who = Players:GetPlayerFromCharacter(model)
+		local bb = make("BillboardGui", { Name = "Nameplate", Adornee = anchor, Size = NP.Size, StudsOffset = NP.Offset, AlwaysOnTop = false, MaxDistance = NP.FadeEnd, ResetOnSpawn = false }, gui)
+		local lbl = make("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = if who then who.DisplayName else (hum.DisplayName ~= "" and hum.DisplayName or model.Name),
+			TextColor3 = if who then NP.Color else NP.NpcColor, Font = Enum.Font.GothamMedium, TextSize = NP.TextSize, TextXAlignment = Enum.TextXAlignment.Left, TextStrokeTransparency = 0.5 }, bb)
+		plates[model] = { gui = bb, label = lbl, hum = hum, anchor = anchor }
+	end)
+end
+local function unplate(model)
+	local p = plates[model]
+	if p then
+		p.gui:Destroy()
+		plates[model] = nil
+	end
+end
+for _, other in Players:GetPlayers() do
+	if other ~= player then
+		if other.Character then
+			plate(other.Character)
+		end
+		other.CharacterAdded:Connect(plate)
+		other.CharacterRemoving:Connect(unplate)
+	end
+end
+Players.PlayerAdded:Connect(function(other)
+	other.CharacterAdded:Connect(plate)
+	other.CharacterRemoving:Connect(unplate)
+end)
+local CollectionService = game:GetService("CollectionService")
+for _, m in CollectionService:GetTagged("NPC") do
+	plate(m)
+end
+CollectionService:GetInstanceAddedSignal("NPC"):Connect(plate)
+CollectionService:GetInstanceRemovedSignal("NPC"):Connect(unplate)
+local plateAcc = 0
+RunService.Heartbeat:Connect(function(dt)
+	plateAcc += dt
+	if plateAcc < 0.1 then
+		return
+	end
+	plateAcc = 0
+	local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	for model, p in plates do
+		if not model.Parent or not p.anchor.Parent then
+			unplate(model)
+		else
+			if me then
+				local a = math.clamp(((p.anchor.Position - me.Position).Magnitude - NP.FadeStart) / math.max(NP.FadeEnd - NP.FadeStart, 1), 0, 1)
+				p.label.TextTransparency = a
+				p.label.TextStrokeTransparency = 0.5 + a * 0.5
+			end
+			if p.hum.Health <= 0 then
+				p.label.TextTransparency = 1
+			end
+		end
+	end
+end)
 
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then

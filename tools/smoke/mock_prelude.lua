@@ -334,6 +334,8 @@ function methods.GetService(self, name)
 		s._init = true; local tags = {}
 		function s.AddTag(_, inst, tag) tags[tag] = tags[tag] or {}; table.insert(tags[tag], inst) end
 		function s.GetTagged(_, tag) return tags[tag] or {} end
+		function s.GetInstanceAddedSignal(_, tag) local k = "_added_" .. tag; return sig(s, k) end
+		function s.GetInstanceRemovedSignal(_, tag) local k = "_removed_" .. tag; return sig(s, k) end
 	elseif name == "Debris" and not s._init then
 		s._init = true; function s.AddItem(_, inst, t) task_.delay(t, function() if inst.Parent then inst:Destroy() end end) end
 	elseif name == "TweenService" and not s._init then
@@ -391,6 +393,8 @@ local SOURCES, moduleCache = {}, {}
 local mockEnv = {
 	game = game_, workspace = workspace_, Instance = Instance, Vector3 = V3, CFrame = CF, Color3 = Color3, UDim = UDim, UDim2 = UDim2,
 	Vector2 = Vector2, Enum = Enum, task = task_,
+	NumberSequence = { new = function(...) return { ... } end }, NumberSequenceKeypoint = { new = function(...) return { ... } end },
+	ColorSequence = { new = function(...) return { ... } end }, NumberRange = { new = function(...) return { ... } end },
 	UserSettings = function() return { GetService = function() return { RotationType = nil } end } end,
 	TweenInfo = { new = function() return {} end }, OverlapParams = { new = function() return {} end }, RaycastParams = { new = function() return {} end },
 	Random = { new = function() local r = {}; function r:NextNumber(a, b) return (a or 0) + math.random() * ((b or 1) - (a or 0)) end; function r:NextInteger(a, b) return math.random(a, b) end return r end },
