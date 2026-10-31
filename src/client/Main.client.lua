@@ -2594,6 +2594,53 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		controls.Visible = not controls.Visible
 	elseif key == Enum.KeyCode.F2 and Config.Dev.Enabled then
 		devPanel.Visible = not devPanel.Visible
+	elseif key == Enum.KeyCode.F3 and Config.Dev.Enabled then
+		-- rig report: what this client sees of the rigs around it (joints, transforms, limb positions)
+		local lines = {}
+		local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local function report(model)
+			local ut = model:FindFirstChild("UpperTorso")
+			if not ut then
+				return
+			end
+			table.insert(lines, "== " .. model.Name .. " anchoredRoot=" .. tostring(model:FindFirstChild("HumanoidRootPart") and model.HumanoidRootPart.Anchored))
+			for _, n in { "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "Head", "LowerTorso" } do
+				local p = model:FindFirstChild(n)
+				if p then
+					local rel = ut.CFrame:PointToObjectSpace(p.Position)
+					table.insert(lines, ("  %s rel(%.2f,%.2f,%.2f) size(%.2f,%.2f,%.2f)"):format(n, rel.X, rel.Y, rel.Z, p.Size.X, p.Size.Y, p.Size.Z))
+				end
+			end
+			for _, m in model:GetDescendants() do
+				if m:IsA("Motor6D") then
+					local rx, ry, rz = m.Transform:ToEulerAnglesXYZ()
+					local cx, cy, cz = m.C0:ToEulerAnglesXYZ()
+					table.insert(lines, ("  M6D %s %s->%s C0(%.2f,%.2f,%.2f r%.0f,%.0f,%.0f) C1(%.2f,%.2f,%.2f) T(%.2f,%.2f,%.2f r%.0f,%.0f,%.0f)"):format(m.Name, m.Part0 and m.Part0.Name or "?", m.Part1 and m.Part1.Name or "?",
+						m.C0.Position.X, m.C0.Position.Y, m.C0.Position.Z, math.deg(cx), math.deg(cy), math.deg(cz), m.C1.Position.X, m.C1.Position.Y, m.C1.Position.Z,
+						m.Transform.Position.X, m.Transform.Position.Y, m.Transform.Position.Z, math.deg(rx), math.deg(ry), math.deg(rz)))
+				elseif m:IsA("Weld") then
+					table.insert(lines, ("  WELD %s %s->%s C0(%.2f,%.2f,%.2f) C1(%.2f,%.2f,%.2f)"):format(m.Name, m.Part0 and m.Part0.Name or "?", m.Part1 and m.Part1.Name or "?", m.C0.Position.X, m.C0.Position.Y, m.C0.Position.Z, m.C1.Position.X, m.C1.Position.Y, m.C1.Position.Z))
+				end
+			end
+			local hum = model:FindFirstChildOfClass("Humanoid")
+			local animator = hum and hum:FindFirstChildOfClass("Animator")
+			if animator then
+				for _, tr in animator:GetPlayingAnimationTracks() do
+					table.insert(lines, ("  TRACK %s t=%.2f w=%.2f"):format(tr.Animation and tr.Animation.AnimationId or "?", tr.TimePosition, tr.WeightCurrent))
+				end
+			end
+		end
+		local n = 0
+		for _, m in workspace:GetDescendants() do
+			if m:IsA("Model") and (m:GetAttribute("Display") or m:GetAttribute("NPC")) and myRoot and m:FindFirstChild("HumanoidRootPart") and (m.HumanoidRootPart.Position - myRoot.Position).Magnitude < 80 and n < 4 then
+				n += 1
+				report(m)
+			end
+		end
+		if player.Character then
+			report(player.Character)
+		end
+		Remotes.Dev:FireServer("Report", table.concat(lines, "\n"))
 	elseif key == Enum.KeyCode.LeftShift then
 		Remotes.Sprint:FireServer(true)
 	elseif key == Enum.KeyCode.G then

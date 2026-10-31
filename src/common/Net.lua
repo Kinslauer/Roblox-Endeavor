@@ -34,6 +34,7 @@ end
 -- Argument checkers. Each returns true when the value is acceptable.
 local CHECK = {
 	string = function(v) return type(v) == "string" and #v <= 64 end,
+	text = function(v) return type(v) == "string" and #v <= 60000 end, -- dev reports only
 	boolean = function(v) return type(v) == "boolean" end,
 	int = function(v) return type(v) == "number" and v == v and v % 1 == 0 and math.abs(v) < 1e6 end,
 	vector = function(v)
@@ -44,6 +45,7 @@ local CHECK = {
 CHECK.table = function(v) return type(v) == "table" end
 CHECK.number = function(v) return type(v) == "number" and v == v and math.abs(v) < 1e6 end
 CHECK["string?"] = function(v) return v == nil or CHECK.string(v) end
+CHECK["text?"] = function(v) return v == nil or CHECK.text(v) end
 CHECK["vector?"] = function(v) return v == nil or CHECK.vector(v) end
 CHECK["int?"] = function(v) return v == nil or CHECK.int(v) end
 

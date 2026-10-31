@@ -75,6 +75,16 @@ function actions.Spawn(player, arg)
 	end
 end
 
+-- F3 on the client: a rig report (what the client sees of nearby rigs), kept in a DataStore so it can
+-- be read from an Open Cloud Luau session (the developer cannot see this client's screen or logs).
+function actions.Report(player, arg)
+	local ok, err = pcall(function()
+		local store = game:GetService("DataStoreService"):GetDataStore("DevReports")
+		store:SetAsync("latest", { Who = player.Name, At = os.time(), Text = tostring(arg):sub(1, 60000) })
+	end)
+	Remotes.Announce:FireClient(player, if ok then "> REPORT SENT" else "> REPORT FAILED: " .. tostring(err), "Info")
+end
+
 function actions.Cycle(player)
 	local result = require(script.Parent.Cycle).Trigger()
 	Remotes.Announce:FireClient(player, if result then ("Cycle %d ran."):format(result.Index) else "A cycle is already running.", "Info")
@@ -116,7 +126,7 @@ function actions.Kill(player)
 end
 
 function DevTools.Init()
-	Net.On("Dev", { rate = 3, burst = 6, args = { "string", "string?" } }, function(player, action, arg)
+	Net.On("Dev", { rate = 3, burst = 6, args = { "string", "text?" } }, function(player, action, arg)
 		if not Config.Dev.Enabled then
 			return
 		end
