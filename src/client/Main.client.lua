@@ -5,6 +5,7 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local CollectionService = game:GetService("CollectionService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -486,8 +487,22 @@ renderInventory = function()
 			table.insert(buttons, { text = if held then "Unequip" else "Equip", color = if held then Color3.fromRGB(120, 70, 70) else nil, fn = function()
 				if held then Remotes.Unequip:FireServer("Weapon") else Remotes.EquipItem:FireServer(id) end
 			end })
-		elseif def.Type == "Armor" or def.Type == "Cybernetic" then
-			local worn = lastArmor[def.Slot] == id or lastCyber[def.Slot] == id
+		elseif def.Type == "Cybernetic" then
+			-- ripped in or out at an Autonet only; arms and legs pick a side
+			if player:GetAttribute("AtAutonet") then
+				local slots = Cybernetics.SlotsFor(Cybernetics.Pieces[id])
+				local paired = #slots > 1
+				for _, slot in slots do
+					local short = if paired then " " .. string.sub(Cybernetics.Label[slot], 1, 1) else ""
+					if lastCyber[slot] == id then
+						table.insert(buttons, { text = "Rip out" .. short, color = Color3.fromRGB(120, 40, 40), fn = function() Remotes.Autonet:FireServer("Out", slot) end })
+					elseif Cybernetics.Fitted(lastCyber, id) < (lastInventory[id] or 0) then
+						table.insert(buttons, { text = "Rip in" .. short, color = Color3.fromRGB(150, 50, 50), fn = function() Remotes.Autonet:FireServer("In", id, slot) end })
+					end
+				end
+			end
+		elseif def.Type == "Armor" then
+			local worn = lastArmor[def.Slot] == id
 			table.insert(buttons, { text = if worn then "Remove" else "Wear", color = if worn then Color3.fromRGB(120, 70, 70) else nil, fn = function()
 				if worn then Remotes.Unequip:FireServer(def.Slot) else Remotes.EquipItem:FireServer(id) end
 			end })
@@ -500,6 +515,15 @@ renderInventory = function()
 		end
 		local shape = Items.Shape(id)
 		local suffix = ("  %dx%d  %.1fkg each"):format(shape.Size[1], shape.Size[2], shape.Weight)
+		if def.Type == "Cybernetic" then
+			local where = {}
+			for _, slot in Cybernetics.Slots do
+				if lastCyber[slot] == id then
+					table.insert(where, string.lower(Cybernetics.Label[slot]))
+				end
+			end
+			suffix ..= if #where > 0 then "  in you (" .. table.concat(where, ", ") .. ")" elseif not player:GetAttribute("AtAutonet") then "  (ripped in at an Autonet)" else ""
+		end
 		if def.Type == "Weapon" or def.Type == "Armor" or def.Type == "Cybernetic" then
 			local cond, up = lastCondition[id] or 100, lastUpgrades[id] or 0
 			suffix ..= (" %d%%%s"):format(cond, if up > 0 then " +" .. up else "")
@@ -520,6 +544,12 @@ renderInventory = function()
 		addRow(invPanel, Items.Defs[recipe.Output].Name .. ": " .. table.concat(parts, ", "), { { text = "Craft", fn = function() Remotes.Craft:FireServer(recipeId) end } })
 	end
 end
+player:GetAttributeChangedSignal("AtAutonet"):Connect(function()
+	renderInventory() -- the rip buttons appear at the table
+	if player:GetAttribute("AtAutonet") then
+		invPanel.Visible = true
+	end
+end)
 Remotes.InventoryChanged.OnClientEvent:Connect(function(inv, equipped, armor, cyber, grid)
 	lastInventory, lastEquipped, lastArmor, lastCyber = inv, equipped, armor, cyber
 	if grid then
@@ -571,9 +601,18 @@ local function renderLoadout()
 		local id = loadout.Armor[slot]
 		addRow(loadoutPanel, ("%s: %s"):format(slot, if id then Items.Defs[id].Name else "-"), {})
 	end
+	addRow(loadoutPanel, ("-- Body: %d%% metal --"):format(math.floor((loadout.Conversion or 0) * 100 + 0.5)), {}, if (loadout.Conversion or 0) >= 1 then Color3.fromRGB(200, 220, 228) else nil)
 	for _, slot in Cybernetics.Slots do
 		local id = loadout.Cyber[slot]
-		addRow(loadoutPanel, ("%s implant: %s"):format(slot, if id then Items.Defs[id].Name else "-"), {})
+		addRow(loadoutPanel, ("%s: %s"):format(Cybernetics.Label[slot], if id then Items.Defs[id].Name else "flesh"), {})
+	end
+	local senses = {}
+	if (loadout.Hearing or 0) > 0 then table.insert(senses, ("hearing %d"):format(loadout.Hearing)) end
+	if (loadout.Scent or 0) > 0 then table.insert(senses, ("scent %d%s"):format(loadout.Scent, if loadout.Track then " + tracks blood" else "")) end
+	if (loadout.Lift or 0) > 0 then table.insert(senses, ("lift %d"):format(loadout.Lift)) end
+	if (loadout.JumpMult or 1) ~= 1 then table.insert(senses, ("jump x%.2f"):format(loadout.JumpMult)) end
+	if #senses > 0 then
+		addRow(loadoutPanel, "Senses: " .. table.concat(senses, ", "), {})
 	end
 	addRow(loadoutPanel, ("Flick window x%.2f  |  Black Flash x%.1f"):format(loadout.FlickerRate, 2.5 + loadout.FlashBonus), {})
 	addRow(loadoutPanel, ("Resist  Phys %d%%  Arc %d%%  |  Weight %d  |  Posture %d"):format(
@@ -633,7 +672,6 @@ Remotes.Raid.OnClientEvent:Connect(function(info)
 end)
 
 -- ===== Grab / throw (G hold-to-charge, H drop) and world effects =====
-local CollectionService = game:GetService("CollectionService")
 local holdLabel = label({ Size = UDim2.fromOffset(360, 40), Position = UDim2.new(0.5, -180, 1, -120), TextSize = 14, TextColor3 = Color3.fromRGB(255, 220, 120), Text = "" })
 local chargeStart = nil
 local function nearestGrabbable()
@@ -1696,6 +1734,21 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 		hitstop(0.03)
 	elseif kind == "EnemyStep" and typeof(a) == "Instance" then
 		floatWord(a, "ENEMY STEP", HUD.DamageNumbers.Colors.Dodged, false)
+	elseif kind == "Rip" and typeof(a) == "Instance" then
+		floatWord(a, "RIPPING", Color3.fromRGB(255, 80, 80), true)
+		if a == player.Character then
+			local seconds = tonumber(b) or 4
+			task.spawn(function()
+				local t0 = os.clock()
+				while os.clock() - t0 < seconds and player.Character == a do
+					damageFlash.BackgroundColor3 = Color3.fromRGB(230, 230, 240)
+					flashDamage(0.6)
+					shake(0.25)
+					task.wait(0.35)
+				end
+				damageFlash.BackgroundColor3 = HUD.DamageFlash.Color
+			end)
+		end
 	end
 	if SOUND[kind] and typeof(a) == "Instance" then
 		Sounds.Play(SOUND[kind], a:FindFirstChild("HumanoidRootPart") or a)
@@ -1874,6 +1927,345 @@ if player.Character then
 end
 reticleActive = aimActive
 
+local implantWatchModel -- defined in the block below; the nameplate tag loop uses it
+do
+-- ===== Visible implants (ported from combat-feel): what is in a body shows on it =====
+local IM = Config.Implants
+local implantDrawn = {} -- model -> { [slot] = { itemId, parts, hidden } }
+local implantWatch = {}
+local function inert(part)
+	part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.Massless, part.CastShadow = false, false, false, false, true, false
+end
+local function weldTo(a, b)
+	local w = Instance.new("WeldConstraint")
+	w.Part0, w.Part1 = a, b
+	w.Parent = b
+end
+local function scaledV(v, size)
+	return Vector3.new(v.X * size.X, v.Y * size.Y, v.Z * size.Z)
+end
+local function implantArt(itemId)
+	iconFolder = iconFolder or ReplicatedStorage:FindFirstChild("Icons")
+	local a = iconFolder and iconFolder:FindFirstChild(itemId)
+	return a
+end
+-- fit a clone's parts into a box (cf at the centre, size in studs)
+local function fitInto(clone, cf, size)
+	local parts = {}
+	for _, d in clone:GetDescendants() do
+		if d:IsA("BasePart") then
+			table.insert(parts, d)
+		end
+	end
+	if clone:IsA("BasePart") then
+		table.insert(parts, clone)
+	end
+	if #parts == 1 then
+		parts[1].Size = size
+		parts[1].CFrame = cf
+	elseif #parts > 1 and clone:IsA("Model") then
+		local _, extent = clone:GetBoundingBox()
+		local r = math.min(size.X / math.max(extent.X, 0.01), size.Y / math.max(extent.Y, 0.01), size.Z / math.max(extent.Z, 0.01))
+		pcall(function()
+			clone:ScaleTo(clone:GetScale() * r)
+		end)
+		local bcf = clone:GetBoundingBox()
+		clone:PivotTo(clone:GetPivot() * (bcf:Inverse() * cf))
+	end
+	return parts
+end
+local function implantClear(model, slot)
+	local d = implantDrawn[model] and implantDrawn[model][slot]
+	if d then
+		for _, part in d.parts do
+			part:Destroy()
+		end
+		for bp, t in d.hidden or {} do
+			if bp.Parent then
+				bp.Transparency = t
+			end
+		end
+		implantDrawn[model][slot] = nil
+	end
+end
+local function implantDraw(model, slot)
+	local itemId = model:GetAttribute("Cyber_" .. slot)
+	local have = implantDrawn[model] and implantDrawn[model][slot]
+	if have and have.itemId == itemId then
+		return
+	end
+	implantClear(model, slot)
+	local spec = IM.Slots[slot]
+	if type(itemId) ~= "string" or not spec or not Cybernetics.Pieces[itemId] then
+		return
+	end
+	local accent = IM.Accent[itemId] or IM.DefaultAccent
+	local parts, hidden = {}, nil
+	local function add(part, onto)
+		inert(part)
+		weldTo(onto, part)
+		part.Parent = model
+		table.insert(parts, part)
+	end
+	local art = implantArt(itemId)
+	if spec.Shell then
+		-- a limb: metal shells over the body parts plus a lit seam at the joint
+		for _, name in spec.Shell do
+			local bp = model:FindFirstChild(name)
+			if bp and bp:IsA("BasePart") then
+				local copy = Instance.new("Part")
+				copy.Name = "Implant_" .. name
+				copy.Size = bp.Size * IM.Metal.Grow
+				copy.Color, copy.Material = IM.Metal.Color, IM.Metal.Material
+				copy.CFrame = bp.CFrame
+				add(copy, bp)
+			end
+		end
+	elseif art and spec.Fit then
+		-- a small piece with a model: fitted into its box on the head or chest
+		for _, f in spec.Fit do
+			local bp = model:FindFirstChild(f.Part)
+			if bp and bp:IsA("BasePart") then
+				local clone = art:Clone()
+				local cf = bp.CFrame * CFrame.new(scaledV(f.Offset, bp.Size)) * CFrame.Angles(0, math.rad(f.Turn or 0), 0)
+				for _, part in fitInto(clone, cf, scaledV(f.Size, bp.Size) * IM.ArtGrow) do
+					add(part, bp)
+				end
+			end
+		end
+	end
+	for _, b in spec.Bits or {} do
+		if spec.Shell or not art then
+			local onto = model:FindFirstChild(b.Part)
+			if onto and onto:IsA("BasePart") then
+				local part = Instance.new("Part")
+				part.Name = "ImplantBit"
+				part.Size = b.Size
+				if b.Neon then
+					part.Material, part.Color = Enum.Material.Neon, accent
+				else
+					part.Material, part.Color = IM.Metal.Material, IM.Metal.Color
+				end
+				part.CFrame = onto.CFrame * CFrame.new(scaledV(b.Offset, onto.Size))
+				add(part, onto)
+			end
+		end
+	end
+	implantDrawn[model] = implantDrawn[model] or {}
+	implantDrawn[model][slot] = { itemId = itemId, parts = parts, hidden = hidden }
+end
+local function implantUnwatch(model)
+	for _, c in implantWatch[model] or {} do
+		c:Disconnect()
+	end
+	implantWatch[model] = nil
+	for slot in implantDrawn[model] or {} do
+		implantClear(model, slot)
+	end
+	implantDrawn[model] = nil
+end
+implantWatchModel = function(model)
+	if typeof(model) ~= "Instance" or not model:IsA("Model") or implantWatch[model] then
+		return
+	end
+	local conns = {}
+	implantWatch[model] = conns
+	task.spawn(function()
+		if not (model:FindFirstChild("UpperTorso") or model:WaitForChild("UpperTorso", 5)) or implantWatch[model] ~= conns then
+			return
+		end
+		for _, slot in Cybernetics.Slots do
+			table.insert(conns, model:GetAttributeChangedSignal("Cyber_" .. slot):Connect(function()
+				implantDraw(model, slot)
+			end))
+			implantDraw(model, slot)
+		end
+		table.insert(conns, model.AncestryChanged:Connect(function()
+			if not model:IsDescendantOf(workspace) then
+				implantUnwatch(model)
+			end
+		end))
+	end)
+end
+for _, other in Players:GetPlayers() do
+	if other.Character then
+		implantWatchModel(other.Character)
+	end
+	other.CharacterAdded:Connect(implantWatchModel)
+end
+Players.PlayerAdded:Connect(function(other)
+	other.CharacterAdded:Connect(implantWatchModel)
+end)
+
+end
+
+do
+-- ===== Senses (ported from combat-feel): ears and nose =====
+local SN = Config.Senses
+local sensesRing = make("Frame", { Name = "Senses", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 })
+local pips, scentMarkers = {}, {}
+local function pipAt(i)
+	local f = pips[i]
+	if not f then
+		f = make("Frame", { Name = "Heard", AnchorPoint = Vector2.new(0.5, 0.5), Size = SN.PipSize, BorderSizePixel = 0, BackgroundColor3 = SN.HearColor }, sensesRing)
+		make("UICorner", { CornerRadius = UDim.new(1, 0) }, f)
+		pips[i] = f
+	end
+	return f
+end
+local function scentMarker(i)
+	local m = scentMarkers[i]
+	if not m then
+		m = make("BillboardGui", { Name = "Scent", AlwaysOnTop = true, Size = SN.MarkerSize, LightInfluence = 0, ResetOnSpawn = false }, gui)
+		local dot = make("Frame", { Name = "Dot", Size = UDim2.fromScale(1, 1), BorderSizePixel = 0 }, m)
+		make("UICorner", { CornerRadius = UDim.new(1, 0) }, dot)
+		scentMarkers[i] = m
+	end
+	return m
+end
+local function senseBodies()
+	local out = {}
+	for _, other in Players:GetPlayers() do
+		if other ~= player and other.Character then
+			table.insert(out, other.Character)
+		end
+	end
+	for _, m in CollectionService:GetTagged("NPC") do
+		table.insert(out, m)
+	end
+	return out
+end
+local function seenFrom(cam, target, model)
+	local _, onScreen = cam:WorldToViewportPoint(target)
+	if not onScreen then
+		return false
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { player.Character, model }
+	return workspace:Raycast(cam.CFrame.Position, target - cam.CFrame.Position, params) == nil
+end
+local function hear()
+	local radius = player:GetAttribute("Hearing") or 0
+	local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local cam = workspace.CurrentCamera
+	local n = 0
+	if radius > 0 and me and cam then
+		local look = cam.CFrame.LookVector
+		local flatLook = Vector3.new(look.X, 0, look.Z)
+		if flatLook.Magnitude > 0.01 then
+			flatLook = flatLook.Unit
+			local right = flatLook:Cross(Vector3.yAxis)
+			local size = cam.ViewportSize
+			local r = math.min(size.X, size.Y) * SN.RingScale
+			for _, model in senseBodies() do
+				local root = model:FindFirstChild("HumanoidRootPart")
+				local hum = model:FindFirstChildOfClass("Humanoid")
+				if root and hum and hum.Health > 0 then
+					local offset = root.Position - me.Position
+					local d = offset.Magnitude
+					local v = root.AssemblyLinearVelocity
+					if d <= radius and d > 1 and Vector3.new(v.X, 0, v.Z).Magnitude >= SN.MoveSpeed and not seenFrom(cam, root.Position, model) then
+						n += 1
+						local flat = Vector3.new(offset.X, 0, offset.Z).Unit
+						local angle = math.atan2(flat:Dot(right), flat:Dot(flatLook))
+						local f = pipAt(n)
+						f.Position = UDim2.new(0.5, math.sin(angle) * r, 0.5, -math.cos(angle) * r)
+						f.Rotation = math.deg(angle) + 90
+						f.BackgroundTransparency = 0.15 + 0.7 * (d / radius)
+						f.Visible = true
+					end
+				end
+			end
+		end
+	end
+	for i = n + 1, #pips do
+		pips[i].Visible = false
+	end
+end
+local function smell()
+	local radius = player:GetAttribute("Scent") or 0
+	local track = player:GetAttribute("Track") == true
+	local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local n = 0
+	local function mark(part, color)
+		n += 1
+		local m = scentMarker(n)
+		m.Adornee = part
+		m.Dot.BackgroundColor3 = color
+		m.Dot.BackgroundTransparency = 0.35
+		m.Enabled = true
+	end
+	if radius > 0 and me then
+		for _, part in CollectionService:GetTagged("Scent") do
+			if part:IsA("BasePart") and part:IsDescendantOf(workspace) and (part.Position - me.Position).Magnitude <= radius then
+				mark(part, SN.ScentColor)
+			end
+		end
+		if track then
+			for _, model in senseBodies() do
+				local root = model:FindFirstChild("HumanoidRootPart")
+				local hum = model:FindFirstChildOfClass("Humanoid")
+				if root and hum and hum.Health > 0 and hum.Health / math.max(hum.MaxHealth, 1) < SN.WoundedBelow and (root.Position - me.Position).Magnitude <= radius then
+					mark(root, SN.BloodColor)
+				end
+			end
+		end
+	end
+	for i = n + 1, #scentMarkers do
+		scentMarkers[i].Enabled = false
+		scentMarkers[i].Adornee = nil
+	end
+end
+do
+	local a, b = 0, 0
+	RunService.Heartbeat:Connect(function(dt)
+		a += dt
+		b += dt
+		if a >= SN.Tick then
+			a = 0
+			hear()
+		end
+		if b >= SN.ScentTick then
+			b = 0
+			smell()
+		end
+	end)
+end
+
+end
+
+-- ===== The machine voice (ported from combat-feel): a 100% metal conduit's chat comes out flat =====
+pcall(function()
+	local TextChatService = game:GetService("TextChatService")
+	local Voice = require(Shared:WaitForChild("Voice"))
+	local V = Config.Voice
+	local function machineSpeaker(message)
+		local source = message.TextSource
+		local p = source and Players:GetPlayerByUserId(source.UserId)
+		return p ~= nil and p:GetAttribute("Machine") == true
+	end
+	TextChatService.OnIncomingMessage = function(message)
+		if message.Status ~= Enum.TextChatMessageStatus.Success or not machineSpeaker(message) then
+			return nil
+		end
+		local props = Instance.new("TextChatMessageProperties")
+		props.Text = ('<font color="%s">%s</font>'):format(V.TextColor, Voice.Machine(message.Text))
+		props.PrefixText = ('<font color="%s">%s</font>'):format(V.NameColor, message.PrefixText)
+		return props
+	end
+	TextChatService.OnBubbleAdded = function(message)
+		if not machineSpeaker(message) then
+			return nil
+		end
+		local props = Instance.new("BubbleChatMessageProperties")
+		props.TextColor3 = V.BubbleText
+		props.BackgroundColor3 = V.BubbleBackground
+		props.FontFace = Font.fromEnum(Enum.Font.Code)
+		return props
+	end
+end)
+
 -- ===== Nameplates (ported from combat-feel): bodies read first =====
 -- Roblox's over-head name and health bar are switched off locally for every humanoid we plate; a small
 -- plate sits at hip height, lower-left, fading with distance. Players white, hostiles red; never my own.
@@ -1919,11 +2311,12 @@ Players.PlayerAdded:Connect(function(other)
 	other.CharacterAdded:Connect(plate)
 	other.CharacterRemoving:Connect(unplate)
 end)
-local CollectionService = game:GetService("CollectionService")
 for _, m in CollectionService:GetTagged("NPC") do
 	plate(m)
+	implantWatchModel(m)
 end
 CollectionService:GetInstanceAddedSignal("NPC"):Connect(plate)
+CollectionService:GetInstanceAddedSignal("NPC"):Connect(implantWatchModel)
 CollectionService:GetInstanceRemovedSignal("NPC"):Connect(unplate)
 local plateAcc = 0
 RunService.Heartbeat:Connect(function(dt)

@@ -30,7 +30,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (128 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
+  `scenario` = Endeavor end to end (139 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
   Endeavor client boots. They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution (`ROBLOX_API_KEY` with Luau Execution Sessions: Write) runs a script
@@ -120,6 +120,16 @@ store `ConduitCharacter_v2`) is shared by both places.
   mid-telegraph unless Hyperarmor). Its tree is exported to the scratchpad `cf/` for reading; its owner checklist is
   `production/qa/playtest-checklist-2026-10-25.md` there. Next ports: Aim stance, HUD v2 + nameplates, enemy turns +
   pathfinding, launcher/juggle, full-body cybernetics, Autonet, cycle/clues/computer, contacts/raids, Verdant Reach.
+- Full-body cybernetics (ported from combat-feel): `src/shared/Cybernetics.lua` (8 slots Eyes/Ears/Nose/Core/LeftArm/
+  RightArm/LeftLeg/RightLeg, 13 pieces, Fits/SlotsFor/Fitted/Renamed), Gear derives JumpMult/Hearing/Scent/Track/Lift/
+  Conversion with paired-copy counting (`Gear.CyberSlot`, EquipGear(player,id,slot), Validate drops extra copies) and
+  pushes player attrs Hearing/Scent/Track/Machine + character attrs Cyber_<slot>; rips only through `src/server/
+  Autonet.lua` (Remote "Autonet" In/Out, tables registered by the hideout module `Autonet` and the arena; Config.Cyber);
+  Inventory.Equip refuses cybernetics; PlayerData.Load migrates Optic->Eyes, Arm->RightArm; Stats sets JumpHeight;
+  WornGear no longer draws cyber (client implants do: `implantDraw` shells/bits/icon-model fit, Config.Implants);
+  client senses (hearing pips, scent markers; Loot parts carry the "Scent" tag), machine voice via TextChatService
+  (`src/shared/Voice.lua`, Config.Voice). The 13 Studio-generated implant meshes from combat-feel are listed in its
+  `design/art/implant-models.md` (mesh/texture ids) - not wired yet (would need AssetService:CreateMeshPartAsync).
 - Grid inventory (`src/server/Inventory.lua`, shapes in `Items.Shape`/`Items.Footprint`, `Config.Inventory`): profile.Grid.Items
   = { Id, X, Y, Rot, Count } is the truth, profile.Inventory the count cache (recount after every change). Add/Remove/
   AddAll keep their names; Add drops overflow through `Inventory.Overflow` (set by Loot) unless keepLeftover; placement

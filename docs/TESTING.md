@@ -97,6 +97,29 @@ report). Versions: Endeavor v48, Front v19.
 - [ ] Cybernetics show: optics on the face, Servo Arm / Arc Gauntlet on the left forearm, cores on the upper back.
 - [ ] Nothing floats off the body or clips badly through the head; say which piece if one does.
 
+## Endeavor: cybernetics (the whole body)
+- [ ] Tab: a cybernetic in your pack has no Wear button in the field; the tooltip/row says it is ripped in at an Autonet.
+- [ ] Hideout (O): build the Autonet module (6 sheet metal, 10 wire, 3 battery, 2 glass); a red-lit table appears.
+      The arena has one beside the Cybernetics Bay (which now hands out two of each arm and leg piece).
+- [ ] X on the table: "On the Autonet"; Tab now shows Rip in / Rip out on cybernetics. Arm and leg pieces show
+      Rip in L and Rip in R. Walking away from the table (about 12 studs) takes the buttons away.
+- [ ] Rip one in: a third of your max health goes at once, you are held in place about 4 s with the screen whiting
+      at the edges and the camera shaking, "RIPPING" over you, then it is in. A swap costs and takes twice as much.
+      Getting hurt during a rip cancels it (the cost stays). Fighting (recent combat) refuses the table.
+- [ ] L loadout: eight slots (Eyes, Ears, Nose, Core, Left/Right arm, Left/Right leg), each "flesh" until filled,
+      and "Body: N% metal". Two Servo Arms need two in the pack; the row says "in you (left arm, right arm)".
+- [ ] Implants show on the body for everyone: metal shells with a lit seam on arms and legs, small lit parts on the
+      head and chest (optic lenses, ear pods, nose piece, core). Say which look wrong.
+- [ ] Audio Pickup (ears): a moving raider behind you or behind a wall puts a pip on the ring around the screen
+      centre pointing at it; it goes quiet when the raider stands still or you can see it.
+- [ ] Chem Sniffer (nose): loot containers within ~45 studs get a green dot through walls. Blood Tracer: hurt a
+      raider below half health and it gets a red dot too.
+- [ ] Strider legs: faster walk. Piston legs: noticeably higher jump. Two Servo Arms: the heaviest debris lifts
+      without the Strength requirement.
+- [ ] Fill all eight slots: "Body: 100% metal", a lore line, and chat comes out flat and capitalised ("lol I'm sooooo
+      done!!" becomes "I AM SO DONE.") in grey-blue with a terminal-style bubble. Rip one out: the voice returns.
+- [ ] Old characters: an Optic implant is now in Eyes, an Arm implant in the Right arm.
+
 ## Endeavor: enemies and rigs
 - [ ] The city has standing hostiles: Raider packs in the Transit Hub, mixed packs (Shockers, Brutes) in Corp Plaza and
       the Sprawl, tougher packs and sometimes a Warden in the Blackout Zone. They wander near where they spawned,

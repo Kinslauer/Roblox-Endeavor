@@ -205,6 +205,7 @@ function Loot.Spawn(cframe, bundle, opts)
 	part.Anchored = false
 	part.CFrame = cframe
 	part:SetAttribute("Label", opts.Label or "Remains")
+	game:GetService("CollectionService"):AddTag(part, "Scent") -- a nose implant marks it through walls
 	-- the look: crates for caches and drops, a stash bag for remains, spoils and salvage
 	local label = opts.Label or "Remains"
 	local meshId = if opts.Mesh then Assets.Loot[opts.Mesh] elseif label:find("Vault") then Assets.Loot.CrateB elseif label:find("Cache") or label:find("Crate") or label:find("Drop") or label:find("Locker") then Assets.Loot.CrateA else Assets.Loot.Stash

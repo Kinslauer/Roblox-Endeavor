@@ -74,6 +74,44 @@ Config.Momentum = {
 	EnemyStepHop = 34, -- extra upward studs/s on that dodge
 }
 
+-- Visible implants (client, ported from combat-feel): what is in a body shows on it, for everyone. Limbs get a metal
+-- shell (a copy of the body part a hair larger) plus a lit seam; eyes, ears, nose and core get small parts. A piece
+-- with an icon model (ReplicatedStorage.Icons) is drawn with that model in the Fit box instead of the bits.
+Config.Implants = {
+	Metal = { Color = Color3.fromRGB(118, 116, 110), Material = Enum.Material.Metal, Grow = 1.04 },
+	ArtGrow = 1.06,
+	Slots = {
+		Eyes = { Fit = { { Part = "Head", Offset = Vector3.new(0, 0.1, -0.5), Size = Vector3.new(0.9, 0.24, 0.25) } }, Bits = {
+			{ Part = "Head", Offset = Vector3.new(-0.17, 0.1, -0.5), Size = Vector3.new(0.2, 0.1, 0.06), Neon = true },
+			{ Part = "Head", Offset = Vector3.new(0.17, 0.1, -0.5), Size = Vector3.new(0.2, 0.1, 0.06), Neon = true } } },
+		Ears = { Fit = { { Part = "Head", Offset = Vector3.new(0.52, 0.02, 0), Size = Vector3.new(0.16, 0.42, 0.4) }, { Part = "Head", Offset = Vector3.new(-0.52, 0.02, 0), Size = Vector3.new(0.16, 0.42, 0.4), Turn = 180 } }, Bits = {
+			{ Part = "Head", Offset = Vector3.new(-0.52, 0.02, 0), Size = Vector3.new(0.1, 0.35, 0.3) }, { Part = "Head", Offset = Vector3.new(0.52, 0.02, 0), Size = Vector3.new(0.1, 0.35, 0.3) },
+			{ Part = "Head", Offset = Vector3.new(-0.56, 0.02, 0), Size = Vector3.new(0.04, 0.12, 0.12), Neon = true }, { Part = "Head", Offset = Vector3.new(0.56, 0.02, 0), Size = Vector3.new(0.04, 0.12, 0.12), Neon = true } } },
+		Nose = { Fit = { { Part = "Head", Offset = Vector3.new(0, -0.1, -0.54), Size = Vector3.new(0.24, 0.32, 0.2) } }, Bits = {
+			{ Part = "Head", Offset = Vector3.new(0, -0.08, -0.53), Size = Vector3.new(0.16, 0.24, 0.12) }, { Part = "Head", Offset = Vector3.new(0, -0.2, -0.57), Size = Vector3.new(0.1, 0.04, 0.04), Neon = true } } },
+		Core = { Fit = { { Part = "UpperTorso", Offset = Vector3.new(0, 0.05, -0.5), Size = Vector3.new(0.85, 0.8, 0.26) } }, Bits = {
+			{ Part = "UpperTorso", Offset = Vector3.new(0, 0.05, -0.5), Size = Vector3.new(0.9, 0.8, 0.12) }, { Part = "UpperTorso", Offset = Vector3.new(0, 0.05, -0.56), Size = Vector3.new(0.22, 0.22, 0.05), Neon = true } } },
+		LeftArm = { Shell = { "LeftUpperArm", "LeftLowerArm", "LeftHand" }, Bits = { { Part = "LeftLowerArm", Offset = Vector3.new(0, 0.45, 0), Size = Vector3.new(1.1, 0.08, 1.1), Neon = true } } },
+		RightArm = { Shell = { "RightUpperArm", "RightLowerArm", "RightHand" }, Bits = { { Part = "RightLowerArm", Offset = Vector3.new(0, 0.45, 0), Size = Vector3.new(1.1, 0.08, 1.1), Neon = true } } },
+		LeftLeg = { Shell = { "LeftUpperLeg", "LeftLowerLeg", "LeftFoot" }, Bits = { { Part = "LeftLowerLeg", Offset = Vector3.new(0, 0.45, 0), Size = Vector3.new(1.1, 0.08, 1.1), Neon = true } } },
+		RightLeg = { Shell = { "RightUpperLeg", "RightLowerLeg", "RightFoot" }, Bits = { { Part = "RightLowerLeg", Offset = Vector3.new(0, 0.45, 0), Size = Vector3.new(1.1, 0.08, 1.1), Neon = true } } },
+	},
+	Accent = {
+		ReflexOptic = Color3.fromRGB(255, 170, 60), TargetingLens = Color3.fromRGB(255, 60, 60), AudioPickup = Color3.fromRGB(90, 220, 200),
+		EchoArray = Color3.fromRGB(120, 160, 255), ChemSniffer = Color3.fromRGB(170, 230, 80), BloodTracer = Color3.fromRGB(200, 30, 40),
+		NeuralCore = Color3.fromRGB(140, 120, 255), OverclockCore = Color3.fromRGB(255, 90, 30), PlatedCore = Color3.fromRGB(200, 200, 190),
+		ServoArm = Color3.fromRGB(255, 190, 90), ArcGauntlet = Color3.fromRGB(80, 200, 255), StriderLeg = Color3.fromRGB(120, 255, 170), PistonLeg = Color3.fromRGB(255, 220, 120),
+	},
+	DefaultAccent = Color3.fromRGB(80, 200, 255),
+}
+-- Senses (client): ears put pips on a ring for moving bodies you cannot see; the nose marks loot and wounded bodies.
+Config.Senses = {
+	Tick = 0.15, MoveSpeed = 6, RingScale = 0.16, PipSize = UDim2.fromOffset(18, 6), HearColor = Color3.fromRGB(235, 225, 200),
+	ScentTick = 0.5, ScentColor = Color3.fromRGB(170, 230, 80), BloodColor = Color3.fromRGB(200, 30, 40), WoundedBelow = 0.5, MarkerSize = UDim2.fromOffset(10, 10),
+}
+-- The machine voice's look in chat (client; the words come from shared/Voice.lua)
+Config.Voice = { NameColor = "#8FA3AD", TextColor = "#C9D6DC", BubbleText = Color3.fromRGB(200, 220, 228), BubbleBackground = Color3.fromRGB(24, 30, 34) }
+
 -- Combat stance (client, ported from combat-feel's Aim): the body faces where the camera looks, the camera sits
 -- over the shoulder and the mouse is locked, so swings and bolts go where you look. Pauses while a panel is open.
 Config.Aim = {

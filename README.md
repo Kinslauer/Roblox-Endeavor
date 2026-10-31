@@ -67,6 +67,13 @@ than the pack's limit slows you to 60% and raises stamina costs. Hideout Shelvin
 `profile.Inventory` stays a plain id→count cache rebuilt from the grid, so crafting, equipping, quests and the vault read
 counts as before.
 
+## Cybernetics: the whole body
+Eyes, ears, nose, core, both arms and both legs can be ripped out and replaced with metal (`src/shared/Cybernetics.lua`,
+thirteen pieces, each slot kind doing something no other does: timing, hearing, scent, the engine, force and lift,
+movement). Rips happen only at an Autonet (a hideout module, or the arena's table): a third of your max health up front
+and four seconds on the table, a swap twice that. What is in a body shows on it for everyone. Fill all eight slots and
+you are 100% metal: your chat comes out flat and capitalised until you rip a piece back out.
+
 ## Destruction & salvage
 Built from [docs/systems/destruction-and-salvage.md](docs/systems/destruction-and-salvage.md), stories 1-7.
 - **Props** (`src/shared/Props.lua`, `src/server/Destruction.lua`): streetlights, signs, crates, barrels, fences, vending
