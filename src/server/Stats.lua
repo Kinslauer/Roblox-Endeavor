@@ -4,6 +4,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Props = require(ReplicatedStorage.Shared.Props)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Gear = require(script.Parent.Gear)
+local HeldWeapons = require(script.Parent.HeldWeapons)
 local Net = require(script.Parent.Common.Net)
 local PlayerData = require(script.Parent.Common.PlayerData)
 
@@ -26,6 +27,7 @@ function Stats.Apply(player, fill)
 	local sprintMult = if char:GetAttribute("Sprinting") then Config.Combat.SprintMult else 1
 	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult * sprintMult
 
+	HeldWeapons.Attach(char, PlayerData.Get(player).Equipped)
 	char:SetAttribute("MaxStamina", d.MaxStamina)
 	char:SetAttribute("MaxPosture", d.MaxPosture)
 	char:SetAttribute("MaxCharge", S.MaxCharge)

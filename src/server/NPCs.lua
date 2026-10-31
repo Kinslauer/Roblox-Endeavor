@@ -13,6 +13,7 @@ local Quests = require(script.Parent.Quests)
 local Stats = require(script.Parent.Stats)
 local Gore = require(script.Parent.Gore)
 local Rigs = require(script.Parent.Rigs)
+local HeldWeapons = require(script.Parent.HeldWeapons)
 local Assets = require(Shared.Assets)
 
 local NPCs = {}
@@ -33,13 +34,13 @@ end
 -- Moves: optional list of special attacks { Name, Chance, Telegraph, Damage, Posture, Radius?, Knockback, Stun?, Unblockable? }
 NPCs.Types = {
 	Raider = { Health = 70, Speed = 13, Damage = 9, Posture = 10, Range = 6, Cooldown = 1.4, Telegraph = 0.45, Aggro = 90, Xp = 35, Loot = "Raider",
-		Color = Color3.fromRGB(110, 40, 40), Size = Vector3.new(2, 5, 1) },
+		Color = Color3.fromRGB(110, 40, 40), Size = Vector3.new(2, 5, 1), Weapon = "PipeClub" },
 	Brute = { Health = 220, Speed = 10, Damage = 22, Posture = 30, Range = 7, Cooldown = 2.4, Telegraph = 0.8, Aggro = 80, Xp = 90, Loot = "Raider",
-		Color = Color3.fromRGB(90, 60, 30), Size = Vector3.new(3, 6.5, 1.6), Knockback = 40, Hyperarmor = true },
+		Color = Color3.fromRGB(90, 60, 30), Size = Vector3.new(3, 6.5, 1.6), Knockback = 40, Hyperarmor = true, Weapon = "Sledge" },
 	Shocker = { Health = 90, Speed = 15, Damage = 12, Posture = 8, Range = 9, Cooldown = 1.6, Telegraph = 0.5, Aggro = 110, Xp = 60, Loot = "Raider",
-		Color = Color3.fromRGB(40, 90, 140), Size = Vector3.new(2, 5, 1), Type = "Arc", Stun = 0.6 },
+		Color = Color3.fromRGB(40, 90, 140), Size = Vector3.new(2, 5, 1), Type = "Arc", Stun = 0.6, Weapon = "ShockBaton" },
 	Warden = { Health = 900, Speed = 11, Damage = 26, Posture = 35, Range = 8, Cooldown = 2.0, Telegraph = 0.7, Aggro = 140, Xp = 600, Loot = "Supply",
-		Color = Color3.fromRGB(150, 30, 60), Size = Vector3.new(3.5, 8, 2), Knockback = 45, Hyperarmor = true, Boss = true,
+		Color = Color3.fromRGB(150, 30, 60), Size = Vector3.new(3.5, 8, 2), Knockback = 45, Hyperarmor = true, Boss = true, Weapon = "RebarBlade",
 		Moves = {
 			{ Name = "Slam", Chance = 0.35, Telegraph = 1.1, Damage = 40, Posture = 60, Radius = 14, Knockback = 70, Unblockable = true, Stun = 1.0 },
 			{ Name = "Lunge", Chance = 0.25, Telegraph = 0.6, Damage = 30, Posture = 40, Dash = 60, Knockback = 50 },
@@ -124,6 +125,7 @@ function NPCs.Spawn(typeName, position, opts)
 	root:SetNetworkOwner(nil)
 	if model:GetAttribute("Rigged") then
 		Rigs.Animate(model, hum)
+		HeldWeapons.Attach(model, def.Weapon)
 	end
 
 	local alive = true

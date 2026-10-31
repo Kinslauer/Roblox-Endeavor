@@ -74,12 +74,14 @@ store `ConduitCharacter_v2`) is shared by both places.
   Enemy rigs (Raider/Brute/Shocker/Warden, `tools/models/raider.py` + `enemies.py`) are R15 limb meshes jointed by
   `src/server/Rigs.lua` (Motor6Ds from limb positions, Animator created before replication, Roblox's public R15
   idle/walk anims). Left limbs must be at -X. Display mannequins stand on magenta pads by the test armory.
-  Still placeholder: weapons in hand, custom animations, sounds, the Front's props, hideout/arena/raid geometry.
+  Weapons in hand: `tools/models/weapons.py` -> `Assets.Weapons` (6 ids), welded into RightHand by `src/server/HeldWeapons.lua`
+  (players on every Stats.Apply, NPCs via `NPCs.Types[t].Weapon`, arena mannequins too). Grip offsets unverified in-game.
+  Still placeholder: custom animations, sounds, the Front's props, hideout/arena/raid geometry.
   Known limit: MeshPart CollisionFidelity can't be set from scripts, so collapsed stumps may collide as hulls.
 - All balance numbers are first guesses pending the user's playtest checklist.
 
 ## Open items
-- Next art: weapons in hand, Front props,
+- Next art: Front props (sandbags, wrecked trucks, staged structures), hideout geometry,
   animations (hooks exist: `CombatEvent` "Swing"). Awaiting the user's in-game look at the rigs (animation playback can't be verified from the Luau execution API).
 - The user's playtest checklist (pending).
 - Front: real 20-player frame-rate test; war world art; vehicles are intentionally absent.

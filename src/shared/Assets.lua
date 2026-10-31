@@ -76,6 +76,17 @@ Assets.Rigs = {
 	Warden = 80181254073544,
 }
 
+-- Weapons held in the right hand (see server/HeldWeapons.lua): [weaponId] = { Id, Grip }
+-- Grip "Melee" (default): modelled along +Y from the grip; "Pistol": grip along Y, barrel along +Z.
+Assets.Weapons = {
+	PipeClub = { Id = 98352702068074 },
+	RebarBlade = { Id = 109978068606651 },
+	ShockBaton = { Id = 90209087116064 },
+	ScrapSpear = { Id = 103214457247078 },
+	Sledge = { Id = 140412858794705 },
+	ArcPistol = { Id = 137041276570028, Grip = "Pistol" },
+}
+
 -- Roblox drops Blender material colours on import, so every part is named "<Part>_<Material>"
 -- and the material is applied from this table when the model is loaded.
 Assets.Materials = {
@@ -101,6 +112,7 @@ Assets.Materials = {
 	Hood = { Color = Color3.fromRGB(41, 38, 43), Material = Enum.Material.Fabric },
 	Jacket = { Color = Color3.fromRGB(61, 51, 43), Material = Enum.Material.Fabric },
 	Cloth = { Color = Color3.fromRGB(51, 48, 46), Material = Enum.Material.Fabric },
+	Grip = { Color = Color3.fromRGB(32, 30, 28), Material = Enum.Material.Rubber },
 	Bandage = { Color = Color3.fromRGB(168, 153, 128), Material = Enum.Material.Fabric },
 	Skin = { Color = Color3.fromRGB(158, 122, 97), Material = Enum.Material.SmoothPlastic },
 	Boot = { Color = Color3.fromRGB(26, 23, 23), Material = Enum.Material.Leather },

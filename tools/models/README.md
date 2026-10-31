@@ -6,6 +6,7 @@ The game loads them by asset ID (`src/shared/Assets.lua`) and falls back to gene
     BLENDER=/home/user/scratch-blender/blender-4.2.3-linux-x64/blender   # 4.2 LTS linux tarball from download.blender.org
     $BLENDER -b --python tools/models/streetlight.py      # -> tools/models/out/*.fbx (+ *_preview.obj)
     $BLENDER -b --python tools/models/props.py            # nine props x conditions A/B/C
+    $BLENDER -b --python tools/models/weapons.py          # the six held weapons (grip at origin, blade along +Y)
     python3 tools/models/preview.py out/X_preview.obj out/X.png   # software preview (Pillow), no OpenGL needed
     ROBLOX_API_KEY=... python3 tools/models/upload.py Name out/Name.fbx [...]   # prints "Name assetId"; key needs Assets: Write
 
@@ -16,3 +17,5 @@ Rules that matter:
 - Conditions: `<Prop>_A` intact, `_B` worn, `_C` wrecked. `Assets.PickProp` rolls one on spawn and on rematerialize.
 - Loaded models are dressed, anchored, and pivoted to their bounding-box bottom so they sit on the ground.
 - Chunks (`Chunk_*`) are single meshes used as the physical debris piece; `Props.Defs[...].Chunks[i].Asset` names them.
+- Weapons (`Wpn_*`): grip at the origin, business end along +Y (pistols: grip along Y, barrel along +Z).
+  `server/HeldWeapons.lua` welds them into RightHand with `Assets.Weapons[id].Grip` picking the hand offset.

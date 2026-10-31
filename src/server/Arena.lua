@@ -18,6 +18,7 @@ local NPCs = require(script.Parent.NPCs)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local Stats = require(script.Parent.Stats)
 local Rigs = require(script.Parent.Rigs)
+local HeldWeapons = require(script.Parent.HeldWeapons)
 local Assets = require(Shared.Assets)
 
 local Arena = {}
@@ -276,6 +277,7 @@ local function buildArmory()
 				root:SetNetworkOwner(nil)
 				root.Anchored = true -- it stands still; the idle animation still plays on the limbs
 				Rigs.Animate(model, hum)
+				HeldWeapons.Attach(model, (NPCs.Types[typeName] or {}).Weapon)
 				local label = Instance.new("BillboardGui")
 				label.Size, label.StudsOffset, label.AlwaysOnTop = UDim2.fromOffset(160, 30), Vector3.new(0, 4.5, 0), true
 				local text = Instance.new("TextLabel")

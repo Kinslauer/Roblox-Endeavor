@@ -81,6 +81,8 @@ end
 CF.__add = function(a, b) return mkcf(a.Position + b, a.r) end
 CF.__sub = function(a, b) return mkcf(a.Position - b, a.r) end
 function CF.Inverse(a) return a end
+function CF.ToObjectSpace(a, b) return b end
+function CF.ToWorldSpace(a, b) return a * b end
 
 local Color3 = { new = function(r, g, b) return {R = r, G = g, B = b} end, fromRGB = function(r, g, b) return {R = r/255, G = g/255, B = b/255} end }
 local UDim = { new = function(s, o) return {Scale = s, Offset = o} end }
