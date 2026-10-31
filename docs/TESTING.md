@@ -17,6 +17,11 @@ report). Versions: Endeavor v43, Front v19.
 - [ ] The city reads as late night: purple haze, neon bloom, cold grade; you can still see where you're going.
 
 ## Endeavor: combat
+- [ ] Combat stance (on by default): the body turns to where the camera looks even standing still, the camera sits
+      over the right shoulder (far and high with a melee weapon, closer with the arc pistol) and the mouse is locked.
+      LeftControl toggles the classic camera; with a panel open LeftControl closes the panels instead. Hold LeftAlt to
+      free the mouse without leaving the stance; any panel (Tab, O, J, L, N, F2) frees it on its own.
+- [ ] Swings and arc pistol bolts go where the reticle/centre of the screen points.
 - [ ] Light swing (LMB) and heavy swing (RMB/hold) show an arc and make a whoosh (heavy is deeper).
 - [ ] Swings animate: the arm winds up and back, the torso twists, then the arm snaps down through the arc.
       Heavy swings wind up higher and slower. Other conduits' swings animate too.

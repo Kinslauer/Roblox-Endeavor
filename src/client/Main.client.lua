@@ -698,7 +698,7 @@ local function hitstop(seconds)
 	fovTween = TweenService:Create(cam, TweenInfo.new(seconds, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { FieldOfView = base })
 	fovTween:Play()
 end
-RunService:BindToRenderStep("EndeavorCameraShake", Enum.RenderPriority.Camera.Value + 1, function(dt)
+RunService:BindToRenderStep("EndeavorCameraShake", 201, function(dt) -- RenderPriority.Camera (200) + 1
 	if trauma <= 0 then
 		return
 	end
@@ -1012,6 +1012,12 @@ local helmetcam = false
 local savedZoom = { min = 0.5, max = 128 }
 local function setHelmetcam(on)
 	helmetcam = on
+	task.defer(function()
+		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum.CameraOffset = if on or not Config.Aim.DefaultOn then Vector3.zero else hum.CameraOffset
+		end
+	end)
 	if on then
 		savedZoom.min, savedZoom.max = player.CameraMinZoomDistance, player.CameraMaxZoomDistance
 		player.CameraMinZoomDistance, player.CameraMaxZoomDistance = 0.5, 0.5
@@ -1640,6 +1646,102 @@ end
 local SKILL_KEYS = { [Enum.KeyCode.R] = 1, [Enum.KeyCode.Y] = 2, [Enum.KeyCode.V] = 3 }
 local TOGGLES = { [Enum.KeyCode.J] = statsPanel, [Enum.KeyCode.Tab] = invPanel, [Enum.KeyCode.L] = loadoutPanel, [Enum.KeyCode.N] = app, [Enum.KeyCode.O] = hidePanel }
 
+-- ===== Combat stance (ported from combat-feel's Aim) =====
+-- While on, the body turns to the camera's yaw, the camera rides over the right shoulder and the mouse is
+-- locked to the centre, so melee cones and the arc pistol (both fire along the facing on the server) go where
+-- you look. It pauses, freeing the cursor, while any panel needs the mouse or LeftAlt is held.
+local AIM = Config.Aim
+local GameSettings = UserSettings():GetService("UserGameSettings")
+local aimOn = AIM.DefaultOn
+local MENUS = { statsPanel, invPanel, loadoutPanel, app, hidePanel, containerPanel, devPanel, deathScreen }
+local function menuOpen()
+	for _, m in MENUS do
+		if m.Visible then
+			return true
+		end
+	end
+	return false
+end
+local function aimActive()
+	return aimOn and not helmetcam and not menuOpen() and not UserInputService:IsKeyDown(AIM.FreeCursorKey)
+end
+local function aimPreset()
+	local char = player.Character
+	local def = char and Weapons.Defs[char:GetAttribute("Weapon") or ""]
+	return if def and def.Family == "Sidearm" then AIM.Ranged else AIM.Melee
+end
+local function applyAim()
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if hum then
+		hum.CameraOffset = if aimOn and not helmetcam then aimPreset().ShoulderOffset else Vector3.zero
+		hum.AutoRotate = not aimOn
+	end
+	GameSettings.RotationType = if aimOn then Enum.RotationType.CameraRelative else Enum.RotationType.MovementRelative
+	if not aimOn then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	end
+end
+-- pin the third-person distance for a frame when the weapon kind changes, then let the player scroll again
+local pinToken = 0
+local function setDistance(distance)
+	if helmetcam then
+		return
+	end
+	pinToken += 1
+	local token = pinToken
+	local minZ, maxZ = player.CameraMinZoomDistance, player.CameraMaxZoomDistance
+	player.CameraMinZoomDistance, player.CameraMaxZoomDistance = distance, distance
+	task.delay(0.1, function()
+		if token == pinToken then
+			player.CameraMinZoomDistance, player.CameraMaxZoomDistance = math.min(minZ, distance), math.max(maxZ, distance)
+		end
+	end)
+end
+RunService.Heartbeat:Connect(function()
+	if not aimActive() then
+		return
+	end
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not (hum and root) or hum.Health <= 0 or hum.Sit or hum.PlatformStand then
+		return
+	end
+	local cam = workspace.CurrentCamera
+	if not cam then
+		return
+	end
+	local look = cam.CFrame.LookVector
+	local flat = Vector3.new(look.X, 0, look.Z)
+	if flat.Magnitude > 0.05 then
+		root.CFrame = CFrame.lookAt(root.Position, root.Position + flat.Unit) -- yaw only; physics keeps the position
+	end
+end)
+RunService:BindToRenderStep("EndeavorAim", 202, function() -- after the camera scripts, which reset MouseBehavior
+	if aimOn then
+		UserInputService.MouseBehavior = if aimActive() then Enum.MouseBehavior.LockCenter else Enum.MouseBehavior.Default
+	end
+end)
+local function bindAim(char)
+	task.defer(applyAim)
+	local lastKind
+	local function refresh(force)
+		local preset = aimPreset()
+		applyAim()
+		if force or preset ~= lastKind then
+			lastKind = preset
+			setDistance(preset.Distance)
+		end
+	end
+	char:GetAttributeChangedSignal("Weapon"):Connect(refresh)
+	task.delay(0.5, refresh, true)
+end
+player.CharacterAdded:Connect(bindAim)
+if player.Character then
+	bindAim(player.Character)
+end
+
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then
 		return
@@ -1662,6 +1764,17 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		Remotes.Feint:FireServer()
 	elseif key == Enum.KeyCode.P then
 		setHelmetcam(not helmetcam)
+	elseif key == AIM.ToggleKey then
+		if menuOpen() then
+			for _, m in MENUS do -- "lock my camera" with a panel up means: put the panels away
+				if m ~= deathScreen then
+					m.Visible = false
+				end
+			end
+		else
+			aimOn = not aimOn
+			applyAim()
+		end
 	elseif key == Enum.KeyCode.F1 then
 		controls.Visible = not controls.Visible
 	elseif key == Enum.KeyCode.F2 and Config.Dev.Enabled then

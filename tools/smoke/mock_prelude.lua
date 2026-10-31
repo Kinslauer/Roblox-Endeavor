@@ -117,7 +117,7 @@ end
 
 -------------------------------------------------- instances
 local EVENTS = { Changed=1, Triggered=1, Died=1, HealthChanged=1, Touched=1, AncestryChanged=1, OnServerEvent=1, OnClientEvent=1,
-	PlayerAdded=1, PlayerRemoving=1, CharacterAdded=1, CharacterRemoving=1, Event=1, Heartbeat=1, RenderStepped=1, Destroying=1, Activated=1, InputBegan=1, InputEnded=1 }
+	PlayerAdded=1, PlayerRemoving=1, CharacterAdded=1, CharacterRemoving=1, Event=1, Heartbeat=1, RenderStepped=1, Destroying=1, Activated=1, InputBegan=1, InputEnded=1, InputChanged=1, MouseEnter=1, MouseLeave=1 }
 local Instance, new = {}, nil
 local methods = {}
 local Inst = {}
@@ -353,6 +353,12 @@ function methods.GetService(self, name)
 		end
 	elseif name == "RunService" and not s._init then
 		s._init = true; s.Heartbeat = sig(s, "Heartbeat"); s.RenderStepped = sig(s, "RenderStepped")
+		function s.BindToRenderStep() end
+		function s.UnbindFromRenderStep() end
+	elseif name == "UserInputService" and not s._init then
+		s._init = true
+		function s.IsKeyDown() return false end
+		function s.GetMouseLocation() return Vector2.new(0, 0) end
 	end
 	return s
 end
@@ -385,6 +391,7 @@ local SOURCES, moduleCache = {}, {}
 local mockEnv = {
 	game = game_, workspace = workspace_, Instance = Instance, Vector3 = V3, CFrame = CF, Color3 = Color3, UDim = UDim, UDim2 = UDim2,
 	Vector2 = Vector2, Enum = Enum, task = task_,
+	UserSettings = function() return { GetService = function() return { RotationType = nil } end } end,
 	TweenInfo = { new = function() return {} end }, OverlapParams = { new = function() return {} end }, RaycastParams = { new = function() return {} end },
 	Random = { new = function() local r = {}; function r:NextNumber(a, b) return (a or 0) + math.random() * ((b or 1) - (a or 0)) end; function r:NextInteger(a, b) return math.random(a, b) end return r end },
 	typeof = function(v)

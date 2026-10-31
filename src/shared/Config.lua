@@ -46,6 +46,17 @@ Config.Inventory = {
 	CarryPerPackLevel = 5, -- extra carry per bench upgrade of the worn pack (each level also adds a row)
 }
 
+-- Combat stance (client, ported from combat-feel's Aim): the body faces where the camera looks, the camera sits
+-- over the shoulder and the mouse is locked, so swings and bolts go where you look. Pauses while a panel is open.
+Config.Aim = {
+	DefaultOn = true,
+	ToggleKey = Enum.KeyCode.LeftControl,
+	FreeCursorKey = Enum.KeyCode.LeftAlt, -- hold to free the mouse without leaving the stance
+	-- camera presets by weapon kind: melee far and high so the whole exchange reads, guns in over the shoulder
+	Melee = { Distance = 15, ShoulderOffset = Vector3.new(0.9, 1.4, 0) },
+	Ranged = { Distance = 9, ShoulderOffset = Vector3.new(1.75, 0.5, 0) },
+}
+
 -- Impact feel (client, ported from combat-feel's Presentation.Impacts): sparks, rings, shards, after-images,
 -- camera shake (0..1 trauma) and FOV hitstop per event kind.
 Config.Impacts = {

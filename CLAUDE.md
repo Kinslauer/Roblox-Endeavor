@@ -110,7 +110,8 @@ store `ConduitCharacter_v2`) is shared by both places.
 - Ported from `origin/claude/combat-feel` (the user's other session's branch; 69 commits, its own world and systems;
   owner chose cherry-picking into this branch): attack input queue (`enqueue` in Combat, Config.Combat.InputQueue),
   impact feel (client `impact()`: sparks/ring/shards/ghost + trauma camera shake + FOV hitstop, tuning in
-  Config.Impacts). Its tree is exported to the scratchpad `cf/` for reading; its owner checklist is
+  Config.Impacts), combat stance (client `aimOn`/`aimActive`/`applyAim`, Config.Aim: faces camera yaw on Heartbeat,
+  shoulder offset per weapon kind, LockCenter unless a MENUS panel is open or LeftAlt held). Its tree is exported to the scratchpad `cf/` for reading; its owner checklist is
   `production/qa/playtest-checklist-2026-10-25.md` there. Next ports: Aim stance, HUD v2 + nameplates, enemy turns +
   pathfinding, launcher/juggle, full-body cybernetics, Autonet, cycle/clues/computer, contacts/raids, Verdant Reach.
 - Grid inventory (`src/server/Inventory.lua`, shapes in `Items.Shape`/`Items.Footprint`, `Config.Inventory`): profile.Grid.Items
