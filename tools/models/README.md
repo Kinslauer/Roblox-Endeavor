@@ -13,6 +13,7 @@ The game loads them by asset ID (`src/shared/Assets.lua`) and falls back to gene
     $BLENDER -b --python tools/models/compound.py         # hideout wall panel + gate frame, raid arena wall/pillar/gate shells
     $BLENDER -b --python tools/models/firearms.py         # the Front's seven firearms (grip at origin, barrel along +Y)
     $BLENDER -b --python tools/models/base.py             # faction base: bunker shell, flagpole, locker terminal
+    $BLENDER -b --python tools/models/worn.py             # worn armor + cybernetics (origin = limb centre), both places
     python3 tools/models/preview.py out/X_preview.obj out/X.png   # software preview (Pillow), no OpenGL needed
     ROBLOX_API_KEY=... python3 tools/models/upload.py Name out/Name.fbx [...]   # prints "Name assetId"; key needs Assets: Write
 

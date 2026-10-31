@@ -142,6 +142,29 @@ Assets.Base = {
 	Locker = 111491796184766,
 }
 
+-- Worn gear (tools/models/worn.py, common/WornGear.lua): armor and cybernetics welded onto limbs, keyed
+-- by item id. Limb "UpperLeg" goes on both legs.
+Assets.Worn = {
+	ScavHelm = { Id = 91709410827611, Limb = "Head" },
+	PlatedHelm = { Id = 92859674573572, Limb = "Head" },
+	ArcHood = { Id = 94718008402702, Limb = "Head" },
+	Helmet = { Id = 73112723341170, Limb = "Head" },
+	ScrapVest = { Id = 77827178367213, Limb = "UpperTorso" },
+	RiotPlate = { Id = 101619565204054, Limb = "UpperTorso" },
+	ConduitHarness = { Id = 96609756104129, Limb = "UpperTorso" },
+	FlakVest = { Id = 91405959496523, Limb = "UpperTorso" },
+	SteelPlate = { Id = 88180546853294, Limb = "UpperTorso" },
+	ScrapGreaves = { Id = 78063481367635, Limb = "UpperLeg" },
+	ServoGreaves = { Id = 127667007495817, Limb = "UpperLeg" },
+	PlatedGreaves = { Id = 114276638981555, Limb = "UpperLeg" },
+	ReflexOptic = { Id = 131871131352328, Limb = "Head" },
+	TargetingLens = { Id = 134076533137550, Limb = "Head" },
+	ServoArm = { Id = 99881854714921, Limb = "LeftLowerArm" },
+	ArcGauntlet = { Id = 110756870292079, Limb = "LeftLowerArm" },
+	NeuralCore = { Id = 114038010201506, Limb = "UpperTorso" },
+	OverclockCore = { Id = 128521678913563, Limb = "UpperTorso" },
+}
+
 -- Roblox drops Blender material colours on import, so every part is named "<Part>_<Material>"
 -- and the material is applied from this table when the model is loaded.
 Assets.Materials = {

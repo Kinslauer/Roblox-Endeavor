@@ -28,6 +28,13 @@ report). Versions: Endeavor v28, Front v15.
 - [ ] Equipping a weapon from Tab puts its model in your right hand; fists show nothing. Check each: pipe club,
       rebar blade, shock baton, scrap spear, sledge, arc pistol. Note any that point the wrong way or float.
 
+## Endeavor: worn gear
+- [ ] Wearing armor from Tab shows it on your body: helms on the head (Scav cap with goggles, Plated with a red slit,
+      Arc hood with cyan lines), vests on the chest (Scrap plates, Riot plate with collar, Conduit harness with a glowing
+      core), greaves on both thighs. Unequipping removes it. Other players' gear is visible too.
+- [ ] Cybernetics show: optics on the face, Servo Arm / Arc Gauntlet on the left forearm, cores on the upper back.
+- [ ] Nothing floats off the body or clips badly through the head; say which piece if one does.
+
 ## Endeavor: enemies and rigs
 - [ ] Mannequins on the magenta pads by the test armory: Raider, Brute, Shocker, Warden. Limbs in the right place
       (left arm on the character's left), idle animation playing, weapon in the right hand.
@@ -69,6 +76,7 @@ report). Versions: Endeavor v28, Front v15.
       with its door toward the front line, a flag in your faction's colour, and a locker terminal (X opens the app).
 - [ ] Your rifle or pistol shows in your right hand (AKM, M16A1, SKS, M14, Mosin, Makarov, M1911); switching (1/2)
       swaps the model; other soldiers' guns are visible too. Note if the barrel points the wrong way or the gun floats.
+- [ ] Flak vest / steel plate carrier show on the torso and the steel helmet on the head of anyone wearing them.
 - [ ] Soldiers hold their rifle with both hands (not arms hanging); each shot kicks the arms; reloading (R) drops the
       left hand to the magazine and brings it back.
 - [ ] Sectors have farmhouse/hall buildings, sandbag nests, trucks, tank traps, ammo crates. No floating or sunken props.

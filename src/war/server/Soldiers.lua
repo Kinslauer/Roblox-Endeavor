@@ -10,6 +10,7 @@ local Firearms = require(Shared.Firearms)
 local Remotes = require(Shared.Remotes)
 local Net = require(script.Parent.Common.Net)
 local HeldWeapons = require(script.Parent.Common.HeldWeapons)
+local WornGear = require(script.Parent.Common.WornGear)
 local ModelAssets = require(script.Parent.Common.ModelAssets)
 local Assets = require(Shared.Assets)
 local PlayerData = require(script.Parent.Common.PlayerData)
@@ -42,6 +43,14 @@ local function pushWeapon(player)
 	if player.Character and held then
 		local w = held.Weapons[held.Active]
 		HeldWeapons.Attach(player.Character, w and w.Id)
+		local worn = {}
+		if held.Armor then
+			table.insert(worn, held.Armor.Id)
+		end
+		if held.Helmet then
+			table.insert(worn, held.Helmet.Id)
+		end
+		WornGear.Apply(player.Character, worn)
 	end
 	local s = soldiers[player]
 	if s then

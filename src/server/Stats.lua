@@ -5,6 +5,7 @@ local Props = require(ReplicatedStorage.Shared.Props)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Gear = require(script.Parent.Gear)
 local HeldWeapons = require(script.Parent.Common.HeldWeapons)
+local WornGear = require(script.Parent.Common.WornGear)
 local Net = require(script.Parent.Common.Net)
 local PlayerData = require(script.Parent.Common.PlayerData)
 
@@ -29,6 +30,14 @@ function Stats.Apply(player, fill)
 
 	char:SetAttribute("Weapon", PlayerData.Get(player).Equipped)
 	HeldWeapons.Attach(char, PlayerData.Get(player).Equipped)
+	local worn = {}
+	for _, id in PlayerData.Get(player).Armor do
+		table.insert(worn, id)
+	end
+	for _, id in PlayerData.Get(player).Cyber do
+		table.insert(worn, id)
+	end
+	WornGear.Apply(char, worn)
 	char:SetAttribute("MaxStamina", d.MaxStamina)
 	char:SetAttribute("MaxPosture", d.MaxPosture)
 	char:SetAttribute("MaxCharge", S.MaxCharge)
