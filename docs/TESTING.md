@@ -1,7 +1,7 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v56, Front v19.
+report). Versions: Endeavor v57, Front v19.
 
 ## Endeavor: first minutes
 - [ ] The starting room is a pod: dark panelled walls with cyan seams, diamond-plate floor, the console in a terminal
@@ -210,6 +210,9 @@ move; the city and the scarp overlook stay put. The server's seed is printed in 
 - [ ] Site guards return to their posts 4 minutes after dying.
 - [ ] Dev panel (F2): "North" row (Scarp, Hairpin, Reach) and "Sites" row (Ridge, Mast, Mine, Ship) teleports.
 - [ ] Nothing falls through the terrain: walk the switchbacks, the trail and a mountain slope.
+- [ ] The valley is dressed with real models: low-poly pines and broadleaf trees of varied size, bare dead trees on
+      the scarp and in marshes, faceted rocks, canvas ridge tents at the camps, glass geodesic domes with white ribs
+      and a door in the Reach, solar towers with a tilted blue panel. Trees stand on the ground, not in it or above it.
 
 ## Endeavor: hideouts and raids
 - [ ] Claim a site, open the bench (X). Bench model matches the tier (Tinkerer planks, Workshop steel, Foundry chrome).

@@ -255,6 +255,8 @@ function methods.Raycast(self, origin, dir, params)
 	if best then return { Instance = best, Position = origin + u * bestT, Normal = V3.new(0, 1, 0), Distance = bestT } end
 	return nil
 end
+function methods.ScaleTo(self, s) rawset(self, "_scale", s) end
+function methods.GetScale(self) return rawget(self, "_scale") or 1 end
 function methods.GetJoinData(self) return rawget(self, "_joinData") or {} end
 function methods.SetTeleportData(self, d) rawset(self, "_td", d) end
 function methods.TeleportAsync(self, placeId, players, options) table.insert(FireLog, { "Teleport", placeId, players, options }) end

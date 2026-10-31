@@ -58,7 +58,8 @@ every player has finished or skipped (and 30s have passed) the world opens early
   ambushes) to **Verdant Reach**, a green terrace at the map's centre-north: hedge ring, greenhouse domes, solar towers,
   and a covered market that is a safe zone with a trader who sells for war credits. Around the valley is the **Ridge**:
   a mountain range and forest with encampments, stockpiles and relic sites (Signal Mast, Crashed Dropship, Old Mine)
-  whose guarded containers hold gear the city rarely drops, refilling over time.
+  whose guarded containers hold gear the city rarely drops, refilling over time. The valley is dressed with a Blender
+  kit (`tools/models/frontier.py`): pines, broadleaf trees, dead trees, rocks, tents, greenhouse domes, solar towers.
 - **Raids** (`src/server/Raids.lua`): the Blackout Gate opens a 20s join window for up to 6 players, teleports them to
   a sealed arena and runs four waves (Raiders, Shockers, a Brute, then the **Warden** boss with a telegraphed slam and
   lunge). Enemies scale with party size. Clearing it drops a vault (3x supply rolls + a guaranteed implant) and 400 xp,

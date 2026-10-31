@@ -271,7 +271,27 @@ local function buildRoads()
 end
 
 -- ===== chunks =====
+-- Spawns a kit model (scaled, yawed at random) or returns nil so the caller builds parts instead.
+local function kit(id, x, y, z, scale, name)
+	if not id then
+		return nil
+	end
+	local model = ModelAssets.Spawn(id, CFrame.new(x, y, z) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0), name, folder)
+	if model and scale and scale ~= 1 then
+		pcall(function()
+			model:ScaleTo(scale)
+		end)
+	end
+	return model
+end
+
 local function tree(x, z, y)
+	local list = if rng:NextNumber() < 0.6 then Assets.Frontier.Pines else Assets.Frontier.Broad
+	local model = kit(list[rng:NextInteger(1, #list)], x, y - 0.5, z, rng:NextNumber(0.75, 1.3), "Tree")
+	if model then
+		CollectionService:AddTag(model, "Tree")
+		return model
+	end
 	local h = rng:NextNumber(9, 16)
 	local trunk = part({ Name = "Trunk", Size = Vector3.new(1.4, h, 1.4), Position = Vector3.new(x, y + h / 2 - 0.5, z), Color = PAL.Trunk, Material = Enum.Material.Wood })
 	local leaf = PAL.Leaf[rng:NextInteger(1, #PAL.Leaf)]
@@ -284,12 +304,19 @@ local function tree(x, z, y)
 end
 
 local function deadTree(x, z, y)
+	if kit(Assets.Frontier.Dead, x, y - 0.5, z, rng:NextNumber(0.7, 1.2), "DeadTree") then
+		return
+	end
 	local h = rng:NextNumber(7, 12)
 	part({ Name = "DeadTrunk", Size = Vector3.new(1.1, h, 1.1), CFrame = CFrame.new(x, y + h / 2 - 0.5, z) * CFrame.Angles(rng:NextNumber(-0.12, 0.12), 0, rng:NextNumber(-0.12, 0.12)), Color = PAL.Dead, Material = Enum.Material.Wood })
 	part({ Name = "DeadBranch", Size = Vector3.new(0.5, 4, 0.5), CFrame = CFrame.new(x, y + h * 0.7, z) * CFrame.Angles(0, rng:NextNumber(0, math.pi), rng:NextNumber(0.6, 1.1)), Color = PAL.Dead, Material = Enum.Material.Wood, CanCollide = false })
 end
 
 local function rock(x, z, y, size)
+	local rocks = Assets.Frontier.Rocks
+	if kit(rocks[rng:NextInteger(1, #rocks)], x, y - 0.6, z, size / 6, "Rock") then
+		return
+	end
 	part({ Name = "Rock", Shape = Enum.PartType.Ball, Size = Vector3.new(size, size * 0.7, size * 0.8), CFrame = CFrame.new(x, y + size * 0.2, z) * CFrame.Angles(0, rng:NextNumber(0, math.pi), 0), Color = PAL.Rock, Material = Enum.Material.Slate })
 end
 
@@ -555,9 +582,15 @@ local function buildReach()
 		local a = i / 9 * math.pi * 2 + 0.2
 		local r = 148
 		local p = c + Vector3.new(math.sin(a) * r, 0, math.cos(a) * r)
-		local dome = part({ Name = "Dome", Shape = Enum.PartType.Ball, Size = Vector3.new(22, 22, 22), Position = Vector3.new(p.X, y + 1, p.Z), Color = PAL.Dome, Material = Enum.Material.Glass, Transparency = 0.55, CanCollide = false })
-		glow(dome, Color3.fromRGB(255, 120, 220), 26, 0.8)
-		part({ Name = "DomeBase", Shape = Enum.PartType.Cylinder, Size = Vector3.new(1, 23, 23), CFrame = CFrame.new(p.X, y + 0.5, p.Z) * CFrame.Angles(0, 0, math.pi / 2), Color = PAL.Frame, Material = Enum.Material.Concrete })
+		local domeModel = Assets.Frontier.Dome and ModelAssets.Spawn(Assets.Frontier.Dome, CFrame.new(p.X, y, p.Z) * CFrame.lookAt(Vector3.zero, Vector3.new(c.X - p.X, 0, c.Z - p.Z)).Rotation, "Dome", folder)
+		if domeModel then
+			local grow = part({ Name = "GrowLight", Size = Vector3.new(1, 1, 1), Position = Vector3.new(p.X, y + 6, p.Z), Transparency = 1, CanCollide = false })
+			glow(grow, Color3.fromRGB(255, 120, 220), 26, 0.8)
+		else
+			local dome = part({ Name = "Dome", Shape = Enum.PartType.Ball, Size = Vector3.new(22, 22, 22), Position = Vector3.new(p.X, y + 1, p.Z), Color = PAL.Dome, Material = Enum.Material.Glass, Transparency = 0.55, CanCollide = false })
+			glow(dome, Color3.fromRGB(255, 120, 220), 26, 0.8)
+			part({ Name = "DomeBase", Shape = Enum.PartType.Cylinder, Size = Vector3.new(1, 23, 23), CFrame = CFrame.new(p.X, y + 0.5, p.Z) * CFrame.Angles(0, 0, math.pi / 2), Color = PAL.Frame, Material = Enum.Material.Concrete })
+		end
 		for k = 1, 3 do
 			part({ Name = "GrowBed", Size = Vector3.new(6, 1.2, 1.6), Position = Vector3.new(p.X + (k - 2) * 3.2, y + 1, p.Z), Color = PAL.Leaf[2], Material = Enum.Material.Grass, CanCollide = false })
 		end
@@ -566,8 +599,10 @@ local function buildReach()
 	for i = 1, 6 do
 		local a = i / 6 * math.pi * 2
 		local p = c + Vector3.new(math.sin(a) * 80, 0, math.cos(a) * 80)
-		part({ Name = "TowerMast", Size = Vector3.new(1.2, 26, 1.2), Position = Vector3.new(p.X, y + 13, p.Z), Color = PAL.Frame, Material = Enum.Material.Metal })
-		part({ Name = "SolarPanel", Size = Vector3.new(12, 0.4, 8), CFrame = CFrame.new(p.X, y + 26, p.Z) * CFrame.Angles(-0.5, a, 0), Color = PAL.Panel, Material = Enum.Material.Glass, CanCollide = false })
+		if not (Assets.Frontier.Tower and ModelAssets.Spawn(Assets.Frontier.Tower, CFrame.new(p.X, y, p.Z) * CFrame.Angles(0, -a, 0), "SolarTower", folder)) then
+			part({ Name = "TowerMast", Size = Vector3.new(1.2, 26, 1.2), Position = Vector3.new(p.X, y + 13, p.Z), Color = PAL.Frame, Material = Enum.Material.Metal })
+			part({ Name = "SolarPanel", Size = Vector3.new(12, 0.4, 8), CFrame = CFrame.new(p.X, y + 26, p.Z) * CFrame.Angles(-0.5, a, 0), Color = PAL.Panel, Material = Enum.Material.Glass, CanCollide = false })
+		end
 	end
 	-- planter beds along the cross paths, trees, lamps
 	for i = 1, 28 do
@@ -745,6 +780,9 @@ end
 
 local function tent(position, yaw)
 	local cf = CFrame.new(position) * CFrame.Angles(0, yaw, 0)
+	if Assets.Frontier.Tent and ModelAssets.Spawn(Assets.Frontier.Tent, cf, "Tent", folder) then
+		return
+	end
 	for _, s in { -1, 1 } do
 		part({ Name = "TentSide", Size = Vector3.new(7, 0.3, 6), CFrame = cf * CFrame.new(s * 2.2, 2.2, 0) * CFrame.Angles(0, 0, s * 0.9), Color = PAL.Tent, Material = Enum.Material.Fabric })
 	end

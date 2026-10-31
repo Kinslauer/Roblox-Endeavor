@@ -169,6 +169,18 @@ Assets.Worn = {
 
 -- Loot containers and the Neural Net terminal shell (tools/models/loot.py): meshes ride inside the lootable
 -- part / terminal body, which turn invisible. Loot.Spawn picks by label unless opts.Mesh names one.
+-- The frontier kit (tools/models/frontier.py -> server/Frontier.lua chunk builders). Scaled in place
+-- with Model:ScaleTo; every one falls back to generated parts when it fails to load.
+Assets.Frontier = {
+	Pines = { 92768258437635, 120932030100957 },
+	Broad = { 100146944193691, 86344580066937 },
+	Dead = 132455478470140,
+	Rocks = { 136961458265470, 140181270253858, 126475140264638 },
+	Tent = 115392531991737,
+	Dome = 125608573514511,
+	Tower = 86663060548171,
+}
+
 Assets.Loot = {
 	CrateA = 135218922360091, -- supply / cache crate
 	CrateB = 116144381772246, -- vault cache, glowing lock
@@ -248,6 +260,18 @@ Assets.Materials = {
 	Visor = { Color = Color3.fromRGB(255, 25, 25), Material = Enum.Material.Neon, Light = Color3.fromRGB(255, 40, 40) },
 	Coat = { Color = Color3.fromRGB(33, 31, 38), Material = Enum.Material.Fabric },
 	Sandbag = { Color = Color3.fromRGB(150, 132, 92), Material = Enum.Material.Fabric },
+	-- the frontier kit
+	Bark = { Color = Color3.fromRGB(78, 56, 38), Material = Enum.Material.Wood },
+	DeadBark = { Color = Color3.fromRGB(70, 62, 56), Material = Enum.Material.Wood },
+	Needle = { Color = Color3.fromRGB(42, 88, 46), Material = Enum.Material.Grass },
+	Leaf = { Color = Color3.fromRGB(72, 124, 56), Material = Enum.Material.Grass },
+	LeafDark = { Color = Color3.fromRGB(46, 92, 66), Material = Enum.Material.Grass },
+	Stone = { Color = Color3.fromRGB(102, 100, 104), Material = Enum.Material.Slate },
+	StoneDark = { Color = Color3.fromRGB(70, 68, 76), Material = Enum.Material.Slate },
+	Canvas = { Color = Color3.fromRGB(92, 96, 76), Material = Enum.Material.Fabric },
+	Frame = { Color = Color3.fromRGB(218, 212, 198), Material = Enum.Material.Metal },
+	DomeGlass = { Color = Color3.fromRGB(180, 230, 220), Material = Enum.Material.Glass, Transparency = 0.5 },
+	SolarGlass = { Color = Color3.fromRGB(26, 46, 90), Material = Enum.Material.Glass },
 	SandbagDark = { Color = Color3.fromRGB(112, 96, 62), Material = Enum.Material.Fabric },
 	Char = { Color = Color3.fromRGB(28, 26, 25), Material = Enum.Material.CorrodedMetal },
 	Olive = { Color = Color3.fromRGB(70, 78, 46), Material = Enum.Material.Metal },

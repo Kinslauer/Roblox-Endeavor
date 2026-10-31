@@ -228,23 +228,25 @@ function Frontier.Generate(seed)
 	local path = { L.Cells[2][footCol] }
 	local visited = { [L.Cells[2][footCol]] = true }
 	local cur = path[1]
-	local steps = 0
+	local steps, laterals = 0, 0
 	while steps < 40 do
 		steps += 1
 		local dr, dc = rr - cur.Row, rc - cur.Col
 		if math.abs(dr) + math.abs(dc) <= 1 then
 			break -- next to the Reach
 		end
-		local options = {}
+		local options, closerSet = {}, {}
 		for _, d in { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } } do
 			local nr, nc = cur.Row + d[1], cur.Col + d[2]
 			if nr >= 2 and nr <= rows - 1 and nc >= 2 and nc <= cols - 1 then
 				local cell = L.Cells[nr][nc]
 				if not visited[cell] and cell.Type ~= "Reach" then
 					local closer = (math.abs(rr - nr) + math.abs(rc - nc)) < (math.abs(dr) + math.abs(dc))
-					-- the walk is at least six cells: it detours while it is still short, then heads for the Reach
-					local short = steps <= 6 - (math.abs(dr) + math.abs(dc))
-					for _ = 1, if closer then (if short then 1 else 4) elseif short then 4 elseif steps <= 5 then 1 else 0 do
+					closerSet[cell] = closer
+					-- the walk is at least six cells and bends at least twice: it detours while it is still short
+					-- or straight, then heads for the Reach
+					local detour = steps <= 6 - (math.abs(dr) + math.abs(dc)) or laterals < 2
+					for _ = 1, if closer then (if detour then 1 else 4) elseif detour then 4 elseif steps <= 5 then 1 else 0 do
 						table.insert(options, cell)
 					end
 				end
@@ -254,6 +256,9 @@ function Frontier.Generate(seed)
 			break
 		end
 		cur = options[rng:NextInteger(1, #options)]
+		if not closerSet[cur] then
+			laterals += 1
+		end
 		visited[cur] = true
 		table.insert(path, cur)
 	end

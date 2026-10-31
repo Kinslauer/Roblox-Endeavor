@@ -60,7 +60,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   K artillery, F dig, V sandbags, M app.
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v56, Front v19). Front v10 verified on a real server:
+- Both places published and starting cleanly (Endeavor v57, Front v19). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.
@@ -185,7 +185,9 @@ store `ConduitCharacter_v2`) is shared by both places.
   emits a heightmap + labels, `map.py world.json out.png world` draws city + frontier (`docs/maps/world_map_seed*.png`;
   set Config.Frontier.Seed to draw a given roll). Live probe pattern: scratch `probe_frontier.lua` (City.Init +
   Frontier.Init + Populate, raycast heights vs Frontier.Height).
-  Trees/rocks/tents/domes are parts (no Blender kit yet): the next art pass.
+  Frontier kit (`tools/models/frontier.py` -> `Assets.Frontier`: Pines/Broad/Dead/Rocks/Tent/Dome/Tower, materials
+  Bark/DeadBark/Needle/Leaf/LeafDark/Stone/StoneDark/Canvas/Frame/DomeGlass/SolarGlass): `kit()` in server/Frontier.lua
+  spawns + `Model:ScaleTo`s them with part fallbacks; live v57: 574 trees, 256 rocks, 8 tents, 9 domes, 6 towers, 8.3s build.
 
 - The test arena (Arena.lua: the Pit, armory, mannequins, dummies) is built at `Config.Dev.ArenaOrigin` (3000, 0, 0),
   off the map, on its own slab; its pads are tagged ArenaSpawn, not CitySpawn. The city's centre is `City.buildCrossroads`
