@@ -18,6 +18,8 @@ report). Versions: Endeavor v22, Front v12.
       the spear thrusts, the arc pistol aims and kicks. Brutes (sledge) and Wardens (blade) use theirs too.
 - [ ] Blocking (F) raises both arms into a guard (yours and other players'); a blocked or parried hit jolts the guard.
 - [ ] Getting hit flinches head and torso; a guard break staggers harder.
+- [ ] Your own hits float a damage number off the target (yellow normal, orange big, grey blocked, cyan arc) with a
+      small camera nudge; nobody else sees your numbers.
 - [ ] Hostiles raise their arm for the whole telegraph (red glow) and slash when it lands; dodge/parry on the slash.
 - [ ] Hitting a dummy or hostile thuds and flashes it red; parry (F just before impact) clangs and flashes white.
 - [ ] Guard break (blocking too long) plays the deep crack; posture bar empties.

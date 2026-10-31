@@ -964,6 +964,20 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 			}, workspace)
 			Debris:AddItem(beam, 0.1)
 		end
+	elseif kind == "Damage" and typeof(a) == "Instance" and type(b) == "table" then
+		-- our hit landed: float the number off the victim and nudge the camera
+		local root = a:FindFirstChild("Head") or a:FindFirstChild("HumanoidRootPart")
+		if root then
+			local amount, result, dtype = b[1], b[2], b[3]
+			local billboard = make("BillboardGui", { Size = UDim2.fromOffset(120, 36), StudsOffset = Vector3.new(math.random(-15, 15) / 10, 2.5, 0), AlwaysOnTop = true }, root)
+			local color = if result == "blocked" then Color3.fromRGB(170, 170, 190) elseif dtype == "Arc" then Color3.fromRGB(90, 220, 255) elseif amount >= 30 then Color3.fromRGB(255, 150, 50) else Color3.fromRGB(255, 225, 90)
+			local text = make("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = ("%d"):format(math.round(amount)), TextColor3 = color, Font = Enum.Font.GothamBold, TextScaled = true, TextStrokeTransparency = 0.3 }, billboard)
+			Debris:AddItem(billboard, 1.0)
+			TweenService:Create(billboard, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { StudsOffset = billboard.StudsOffset + Vector3.new(0, 3, 0) }):Play()
+			TweenService:Create(text, TweenInfo.new(0.9), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+			local cam = workspace.CurrentCamera
+			cam.CFrame = cam.CFrame * CFrame.Angles(math.rad(if amount >= 30 then 0.8 else 0.3), 0, 0)
+		end
 	elseif kind == "Windup" then
 		windupAnim(a, tonumber(b) or 0.5, (tonumber(b) or 0) >= 0.7)
 		task.delay(tonumber(b) or 0.5, function()

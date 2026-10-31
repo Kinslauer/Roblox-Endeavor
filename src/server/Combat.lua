@@ -391,6 +391,10 @@ local function applyDamage(attacker, victim, amount, opts)
 
 	vhum:TakeDamage(amount)
 	victim:SetAttribute("LastHitType", opts.Type or "Physical")
+	if ap and amount > 0 then
+		-- the attacker's own feedback: a floating number (its colour says blocked / normal / arc)
+		Remotes.CombatEvent:FireClient(ap, "Damage", victim, { amount, result, opts.Type or "Physical" })
+	end
 	if vp then
 		Combat.WearWorn(vp)
 	end
