@@ -1,12 +1,14 @@
 -- Hostile NPCs. Data-driven types with telegraphed attacks so parry/dodge timing is readable.
 -- Rigs are placeholder blocks until real models exist (swap NPCs.BuildRig).
 local CollectionService = game:GetService("CollectionService")
+local PathfindingService = game:GetService("PathfindingService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Items = require(Shared.Items)
 local Remotes = require(Shared.Remotes)
+local Config = require(Shared.Config)
 local Combat = require(script.Parent.Combat)
 local Loot = require(script.Parent.Loot)
 local Quests = require(script.Parent.Quests)
@@ -76,6 +78,108 @@ function NPCs.BuildRig(name, typeDef)
 	root.Parent, head.Parent, hum.Parent = model, model, model
 	model.PrimaryPart = root
 	return model, hum, root
+end
+
+local AI = Config.City.AI
+
+-- Taking turns (ported from combat-feel; owner: "every time I swing I get hit", "make them spread around you").
+-- Only AI.MeleeAttackers bodies may be winding up or striking at one target at a time; the rest hold a ring
+-- around it (AI.HoldGap outside their reach), spread apart, circling, and step in when the slot frees.
+local claims = setmetatable({}, { __mode = "k" }) -- target -> { [attacker] = claim ends }
+
+local function othersSwinging(target, attacker, now)
+	local c, n = claims[target], 0
+	for m, untilT in c or {} do
+		if untilT <= now or not m.Parent then
+			c[m] = nil
+		elseif m ~= attacker then
+			n += 1
+		end
+	end
+	return n
+end
+
+local function claimSwing(target, attacker, now, seconds)
+	if othersSwinging(target, attacker, now) >= AI.MeleeAttackers then
+		return false
+	end
+	claims[target] = claims[target] or {}
+	claims[target][attacker] = now + seconds
+	return true
+end
+NPCs.Swinging = function(target)
+	return othersSwinging(target, nil, os.clock())
+end
+
+-- Where a waiting body stands: on the ring at its current bearing, drifting `side`, pushed away from any
+-- other body close by so a group fans out around you instead of stacking in front.
+local function holdSpot(model, root, troot, radius, side)
+	local rel = (root.Position - troot.Position) * Vector3.new(1, 0, 1)
+	local a = if rel.Magnitude > 0.1 then math.atan2(rel.Z, rel.X) else math.random() * math.pi * 2
+	for _, other in CollectionService:GetTagged("NPC") do
+		local oroot = other ~= model and other:FindFirstChild("HumanoidRootPart")
+		if oroot and (oroot.Position - root.Position).Magnitude < AI.Spread then
+			local orel = (oroot.Position - troot.Position) * Vector3.new(1, 0, 1)
+			if orel.Magnitude > 0.1 then
+				local diff = (a - math.atan2(orel.Z, orel.X) + math.pi) % (2 * math.pi) - math.pi
+				a += if diff >= 0 then AI.SpreadPush else -AI.SpreadPush
+			end
+		end
+	end
+	a += side * AI.CircleSpeed * AI.Tick
+	return troot.Position + Vector3.new(math.cos(a) * radius, 0, math.sin(a) * radius)
+end
+
+-- Path follower: a waypoint list, recomputed on a cadence, when the goal moves, or when stuck (then it jumps).
+local function newNavigator(model, hum, root)
+	local nav = { waypoints = nil, index = 1, goal = nil, lastCompute = 0, lastProgressAt = 0, lastPos = root.Position }
+	local path
+	pcall(function()
+		path = PathfindingService:CreatePath({ AgentRadius = AI.AgentRadius, AgentHeight = AI.AgentHeight, AgentCanJump = true })
+	end)
+	local function compute(goal)
+		nav.goal, nav.lastCompute = goal, os.clock()
+		local ok = path and pcall(path.ComputeAsync, path, root.Position, goal)
+		if ok and path.Status == Enum.PathStatus.Success then
+			nav.waypoints, nav.index = path:GetWaypoints(), 2
+		else
+			nav.waypoints = nil -- straight MoveTo
+		end
+		nav.lastProgressAt, nav.lastPos = os.clock(), root.Position
+	end
+	function nav.moveTo(goal)
+		local now = os.clock()
+		if (root.Position - nav.lastPos).Magnitude > 0.5 then
+			nav.lastProgressAt, nav.lastPos = now, root.Position
+		end
+		local stuck = now - nav.lastProgressAt > AI.StuckSeconds
+		if not nav.goal or now - nav.lastCompute > AI.Repath or (goal - nav.goal).Magnitude > AI.RepathMove or stuck then
+			if stuck then
+				hum.Jump = true
+			end
+			compute(goal)
+		end
+		local wps = nav.waypoints
+		if wps and wps[nav.index] then
+			local wp = wps[nav.index]
+			if (wp.Position - root.Position).Magnitude < AI.WaypointReach then
+				nav.index += 1
+				wp = wps[nav.index]
+			end
+			if wp then
+				if wp.Action == Enum.PathWaypointAction.Jump then
+					hum.Jump = true
+				end
+				hum:MoveTo(wp.Position)
+				return
+			end
+		end
+		hum:MoveTo(goal)
+	end
+	function nav.stop()
+		hum:MoveTo(root.Position)
+	end
+	return nav
 end
 
 local function nearestTarget(root, aggro, filter)
@@ -205,56 +309,78 @@ function NPCs.Spawn(typeName, position, opts)
 		local lastAttack = 0
 		local basic = { Telegraph = def.Telegraph, Damage = def.Damage, Posture = def.Posture, Range = def.Range }
 		local hadTarget = false
+		local nav = newNavigator(model, hum, root)
+		local home = root.Position
+		local side = if math.random() < 0.5 then 1 else -1 -- which way this body circles while it waits
 		while alive and model.Parent and hum.Health > 0 do
+			local now = os.clock()
 			local target, dist = nearestTarget(root, def.Aggro, opts.Filter)
+			if target and (root.Position - home).Magnitude > AI.Leash then
+				target = nil -- leashed: give up and walk back
+			end
 			if target and not hadTarget then
 				bark(model, "Alert") -- first sight of prey
 			end
 			hadTarget = target ~= nil
 			if target then
 				local troot = target.HumanoidRootPart
-				local t = os.clock()
-				if t - lastAttack > def.Cooldown then
-					local move
-					if def.Moves then
-						local roll = math.random()
-						for _, m in def.Moves do
-							roll -= m.Chance
-							if roll <= 0 then
-								move = m
-								break
-							end
+				local canAttack = now - lastAttack > def.Cooldown and Combat.CanAct(model)
+				local move
+				if canAttack and def.Moves then
+					local roll = math.random()
+					for _, m in def.Moves do
+						roll -= m.Chance
+						if roll <= 0 then
+							move = m
+							break
 						end
 					end
-					if move and (move.Dash or dist <= (move.Radius or def.Range) + 2) then
-						lastAttack = t
-						if def.Hyperarmor then
-							Combat.AddBuff(model, "Hyperarmor", 0, move.Telegraph + 0.3)
-						end
-						strike(target, move)
-						lastAttack = os.clock()
-					elseif dist <= def.Range then
-						lastAttack = t
+				end
+				local holdRadius = def.Range + AI.HoldGap
+				local hold = false
+				if move and (move.Dash or dist <= (move.Radius or def.Range) + 2) then
+					-- a special move is this body's own turn: it does not wait for the ring
+					lastAttack = now
+					if def.Hyperarmor then
+						Combat.AddBuff(model, "Hyperarmor", 0, move.Telegraph + 0.3)
+					end
+					nav.stop()
+					strike(target, move)
+					lastAttack = os.clock()
+				elseif dist <= def.Range * 0.85 then
+					if canAttack and claimSwing(target, model, now, def.Telegraph + 0.3 + AI.SwingGap) then
+						lastAttack = now
 						if def.Hyperarmor then
 							Combat.AddBuff(model, "Hyperarmor", 0, def.Telegraph + 0.2)
 						end
+						nav.stop()
 						strike(target, basic)
 						lastAttack = os.clock()
+					elseif canAttack then
+						hold = true -- someone else is swinging: back out to the ring
 					else
-						hum:MoveTo(troot.Position)
+						nav.stop()
+						model:PivotTo(facing(root, troot)) -- track the target through recovery
 					end
-				elseif dist > def.Range * 0.8 then
-					hum:MoveTo(troot.Position)
+				elseif dist <= holdRadius + 3 and othersSwinging(target, model, now) >= AI.MeleeAttackers then
+					hold = true -- not your turn: don't crowd in
+				else
+					nav.moveTo(troot.Position)
+				end
+				if hold then
+					nav.moveTo(holdSpot(model, root, troot, holdRadius, side))
 				end
 			else
 				local spot = model:GetAttribute("Investigate")
 				if spot and os.clock() < (model:GetAttribute("InvestigateUntil") or 0) and (spot - root.Position).Magnitude > 6 then
-					hum:MoveTo(spot)
+					nav.moveTo(spot)
 				elseif spot then
 					model:SetAttribute("Investigate", nil)
+				elseif (root.Position - home).Magnitude > 8 then
+					nav.moveTo(home) -- back to the post after a chase
 				end
 			end
-			task.wait(0.2)
+			task.wait(AI.Tick)
 		end
 	end)
 	return model

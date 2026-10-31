@@ -98,6 +98,10 @@ report). Versions: Endeavor v46, Front v19.
       chase on sight and come back a couple of minutes after dying.
 - [ ] Mannequins on the magenta pads by the test armory: Raider, Brute, Shocker, Warden. Limbs in the right place
       (left arm on the character's left), idle animation playing, weapon in the right hand.
+- [ ] Groups take turns: with three raiders on you only one winds up at a time; the others hold a ring a few studs
+      out, circling and spreading apart, and step in when it is their turn. Can you fight a pack now?
+- [ ] Hostiles path around walls and props instead of pushing into them, jump when stuck, and walk back to their
+      post if you lead them too far (about 110 studs).
 - [ ] Hostiles bark: a shout when they first spot you, another on each attack windup, a death cry. Raiders shout,
       Brutes roar low, Shockers crackle, the Warden sounds a horn.
 - [ ] Live hostiles walk with moving legs, telegraph attacks, and die with gore (dismemberment, pools, corpse stays).

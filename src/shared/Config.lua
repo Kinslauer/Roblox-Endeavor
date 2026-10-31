@@ -87,6 +87,23 @@ Config.Impacts = {
 
 Config.City = {
 	CacheRespawn = 240, -- seconds before an opened cache refills
+	-- hostile group behaviour and movement (server/NPCs.lua, ported from combat-feel's Enemies.AI)
+	AI = {
+		Tick = 0.15, -- seconds between decisions
+		Repath = 0.6, -- seconds between path recomputes while chasing
+		RepathMove = 6, -- or sooner, when the target moved this far
+		WaypointReach = 3.5, -- studs to consider a waypoint reached
+		StuckSeconds = 1.5, -- no progress for this long -> recompute (and jump)
+		AgentRadius = 2.5,
+		AgentHeight = 5.5,
+		MeleeAttackers = 1, -- melee bodies allowed to wind up / strike at one target at once
+		SwingGap = 0.3, -- seconds after a strike before the next body may start its wind-up
+		HoldGap = 5, -- studs outside its reach a waiting body holds
+		CircleSpeed = 0.5, -- radians/s a waiting body drifts around you
+		Spread = 7, -- studs: waiting bodies closer than this push apart
+		SpreadPush = 0.25, -- radians per tick they push
+		Leash = 110, -- studs from its spawn a hostile gives up a chase and walks back
+	},
 	-- standing hostiles per district Danger (server/Population.lua)
 	Population = {
 		Cap = 36, -- hostiles alive at once from all sources, before Population stops adding

@@ -620,6 +620,36 @@ run(1.5)
 check("the queued heavy plays once the swing ends", heavyFired)
 qconn:Disconnect()
 
+-- taking turns: three raiders next to the player, but only one winds up at a time
+as(player)
+local NPCs_ = M.mockEnv.__require(SSS.Server.NPCs)
+local pr = player.Character.HumanoidRootPart
+local pack = {}
+for i = 1, 3 do
+	local m = NPCs_.Spawn("Raider", pr.Position + M.V3.new(3 * i, 0, 3), { Parent = game_.Workspace })
+	table.insert(pack, m)
+end
+local logBefore = #M.FireLog
+run(3)
+-- with three bodies in reach and no turn-taking each would wind up every ~1.9 s (about 5 in 3 s);
+-- one slot at a time with the swing gap caps it near 3
+local windups = 0
+for i = logBefore + 1, #M.FireLog do
+	local e = M.FireLog[i]
+	if e[1] == "CombatEvent" and e[3] == "Windup" and table.find(pack, e[4]) then windups += 1 end
+end
+check("the pack attacks (someone wound up)", windups >= 1)
+check("the pack takes turns rather than all swinging", windups <= 4)
+check("the others hold a ring instead of stacking", (function()
+	local far = 0
+	for _, m in pack do
+		local r = m:FindFirstChild("HumanoidRootPart")
+		if r and (r.Position - pr.Position).Magnitude > 6 then far += 1 end
+	end
+	return far >= 1
+end)())
+for _, m in pack do m:Destroy() end
+
 -- dev tools: teleport to the armory and spawn a hostile through the F2 panel's remote
 as(player)
 local devRoot = player.Character.HumanoidRootPart

@@ -357,6 +357,9 @@ function methods.GetService(self, name)
 		s._init = true; s.Heartbeat = sig(s, "Heartbeat"); s.RenderStepped = sig(s, "RenderStepped")
 		function s.BindToRenderStep() end
 		function s.UnbindFromRenderStep() end
+	elseif name == "PathfindingService" and not s._init then
+		s._init = true
+		function s.CreatePath() local path = { Status = "PathStatus.NoPath" }; function path:ComputeAsync() end; function path:GetWaypoints() return {} end; return path end
 	elseif name == "UserInputService" and not s._init then
 		s._init = true
 		function s.IsKeyDown() return false end
