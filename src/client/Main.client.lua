@@ -16,6 +16,11 @@ local HideoutDefs = require(Shared:WaitForChild("Hideout"))
 local Items = require(Shared:WaitForChild("Items"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local Sounds = require(Shared:WaitForChild("Sounds"))
+-- Sounds for combat events, played at the character they happened to.
+local SOUND = { Hit = "HitFlesh", Block = "BlockThud", Parry = "HitClang", GuardBreak = "GuardBreak", Devour = "Devour", Flick = "FlickerTick" }
+-- Sounds for props breaking, by prop id; anything else is metal. Chunks hitting the ground thud.
+local BREAK_SOUND = { WindowPane = "BreakGlass", Crate = "BreakWood", Slab = "Collapse", Chunk = "ImpactDirt" }
+
 local Skills = require(Shared:WaitForChild("Skills"))
 
 local player = Players.LocalPlayer
@@ -734,11 +739,6 @@ Remotes.PhaseChanged.OnClientEvent:Connect(function(phase)
 end)
 
 -- ===== Combat feedback & movement =====
-
--- Sounds for combat events, played at the character they happened to.
-local SOUND = { Hit = "HitFlesh", Block = "BlockThud", Parry = "HitClang", GuardBreak = "GuardBreak", Devour = "Devour", Flick = "FlickerTick" }
--- Sounds for props breaking, by prop id; anything else is metal. Chunks hitting the ground thud.
-local BREAK_SOUND = { WindowPane = "BreakGlass", Crate = "BreakWood", Slab = "Collapse", Chunk = "ImpactDirt" }
 
 local FLASH = {
 	Hit = Color3.fromRGB(255, 70, 70), Block = Color3.fromRGB(150, 150, 255), Parry = Color3.fromRGB(255, 255, 255), Devour = Color3.fromRGB(120, 0, 160),
