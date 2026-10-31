@@ -60,7 +60,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   K artillery, F dig, V sandbags, M app.
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v17, Front v9). Spawn fall-through fixed by anchoring the
+- Both places published and starting cleanly (Endeavor v18, Front v9). Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.
 - User reported keys not working in Studio before v16; v16 adds visible swing arcs, block outline, sprint and a
   controls card. If keys still do nothing, get the F9 Client tab log.
@@ -68,12 +68,15 @@ store `ConduitCharacter_v2`) is shared by both places.
   (`/home/user/scratch-blender/...`), props are built by script (`tools/models/`, see its README), previewed with a
   software rasterizer, uploaded as Model assets via Open Cloud (`tools/models/upload.py`, key needs Assets: Write,
   key user id 3155619052), and wired by ID in `src/shared/Assets.lua` with A/B/C condition variants. The nine street
-  props + streetlight + 3 chunks are done (Endeavor v17). Still placeholder: buildings, NPC rigs, weapons,
-  animations, sounds, the Front's props.
+  props + streetlight + 3 chunks, and the building kits (5 district styles x 3 heights x intact/collapsed,
+  `tools/models/buildings.py`, bmesh-merged to ~7 MeshParts each, `Assets.Buildings` + `Assets.PickBuilding`) are
+  done (Endeavor v18). Model loading is in `src/server/ModelAssets.lua` (cache, dress, anchor, bottom pivot).
+  Still placeholder: NPC rigs, weapons, animations, sounds, the Front's props, hideout/arena/raid geometry.
+  Known limit: MeshPart CollisionFidelity can't be set from scripts, so collapsed stumps may collide as hulls.
 - All balance numbers are first guesses pending the user's playtest checklist.
 
 ## Open items
-- Next art: building facades/district kits, enemy rigs (Raider/Brute/Shocker/Warden), weapons, Front props,
+- Next art: enemy rigs (Raider/Brute/Shocker/Warden), weapons, Front props,
   animations (hooks exist: `CombatEvent` "Swing"). Rig import for animated characters is untested.
 - The user's playtest checklist (pending).
 - Front: real 20-player frame-rate test; war world art; vehicles are intentionally absent.

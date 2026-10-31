@@ -12,7 +12,9 @@ local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Remotes = require(Shared.Remotes)
+local Assets = require(Shared.Assets)
 local Destruction = require(script.Parent.Destruction)
+local ModelAssets = require(script.Parent.ModelAssets)
 local Loot = require(script.Parent.Loot)
 local Quests = require(script.Parent.Quests)
 
@@ -24,13 +26,13 @@ local rng = Random.new(1337) -- fixed seed: the city is the same every server
 
 -- Center, size (studs), block grid, tower height range, palette, cache count, danger label.
 City.Districts = {
-	{ Name = "Transit Hub", Center = Vector3.new(0, 0, -420), Size = 420, Blocks = 4, Height = { 14, 40 }, Caches = 8, Danger = "Low",
+	{ Name = "Transit Hub", Style = "Transit", Center = Vector3.new(0, 0, -420), Size = 420, Blocks = 4, Height = { 14, 40 }, Caches = 8, Danger = "Low",
 		Color = Color3.fromRGB(60, 64, 78), Neon = Color3.fromRGB(0, 220, 255), Collapse = 0.25, Lockup = "Weak" },
-	{ Name = "Corp Plaza", Center = Vector3.new(420, 0, 0), Size = 420, Blocks = 3, Height = { 40, 110 }, Caches = 6, Danger = "Medium",
+	{ Name = "Corp Plaza", Style = "Corp", Center = Vector3.new(420, 0, 0), Size = 420, Blocks = 3, Height = { 40, 110 }, Caches = 6, Danger = "Medium",
 		Color = Color3.fromRGB(70, 72, 90), Neon = Color3.fromRGB(255, 50, 160), Collapse = 0.15, Lockup = "Reinforced", Sealed = true },
-	{ Name = "The Sprawl", Center = Vector3.new(-420, 0, 0), Size = 420, Blocks = 6, Height = { 8, 22 }, Caches = 12, Danger = "Medium",
+	{ Name = "The Sprawl", Style = "Sprawl", Center = Vector3.new(-420, 0, 0), Size = 420, Blocks = 6, Height = { 8, 22 }, Caches = 12, Danger = "Medium",
 		Color = Color3.fromRGB(78, 66, 56), Neon = Color3.fromRGB(255, 170, 40), Collapse = 0.4, Lockup = "Standard" },
-	{ Name = "Blackout Zone", Center = Vector3.new(0, 0, 420), Size = 420, Blocks = 4, Height = { 20, 70 }, Caches = 6, Danger = "High",
+	{ Name = "Blackout Zone", Style = "Blackout", Center = Vector3.new(0, 0, 420), Size = 420, Blocks = 4, Height = { 20, 70 }, Caches = 6, Danger = "High",
 		Color = Color3.fromRGB(30, 30, 38), Neon = Color3.fromRGB(255, 30, 30), Collapse = 0.5, Raid = true, Lockup = "Reinforced" },
 }
 
@@ -48,6 +50,20 @@ local function part(props)
 end
 
 local function tower(district, x, z, footprint)
+	-- Blender kit first: a building whose height class fits the district, collapsed by the district's odds
+	local entry = Assets.PickBuilding(district.Style, district.Height[1], district.Height[2], district.Collapse, rng)
+	if entry then
+		local yaw = rng:NextInteger(0, 3) * math.pi / 2
+		local model, size = ModelAssets.Spawn(entry.Id, CFrame.new(x, GROUND_TOP, z) * CFrame.Angles(0, yaw, 0), "Building", folder)
+		if model then
+			model:SetAttribute("Style", district.Style)
+			if not entry.Collapsed and entry.Height > 24 and rng:NextNumber() < 0.5 then
+				-- a walkable ledge partway up for verticality (gameplay, so it stays generated)
+				part({ Name = "Ledge", Size = Vector3.new(size.X + 6, 1, 4), Position = Vector3.new(x, GROUND_TOP + entry.Height * 0.5, z + size.Z / 2 + 2), Color = district.Color, Material = Enum.Material.Metal })
+			end
+			return model
+		end
+	end
 	local h = rng:NextInteger(district.Height[1], district.Height[2])
 	local collapsed = rng:NextNumber() < district.Collapse
 	if collapsed then
@@ -140,7 +156,7 @@ local STREET_PROPS = { "Streetlight", "StreetSign", "Crate", "Barrel", "FencePan
 
 -- The four corner quadrants between districts: unnamed outskirts of low ruins, wrecks and
 -- rubble so the city reads as one continuous place instead of four islands.
-local OUTSKIRTS = { Color = Color3.fromRGB(52, 50, 56), Neon = Color3.fromRGB(120, 120, 140), Height = { 6, 16 }, Collapse = 0.6 }
+local OUTSKIRTS = { Style = "Outskirts", Color = Color3.fromRGB(52, 50, 56), Neon = Color3.fromRGB(120, 120, 140), Height = { 6, 16 }, Collapse = 0.6 }
 local function buildOutskirts()
 	local inner, outer = 150, 620 -- stay clear of the Pit/armory and the district squares
 	for _, sx in { -1, 1 } do

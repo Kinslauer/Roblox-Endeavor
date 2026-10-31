@@ -13,7 +13,7 @@ local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Props = require(Shared.Props)
 local Assets = require(Shared.Assets)
-local InsertService = game:GetService("InsertService")
+local ModelAssets = require(script.Parent.ModelAssets)
 local Remotes = require(Shared.Remotes)
 local Combat = require(script.Parent.Combat)
 local Gear = require(script.Parent.Gear)
@@ -74,58 +74,14 @@ local function buildPart(spec, origin, parent)
 	return p
 end
 
--- Uploaded models are loaded once and cloned; a failed load falls back to generated parts.
-local assetCache = {}
-local function loadAsset(id)
-	if id == 0 then
-		return nil
-	end
-	if assetCache[id] == nil then
-		local ok, result = pcall(function()
-			local container = InsertService:LoadAsset(id)
-			local model = container:FindFirstChildWhichIsA("Model") or container:FindFirstChildWhichIsA("BasePart")
-			if model then
-				model.Parent = nil
-			end
-			container:Destroy()
-			return model
-		end)
-		if not ok or not result then
-			warn("[Destruction] could not load asset", id, result)
-		end
-		assetCache[id] = (ok and result) or false
-	end
-	return assetCache[id] or nil
-end
+local loadAsset = ModelAssets.Template
 
 -- Spawns an intact prop at `cframe`. Returns the model.
 function Destruction.SpawnProp(propId, cframe)
 	local def = Props.Defs[propId]
 	assert(def, "unknown prop " .. tostring(propId))
-	local template = loadAsset(Assets.PickProp(propId, rng) or 0)
-	local model
-	if template then
-		-- Blender-built model: a Model of MeshParts (or a single MeshPart). Dress it, anchor it,
-		-- and set it down so its bottom sits on the given point.
-		model = template:Clone()
-		if model:IsA("BasePart") then
-			local holder = Instance.new("Model")
-			model.Parent = holder
-			model = holder
-		end
-		Assets.Dress(model)
-		for _, p in model:GetDescendants() do
-			if p:IsA("BasePart") then
-				p.Anchored = true
-				p.CanQuery = true
-			end
-		end
-		model.Name = propId
-		model.PrimaryPart = model:FindFirstChildWhichIsA("BasePart")
-		local bboxCF, bboxSize = model:GetBoundingBox()
-		model.WorldPivot = CFrame.new(bboxCF.Position - Vector3.new(0, bboxSize.Y / 2, 0))
-		model:PivotTo(cframe)
-	else
+	local model = ModelAssets.Spawn(Assets.PickProp(propId, rng), cframe, propId, nil)
+	if not model then
 		model = Instance.new("Model")
 		model.Name = propId
 		for _, spec in def.Parts do
