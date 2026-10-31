@@ -93,15 +93,36 @@ end
 
 local STAGE_HEALTH = { 300, 220, 160 } -- health of stages 1-3; rubble (4) is indestructible
 
+-- Picks the uploaded building kit whose footprint is nearest the requested size; nil when none
+-- is registered (the generated boxes are used instead).
+local function pickKit(w)
+	local best, bestD
+	for name, kit in Assets.FrontBuildings do
+		local dist = math.abs(kit.Width - w)
+		if not best or dist < bestD then
+			best, bestD = kit, dist
+		end
+	end
+	return best
+end
+
 local function spawnStructure(sector, center, w, d, h)
 	local model = Instance.new("Model")
 	model.Name = "Structure"
 	model:SetAttribute("Stage", 1)
+	local kit = pickKit(w)
+	if kit then
+		w, d, h = kit.Width, kit.Depth, kit.Height
+	end
+	local yaw = rng:NextInteger(0, 3) * 90
 	local entry = { stages = {}, stage = 1, health = STAGE_HEALTH[1], center = center, w = w, d = d, h = h, color = Color3.fromRGB(rng:NextInteger(100, 150), rng:NextInteger(80, 110), rng:NextInteger(60, 90)), sector = sector }
 	for stage = 1, 4 do
-		local holder = Instance.new("Model")
-		holder.Name = "Stage" .. stage
-		buildStage(holder, stage, center + Vector3.new(0, GROUND_TOP, 0), w, d, h, entry.color)
+		local holder = kit and ModelAssets.Spawn(kit.Stages[stage], CFrame.new(center + Vector3.new(0, GROUND_TOP, 0)) * CFrame.Angles(0, math.rad(yaw), 0), "Stage" .. stage, nil)
+		if not holder then
+			holder = Instance.new("Model")
+			holder.Name = "Stage" .. stage
+			buildStage(holder, stage, center + Vector3.new(0, GROUND_TOP, 0), w, d, h, entry.color)
+		end
 		entry.stages[stage] = holder
 	end
 	entry.stages[1].Parent = model

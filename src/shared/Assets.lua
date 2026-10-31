@@ -97,6 +97,13 @@ Assets.Front = {
 	AmmoCrate = 89789308888628,
 }
 
+-- The Front's staged buildings (tools/models/front_buildings.py): Stages[1..4] = intact, damaged,
+-- ruined, rubble. Battlefield picks the kit nearest the footprint it wanted.
+Assets.FrontBuildings = {
+	Farmhouse = { Width = 18, Depth = 16, Height = 9, Stages = { 90952332269870, 106074559329466, 77239609557564, 116251743217738 } },
+	Hall = { Width = 24, Depth = 20, Height = 12, Stages = { 72519396548568, 83800228553052, 94898623532790, 99432007888838 } },
+}
+
 -- Roblox drops Blender material colours on import, so every part is named "<Part>_<Material>"
 -- and the material is applied from this table when the model is loaded.
 Assets.Materials = {
@@ -148,6 +155,8 @@ Assets.Materials = {
 	GlassLit = { Color = Color3.fromRGB(217, 191, 115), Material = Enum.Material.Neon },
 	NeonAmber = { Color = Color3.fromRGB(255, 158, 38), Material = Enum.Material.Neon, Light = Color3.fromRGB(255, 170, 60) },
 	NeonRed = { Color = Color3.fromRGB(255, 30, 30), Material = Enum.Material.Neon, Light = Color3.fromRGB(255, 50, 50) },
+	SootBrick = { Color = Color3.fromRGB(58, 42, 36), Material = Enum.Material.Brick },
+	Plaster = { Color = Color3.fromRGB(158, 148, 128), Material = Enum.Material.Concrete },
 	Rubble = { Color = Color3.fromRGB(84, 82, 79), Material = Enum.Material.Concrete },
 }
 

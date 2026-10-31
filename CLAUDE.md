@@ -79,12 +79,14 @@ store `ConduitCharacter_v2`) is shared by both places.
   Front props (`tools/models/front.py` -> `Assets.Front`): sandbag nests A/B tile the trench lips and nests, trucks A/B,
   hedgehogs on sector edges, ammo crates; a soldier's stacked sandbags carry the LowSandbags mesh inside the collider
   part. Everything falls back to the old generated boxes when an asset fails to load.
-  Still placeholder: custom animations, sounds, hideout/arena/raid geometry, the Front's staged buildings.
+  Front staged buildings (`tools/models/front_buildings.py` -> `Assets.FrontBuildings`, Farmhouse 18x16x9 and Hall
+  24x20x12, four stages each) replace the box structures; Battlefield picks the kit nearest the wanted width.
+  Still placeholder: custom animations, sounds, hideout/arena/raid geometry.
   Known limit: MeshPart CollisionFidelity can't be set from scripts, so collapsed stumps may collide as hulls.
 - All balance numbers are first guesses pending the user's playtest checklist.
 
 ## Open items
-- Next art: the Front's staged buildings (4 stages), hideout geometry,
+- Next art: hideout geometry,
   animations (hooks exist: `CombatEvent` "Swing"). Awaiting the user's in-game look at the rigs (animation playback can't be verified from the Luau execution API).
 - The user's playtest checklist (pending).
 - Front: real 20-player frame-rate test; war world art; vehicles are intentionally absent.
