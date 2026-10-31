@@ -31,6 +31,8 @@ function Lifecycle.Spawn(player)
 	if not player.Parent then
 		return
 	end
+	-- Decide where first, so the ground exists (and has replicated) before the character does.
+	local spawnAt = Hideouts.SpawnCFrame(player) or WorldPhase.GetSpawnCFrame(player)
 	player:LoadCharacter()
 	local char = player.Character
 	local root = char and char:WaitForChild("HumanoidRootPart", 10)
@@ -38,7 +40,16 @@ function Lifecycle.Spawn(player)
 	if not (root and hum) then
 		return
 	end
-	char:PivotTo(Hideouts.SpawnCFrame(player) or WorldPhase.GetSpawnCFrame(player))
+	char:PivotTo(spawnAt)
+	-- The client owns its character's physics and may not have the floor yet: hold the character
+	-- on the server for a moment so it cannot fall through ground it hasn't received.
+	root.Anchored = true
+	task.delay(Config.SpawnSettle, function()
+		if root.Parent then
+			char:PivotTo(spawnAt)
+			root.Anchored = false
+		end
+	end)
 	Gear.Recompute(player) -- fresh derived stats (important after a permadeath wipe)
 	Stats.Apply(player, true)
 	Stats.Push(player)

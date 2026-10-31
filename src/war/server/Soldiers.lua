@@ -88,7 +88,15 @@ function Soldiers.Spawn(player)
 	if not (root and hum) then
 		return
 	end
-	char:PivotTo(Battlefield.BaseCFrame(faction))
+	local spawnAt = Battlefield.BaseCFrame(faction)
+	char:PivotTo(spawnAt)
+	root.Anchored = true -- held until the client has the battlefield (see Config.SpawnSettle)
+	task.delay(Config.SpawnSettle, function()
+		if root.Parent then
+			char:PivotTo(spawnAt)
+			root.Anchored = false
+		end
+	end)
 	char:SetAttribute("Faction", faction)
 	hum.MaxHealth, hum.Health = 100, 100
 	hum.WalkSpeed = 14

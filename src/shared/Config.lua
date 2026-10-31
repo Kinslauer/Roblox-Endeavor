@@ -140,6 +140,8 @@ Config.Hideouts = {
 	MedbayHealPerSecond = 2,
 }
 
+Config.SpawnSettle = 1.5 -- seconds the character is held in place after a spawn so the client receives the ground first
+
 Config.SpawnProtection = 8 -- seconds of invulnerability after spawning into the open world
 
 Config.RespawnDelay = 5
