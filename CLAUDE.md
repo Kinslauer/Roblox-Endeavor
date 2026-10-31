@@ -30,7 +30,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (125 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
+  `scenario` = Endeavor end to end (128 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
   Endeavor client boots. They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution (`ROBLOX_API_KEY` with Luau Execution Sessions: Write) runs a script
@@ -115,7 +115,9 @@ store `ConduitCharacter_v2`) is shared by both places.
   bottom-centre composite bars + health bar, hotbar under it, `floatWord` words/taken numbers, reticle with hit
   marker, damage vignette, nameplates for players and NPC-tagged models; "Hit" fx now carries the amount), enemy group
   behaviour (NPCs: `claimSwing`/`holdSpot` turn-taking ring, `newNavigator` PathfindingService follower with stuck-jump,
-  leash home; Config.City.AI). Its tree is exported to the scratchpad `cf/` for reading; its owner checklist is
+  leash home; Config.City.AI), momentum (Config.Momentum: side-dodge i-frames, launcher `holdForLauncher`/`launch`/`pop`
+  in Combat on NPC-tagged non-player bodies, Juggled attribute, Enemy Step in Dodge, NPC strike lost when stunned
+  mid-telegraph unless Hyperarmor). Its tree is exported to the scratchpad `cf/` for reading; its owner checklist is
   `production/qa/playtest-checklist-2026-10-25.md` there. Next ports: Aim stance, HUD v2 + nameplates, enemy turns +
   pathfinding, launcher/juggle, full-body cybernetics, Autonet, cycle/clues/computer, contacts/raids, Verdant Reach.
 - Grid inventory (`src/server/Inventory.lua`, shapes in `Items.Shape`/`Items.Footprint`, `Config.Inventory`): profile.Grid.Items

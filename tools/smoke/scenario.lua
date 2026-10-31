@@ -620,6 +620,27 @@ run(1.5)
 check("the queued heavy plays once the swing ends", heavyFired)
 qconn:Disconnect()
 
+-- launcher: a light staggers a raider, a heavy started in the grace window sends it up (Juggled)
+as(player)
+Remotes.EquipItem:FireServer("PipeClub"); run(0.3)
+local NPCsL = M.mockEnv.__require(SSS.Server.NPCs)
+local lr = player.Character.HumanoidRootPart
+local dummyR = NPCsL.Spawn("Raider", lr.Position + M.V3.new(0, 0, -3), { Parent = game_.Workspace }) -- a Brute has hyperarmor while it swings and would not stagger
+dummyR.Humanoid.MaxHealth, dummyR.Humanoid.Health = 5000, 5000
+dummyR.HumanoidRootPart.Anchored = true -- hold it in reach: knockback would push it out of the heavy's range here
+lr.CFrame = M.CF.lookAt(lr.Position, dummyR.HumanoidRootPart.Position); run(0.1)
+Remotes.Attack:FireServer(); run(0.7) -- the light lands and staggers it; the heavy pressed now queues and fires inside the grace window
+Remotes.Heavy:FireServer(); run(0.8)
+check("a heavy on a staggered hostile launches it", dummyR:GetAttribute("Juggled") == true)
+Remotes.Attack:FireServer(); run(0.5)
+check("a hit on a launched hostile pops it (AIR)", (function()
+	for _, e in M.FireLog do if e[1] == "CombatEvent" and e[3] == "Juggle" and e[4] == dummyR then return true end end
+	return false
+end)())
+run(1.5)
+check("it lands and the juggle ends", dummyR:GetAttribute("Juggled") == false)
+dummyR:Destroy()
+
 -- taking turns: three raiders next to the player, but only one winds up at a time
 as(player)
 local NPCs_ = M.mockEnv.__require(SSS.Server.NPCs)

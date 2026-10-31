@@ -1677,6 +1677,25 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 	end
 	if WORDS[kind] and typeof(a) == "Instance" then
 		floatWord(a, WORDS[kind], HUD.DamageNumbers.Colors[kind], false)
+	elseif kind == "Launch" and typeof(a) == "Instance" then
+		floatWord(a, "LAUNCHED", Color3.fromRGB(255, 230, 120), true)
+		local root = a:FindFirstChild("HumanoidRootPart")
+		if root then
+			local streak = neon(Enum.PartType.Block, Vector3.new(0.6, 10, 0.6), Color3.fromRGB(255, 230, 120), root.CFrame * CFrame.new(0, -6, 0))
+			if fxSpawn(streak, 0.3) then
+				TweenService:Create(streak, TweenInfo.new(0.3), { Transparency = 1, Size = Vector3.new(0.12, 16, 0.12) }):Play()
+			end
+		end
+		if b == player.Character then
+			shake(0.5)
+			hitstop(0.06)
+		end
+	elseif kind == "Juggle" and typeof(a) == "Instance" then
+		floatWord(a, ("AIR x%d"):format(tonumber(b) or 1), Color3.fromRGB(255, 230, 120), false)
+		shake(0.2)
+		hitstop(0.03)
+	elseif kind == "EnemyStep" and typeof(a) == "Instance" then
+		floatWord(a, "ENEMY STEP", HUD.DamageNumbers.Colors.Dodged, false)
 	end
 	if SOUND[kind] and typeof(a) == "Instance" then
 		Sounds.Play(SOUND[kind], a:FindFirstChild("HumanoidRootPart") or a)

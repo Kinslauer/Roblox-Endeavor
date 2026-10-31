@@ -48,7 +48,12 @@ report). Versions: Endeavor v47, Front v19.
 - [ ] Hitting a dummy or hostile thuds and flashes it red; parry (F just before impact) clangs and flashes white.
 - [ ] Guard break (blocking too long) plays the deep crack; posture bar empties.
 - [ ] Flicker (E just before your hit lands) ticks; three chained = BLACK FLASH banner, red shockwave, boom.
-- [ ] Dodge (Q) has i-frames; feint (Z) cancels a swing; sprint (Shift) drains stamina.
+- [ ] Dodge (Q) has i-frames (longer when you dodge sideways); feint (Z) cancels a swing; sprint (Shift) drains stamina.
+- [ ] Launcher: light, light, then heavy on a Raider sends it up ("LAUNCHED", a yellow streak); hits while it is
+      airborne pop it back up ("AIR x2...") and hurt more; it lands stunned. A Brute cannot be launched mid-swing
+      (hyperarmor); players are never launched. Does the rhythm read? Too floaty or too short?
+- [ ] Enemy Step: dodge (Q) next to a launched hostile hops you up and refunds stamina ("ENEMY STEP").
+- [ ] A hostile staggered during its wind-up loses that strike (the red glow ends with no hit).
 - [ ] Equipping a weapon from Tab puts its model in your right hand; fists show nothing. Check each: pipe club,
       rebar blade, shock baton, scrap spear, sledge, arc pistol. Note any that point the wrong way or float.
 

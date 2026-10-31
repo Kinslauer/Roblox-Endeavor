@@ -46,6 +46,27 @@ Config.Inventory = {
 	CarryPerPackLevel = 5, -- extra carry per bench upgrade of the worn pack (each level also adds a row)
 }
 
+-- Momentum (ported from combat-feel's momentum.md 2.5): side-dodge i-frames, the launcher, juggles, Enemy Step.
+-- A melee heavy on an *open* hostile (staggered, or just out of its stagger) launches it: it is Juggled (helpless until
+-- it lands) and every hit while airborne pops it up again and hurts more. Players are never launched.
+Config.Momentum = {
+	SideIFrameMult = 1.3, -- side dodges (|dot(dir, look)| < 0.5) get this much more i-frame time
+	LaunchVelocity = 70, -- studs/s up (~12 studs of height, ~0.7 s of hang)
+	LaunchDrift = 8, -- studs/s away from the attacker
+	LaunchAirTime = 0.8, -- seconds the target counts as Juggled after a launch
+	LaunchGrace = 0.6, -- a heavy launches if you *start* it while the target is staggered or up to this long after
+	LaunchHold = true, -- starting that heavy keeps the open target staggered until it lands
+	LaunchHoldReach = 1, -- studs past the heavy's range a target can be and still be held
+	AirDamageMult = 1.35, -- damage multiplier against a Juggled target
+	AirPopVelocity = 32, -- upward studs/s each hit gives a Juggled target
+	AirPopExtend = 0.3, -- seconds each pop adds to the juggle
+	MaxJuggleHits = 4, -- pops stop after this many hits
+	LandStun = 0.45, -- hit-stun after the juggle ends (the get-up)
+	EnemyStepRange = 9, -- studs from the airborne enemy a dodge springs off it
+	EnemyStepRefund = 12, -- stamina back
+	EnemyStepHop = 34, -- extra upward studs/s on that dodge
+}
+
 -- Combat stance (client, ported from combat-feel's Aim): the body faces where the camera looks, the camera sits
 -- over the shoulder and the mouse is locked, so swings and bolts go where you look. Pauses while a panel is open.
 Config.Aim = {

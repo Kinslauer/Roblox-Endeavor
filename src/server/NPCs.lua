@@ -277,8 +277,8 @@ function NPCs.Spawn(typeName, position, opts)
 		end
 		model:PivotTo(facing(root, troot))
 		telegraph(model, spec.Telegraph, if spec.Unblockable then Color3.fromRGB(255, 120, 0) else Color3.fromRGB(255, 40, 40))
-		if not alive or hum.Health <= 0 then
-			return
+		if not alive or hum.Health <= 0 or (Combat.IsStunned(model) and not def.Hyperarmor) then
+			return -- staggered (or launched) during the wind-up: the strike is lost
 		end
 		if spec.Dash then
 			local dir = (troot.Position - root.Position) * Vector3.new(1, 0, 1)
