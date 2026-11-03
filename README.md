@@ -25,6 +25,11 @@ The key is an Open Cloud API key with Place Management: Write on the experience.
 
 Enable *Game Settings > Security > Enable Studio Access to API Services* to test DataStores.
 
+## Movement
+Ported from Roblox's Platformer template: momentum, gravity 160, jump height 8, coyote time, a double jump, a roll
+(Q on the ground) that becomes a long jump if you jump out of it, an air dash (Q in the air), and a lean into movement.
+The dodge keeps its stamina cost and i-frames on the server.
+
 ## Controls (Cursed Gear layout)
 `LMB` attack (your weapon's combo) · `RMB` heavy/critical · `F` block (tap just before a hit to parry) · `Q` dodge ·
 **`E` flicker** · `Z` feint (cancel a swing's windup) · `R` / `Y` / `V` skill slots 1-3 · `X` interact (loot, armory) ·

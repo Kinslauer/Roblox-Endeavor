@@ -1,7 +1,7 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v63, Front v19.
+report). Versions: Endeavor v68, Front v19.
 
 ## Endeavor: first minutes
 - [ ] The starting room is a pod: dark panelled walls with cyan seams, diamond-plate floor, the console in a terminal
@@ -23,6 +23,19 @@ report). Versions: Endeavor v63, Front v19.
 - [ ] F1 shows the controls card. Tab inventory, L loadout, J attributes, O hideout, N recruit app all open and close.
 - [ ] City hum and wind are audible from the start (ambient loops).
 - [ ] The city reads as late night: purple haze, neon bloom, cold grade; you can still see where you're going.
+
+## Endeavor: movement (ported from Roblox's Platformer template)
+- [ ] The body has weight: starting, stopping and turning ease in over a fraction of a second; jumps feel a little
+      floatier (gravity 160, jump height 8) and the body leans into turns and runs.
+- [ ] Space on the ground jumps, and still works for a moment after walking off a ledge. Space again in the air is a
+      double jump (once per airtime, with a flip animation).
+- [ ] Q on the ground is a roll in your move direction (backward with no input) that slows over its length; Q in the
+      air is a short dash that holds your height, once per airtime. Both still cost stamina, give the dodge i-frames,
+      and Enemy Step off a juggled enemy still hops you up (and gives the air dash and double jump back).
+- [ ] Space right after a roll starts is a long jump; flying into a wall during it knocks you back and down for a beat.
+- [ ] Landing refills the double jump and the dash. No stamina, no roll.
+- [ ] Enemy mannequins (F2, Armory): arms hang at their sides and swing outward, not into the body; the weapon is in
+      the right hand.
 
 ## Endeavor: combat
 - [ ] Combat stance (on by default): the body turns to where the camera looks even standing still, the camera sits

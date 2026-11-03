@@ -85,6 +85,9 @@ CF.__sub = function(a, b) return mkcf(a.Position - b, a.r) end
 CF.identity = mkcf(V3.new(0, 0, 0))
 function CF.Inverse(a) return a end
 function CF.ToObjectSpace(a, b) return b end
+function CF.VectorToObjectSpace(a, v) return v end
+function CF.Lerp(a, b, t) return b end
+function CF.VectorToWorldSpace(a, v) return v end
 function CF.ToWorldSpace(a, b) return a * b end
 
 local Color3 = { new = function(r, g, b) return {R = r, G = g, B = b} end, fromRGB = function(r, g, b) return {R = r/255, G = g/255, B = b/255} end }
@@ -119,7 +122,7 @@ end
 
 -------------------------------------------------- instances
 local EVENTS = { ChildAdded = true, DescendantAdded = true, Changed=1, Triggered=1, Died=1, HealthChanged=1, Touched=1, AncestryChanged=1, OnServerEvent=1, OnClientEvent=1,
-	PlayerAdded=1, PlayerRemoving=1, CharacterAdded=1, CharacterRemoving=1, Event=1, Heartbeat=1, RenderStepped=1, Destroying=1, Activated=1, InputBegan=1, InputEnded=1, InputChanged=1, MouseEnter=1, MouseLeave=1 }
+	PlayerAdded=1, PlayerRemoving=1, CharacterAdded=1, CharacterRemoving=1, Event=1, Heartbeat=1, RenderStepped=1, Stepped=1, Completed=1, Destroying=1, Activated=1, InputBegan=1, InputEnded=1, InputChanged=1, MouseEnter=1, MouseLeave=1 }
 local Instance, new = {}, nil
 local methods = {}
 local Inst = {}
@@ -155,6 +158,7 @@ function methods.Destroy(self) self.Parent = nil; rawset(self, "Destroyed", true
 function methods.SetAttribute(self, k, v) local a = self._attrs; if a[k] ~= v then a[k] = v; sig(self, "attr:" .. k):Fire() end end
 function methods.GetAttribute(self, k) return self._attrs[k] end
 function methods.GetAttributeChangedSignal(self, k) return sig(self, "attr:" .. k) end
+function methods.GetPropertyChangedSignal(self, k) return sig(self, "prop:" .. k) end
 function methods.PivotTo(self, cf)
 	local current = rawget(self, "WorldPivot") or rawget(self, "_pivot")
 	if current and current ~= cf and not self:FindFirstChild("HumanoidRootPart") then
@@ -197,11 +201,24 @@ function methods.Clone(self)
 end
 function methods.TakeDamage(self, n) self.Health = math.max(0, self.Health - n) end
 function methods.MoveTo(self, p) end
+-- humanoid movement (client/Movement): input in, move out, states
+function methods.GetMoveVelocity(self) return (rawget(self, "MoveDirection") or V3.new()) * (self.WalkSpeed or 16) end
+function methods.Move(self, dir) rawset(self, "_moved", dir) end
+function methods.ChangeState(self, st) rawset(self, "_state", st); table.insert(FireLog, { "HumanoidState", tostring(st) }) end
+function methods.GetState(self) return rawget(self, "_state") or "HumanoidStateType.Running" end
+function methods.LoadAnimation(self, anim)
+	local track = { Animation = anim, Looped = false, Priority = nil, IsPlaying = false, TimePosition = 0, WeightCurrent = 1 }
+	function track:Play() self.IsPlaying = true; table.insert(FireLog, { "AnimPlay", anim.AnimationId }) end
+	function track:Stop() self.IsPlaying = false end
+	function track:AdjustSpeed() end
+	return track
+end
 function methods.FireClient(self, p, ...) local e = {self.Name, "client", ...}; e.player = p; table.insert(FireLog, e) end
 function methods.FireAllClients(self, ...) table.insert(FireLog, {self.Name, "all", ...}) end
 function methods.FireServer(self, ...) sig(self, "OnServerEvent"):Fire(Instance.CurrentPlayer, ...) end
 function methods.Fire(self, ...) sig(self, "Event"):Fire(...) end
-function methods.Play(self) local tgt, props = rawget(self, "_target"), rawget(self, "_props"); if tgt and props then for k, v in props do tgt[k] = v end end end
+function methods.Play(self) local tgt, props = rawget(self, "_target"), rawget(self, "_props"); if tgt and props then for k, v in props do tgt[k] = v end end
+	if rawget(self, "ClassName") == "Tween" then local info = rawget(self, "_info"); task_.delay((info and info.Time) or 0, function() sig(self, "Completed"):Fire("PlaybackState.Completed") end) end end
 function methods.Kick(self, msg) print("!! KICKED: " .. tostring(msg)) end
 function methods.Reconcile() end
 function methods.GetPartBoundsInRadius(self, origin, radius, params)
@@ -269,7 +286,7 @@ function methods.GetDebugId() return "id" end
 
 local DEFAULTS = {
 	Humanoid = function(i) rawset(i, "MaxHealth", 100); rawset(i, "_Health", 100); rawset(i, "WalkSpeed", 16); rawset(i, "HipHeight", 0); rawset(i, "MoveDirection", V3.zero) end,
-	Part = function(i) rawset(i, "_cf", mkcf(V3.zero)); rawset(i, "Size", V3.new(4,1,2)); rawset(i, "Anchored", false); rawset(i, "CanCollide", true) end,
+	Part = function(i) rawset(i, "_cf", mkcf(V3.zero)); rawset(i, "Size", V3.new(4,1,2)); rawset(i, "Anchored", false); rawset(i, "CanCollide", true); rawset(i, "AssemblyLinearVelocity", V3.new()); rawset(i, "AssemblyMass", 10) end,
 	MeshPart = function(i) rawset(i, "_cf", mkcf(V3.zero)); rawset(i, "Size", V3.new(4,1,2)) end,
 }
 
@@ -343,7 +360,7 @@ function methods.GetService(self, name)
 	elseif name == "Debris" and not s._init then
 		s._init = true; function s.AddItem(_, inst, t) task_.delay(t, function() if inst.Parent then inst:Destroy() end end) end
 	elseif name == "TweenService" and not s._init then
-		s._init = true; function s.Create(_, inst, info, props) local t = newInstance("Tween"); rawset(t, "_target", inst); rawset(t, "_props", props); return t end
+		s._init = true; function s.Create(_, inst, info, props) local t = newInstance("Tween"); rawset(t, "_target", inst); rawset(t, "_props", props); rawset(t, "_info", info); return t end
 	elseif name == "DataStoreService" and not s._init then
 		s._init = true
 		function s.GetDataStore() if M_UNPUBLISHED then error("You must publish this place to the web to access DataStore") end local ds = {}; function ds.GetAsync() return nil end; function ds.SetAsync() end; function ds.UpdateAsync(_, k, f) return f(nil) end; function ds.RemoveAsync() end; return ds end
@@ -358,9 +375,10 @@ function methods.GetService(self, name)
 			return container
 		end
 	elseif name == "RunService" and not s._init then
-		s._init = true; s.Heartbeat = sig(s, "Heartbeat"); s.RenderStepped = sig(s, "RenderStepped")
-		function s.BindToRenderStep() end
-		function s.UnbindFromRenderStep() end
+		s._init = true; s.Heartbeat = sig(s, "Heartbeat"); s.RenderStepped = sig(s, "RenderStepped"); s.Stepped = sig(s, "Stepped")
+		s._render = {}
+		function s.BindToRenderStep(_, name, _prio, fn) s._render[name] = fn end
+		function s.UnbindFromRenderStep(_, name) s._render[name] = nil end
 	elseif name == "PathfindingService" and not s._init then
 		s._init = true
 		function s.CreatePath() local path = { Status = "PathStatus.NoPath" }; function path:ComputeAsync() end; function path:GetWaypoints() return {} end; return path end
@@ -374,6 +392,8 @@ end
 game_.GetService = methods.GetService
 local workspace_ = game_:GetService("Workspace")
 workspace_.Name = "Workspace"
+workspace_.Gravity = 196.2
+function methods.Spherecast() return nil end
 -- Terrain: voxel writes are accepted and dropped (the smoke tests only need the calls to succeed)
 local terrain_ = newInstance("Terrain"); terrain_.Name = "Terrain"; terrain_.Parent = workspace_
 rawset(terrain_, "WriteVoxels", function() end); rawset(terrain_, "FillBlock", function() end); rawset(terrain_, "FillBall", function() end); rawset(terrain_, "Clear", function() end)
@@ -395,6 +415,8 @@ local function step(dt)
 		if s.co then local ok, err = coroutine.resume(s.co); if not ok then print("!! ERROR(task): " .. tostring(err)); print(debug.traceback(s.co)) end
 		else runSafe(s.fn) end
 	end
+	for _, fn in rs._render or {} do runSafe(function() fn(dt) end) end
+	rs.Stepped:Fire(0, dt)
 	rs.Heartbeat:Fire(dt)
 end
 
@@ -407,7 +429,7 @@ local mockEnv = {
 	Region3 = { new = function(a, b) return { CFrame = CF.new((a + b) / 2), Size = b - a, ExpandToGrid = function(self) return self end } end },
 	ColorSequence = { new = function(...) return { ... } end }, NumberRange = { new = function(...) return { ... } end },
 	UserSettings = function() return { GetService = function() return { RotationType = nil } end } end,
-	TweenInfo = { new = function() return {} end }, OverlapParams = { new = function() return {} end }, RaycastParams = { new = function() return {} end },
+	TweenInfo = { new = function(t) return { Time = t or 1 } end }, OverlapParams = { new = function() return {} end }, RaycastParams = { new = function() return {} end },
 	-- Random: a seeded generator keeps a seeded layout the same across calls (unseeded = math.random)
 	Random = { new = function(seed)
 		local r = {}

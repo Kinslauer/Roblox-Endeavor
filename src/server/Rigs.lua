@@ -73,6 +73,24 @@ function Rigs.Build(assetId, name)
 			p.CanCollide = false
 		end
 	end
+	-- The FBX import mirrors Blender's X axis, so a body modelled with its left limbs at -X arrives with
+	-- them on its right (verified live 2026-11-03: every rig's LeftUpperArm sat on the right). Stock
+	-- animations and the client's swing poses then turn the arms into the torso. Swap the names back.
+	local function swapSides()
+		local swapped = {}
+		for name, part in limbs do
+			local other = if name:sub(1, 4) == "Left" then "Right" .. name:sub(5) elseif name:sub(1, 5) == "Right" then "Left" .. name:sub(6) else name
+			swapped[other] = part
+			part.Name = other
+		end
+		limbs = swapped
+	end
+	if limbs.LeftUpperArm and limbs.LowerTorso then
+		local right = limbs.LowerTorso.CFrame.RightVector
+		if (limbs.LeftUpperArm.Position - limbs.LowerTorso.Position):Dot(right) > 0 then
+			swapSides()
+		end
+	end
 	for _, limb in LIMBS do
 		if not limbs[limb] then
 			if not warned[assetId] then

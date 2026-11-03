@@ -18,6 +18,8 @@ local Items = require(Shared:WaitForChild("Items"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local Sounds = require(Shared:WaitForChild("Sounds"))
 local Weapons = require(Shared:WaitForChild("Weapons"))
+local Movement = require(script.Parent:WaitForChild("Movement"))
+Movement.Start()
 -- Sounds for combat events, played at the character they happened to.
 local SOUND = { Hit = "HitFlesh", Block = "BlockThud", Parry = "HitClang", GuardBreak = "GuardBreak", Devour = "Devour", Flick = "FlickerTick" }
 -- Sounds for props breaking, by prop id; anything else is metal. Chunks hitting the ground thud.
@@ -1811,7 +1813,8 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 	if kind == "Swing" then
 		swingFx(a, b)
 	elseif kind == "DodgeMove" or kind == "Knockback" then
-		if root then
+		-- a dodge already moved us (client/Movement); the server only adds Enemy Step's hop
+		if root and not (kind == "DodgeMove" and Movement.ServerDodge(a)) then
 			root.AssemblyLinearVelocity = a -- we own our character's physics
 		end
 	elseif kind == "BlackFlash" then
@@ -2661,7 +2664,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		local root = char and char:FindFirstChild("HumanoidRootPart")
 		if hum and root then
 			local dir = if hum.MoveDirection.Magnitude > 0.1 then hum.MoveDirection else -root.CFrame.LookVector -- backstep by default
-			Remotes.Dodge:FireServer(dir)
+			Movement.Dodge(dir) -- roll on the ground, dash in the air; it tells the server
 		end
 	elseif SKILL_KEYS[key] then
 		Remotes.UseSkill:FireServer(SKILL_KEYS[key])

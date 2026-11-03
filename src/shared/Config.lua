@@ -363,6 +363,37 @@ Config.Flicker = {
 	RatePerIntelligence = 0.01,
 }
 
+-- How a body moves (client/Movement.lua, ported from Roblox's Platformer template). Accelerations are
+-- how fast the move direction turns toward the input, per second, on a 0-1 scale: lower = heavier.
+Config.Movement = {
+	Gravity = 160, -- Workspace.Gravity (Roblox default 196.2); set by the server at startup
+	JumpHeight = 8, -- studs; cybernetic legs multiply it (Gear JumpMult)
+	DoubleJumpScale = 1, -- the double jump reaches this share of the jump height
+	JumpCooldown = 0.15,
+	CoyoteTime = 0.15, -- seconds after leaving a ledge that still count as grounded for a jump
+	GroundAcceleration = 20,
+	AirAcceleration = 15,
+	LadderAcceleration = 20,
+	-- the dodge (Q): a roll on the ground, a dash in the air (once per airtime)
+	RollSpeed = 60, RollTime = 0.35, RollForceFactor = 1500,
+	DashSpeed = 60, DashTime = 0.2, DashForceFactor = 1500,
+	-- jump within this long after a roll starts = a long jump; flying into a wall stuns you
+	LongJumpWindow = 0.3, LongJumpSpeed = 60, LongJumpHeight = 7, LongJumpForceFactor = 1500,
+	WallCheckRadius = 1,
+	StunBounceSpeed = 25, StunBounceHeight = 3, StunForceFactor = 1500, RecoverTime = 0.5,
+	-- lean into movement (degrees)
+	LeanRoll = 15, LeanPitch = 5, LeanSpeed = 10,
+	AnimFade = 0.1,
+	-- Roblox's own animations from the Platformer template
+	Anims = {
+		Roll = "rbxassetid://14181171022",
+		Dash = "rbxassetid://14145234694",
+		LongJump = "rbxassetid://14181783061",
+		Stun = "rbxassetid://14181937710",
+		Recover = "rbxassetid://14182254720",
+	},
+}
+
 Config.Combat = {
 	SprintMult = 1.45,
 	SprintStaminaPerSecond = 9,

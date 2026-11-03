@@ -62,6 +62,16 @@ store `ConduitCharacter_v2`) is shared by both places.
   P helmetcam. Front: LMB fire, RMB aim, R reload, T rack/unjam, B selector, 1/2 switch, G frag, H dressing, Q/E lean,
   K artillery, F dig, V sandbags, M app.
 
+- Movement (owner, 2026-11-03: "the platformer template has the movement i'd like"): `src/client/Movement.lua` is a
+  port of Roblox's Platformer template (the user uploaded Platform.rbxl; read with the scratch `tools/rbxl.py` binary
+  place reader): RenderStep at Last reads humanoid move/jump, eases the move direction per Config.Movement
+  accelerations, owns jumping (coyote time, double jump, long jump within LongJumpWindow of a roll, wall stun + recover),
+  Q = `Movement.Dodge(dir)`: roll on the ground (tweened planar LinearVelocity) / air dash (vector LinearVelocity, once
+  per airtime), predicted from the replicated Stamina attribute, then Remotes.Dodge (server keeps stamina + i-frames);
+  "DodgeMove" back from the server only adds Enemy Step's hop (`Movement.ServerDodge`). Lean on every player's Root
+  joint Transform. Roblox-owned template animations in Config.Movement.Anims. Server: workspace.Gravity =
+  Config.Movement.Gravity (160) in Main, JumpHeight = Config.Movement.JumpHeight (8) * JumpMult in Stats. Client test
+  `tools/smoke/client.lua` builds the client folder like Rojo does and runs 13 movement checks.
 - Lore (owner, 2026-10-31; docs/DESIGN.md "The stack"): conduits upload their consciousness stack through the hideout
   computer (first log-in = initialization, `Knowledge.Uploaded`); every death is a reboot of the stack; on the Front the
   stack links to the recruit's; the rich uploaded and escaped the world. Mechanically: Knowledge survives permadeath only
@@ -69,7 +79,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   "Upload stack / log in".
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v63, Front v19). Front v10 verified on a real server:
+- Both places published and starting cleanly (Endeavor v68, Front v19). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.
@@ -84,7 +94,9 @@ store `ConduitCharacter_v2`) is shared by both places.
   done (Endeavor v18). Model loading is in `src/common/ModelAssets.lua` (cache, dress, anchor, bottom pivot).
   Enemy rigs (Raider/Brute/Shocker/Warden, `tools/models/raider.py` + `enemies.py`) are R15 limb meshes jointed by
   `src/server/Rigs.lua` (Motor6Ds from limb positions, Animator created before replication, Roblox's public R15
-  idle/walk anims). Left limbs must be at -X. Display mannequins stand on magenta pads by the test armory.
+  idle/walk anims). The FBX import mirrors X, so every uploaded rig arrived with its Left limbs on its right (arms
+  swung into the torso, user report 2026-11-03); `Rigs.Build` detects that from LeftUpperArm vs LowerTorso.RightVector
+  and swaps the Left/Right names (verified live v68). Display mannequins stand on magenta pads by the test armory.
   Weapons in hand: `tools/models/weapons.py` + `firearms.py` -> `Assets.Weapons` (6 melee + 7 firearms), welded into
   RightHand by `src/common/HeldWeapons.lua` (Endeavor: every Stats.Apply, NPCs via `NPCs.Types[t].Weapon`, arena
   mannequins; Front: Soldiers.pushWeapon on deploy/switch). Grip offsets unverified in-game.

@@ -39,7 +39,7 @@ function Stats.Apply(player, fill)
 	end
 	WornGear.Apply(char, worn) -- armor only: implants are drawn client-side from the Cyber_<slot> attributes
 	hum.UseJumpPower = false
-	hum.JumpHeight = 7.2 * (d.JumpMult or 1)
+	hum.JumpHeight = Config.Movement.JumpHeight * (d.JumpMult or 1)
 	for _, slot in Cybernetics.Slots do
 		char:SetAttribute("Cyber_" .. slot, PlayerData.Get(player).Cyber[slot])
 	end

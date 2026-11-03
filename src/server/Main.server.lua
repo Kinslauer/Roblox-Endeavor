@@ -33,6 +33,7 @@ local ok, err = pcall(function()
 	local Cycle = require(Server.Cycle)
 	local ImplantLibrary = require(Server.ImplantLibrary)
 
+	workspace.Gravity = require(game:GetService("ReplicatedStorage").Shared.Config).Movement.Gravity -- the template's weight (client/Movement.lua)
 	Gore.Init()
 	Destruction.Init() -- before City, which places props and breach points
 	City.Init()
