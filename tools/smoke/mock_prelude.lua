@@ -218,7 +218,7 @@ function methods.LoadAnimation(self, anim)
 	local track = { Animation = anim, Looped = false, Priority = nil, IsPlaying = false, TimePosition = 0, WeightCurrent = 1 }
 	function track:Play() self.IsPlaying = true; table.insert(FireLog, { "AnimPlay", anim.AnimationId }) end
 	function track:Stop() self.IsPlaying = false end
-	function track:AdjustSpeed() end
+	function track:AdjustSpeed(s) self.Speed = s end
 	return track
 end
 function methods.FireClient(self, p, ...) local e = {self.Name, "client", ...}; e.player = p; table.insert(FireLog, e) end
@@ -227,6 +227,8 @@ function methods.FireServer(self, ...) sig(self, "OnServerEvent"):Fire(Instance.
 function methods.Fire(self, ...) sig(self, "Event"):Fire(...) end
 function methods.Play(self) local tgt, props = rawget(self, "_target"), rawget(self, "_props"); if tgt and props then for k, v in props do tgt[k] = v end end
 	if rawget(self, "ClassName") == "Tween" then local info = rawget(self, "_info"); task_.delay((info and info.Time) or 0, function() sig(self, "Completed"):Fire("PlaybackState.Completed") end) end end
+function methods.Emit(self, n) rawset(self, "_emitted", (rawget(self, "_emitted") or 0) + (n or 1)) end
+function methods.Cancel(self) end
 function methods.Kick(self, msg) print("!! KICKED: " .. tostring(msg)) end
 function methods.Reconcile() end
 function methods.GetPartBoundsInRadius(self, origin, radius, params)
@@ -433,6 +435,7 @@ local function step(dt)
 		else runSafe(s.fn) end
 	end
 	for _, fn in rs._render or {} do runSafe(function() fn(dt) end) end
+	rs.RenderStepped:Fire(dt)
 	rs.Stepped:Fire(0, dt)
 	rs.Heartbeat:Fire(dt)
 end

@@ -113,6 +113,19 @@ store `ConduitCharacter_v2`) is shared by both places.
   (tbox/tcyl/ball: bevelled tapered boxes, elliptical cylinders, domes); asset 128592453586650. Extras named after a
   limb ("LowerTorsoCoat", "LeftLowerLegKnee") ride on that limb (Rigs.Build `named`, side-swapped when mirrored).
   `tools/models/preview.py obj png [azimuth] [elevation]` (face at azimuth -pi/2).
+- Keyframed animations (owner, 2026-11-04: "wynaut" to "I can't upload animations"): `tools/anims/anims.py` writes
+  KeyframeSequence .rbxmx from pose dicts (joint-space degrees; conventions in its header), draws stick-figure sheets
+  (front/side FK on the Conduit's proportions) to check poses, and uploads with `--upload` (assetType Animation,
+  approved within seconds) -> `Assets.Anims`. `src/shared/Anims.lua` loads/caches/plays them (Has/Track/Play/Stop/
+  StopPrefix; a client animates its own character and non-player rigs, never other players'). Swing_<shape> (body only,
+  right arm keyed to identity; timeline windup 0-0.4, strike 0.4-0.6, recovery 0.6-1.0, the client AdjustSpeeds each
+  phase to the server's Windup/Active/End and to 0 during hitstop), Hit_Front/Left/Right/High, Stagger, Recoil, Block,
+  Parry, Idle/Walk/Run (character/Animate), Step_Left/Right/Back. The Luau execution API does not run the simulation
+  (RunService:IsRunning false), so animation motion can't be verified live; only load + Length.
+- Armoured dodge (owner, 2026-11-04): Q in light gear (char attribute GearWeight = Gear WeightScore 0, not Overweight)
+  is the Platformer roll/air dash any way; otherwise forward (dir . look > Config.Movement.ForwardDot) rolls, sides/back
+  are `Step` (Config.Movement.Step: speed/length lose SlowPerWeight per weight point, Quad-out bleed, Step_* anims),
+  no air dash; Combat.Dodge cuts i-frames by IFrameLossPerWeight for the same case.
 - Lore (owner, 2026-10-31; docs/DESIGN.md "The stack"): conduits upload their consciousness stack through the hideout
   computer (first log-in = initialization, `Knowledge.Uploaded`); every death is a reboot of the stack; on the Front the
   stack links to the recruit's; the rich uploaded and escaped the world. Mechanically: Knowledge survives permadeath only
@@ -166,7 +179,8 @@ store `ConduitCharacter_v2`) is shared by both places.
   models along a wall part and hides it; used for hideout walls + gate frame and the raid arena walls/pillars/gate.
   Procedural animation (client, Motor6D C0 tweens under the Animator): windup/slash on "Swing" and NPC "Windup"
   (fired by NPCs.telegraph), flinch on Hit/GuardBreak, guard jolt on Parry/Block, block pose from the Blocking
-  attribute (own and other players). Uploading Animation assets isn't possible through Open Cloud.
+  attribute (own and other players). Animation assets CAN be uploaded through Open Cloud (KeyframeSequence .rbxmx, assetType
+  Animation; see tools/anims) — an earlier note here said otherwise and was wrong.
   Still placeholder: nothing major; everything below is polish and balance.
   Known limit: MeshPart CollisionFidelity can't be set from scripts, so collapsed stumps may collide as hulls.
 - Ported from `origin/claude/combat-feel` (the user's other session's branch; 69 commits, its own world and systems;

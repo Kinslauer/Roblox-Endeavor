@@ -403,6 +403,11 @@ Config.Movement = {
 	-- the dodge (Q): a roll on the ground, a dash in the air (once per airtime)
 	RollSpeed = 60, RollTime = 0.35, RollForceFactor = 1500,
 	DashSpeed = 60, DashTime = 0.2, DashForceFactor = 1500,
+	-- ...in light gear only (every worn piece Light, not overweight: GearWeight 0). Armoured, Q toward where you
+	-- face or travel still rolls; Q to the sides or back is a heavy step that loses speed, length and i-frames
+	-- per point of armour weight (Light 0, Medium 1, Heavy 2 per piece: 0..6), and there is no air dash.
+	ForwardDot = 0.5, -- dodge direction . facing/travel above this = "forward" (a roll)
+	Step = { Speed = 46, Time = 0.34, SlowPerWeight = 0.09, MinMult = 0.45, IFrameLossPerWeight = 0.08, MinIFrameMult = 0.5 },
 	-- jump within this long after a roll starts = a long jump; flying into a wall stuns you
 	LongJumpWindow = 0.3, LongJumpSpeed = 60, LongJumpHeight = 7, LongJumpForceFactor = 1500,
 	WallCheckRadius = 1,

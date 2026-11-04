@@ -76,5 +76,56 @@ check("movement: the template's animations play", played["rbxassetid://141811710
 for _ = 1, 40 do M.step(1/30) end
 char:SetAttribute("Stamina", 0)
 check("movement: no stamina, no dodge", Movement.Dodge(M.V3.new(1, 0, 0)) == false)
+-- armour changes Q: forward still rolls, sides/back become a heavy step, no air dash; light gear is unchanged
+char:SetAttribute("Stamina", 100)
+hum.FloorMaterial = "Material.Concrete"
+for _ = 1, 40 do M.step(1/30) end
+char:SetAttribute("GearWeight", 4)
+check("dodge: armoured, Q to the side is a heavy step", Movement.Dodge(M.V3.new(1, 0, 0)) == true and root:FindFirstChild("StepVelocity") ~= nil and Movement.Action() == "Step")
+for _ = 1, 40 do M.step(1/30) end
+check("dodge: armoured, Q forward still rolls", Movement.Dodge(M.V3.new(0, 0, -1)) == true and root:FindFirstChild("RollVelocity") ~= nil)
+for _ = 1, 40 do M.step(1/30) end
+char:SetAttribute("GearWeight", 1)
+check("dodge: any armour at all makes a backstep heavy", Movement.Dodge(M.V3.new(0, 0, 1)) == true and Movement.Action() == "Step")
+for _ = 1, 40 do M.step(1/30) end
+hum.FloorMaterial = "Material.Air"
+for _ = 1, 12 do M.step(1/30) end
+check("dodge: no air dash in armour", Movement.Dodge(M.V3.new(0, 0, -1)) == false)
+char:SetAttribute("GearWeight", 0)
+check("dodge: light gear keeps the air dash", Movement.Dodge(M.V3.new(1, 0, 0)) == true and Movement.Action() == "Dash")
+hum.FloorMaterial = "Material.Concrete"
+for _ = 1, 40 do M.step(1/30) end
+check("dodge: light gear rolls sideways", Movement.Dodge(M.V3.new(1, 0, 0)) == true and Movement.Action() == "Roll")
+for _ = 1, 40 do M.step(1/30) end
+-- combat animations (tools/anims via shared/Anims): a traced swing plays its body animation and stretches
+-- each phase to the server's timing; hits, clashes, parries and the guard play theirs
+local Assets = M.mockEnv.__require(RS.Shared.Assets)
+local function playedId(name, from)
+	local want = "rbxassetid://" .. tostring(Assets.Anims[name])
+	for i = from + 1, #M.FireLog do local e = M.FireLog[i]; if e[1] == "AnimPlay" and e[2] == want then return true end end
+	return false
+end
+local CE = RS.Remotes.CombatEvent
+local mark = #M.FireLog
+CE.OnClientEvent:Fire("Swing", char, "Light", "SlashR", 0.3, 0.2, 0.8, 6)
+M.step(1/30)
+check("anims: a traced swing plays its body animation", playedId("Swing_SlashR", mark))
+for _ = 1, 9 do M.step(1/30) end -- into the strike
+local Anims = M.mockEnv.__require(RS.Shared.Anims)
+local track = Anims.Track(char, "Swing_SlashR")
+check("anims: the strike phase is stretched to the server's Active", track and track.Speed and math.abs(track.Speed - 0.2 / 0.2) < 1e-6)
+CE.OnClientEvent:Fire("Hit", char, 12, M.V3.new(1, 0.2, 0), M.V3.new(-1, 0, 0), nil)
+M.step(1/30)
+check("anims: a hit plays a reaction", playedId("Hit_Right", mark) or playedId("Hit_Left", mark) or playedId("Hit_Front", mark) or playedId("Hit_High", mark))
+CE.OnClientEvent:Fire("Swing", char, "Light", "Overhead", 0.3, 0.2, 0.8, 6)
+M.step(1/30)
+CE.OnClientEvent:Fire("Clash", char, M.V3.new(0, 3, -2), nil)
+M.step(1/30)
+check("anims: a clash stops the swing and recoils", playedId("Recoil", mark) and not Anims.Track(char, "Swing_Overhead").IsPlaying)
+CE.OnClientEvent:Fire("Parry", char)
+CE.OnClientEvent:Fire("GuardBreak", char)
+char:SetAttribute("Blocking", true)
+M.step(1/30)
+check("anims: parry, guard break and the guard play", playedId("Parry", mark) and playedId("Stagger", mark) and playedId("Block", mark))
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

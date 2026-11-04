@@ -50,6 +50,25 @@ report). Versions: Endeavor v69, Front v19.
       and Enemy Step off a juggled enemy still hops you up (and gives the air dash and double jump back).
 - [ ] Space right after a roll starts is a long jump; flying into a wall during it knocks you back and down for a beat.
 - [ ] Landing refills the double jump and the dash. No stamina, no roll.
+- [ ] In light gear (every worn piece Light, not overweight) Q works as above in every direction.
+- [ ] Wearing any Medium or Heavy piece: Q toward where you face still rolls, but Q to the sides or back is a short,
+      heavy step with its own animation (sinks, pushes off one leg, guard up) that loses speed quickly. More armour
+      (Riot Plate + Plated Helm + Plated Greaves) makes it noticeably shorter and slower than one Medium piece, and it
+      gives fewer i-frames (easier to get hit through it). No air dash at all while armoured.
+
+## Endeavor: the body's own animations (keyframed in code, tools/anims)
+- [ ] Standing still is a fighting stance (knees soft, left foot forward, guard hand up) with slow breathing, not
+      Roblox's default idle. Walking and sprinting use the new walk/run cycle (arms pumping opposite the legs at a
+      run); feet should not skate badly at walk or sprint speed.
+- [ ] Every swing moves the whole body, not just the arm: it coils (torso turns away, weight on the back leg), then
+      uncoils onto the front foot through the strike and holds the follow-through a moment. Overheads rise then drop
+      the weight; thrusts lunge; uppercuts sink then drive up; jabs are short. The right arm still follows the
+      weapon's actual arc. Light and heavy attacks keep their timing.
+- [ ] Getting hit: the body reacts to where it was struck (right side folds left, left side folds right, a high hit
+      snaps the head back, otherwise a recoil backwards). A guard break is a longer stumble with the arms out.
+- [ ] Blocking (F) is a raised guard with a slight breathing sway; a parry or blocked hit jolts it. A clash or a
+      wall glance throws you back into a short recoil.
+- [ ] Enemies use the same swing and hit animations. Other players see your swings, hits and guard too.
 - [ ] Enemy mannequins (F2, Armory): arms hang at their sides and swing outward, not into the body; the weapon is in
       the right hand.
 

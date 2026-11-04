@@ -1093,7 +1093,15 @@ function Combat.Dodge(player, direction)
 	local root = char:FindFirstChild("HumanoidRootPart")
 	local look = root and Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
 	local side = look and look.Magnitude > 0 and math.abs(direction.Unit:Dot(look.Unit)) < 0.5
-	s.lastDodge, s.iframes, s.block = t, t + Gear.Get(player).DodgeIFrames * (if side then Config.Momentum.SideIFrameMult else 1), false
+	-- armour: anything but a forward roll is a heavy step with fewer i-frames (client/Movement, Config.Movement.Step)
+	local weight = (char:GetAttribute("GearWeight") or 0) + (if char:GetAttribute("Overweight") then 2 else 0)
+	local forward = look and look.Magnitude > 0 and direction.Unit:Dot(look.Unit) > Config.Movement.ForwardDot
+	local stepMult = 1
+	if weight > 0 and not forward then
+		local S = Config.Movement.Step
+		stepMult = math.max(S.MinIFrameMult, 1 - S.IFrameLossPerWeight * weight)
+	end
+	s.lastDodge, s.iframes, s.block = t, t + Gear.Get(player).DodgeIFrames * (if side then Config.Momentum.SideIFrameMult else 1) * stepMult, false
 	s.busyUntil = t + 0.2
 	char:SetAttribute("Blocking", false)
 	-- Enemy Step: a dodge next to a Juggled enemy springs off it - stamina back and a hop

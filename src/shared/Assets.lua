@@ -68,6 +68,33 @@ Assets.Buildings = {
 	},
 }
 
+-- Animations (tools/anims/anims.py: keyframes written in code, uploaded as Animation assets): played by
+-- shared/Anims. Swing_<shape> moves the body under the traced right arm; Hit_*, Stagger, Recoil, Block, Parry;
+-- Idle/Walk/Run are the Conduit's everyday set (character/Animate).
+Assets.Anims = {
+	Swing_SlashR = 125453914534844,
+	Swing_SlashL = 73868502712886,
+	Swing_Overhead = 82447544544973,
+	Swing_Diagonal = 99303551700047,
+	Swing_Uppercut = 110688569815812,
+	Swing_Thrust = 99804045337219,
+	Swing_Jab = 107045455247167,
+	Hit_Front = 134088278127403,
+	Hit_Left = 85154318915008,
+	Hit_Right = 136171271391797,
+	Hit_High = 117407627522338,
+	Stagger = 140483288537415,
+	Recoil = 80044155486700,
+	Block = 119493121926575,
+	Parry = 86086215644208,
+	Idle = 95711191696003,
+	Walk = 88349487105275,
+	Run = 71610497642397,
+	Step_Left = 135515038003880,
+	Step_Right = 116259253404942,
+	Step_Back = 105953688996479,
+}
+
 -- Character rigs (R15 limb meshes, see server/Rigs.lua): [npcType] = assetId
 Assets.Rigs = {
 	Rival = 106712459976546, -- the raider mesh in other colours (NPCs.Types.Rival)

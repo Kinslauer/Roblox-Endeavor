@@ -1,5 +1,5 @@
--- Animate: the character's everyday animations (idle, walk, run, jump, fall, climb, swim), Roblox's own R15
--- set. Named "Animate" so Roblox does not add its default script beside it. Works on the Conduit body
+-- Animate: the character's everyday animations: the game's own idle/walk/run (tools/anims) and Roblox's R15
+-- jump, fall, climb and swim. Named "Animate" so Roblox does not add its default script beside it. Works on the Conduit body
 -- (Motor6D joints) and on any R15 avatar. client/Movement plays the action animations (roll, dash, double
 -- jump) above these at Action priority; the client's swing poses offset the joints on top of both.
 local char = script.Parent
@@ -16,6 +16,16 @@ local IDS = {
 	Swim = "rbxassetid://507784897",
 	SwimIdle = "rbxassetid://507785072",
 }
+-- the Conduit's own fighting-stance idle, walk and run (tools/anims, Assets.Anims) replace Roblox's when uploaded
+local ok, Assets = pcall(function()
+	return require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Assets"))
+end)
+local OWN = ok and Assets.Anims or {}
+for _, name in { "Idle", "Walk", "Run" } do
+	if OWN[name] and OWN[name] ~= 0 then
+		IDS[name] = "rbxassetid://" .. tostring(OWN[name])
+	end
+end
 local PRIORITY = { Idle = Enum.AnimationPriority.Idle }
 
 local tracks = {}
@@ -57,9 +67,9 @@ hum.Running:Connect(function(speed)
 	if speed < 0.5 then
 		play("Idle", 0.2)
 	elseif speed < RUN_FROM then
-		play("Walk", 0.15, math.clamp(speed / 14, 0.5, 1.6))
+		play("Walk", 0.15, math.clamp(speed / 7, 0.5, 2.2)) -- the cycle covers ~4.5 studs/s at speed 1
 	else
-		play("Run", 0.15, math.clamp(speed / 22, 0.7, 1.6))
+		play("Run", 0.15, math.clamp(speed / 11.5, 0.8, 2.2)) -- ~11.5 studs/s at speed 1
 	end
 end)
 hum.Climbing:Connect(function(speed)

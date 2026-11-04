@@ -18,6 +18,7 @@ local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local Joints = require(Shared.Joints)
+local Anims = require(Shared.Anims)
 
 local M = Config.Movement
 local C = Config.Combat
@@ -34,6 +35,7 @@ local ACTIONS = {
 	DoubleJump = { clearOnGrounded = true },
 	Dash = { clearOnGrounded = true, accel = 4 },
 	Roll = { accel = 4 },
+	Step = { accel = 2 },
 	LongJump = { clearOnGrounded = true, minTime = 0.2, accel = 1 },
 	Stun = { clearOnGrounded = true, minTime = 0.2, accel = 0, nextAction = "Recover" },
 	Recover = { accel = 1 },
@@ -316,6 +318,41 @@ function Movement.Dodge(dir)
 		return false
 	end
 	dir = dir.Unit
+	-- light gear dodges any way it likes; armour only rolls forward, steps heavily otherwise, never air-dashes
+	local weight = (self.character:GetAttribute("GearWeight") or 0) + (if self.character:GetAttribute("Overweight") then 2 else 0)
+	local look = Vector3.new(self.root.CFrame.LookVector.X, 0, self.root.CFrame.LookVector.Z)
+	local forward = look.Magnitude < 0.01 or dir:Dot(look.Unit) > M.ForwardDot
+	if weight > 0 and not forward and grounded(self) then
+		if self.action ~= "None" and self.action ~= "Jump" then
+			return false
+		end
+		lastPredictedDodge = os.clock()
+		setAction(self, "Step")
+		local S = M.Step
+		local mult = math.max(S.MinMult, 1 - S.SlowPerWeight * weight)
+		local push = planarVelocity(self.root, "StepVelocity", dir, S.Speed * mult, M.RollForceFactor)
+		-- it bleeds speed from the first frame: the heavier, the shorter it carries
+		local tween = TweenService:Create(push, TweenInfo.new(S.Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { PlaneVelocity = Vector2.zero })
+		tween.Completed:Once(function()
+			push:Destroy()
+			if self.action == "Step" then
+				setAction(self, "None")
+			end
+		end)
+		tween:Play()
+		task.delay(S.Time + 0.5, function()
+			if push.Parent then
+				push:Destroy()
+			end
+		end)
+		local rel = self.root.CFrame:VectorToObjectSpace(dir)
+		Anims.Play(self.character, if rel.Z > 0.5 then "Step_Back" elseif rel.X > 0 then "Step_Right" else "Step_Left", { fade = 0.05, weight = 3 })
+		Remotes.Dodge:FireServer(dir)
+		return true
+	end
+	if weight > 0 and not grounded(self) then
+		return false -- no air dash in armour
+	end
 	if grounded(self) then
 		if self.action ~= "None" and self.action ~= "Jump" then
 			return false

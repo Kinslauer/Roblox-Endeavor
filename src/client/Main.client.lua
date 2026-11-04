@@ -20,6 +20,7 @@ local Sounds = require(Shared:WaitForChild("Sounds"))
 local Weapons = require(Shared:WaitForChild("Weapons"))
 local Joints = require(Shared:WaitForChild("Joints"))
 local Swings = require(Shared:WaitForChild("Swings"))
+local Anims = require(Shared:WaitForChild("Anims")) -- the game's own keyframed animations (tools/anims)
 local Movement = require(script.Parent:WaitForChild("Movement"))
 Movement.Start()
 -- Sounds for combat events, played at the character they happened to.
@@ -224,8 +225,10 @@ local KIND_COLORS = {
 	Kill = Color3.fromRGB(230, 230, 230), Info = Color3.fromRGB(120, 220, 255), District = Color3.fromRGB(200, 200, 255),
 }
 local bannerToken = 0
+local announce
+do
 local placeSeen = {} -- place name -> os.clock() its banner last showed (Config.Places.BannerCooldown)
-local function announce(text, kind)
+announce = function(text, kind)
 	if kind == "District" then
 		-- a place names itself as you enter, then keeps quiet for a while: walking the border does not spam
 		local place = tostring(text):match("^(.-)%s%s%-") or tostring(text)
@@ -244,9 +247,11 @@ local function announce(text, kind)
 		end
 	end)
 end
+end
 Remotes.Announce.OnClientEvent:Connect(announce)
 
 -- ===== Attributes (K) =====
+do
 local statLabels = {}
 local statsTitle = label({ Size = UDim2.new(1, 0, 0, 28), Text = "Attributes" })
 statsTitle.Parent = statsPanel
@@ -264,6 +269,7 @@ Remotes.StatsChanged.OnClientEvent:Connect(function(data)
 	end
 	levelLabel.Text = ("Lv %d  (%d/%d xp)"):format(data.Level, data.Xp, data.XpNeeded)
 end)
+end
 
 -- ===== Inventory / crafting (I) =====
 local lastInventory, lastEquipped, lastArmor, lastCyber = {}, "Fists", {}, {}
@@ -898,10 +904,10 @@ RunService.Heartbeat:Connect(function()
 end)
 
 end
-local shake, hitstop, impact, neon, fxSpawn
+local shake, hitstop, impact, neon, fxSpawn, sparks, ring
+local IMP = Config.Impacts
 do
 -- ===== Impact feel (ported from combat-feel): camera shake, FOV hitstop, sparks, rings, shards, ghosts =====
-local IMP = Config.Impacts
 local trauma, shakeSeed = 0, math.random() * 100
 local fovTween
 shake = function(amount)
@@ -960,7 +966,7 @@ neon = function(shape, size, color, cframe)
 	part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch = true, false, false, false
 	return part
 end
-local function sparks(position, spec)
+sparks = function(position, spec)
 	if not spec then
 		return
 	end
@@ -980,7 +986,7 @@ local function sparks(position, spec)
 		emitter:Emit(spec.Count)
 	end
 end
-local function ring(position, spec)
+ring = function(position, spec)
 	local part = neon(Enum.PartType.Cylinder, Vector3.new(0.15, 1, 1), spec.Color, CFrame.new(position) * CFrame.Angles(0, 0, math.rad(90)))
 	if fxSpawn(part, spec.Life + 0.05) then
 		TweenService:Create(part, TweenInfo.new(spec.Life, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.new(0.15, spec.Size, spec.Size), Transparency = 1 }):Play()
@@ -1835,6 +1841,14 @@ local function staggerAnim(char, hard, contact)
 		side = if rel.X >= 0 then 1 else -1
 		high = rel.Y > 0.6
 	end
+	-- the keyframed reactions (tools/anims): which side was struck, or a guard break's stumble
+	local reaction = if hard then "Stagger" elseif high then "Hit_High"
+		elseif contact and torso and math.abs(torso.CFrame:PointToObjectSpace(contact).X) > 0.35 then (if side > 0 then "Hit_Right" else "Hit_Left")
+		else "Hit_Front"
+	if Anims.Has(reaction) then
+		Anims.Play(char, reaction, { fade = 0.04, weight = 6 }) -- over a swing or guard still fading out
+		return
+	end
 	local k = if hard then 1.6 else 1
 	pose(char, "Waist", CFrame.Angles(math.rad(-10 * k), math.rad(side * 16 * k), math.rad(side * 9 * k)), 0.05, Enum.EasingStyle.Quart)
 	if high then
@@ -1849,6 +1863,14 @@ local function staggerAnim(char, hard, contact)
 end
 -- guard: both arms up and across, elbows bent, weight back
 local function blockPose(char, on)
+	if Anims.Has("Block") then
+		if on then
+			Anims.Play(char, "Block", { fade = 0.12 })
+		else
+			Anims.Stop(char, "Block", 0.18)
+		end
+		return
+	end
 	if on then
 		pose(char, "RightShoulder", CFrame.Angles(math.rad(70), 0, math.rad(-25)), 0.12)
 		pose(char, "LeftShoulder", CFrame.Angles(math.rad(70), 0, math.rad(25)), 0.12)
@@ -1861,6 +1883,10 @@ local function blockPose(char, on)
 end
 -- parry / block impact: the guard jolts and comes back
 local function guardHitAnim(char)
+	if Anims.Has("Parry") then
+		Anims.Play(char, "Parry", { fade = 0.03, weight = 8 })
+		return
+	end
 	pose(char, "RightShoulder", CFrame.Angles(math.rad(95), 0, math.rad(-35)), 0.05, Enum.EasingStyle.Quart)
 	pose(char, "LeftShoulder", CFrame.Angles(math.rad(95), 0, math.rad(35)), 0.05, Enum.EasingStyle.Quart)
 	task.delay(0.1, function()
@@ -1894,13 +1920,16 @@ local REST_YAW, REST_PITCH = 12, -75
 local function lerpN(a, b, f)
 	return a + (b - a) * f
 end
-local function swingPose(char, yaw, pitch, twist, lean)
+local function swingPose(char, yaw, pitch, twist, lean, bodyAnimated)
 	local twistRad = math.rad(-twist)
 	local dirRoot = Vector3.new(math.sin(math.rad(yaw)) * math.cos(math.rad(pitch)), math.sin(math.rad(pitch)), -math.cos(math.rad(yaw)) * math.cos(math.rad(pitch)))
 	local dirTorso = CFrame.Angles(0, -twistRad, 0):VectorToWorldSpace(dirRoot)
 	Joints.Set(char, "RightShoulder", armTo(dirTorso))
 	Joints.Set(char, "RightElbow", CFrame.identity)
 	Joints.Set(char, "RightWrist", CFrame.Angles(math.rad(-90), 0, 0)) -- the weapon in line with the arm
+	if bodyAnimated then
+		return -- the Swing_<shape> animation turns the torso, steps the legs and swings the off arm
+	end
 	Joints.Set(char, "Waist", CFrame.Angles(math.rad(lean), twistRad, 0))
 	Joints.Set(char, "LeftShoulder", CFrame.Angles(math.rad(25 + twist * 0.3), 0, math.rad(-12)))
 end
@@ -1918,9 +1947,16 @@ end
 endSwing = function(char, recoil)
 	local st = swinging[char]
 	swinging[char] = nil
+	if st and st.track then
+		st.track:Stop(if recoil then 0.06 else 0.2)
+	end
 	if st and recoil then
 		Joints.Pose(char, "RightShoulder", CFrame.Angles(math.rad(-40), 0, math.rad(25)), 0.08, Enum.EasingStyle.Quart)
-		Joints.Pose(char, "Waist", CFrame.Angles(math.rad(-10), 0, 0), 0.08, Enum.EasingStyle.Quart)
+		if Anims.Has("Recoil") then
+			Anims.Play(char, "Recoil", { fade = 0.04, weight = 4 })
+		else
+			Joints.Pose(char, "Waist", CFrame.Angles(math.rad(-10), 0, 0), 0.08, Enum.EasingStyle.Quart)
+		end
 		task.delay(0.12, function()
 			if not swinging[char] then
 				relax(char, 0.3)
@@ -1942,6 +1978,17 @@ RunService.RenderStepped:Connect(function()
 		if now < st.frozenUntil then
 			e = st.frozenAt -- hitstop: the swing holds where it bit
 		end
+		if st.track then
+			-- the body animation's fixed timeline (wind-up 0.4, strike 0.2, recovery 0.4) stretched to this swing
+			local speed = if now < st.frozenUntil then 0
+				elseif e < st.windup then 0.4 / math.max(st.windup, 0.05)
+				elseif e < st.windup + st.active then 0.2 / math.max(st.active, 0.05)
+				else 0.4 / math.max(st.finish - st.windup - st.active, 0.05)
+			if speed ~= st.speed then
+				st.speed = speed
+				st.track:AdjustSpeed(speed)
+			end
+		end
 		local sy, sp = Swings.Angles(st.shape, 0)
 		local my, mp = Swings.Angles(st.shape, 0.5)
 		local ey, ep = Swings.Angles(st.shape, 1)
@@ -1949,7 +1996,7 @@ RunService.RenderStepped:Connect(function()
 			-- wind-up: from rest to past the start of the arc (the coil), torso turned with it
 			local w = 1 - (1 - e / math.max(st.windup, 1e-3)) ^ 3
 			local cy, cp = sy + (sy - my) * 0.25, sp + (sp - mp) * 0.25
-			swingPose(char, lerpN(REST_YAW, cy, w), lerpN(REST_PITCH, cp, w), cy * 0.4 * w, -6 * w)
+			swingPose(char, lerpN(REST_YAW, cy, w), lerpN(REST_PITCH, cp, w), cy * 0.4 * w, -6 * w, st.body)
 		elseif e < st.windup + st.active then
 			-- the strike: the arc itself, the torso uncoiling through it, weight forward
 			local u = (e - st.windup) / st.active
@@ -1966,7 +2013,7 @@ RunService.RenderStepped:Connect(function()
 				end
 			end
 			local y, p = Swings.Angles(st.shape, u)
-			swingPose(char, y, p, lerpN(sy * 0.4, ey * 0.4, u), lerpN(-6, 10, u))
+			swingPose(char, y, p, lerpN(sy * 0.4, ey * 0.4, u), lerpN(-6, 10, u), st.body)
 			local _, tip = Swings.Blade(root.CFrame, st.shape, u, st.range * st.scale, st.scale)
 			if st.lastTip then
 				trailSegment(st.lastTip, tip, st.heavy)
@@ -1979,7 +2026,7 @@ RunService.RenderStepped:Connect(function()
 			local fy, fp = ey + (ey - my) * over, ep + (ep - mp) * over
 			local back = math.clamp((r - 0.35) / 0.65, 0, 1)
 			back = back * back * (3 - 2 * back)
-			swingPose(char, lerpN(fy, REST_YAW, back), lerpN(fp, REST_PITCH, back), lerpN(ey * 0.4, 0, back), lerpN(10, 0, back))
+			swingPose(char, lerpN(fy, REST_YAW, back), lerpN(fp, REST_PITCH, back), lerpN(ey * 0.4, 0, back), lerpN(10, 0, back), st.body)
 		else
 			endSwing(char, false)
 		end
@@ -1996,6 +2043,12 @@ swingFx = function(char, label, shape, windup, active, finish, range)
 		swinging[char] = { shape = shape, t0 = os.clock(), frozen = 0, frozenUntil = 0, frozenAt = 0, windup = tonumber(windup) or 0.2,
 			active = tonumber(active) or 0.15, finish = math.max(tonumber(finish) or 0.6, (tonumber(windup) or 0.2) + (tonumber(active) or 0.15) + 0.15),
 			range = tonumber(range) or 7, scale = Swings.ScaleOf(char), heavy = heavy }
+		local st = swinging[char]
+		st.body = Anims.Has("Swing_" .. shape) -- the body is animated (here or, for other players, by their client)
+		Anims.StopPrefix(char, "Swing_", 0.05)
+		Anims.Stop(char, "Recoil", 0.05)
+		st.track = Anims.Play(char, "Swing_" .. shape, { fade = 0.06, speed = 0.4 / math.max(st.windup, 0.05) })
+		st.speed = 0.4 / math.max(st.windup, 0.05)
 		return
 	end
 	swingAnim(char, heavy)
@@ -2897,7 +2950,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		local root = char and char:FindFirstChild("HumanoidRootPart")
 		if hum and root then
 			local dir = if hum.MoveDirection.Magnitude > 0.1 then hum.MoveDirection else -root.CFrame.LookVector -- backstep by default
-			Movement.Dodge(dir) -- roll on the ground, dash in the air; it tells the server
+			Movement.Dodge(dir) -- light gear: roll / air dash any way; armour: forward rolls, else a heavy step (client/Movement)
 		end
 	elseif SKILL_KEYS[key] then
 		Remotes.UseSkill:FireServer(SKILL_KEYS[key])
