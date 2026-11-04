@@ -170,6 +170,28 @@ Config.City = {
 		Spread = 7, -- studs: waiting bodies closer than this push apart
 		SpreadPush = 0.25, -- radians per tick they push
 		Leash = 110, -- studs from its spawn a hostile gives up a chase and walks back
+		-- Spacing (ideas from KrugKrew's "best swordfighting ai", 2022): read the player's swing and guard.
+		--   Backoff: when you wind up, it may step out of your reach sideways, after a reaction time
+		--   Press: your recovery (or a stagger) is its opening; it comes straight in
+		--   Strafe: on its own cooldown it circles you instead of standing still
+		--   WaitOutBlock: chance it circles your raised guard for a moment instead of swinging into it
+		--   Wary: below this share of health it keeps out of reach and only comes in on an opening
+		--   RushGive: studs it gives ground (as a sidestep) when you charge it
+		-- Hyperarmored bodies (Brute, Warden) only press: they walk through your swings.
+		Spacing = {
+			DefaultReach = 6, -- your reach when you have not swung yet and your weapon is unknown
+			BackoffMargin = 2.5, -- studs outside your reach it retreats to
+			StrafeTurn = 0.5, -- radians around you per step while circling
+			BlockWait = 1.2, -- longest it circles a raised guard
+			TurnResponsiveness = 25, -- how fast it turns to face you while spacing
+			Types = {
+				Raider = { React = 0.25, Chance = 0.4, Backoff = true, Press = true, Strafe = true, WaitOutBlock = 0.35, Wary = 0.3 },
+				Shocker = { React = 0.2, Chance = 0.55, Backoff = true, Press = true, Strafe = true, WaitOutBlock = 0.5, Wary = 0.35, RushGive = 3 },
+				Rival = { React = 0.12, Chance = 0.75, Backoff = true, Press = true, Strafe = true, WaitOutBlock = 0.6, Wary = 0.3, RushGive = 2 },
+				Brute = { Press = true },
+				Warden = { Press = true },
+			},
+		},
 	},
 	-- standing hostiles per district Danger (server/Population.lua)
 	Population = {

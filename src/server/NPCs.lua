@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Items = require(Shared.Items)
+local Weapons = require(Shared.Weapons)
 local Remotes = require(Shared.Remotes)
 local Config = require(Shared.Config)
 local Combat = require(script.Parent.Combat)
@@ -315,6 +316,136 @@ function NPCs.Spawn(typeName, position, opts)
 		local nav = newNavigator(model, hum, root)
 		local home = root.Position
 		local side = if math.random() < 0.5 then 1 else -1 -- which way this body circles while it waits
+
+		-- ===== spacing (Config.City.AI.Spacing) =====
+		local SP = AI.Spacing
+		local sp = SP and SP.Types[typeName]
+		local mem = { swingId = -1, dodge = false, reactAt = 0, blockSeen = false, blockWaitUntil = 0, flipAt = 0 }
+		local wallParams = RaycastParams.new()
+		wallParams.FilterType = Enum.RaycastFilterType.Exclude
+		wallParams.FilterDescendantsInstances = { model }
+		-- face the target smoothly while spacing (the humanoid would otherwise face where it walks)
+		local turner
+		if sp then
+			local att = Instance.new("Attachment")
+			att.Name = "SpacingAttachment"
+			att.Parent = root
+			turner = Instance.new("AlignOrientation")
+			turner.Name = "SpacingTurn"
+			turner.Mode = Enum.OrientationAlignmentMode.OneAttachment
+			turner.Attachment0 = att
+			turner.Responsiveness = SP.TurnResponsiveness
+			turner.MaxTorque = math.huge
+			turner.Enabled = false
+			turner.Parent = root
+		end
+		local function faceWhileSpacing(on, troot)
+			if not turner then
+				return
+			end
+			turner.Enabled = on
+			hum.AutoRotate = not on
+			if on and troot then
+				local flat = Vector3.new(troot.Position.X, root.Position.Y, troot.Position.Z)
+				if (flat - root.Position).Magnitude > 0.1 then
+					turner.CFrame = CFrame.lookAt(root.Position, flat).Rotation
+				end
+			end
+		end
+		local function reachOf(target, swingReach)
+			if swingReach and swingReach > 0 then
+				return swingReach
+			end
+			local w = Weapons.Defs[target:GetAttribute("Weapon") or ""]
+			local a = w and w.Attacks and w.Attacks[1]
+			return (a and a.Range) or SP.DefaultReach
+		end
+		-- a short direct move (no pathfinding: a sidestep can't wait for a re-plan); a wall that way flips the circling side
+		local function stepTo(goal)
+			local d = (goal - root.Position) * Vector3.new(1, 0, 1)
+			if d.Magnitude < 0.5 then
+				return
+			end
+			if workspace:Raycast(root.Position, d.Unit * math.min(d.Magnitude, 8), wallParams) then
+				side = -side
+			end
+			hum:MoveTo(Vector3.new(goal.X, root.Position.Y, goal.Z))
+		end
+		-- true when spacing has the body this tick
+		local function spacing(target, troot, dist, canAttack, now)
+			if not sp then
+				return false
+			end
+			local phase, swingReach, blocking, stunned, swingId = Combat.Threat(target)
+			local reach = reachOf(target, swingReach)
+			local away = (root.Position - troot.Position) * Vector3.new(1, 0, 1)
+			away = if away.Magnitude > 0.1 then away.Unit else -root.CFrame.LookVector
+			local function ring(radius, turn) -- a point on a ring round the target, `turn` radians this body's way
+				local a = math.atan2(away.Z, away.X) + side * turn
+				return troot.Position + Vector3.new(math.cos(a) * radius, 0, math.sin(a) * radius)
+			end
+			-- 1. your swing: read it after a reaction time and, if it decides to, slip out of reach to the side
+			if phase == "Windup" or phase == "Active" then
+				if not sp.Backoff then
+					return false
+				end
+				if swingId ~= mem.swingId then
+					mem.swingId, mem.dodge, mem.reactAt = swingId, math.random() < sp.Chance, now + sp.React
+				end
+				if mem.dodge and now >= mem.reactAt and dist <= reach + SP.BackoffMargin then
+					stepTo(ring(reach + SP.BackoffMargin + 1, SP.StrafeTurn))
+					return true
+				end
+				return false
+			end
+			-- 2. your recovery or a stagger: the opening. nothing holds it back
+			if phase == "Recovery" or stunned then
+				return false
+			end
+			-- 3. wounded: stay outside your reach and circle; it comes in on the openings above
+			if sp.Wary and hum.Health / hum.MaxHealth < sp.Wary then
+				local r = reach + SP.BackoffMargin + 2
+				if dist > r + 4 then
+					nav.moveTo(ring(r, 0))
+				else
+					stepTo(ring(r, SP.StrafeTurn))
+				end
+				return true
+			end
+			-- 4. your guard up: sometimes it circles a moment rather than swing into it
+			if blocking and sp.WaitOutBlock and canAttack then
+				if not mem.blockSeen then
+					mem.blockSeen = true
+					mem.blockWaitUntil = if math.random() < sp.WaitOutBlock then now + SP.BlockWait else 0
+				end
+				if now < mem.blockWaitUntil then
+					stepTo(ring(math.max(def.Range, reach) + 1, SP.StrafeTurn))
+					return true
+				end
+				return false
+			end
+			if not blocking then
+				mem.blockSeen = false
+			end
+			-- 5. you charge it: give ground as a sidestep
+			local thum = target:FindFirstChildOfClass("Humanoid")
+			if sp.RushGive and not canAttack and thum and thum.MoveDirection.Magnitude > 0.5 and thum.MoveDirection:Dot(away) > 0.7 and dist < reach + 3 then
+				stepTo(ring(dist + sp.RushGive, SP.StrafeTurn))
+				return true
+			end
+			-- 6. its own cooldown, close in: circle you instead of standing still (and change direction now and then)
+			if sp.Strafe and not canAttack and dist <= def.Range + AI.HoldGap + 3 then
+				if now >= mem.flipAt then
+					mem.flipAt = now + 1.5 + math.random() * 2.5
+					if math.random() < 0.35 then
+						side = -side
+					end
+				end
+				stepTo(ring(math.max(def.Range, reach) + 0.5, SP.StrafeTurn))
+				return true
+			end
+			return false
+		end
 		while alive and model.Parent and hum.Health > 0 do
 			local now = os.clock()
 			local target, dist = nearestTarget(root, def.Aggro, opts.Filter)
@@ -341,7 +472,11 @@ function NPCs.Spawn(typeName, position, opts)
 				end
 				local holdRadius = def.Range + AI.HoldGap
 				local hold = false
-				if move and (move.Dash or dist <= (move.Radius or def.Range) + 2) then
+				local spaced = not move and spacing(target, troot, dist, canAttack, now)
+				faceWhileSpacing(spaced, troot)
+				if spaced then
+					-- spacing has the body this tick (see spacing above)
+				elseif move and (move.Dash or dist <= (move.Radius or def.Range) + 2) then
 					-- a special move is this body's own turn: it does not wait for the ring
 					lastAttack = now
 					if def.Hyperarmor then
@@ -374,6 +509,7 @@ function NPCs.Spawn(typeName, position, opts)
 					nav.moveTo(holdSpot(model, root, troot, holdRadius, side))
 				end
 			else
+				faceWhileSpacing(false)
 				local spot = model:GetAttribute("Investigate")
 				if spot and os.clock() < (model:GetAttribute("InvestigateUntil") or 0) and (spot - root.Position).Magnitude > 6 then
 					nav.moveTo(spot)

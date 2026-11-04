@@ -247,7 +247,7 @@ function Combat.Feint(player)
 		return
 	end
 	s.token += 1
-	s.windupUntil, s.swingArmorUntil = 0, 0
+	s.windupUntil, s.swingArmorUntil, s.activeUntil = 0, 0, 0
 	s.busyUntil = t + C.FeintRecovery
 	Combat.AddStamina(char, s.lastCost * C.FeintRefund)
 	s.combo = math.max(0, s.combo - 1)
@@ -346,6 +346,21 @@ function Combat.IsJuggled(char)
 end
 function Combat.IsStunned(char)
 	return os.clock() < st(char).stunned
+end
+-- What a fighter is doing, as an enemy reads it (NPCs spacing): phase "Windup" | "Active" | "Recovery" | "Idle"
+-- (a feint drops straight to Recovery), the reach of the current or last swing (0 before any), guard up,
+-- stunned, and an id that changes with every new swing.
+function Combat.Threat(char)
+	local s, t = st(char), os.clock()
+	local phase = "Idle"
+	if t < s.windupUntil then
+		phase = "Windup"
+	elseif t < (s.activeUntil or 0) then
+		phase = "Active"
+	elseif t < s.busyUntil then
+		phase = "Recovery"
+	end
+	return phase, s.swingReach or 0, s.block == true, t < s.stunned, s.swingId or 0
 end
 -- Only non-player bodies get launched (players own their physics and permadeath makes a helpless state too strong).
 local function launchable(victim)
@@ -655,6 +670,9 @@ function Combat.Swing(char, spec, mods)
 	local token = s.token
 	s.busyUntil = t0 + spec.End
 	s.windupUntil = t0 + spec.Windup
+	s.activeUntil = t0 + spec.Windup + spec.Active
+	s.swingReach = spec.Range
+	s.swingId = (s.swingId or 0) + 1
 	s.swingArmorUntil = if spec.Hyperarmor then t0 + spec.Windup + spec.Active else 0
 	fx("Swing", char, mods.label)
 

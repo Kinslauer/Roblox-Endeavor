@@ -75,6 +75,9 @@ every player has finished or skipped (and 30s have passed) the world opens early
   lunge). Enemies scale with party size. Clearing it drops a vault (3x supply rolls + a guaranteed implant) and 400 xp,
   then extracts you. Dying inside is still permadeath.
 - **Enemies** (`src/server/NPCs.lua`): Raider, Brute (hyperarmor, big knockback), Shocker (arc damage, stuns), Warden.
+  They read your swing and keep their distance: some step out of your reach as you wind up, come in on your recovery,
+  circle while their attack recovers, wait out your guard, and get cagey when wounded. Brutes and Wardens just walk
+  through it.
   Every attack is telegraphed with a red flash (orange = unblockable) so parry/dodge timing is readable.
 - **Devour** (`M` on remains): consume a body for xp, full charge and a heal instead of looting it. Takes longer than
   looting and destroys the loot, so it is a choice and a risk.

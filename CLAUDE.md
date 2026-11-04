@@ -72,6 +72,15 @@ store `ConduitCharacter_v2`) is shared by both places.
   joint Transform. Roblox-owned template animations in Config.Movement.Anims. Server: workspace.Gravity =
   Config.Movement.Gravity (160) in Main, JumpHeight = Config.Movement.JumpHeight (8) * JumpMult in Stats. Client test
   `tools/smoke/client.lua` builds the client folder like Rojo does and runs 13 movement checks.
+- Enemy spacing (owner, 2026-11-04, from KrugKrew's "best swordfighting ai" in the uncopylocked archive the user
+  linked; ideas only, no code copied): `Combat.Threat(char)` -> phase Windup/Active/Recovery/Idle (Swing stores
+  activeUntil, swingReach, swingId; feint clears activeUntil), reach, blocking, stunned, swingId. In NPCs.Spawn's loop,
+  `spacing()` runs before the attack/turn-taking branch per Config.City.AI.Spacing.Types[type]: Backoff on your windup
+  (rolled once per swingId with Chance, after React seconds), Press on Recovery/stun, Wary under a health share,
+  WaitOutBlock, RushGive, Strafe on its own cooldown; short moves are direct `hum:MoveTo` (`stepTo`, wall raycast flips
+  `side`), facing via an AlignOrientation "SpacingTurn" with AutoRotate off. Brute/Warden only Press. The archive clone
+  (sparse, read-only) is at /home/user/kh0din/biggest_uncopylocked_roblox_games_library; scratch `tools/rbxl.py` reads
+  its .rbxl files.
 - Lore (owner, 2026-10-31; docs/DESIGN.md "The stack"): conduits upload their consciousness stack through the hideout
   computer (first log-in = initialization, `Knowledge.Uploaded`); every death is a reboot of the stack; on the Front the
   stack links to the recruit's; the rich uploaded and escaped the world. Mechanically: Knowledge survives permadeath only
@@ -79,7 +88,7 @@ store `ConduitCharacter_v2`) is shared by both places.
   "Upload stack / log in".
 
 ## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v68, Front v19). Front v10 verified on a real server:
+- Both places published and starting cleanly (Endeavor v69, Front v19). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.

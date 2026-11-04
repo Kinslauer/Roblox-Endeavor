@@ -1,7 +1,7 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v68, Front v19.
+report). Versions: Endeavor v69, Front v19.
 
 ## Endeavor: first minutes
 - [ ] The starting room is a pod: dark panelled walls with cyan seams, diamond-plate floor, the console in a terminal
@@ -133,6 +133,18 @@ report). Versions: Endeavor v68, Front v19.
 - [ ] Fill all eight slots: "Body: 100% metal", a lore line, and chat comes out flat and capitalised ("lol I'm sooooo
       done!!" becomes "I AM SO DONE.") in grey-blue with a terminal-style bubble. Rip one out: the voice returns.
 - [ ] Old characters: an Optic implant is now in Eyes, an Arm implant in the Right arm.
+
+## Endeavor: enemy spacing (ideas from KrugKrew's sword-fighting AI)
+- [ ] Raiders, Shockers and Rival conduits read your swing: as you wind up, some of the time they slip sideways out of
+      your reach after a short reaction (Rivals most often and fastest, Raiders least). A feint baits that step back.
+- [ ] Your recovery after a swing (or a stagger) is their opening: they come straight in.
+- [ ] While their own attack is on cooldown they circle you, facing you, instead of standing still, and switch
+      direction now and then. A wall in the way makes them circle the other way.
+- [ ] Hold a guard and they sometimes circle it for a moment instead of swinging into it.
+- [ ] Charge a Shocker or a Rival and it gives ground with a sidestep.
+- [ ] Badly wounded (under about a third of their health), they keep outside your reach and only come in on an opening.
+- [ ] Brutes and Wardens don't back off at all: they walk through your swings (hyperarmor).
+- [ ] Packs still take turns: only one swings at you at a time.
 
 ## Endeavor: enemies and rigs
 - [ ] The city has standing hostiles: Raider packs in the Transit Hub, mixed packs (Shockers, Brutes) in Corp Plaza and

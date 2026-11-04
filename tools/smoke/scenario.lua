@@ -675,6 +675,57 @@ run(1.5)
 check("it lands and the juggle ends", dummyR:GetAttribute("Juggled") == false)
 dummyR:Destroy()
 
+-- spacing (Config.City.AI.Spacing): a rival reads your swing, presses your recovery, circles your guard
+do
+	as(player)
+	local NPCsS = M.mockEnv.__require(SSS.Server.NPCs)
+	local CombatS = M.mockEnv.__require(SSS.Server.Combat)
+	local Cfg = M.mockEnv.__require(RS.Shared.Config)
+	local T = Cfg.City.AI.Spacing.Types.Rival
+	local oldChance, oldBlock = T.Chance, T.WaitOutBlock
+	T.Chance, T.WaitOutBlock = 1, 1 -- always reacts, for the test
+	local oldCd = NPCsS.Types.Rival.Cooldown
+	NPCsS.Types.Rival.Cooldown = 1e6 -- and never swings first, so your swing is never cancelled by its hit
+	local pr = player.Character.HumanoidRootPart
+	local rival = NPCsS.Spawn("Rival", pr.Position + M.V3.new(0, 0, -5), { Parent = game_.Workspace })
+	rival.Humanoid.MaxHealth, rival.Humanoid.Health = 5000, 5000
+	local rh = rival.Humanoid
+	local function goalDist() local g = rawget(rh, "_moveTo"); return g and (M.V3.new(g.X, 0, g.Z) - M.V3.new(pr.Position.X, 0, pr.Position.Z)).Magnitude or 0 end
+	-- the threat read
+	local phase = CombatS.Threat(player.Character)
+	check("spacing: an idle player reads as Idle", phase == "Idle")
+	CombatS.Swing(player.Character, { Windup = 0.5, Active = 0.2, End = 1.2, Range = 6, Damage = 0, Posture = 0, Arc = 0.3 }, {})
+	check("spacing: a swing reads as Windup", (CombatS.Threat(player.Character)) == "Windup")
+	run(0.4)
+	check("spacing: it slips out of your reach as you wind up", goalDist() > 6 + 2.5)
+	run(0.5)
+	check("spacing: after the swing, the recovery reads as Recovery", (CombatS.Threat(player.Character)) == "Recovery")
+	-- your guard: it circles instead of swinging into it
+	run(0.4) -- a guard can only go up once the swing's recovery is over
+	CombatS.SetBlock(player, true); run(0.2)
+	local _, _, blocking = CombatS.Threat(player.Character)
+	check("spacing: a raised guard reads as blocking", blocking == true)
+	run(0.6)
+	check("spacing: it circles you while it waits, facing you", rival.HumanoidRootPart.SpacingTurn.Enabled == true and rh.AutoRotate == false and goalDist() > 5)
+	CombatS.SetBlock(player, false)
+	-- wounded: it keeps outside your reach
+	rh.Health = 5000 * 0.2; run(0.6)
+	check("spacing: wounded, it keeps outside your reach", goalDist() >= 6 + 2.5)
+	T.Chance, T.WaitOutBlock = oldChance, oldBlock
+	NPCsS.Types.Rival.Cooldown = oldCd
+	rival:Destroy()
+	-- a brute does not back off: it walks through swings
+	local brute = NPCsS.Spawn("Brute", pr.Position + M.V3.new(0, 0, -5), { Parent = game_.Workspace })
+	brute.Humanoid.MaxHealth, brute.Humanoid.Health = 5000, 5000
+	run(2.5) -- let its own attack cooldown pass
+	CombatS.Swing(player.Character, { Windup = 0.5, Active = 0.2, End = 1.2, Range = 6, Damage = 0, Posture = 0, Arc = 0.3 }, {})
+	run(0.4)
+	local g = rawget(brute.Humanoid, "_moveTo")
+	check("spacing: a brute walks through your swing", g == nil or (M.V3.new(g.X, 0, g.Z) - M.V3.new(pr.Position.X, 0, pr.Position.Z)).Magnitude < 6)
+	brute:Destroy()
+	run(1.5)
+end
+
 -- taking turns: three raiders next to the player, but only one winds up at a time
 as(player)
 local NPCs_ = M.mockEnv.__require(SSS.Server.NPCs)
@@ -852,9 +903,10 @@ do
 		run(1.6)
 		local e = Frontier.Encounters()[ambushCell]
 		check("frontier: walking into an ambush cell springs it", e and e.models and #e.models > 0 and #CS:GetTagged("NPC") > npcsBefore)
-		local sprung = #CS:GetTagged("NPC")
+		local sprungModels, sprungRest = e.models, e.restUntil
 		run(1.6)
-		check("frontier: a sprung ambush rests", #CS:GetTagged("NPC") == sprung)
+		-- it does not spring again while you stand in it (other packs may respawn meanwhile; only this one counts)
+		check("frontier: a sprung ambush rests", e.models == sprungModels and e.restUntil == sprungRest)
 		for _, m in e.models do m:Destroy() end
 	end
 	-- the hideout computer: contacts, contracts, intel, house and market

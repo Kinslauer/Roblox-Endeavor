@@ -200,7 +200,7 @@ function methods.Clone(self)
 	return c
 end
 function methods.TakeDamage(self, n) self.Health = math.max(0, self.Health - n) end
-function methods.MoveTo(self, p) end
+function methods.MoveTo(self, p) rawset(self, "_moveTo", p) end
 -- humanoid movement (client/Movement): input in, move out, states
 function methods.GetMoveVelocity(self) return (rawget(self, "MoveDirection") or V3.new()) * (self.WalkSpeed or 16) end
 function methods.Move(self, dir) rawset(self, "_moved", dir) end
