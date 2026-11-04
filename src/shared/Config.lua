@@ -136,6 +136,10 @@ Config.Hud = {
 		Color = Color3.fromRGB(225, 225, 232), NpcColor = Color3.fromRGB(255, 150, 130), FadeStart = 30, FadeEnd = 70 },
 }
 
+-- Places (client): no markers through the world; a place's name shows in the top banner as you enter it
+-- (districts, regions, sites, marked spots), then not again for BannerCooldown seconds.
+Config.Places = { BannerCooldown = 300, BannerSeconds = 4, EnterRadius = 45 }
+
 -- Impact feel (client, ported from combat-feel's Presentation.Impacts): sparks, rings, shards, after-images,
 -- camera shake (0..1 trauma) and FOV hitstop per event kind.
 Config.Impacts = {
@@ -437,6 +441,14 @@ Config.Body = {
 }
 
 Config.Combat = {
+	-- the traced blade (shared/Swings, Combat.traceBlade)
+	HitStop = 0.06, -- seconds the blade holds when it bites into a body
+	ClashRadius = 0.9, -- studs between two live blades that counts as meeting
+	ClashRecover = 0.45, -- both fighters are busy this long after a clash
+	ClashPush = 22, -- and are pushed apart this hard
+	GlanceRecover = 0.4, -- a blade stopped by a wall
+	BodyRadius = 1.25, -- a body's capsule radius for blade hits
+	BladeProbe = 1.1, -- studs: sphere swept at the blade's middle and tip for props
 	SprintMult = 1.45,
 	SprintStaminaPerSecond = 9,
 	SprintMinStamina = 10,

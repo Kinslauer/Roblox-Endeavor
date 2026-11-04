@@ -96,6 +96,23 @@ store `ConduitCharacter_v2`) is shared by both places.
   `side`), facing via an AlignOrientation "SpacingTurn" with AutoRotate off. Brute/Warden only Press. The archive clone
   (sparse, read-only) is at /home/user/kh0din/biggest_uncopylocked_roblox_games_library; scratch `tools/rbxl.py` reads
   its .rbxl files.
+- Traced melee (owner, 2026-11-04: "like mordhau"): `src/shared/Swings.lua` = swing shapes (SlashR/SlashL/Overhead/
+  Diagonal/Uppercut/Thrust/Jab as yaw/pitch keys in root space), `Families` per weapon family + Heavy, `Blade(rootCF,
+  id, u, reach, scale)` -> hand/tip, `SegmentDistance`. Combat.Swing with `mods.shape` runs `traceBlade` (Heartbeat,
+  while Active): blade-vs-blade sweep -> `clash` (both cancelled, ClashRecover, pushed apart, fx "Clash",
+  `Combat.Clashed`); blade swept prev->now vs body capsules (`nearbyBodies` = any humanoid in GetPartBoundsInRadius +
+  NPC tag + players) -> strike with ContactPoint/ContactDir (knockback from the contact; "Hit" fx carries them);
+  props via raycasts + `C.BladeProbe` spheres at mid/tip -> Destruction onBladeHit; a wall glances (GlanceRecover).
+  NPC strikes (non-Radius/Dash) also go through Combat.Swing with a quiet telegraph. The client drives the arm along
+  the same arc (`swingPose` via Joints.Set) and freezes it on hit. Tests: "blade:" checks in scenario.lua.
+- Places, not beacons (owner, 2026-11-04: "you shouldnt be able to see all these markers through the world"): World
+  "Marker" no longer draws anything; the client banners a marked place's name on entering Config.Places.EnterRadius,
+  and every "District"-kind announcement (districts, regions, sites, markers) shows once per place per
+  Config.Places.BannerCooldown (300 s). Nameplates are AlwaysOnTop false, MaxDistance 70.
+- Conduit body v2 (owner, 2026-11-04: "not satisfied with the character models"): conduit.py builds sculpted shapes
+  (tbox/tcyl/ball: bevelled tapered boxes, elliptical cylinders, domes); asset 128592453586650. Extras named after a
+  limb ("LowerTorsoCoat", "LeftLowerLegKnee") ride on that limb (Rigs.Build `named`, side-swapped when mirrored).
+  `tools/models/preview.py obj png [azimuth] [elevation]` (face at azimuth -pi/2).
 - Lore (owner, 2026-10-31; docs/DESIGN.md "The stack"): conduits upload their consciousness stack through the hideout
   computer (first log-in = initialization, `Knowledge.Uploaded`); every death is a reboot of the stack; on the Front the
   stack links to the recruit's; the rich uploaded and escaped the world. Mechanically: Knowledge survives permadeath only

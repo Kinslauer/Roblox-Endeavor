@@ -85,9 +85,17 @@ CF.__sub = function(a, b) return mkcf(a.Position - b, a.r) end
 CF.identity = mkcf(V3.new(0, 0, 0))
 function CF.Inverse(a) return a end
 function CF.ToObjectSpace(a, b) return b end
-function CF.VectorToObjectSpace(a, v) return v end
+local function rotT(r, v) return V3.new(r[1]*v.X + r[4]*v.Y + r[7]*v.Z, r[2]*v.X + r[5]*v.Y + r[8]*v.Z, r[3]*v.X + r[6]*v.Y + r[9]*v.Z) end
+function CF.VectorToObjectSpace(a, v) return rotT(a.r, v) end
 function CF.Lerp(a, b, t) return b end
-function CF.VectorToWorldSpace(a, v) return v end
+function CF.VectorToWorldSpace(a, v) return rot(a.r, v) end
+function CF.PointToWorldSpace(a, v) return a.Position + rot(a.r, v) end
+if not CF.PointToObjectSpace then function CF.PointToObjectSpace(a, v) return rotT(a.r, v - a.Position) end end
+function CF.fromAxisAngle(axis, angle)
+	local u = axis.Unit; local c, s_, t = math.cos(angle), math.sin(angle), 1 - math.cos(angle)
+	local x, y, z = u.X, u.Y, u.Z
+	return setmetatable({ Position = V3.new(0, 0, 0), r = { t*x*x + c, t*x*y - s_*z, t*x*z + s_*y, t*x*y + s_*z, t*y*y + c, t*y*z - s_*x, t*x*z - s_*y, t*y*z + s_*x, t*z*z + c } }, CF)
+end
 function CF.ToWorldSpace(a, b) return a * b end
 
 local Color3 = { new = function(r, g, b) return {R = r, G = g, B = b} end, fromRGB = function(r, g, b) return {R = r/255, G = g/255, B = b/255} end }
@@ -225,7 +233,16 @@ function methods.GetPartBoundsInRadius(self, origin, radius, params)
 	local out, list = {}, (params and params.FilterDescendantsInstances) or {}
 	local include = params and params.FilterType == "RaycastFilterType.Include"
 	for _, d in descendants(self, {}) do
-		if d:IsA("BasePart") and d.Position and (d.Position - origin).Magnitude <= radius then
+		local near = false
+		if d:IsA("BasePart") and d.Position then
+			-- like Roblox: the part's box (axis-aligned here) touching the sphere, not just its centre
+			local sz, o = d.Size or V3.new(), d.Position - origin
+			local cx = math.max(math.abs(o.X) - sz.X / 2, 0)
+			local cy = math.max(math.abs(o.Y) - sz.Y / 2, 0)
+			local cz = math.max(math.abs(o.Z) - sz.Z / 2, 0)
+			near = math.sqrt(cx * cx + cy * cy + cz * cz) <= radius
+		end
+		if near then
 			local listed = false
 			for _, ex in list do if d == ex or d:IsDescendantOf(ex) then listed = true end end
 			if include == listed then table.insert(out, d) end

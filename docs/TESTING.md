@@ -25,8 +25,10 @@ report). Versions: Endeavor v69, Front v19.
 - [ ] The city reads as late night: purple haze, neon bloom, cold grade; you can still see where you're going.
 
 ## Endeavor: your body, swings and the look of the screens
-- [ ] You spawn as the Conduit (hood, visor slit, respirator, high-collar jacket with neon seams, plated right forearm,
-      cargo trousers, boots), not your Roblox avatar. It idles, walks, runs, jumps, falls and climbs.
+- [ ] You spawn as the Conduit, rebuilt rounder (v2): hooded head with a wraparound visor band and a small respirator,
+      long coat with a split skirt that moves with your hips, chest plate, layered shoulder plates, gloves with
+      knuckle plates, knee guards and armoured boots. Not your Roblox avatar. It idles, walks, runs, jumps, falls and
+      climbs; the coat and plates stay on the right limbs (shoulder plates on the arms, knee guards on the shins).
 - [ ] Each life rolls its own jacket colour (gunmetal, olive, oxblood, navy, bone, black) and trim colour (cyan,
       magenta, amber, acid, red, white) on the seams, armband, stack port and visor. Dying gives you a new combination.
 - [ ] Your own swings move your arms: windup and slash per weapon family, a block pose on F, a flinch when hit, and the
@@ -83,6 +85,20 @@ report). Versions: Endeavor v69, Front v19.
 - [ ] A hostile staggered during its wind-up loses that strike (the red glow ends with no hit).
 - [ ] Equipping a weapon from Tab puts its model in your right hand; fists show nothing. Check each: pipe club,
       rebar blade, shock baton, scrap spear, sledge, arc pistol. Note any that point the wrong way or float.
+
+### Traced blades (Mordhau-style swings)
+- [ ] A swing only hurts where the weapon actually passes: stepping back out of the arc, or ducking under a high slash
+      with a dodge, makes it miss. The body flinches away from the point the weapon touched (a hit on the right
+      shoulder turns it left; a high hit snaps the head back), not straight back.
+- [ ] A hit bites: the swing freezes for a split second at the contact, sparks fly from the contact point.
+- [ ] Enemies' swings work the same way on you: their weapon arm follows a visible arc and you are pushed from where it
+      landed.
+- [ ] Two weapons meeting mid-air (you and an enemy swinging at each other at range) clang, spark, and both swings
+      stop with a short recovery; neither lands. "CLASH" shows.
+- [ ] Swinging into a wall stops the blade with a glance (sparks, short recovery). Swinging through a streetlight,
+      crate or breach point still breaks it.
+- [ ] Each weapon family swings its own arcs: blades right-left-right-diagonal, blunt/batons right-left-overhead,
+      hammers right-overhead, spears thrust-thrust-slash-thrust, fists jabs then an uppercut. Heavies use the big arc.
 
 ## Endeavor: inventory (Tab)
 - [ ] Tab shows a grid (pockets 6x4 without a pack). Items are coloured blocks sized by footprint: materials 1x1 stacking
@@ -186,10 +202,12 @@ report). Versions: Endeavor v69, Front v19.
 - [ ] After a dematerialize cycle the world returns in a different condition.
 
 ## Endeavor: random events (every 1 to 2.5 minutes once the world is open)
-- [ ] Landmarks are marked once the world opens: every Neural Net terminal (purple), the Blackout Gate (red) and the
-      Test Armory (magenta), with distance. They stay; they come back after a respawn.
-- [ ] Events put a marker in the world: a pulsing diamond with a label and distance in metres, visible through walls
-      (supply drop yellow, Warden red, dead drop purple, your salvage cache green). It disappears when the event ends.
+- [ ] Nothing is drawn through walls: no floating diamonds or distances. Walking up to a marked place (a Neural Net
+      terminal, the Blackout Gate, a supply drop, a Warden, a dead drop, your salvage cache, the next route stop, a
+      site) shows its name in the banner at the top of the screen for about 4 s.
+- [ ] A place's banner (marked places, districts, frontier regions, sites) shows once, then not again for 5 minutes
+      even if you walk out and back in; another place's name still shows.
+- [ ] Nameplates only show within about 70 studs and not through walls.
 - [ ] Supply drop: announced, a glowing crate lands; opening takes 3 s.
 - [ ] Raider ambush: "Raiders have found you", 2 to 4 hostiles close in.
 - [ ] Blackout: the city goes dark for a minute or two (neon stays), Shockers spawn; light returns afterwards.
@@ -212,8 +230,8 @@ Maps: `docs/maps/world_map_seed7919.png` and `world_map_seed23757.png` (two roll
 200-stud chunks dealt by a seed each server: the Reach, the sites, the hairpins, the trail and the checkpoints all
 move; the city and the scarp overlook stay put. The server's seed is printed in the F9 log ("[Frontier] seed ...").
 - [ ] Two servers (or a server restart) give a different valley: the Reach somewhere else, sites in other cells.
-- [ ] A hazard-orange "Route north 1/N: Rail Yard" marker shows after spawning into the open world. Standing at it
-      banners "Checkpoint 1/N" and the marker jumps to the next one (Sprawl Market, Canal Bridge, Blackout Toll,
+- [ ] The route north is marked by place, not beacon: walking up to the next stop ("Route north 1/N: Rail Yard")
+      banners its name; standing at it banners "Checkpoint 1/N" and the next stop takes over to the next one (Sprawl Market, Canal Bridge, Blackout Toll,
       North Gate, Scarp Overlook, Second Hairpin, Scarp Foot, then rolled valley stops such as Valley Ford, Fallen
       Bridge, Dead Crossing, Burnt Clearing, Stone Steps, then Reach Gate, Verdant Reach). It is never a straight line.
 - [ ] Chunks read as places: forest (dense trees), glade (open middle, fallen logs, flowers), boulders (rock field on
@@ -239,7 +257,7 @@ move; the city and the scarp overlook stay put. The server's seed is printed in 
       Stock: Medkit, Ration, Arc Cells x5, Pipe Grenade, Breaching Charge, Rucksack, Frame Pack, Arc Pistol, Plated
       Helm, Servo Greaves, Reflex Optic, Audio Pickup.
 - [ ] Reaching the Reach completes the "Northbound" quest when it is active.
-- [ ] Ring sites, found by walking within 150 studs (banner + a marker that stays, even after permadeath): Ridge Watch
+- [ ] Ring sites, found by walking within 150 studs (banner; remembered even after permadeath): Ridge Watch
       and Logging Camp (encampments: tents, campfire, fence barricade, a stockpile crate), Hunter's Shack and Pump
       Station (concrete huts with a store crate), Signal Mast (70-stud mast with a red beacon on the mountain, relay
       vault), Crashed Dropship (hull, broken wing, fire, cargo + pilot's locker, a boss Warden "Pilot"), Old Mine

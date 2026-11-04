@@ -90,10 +90,12 @@ function Rigs.Build(assetId, name)
 		end
 		limbs = swapped
 	end
+	local mirrored = false
 	if limbs.LeftUpperArm and limbs.LowerTorso then
 		local right = limbs.LowerTorso.CFrame.RightVector
 		if (limbs.LeftUpperArm.Position - limbs.LowerTorso.Position):Dot(right) > 0 then
 			swapSides()
+			mirrored = true
 		end
 	end
 	for _, limb in LIMBS do
@@ -124,12 +126,30 @@ function Rigs.Build(assetId, name)
 		motor(jointName, parent, child, Vector3.new(child.Position.X, y, child.Position.Z))
 	end
 	-- extras (goggles, pouch...) ride on whichever limb they overlap most
+	-- an extra named after a limb ("LowerTorsoCoat", "LeftUpperArmPad") rides on that limb (its side swapped
+	-- with the limbs when the import mirrored); any other rides on whichever limb is nearest
+	local function named(extra)
+		local base = baseName(extra)
+		if mirrored then
+			base = if base:sub(1, 4) == "Left" then "Right" .. base:sub(5) elseif base:sub(1, 5) == "Right" then "Left" .. base:sub(6) else base
+		end
+		local pick
+		for _, limb in LIMBS do
+			if #base > #limb and base:sub(1, #limb) == limb and (not pick or #limb > #pick) then
+				pick = limb
+			end
+		end
+		return pick and limbs[pick]
+	end
 	for _, extra in extras do
-		local best, bestDist = limbs.UpperTorso, math.huge
-		for _, limb in limbs do
-			local d = (limb.Position - extra.Position).Magnitude
-			if d < bestDist then
-				best, bestDist = limb, d
+		local best, bestDist = named(extra), math.huge
+		if not best then
+			best = limbs.UpperTorso
+			for _, limb in limbs do
+				local d = (limb.Position - extra.Position).Magnitude
+				if d < bestDist then
+					best, bestDist = limb, d
+				end
 			end
 		end
 		local weld = Instance.new("WeldConstraint")

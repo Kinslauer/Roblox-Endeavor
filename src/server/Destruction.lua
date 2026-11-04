@@ -350,6 +350,24 @@ local function onSwing(char, origin, look, spec, damage, weapon, isHeavy, seen)
 	end
 end
 
+-- Called by Combat's traced blade for a part it passed through: a prop or breach point breaks there.
+-- Returns true when the part was one (so the blade does not glance off it like a wall).
+local function onBladeHit(char, part, damage, weapon, isHeavy, seen)
+	local kind, model = worldTarget(part)
+	if not kind then
+		return false
+	end
+	if not seen[model] then
+		seen[model] = true
+		local damageType = FAMILY_TYPE[weapon and weapon.Family] or "Blunt"
+		if weapon and weapon.Family == "Hammer" and isHeavy then
+			damageType = "Sledge"
+		end
+		Destruction.HitInstance(part, damage, damageType, char)
+	end
+	return true
+end
+
 local function onBolt(char, hitInstance, damage, weapon)
 	Destruction.HitInstance(hitInstance, damage, "Arc", char)
 end
@@ -838,7 +856,7 @@ function Destruction.Init()
 	folder.Name = "Destruction"
 	folder.Parent = workspace
 
-	Combat.World = { Swing = onSwing, Bolt = onBolt, ImprovisedHit = onImprovisedHit }
+	Combat.World = { Swing = onSwing, Bolt = onBolt, ImprovisedHit = onImprovisedHit, Hit = onBladeHit }
 	require(script.Parent.Inventory).Thrower = { Grenade = Destruction.ThrowGrenade, Charge = Destruction.PlantCharge }
 
 	Net.On("Grab", { rate = 3, burst = 4, args = { "instance" } }, Destruction.Grab)

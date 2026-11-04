@@ -742,7 +742,7 @@ run(3)
 local windups = 0
 for i = logBefore + 1, #M.FireLog do
 	local e = M.FireLog[i]
-	if e[1] == "CombatEvent" and e[3] == "Windup" and table.find(pack, e[4]) then windups += 1 end
+	if e[1] == "CombatEvent" and (e[3] == "Windup" or e[3] == "Swing") and table.find(pack, e[4]) then windups += 1 end -- traced strikes announce as "Swing"
 end
 check("the pack attacks (someone wound up)", windups >= 1)
 check("the pack takes turns rather than all swinging", windups <= 4)
@@ -1044,6 +1044,52 @@ do
 	local fresh = PlayerData.Reset(player)
 	check("frontier: the route survives permadeath", fresh.Frontier.Route == 1 and fresh.Frontier.Found[site.Key] == true)
 	check("computer: knowledge survives permadeath", fresh.Knowledge and fresh.Knowledge.Contacts.Broker == true and fresh.Knowledge.Completed == 1)
+end
+
+-- ===== traced blades (Mordhau-style): the blade hits where it meets a body, two blades meeting cancel both =====
+do
+	local CombatB = M.mockEnv.__require(SSS.Server.Combat)
+	local NPCsB = M.mockEnv.__require(SSS.Server.NPCs)
+	local origin = M.V3.new(5000, 5, 5000)
+	local function body(name, pos, look)
+		local m = NPCsB.BuildRig(name, { Health = 500, Speed = 0 })
+		m.Parent = game_.Workspace
+		m.HumanoidRootPart.CFrame = M.CF.lookAt(pos, look)
+		return m
+	end
+	local spec = { Damage = 10, Posture = 5, Windup = 0.1, Active = 0.3, End = 0.6, Range = 6, Knockback = 15, Stun = 0.3, Type = "Slash" }
+	local a = body("Blade A", origin, origin + M.V3.new(0, 0, -5))
+	local v = body("Blade B", origin + M.V3.new(0, 0, -3.5), origin + M.V3.new(0, 0, -10)) -- facing away: cannot swing back
+	local logAt = #M.FireLog
+	CombatB.Swing(a, spec, { noStatScaling = true, label = "Test", shape = "SlashR" })
+	run(0.8)
+	local contact
+	for i = logAt + 1, #M.FireLog do
+		local e = M.FireLog[i]
+		if e[1] == "CombatEvent" and e[3] == "Hit" and e[4] == v then contact = e[6] end
+	end
+	check("blade: a swing lands on the body its arc passes through", v.Humanoid.Health < 500)
+	check("blade: the hit carries the point of contact", typeof(contact) == "Vector3" or (type(contact) == "table" and contact.X ~= nil))
+	-- out of reach: the arc never meets the body, nothing lands
+	local far = body("Blade C", origin + M.V3.new(0, 0, 40), origin)
+	local h0 = far.Humanoid.Health
+	CombatB.Swing(a, spec, { noStatScaling = true, label = "Test", shape = "SlashR" })
+	run(0.8)
+	check("blade: a body outside the arc is untouched", far.Humanoid.Health == h0)
+	far:Destroy(); v:Destroy()
+	-- two blades meeting mid-air: both swings end, neither lands
+	local b = body("Blade D", origin + M.V3.new(0, 0, -8), origin) -- tips overlap, bodies out of each other's reach
+	local clashed = false
+	local conn = CombatB.Clashed.Event:Connect(function() clashed = true end)
+	local ha, hb = a.Humanoid.Health, b.Humanoid.Health
+	CombatB.Swing(a, spec, { noStatScaling = true, label = "Test", shape = "SlashR" })
+	CombatB.Swing(b, spec, { noStatScaling = true, label = "Test", shape = "SlashR" })
+	run(0.8)
+	conn:Disconnect()
+	check("blade: two blades meeting mid-air clash", clashed)
+	check("blade: a clash lands neither swing", a.Humanoid.Health == ha and b.Humanoid.Health == hb)
+	a:Destroy(); b:Destroy()
+	run(0.5)
 end
 
 check("no script errors", #M.errors == 0)

@@ -59,6 +59,25 @@ function Joints.Pose(char, name, offset, seconds, style)
 	return true
 end
 
+-- Sets the joint to rest * offset this frame (no tween): for poses driven every frame (traced swings).
+function Joints.Set(char, name, offset)
+	local j = Joints.Find(char, name)
+	if not j then
+		return false
+	end
+	local inst, prop, rest = target(j)
+	if not inst then
+		return false
+	end
+	local old = tweens[j]
+	if old then
+		old:Cancel()
+		tweens[j] = nil
+	end
+	inst[prop] = rest * offset
+	return true
+end
+
 -- True when `j` is a joint whose Transform the Animator drives (both kinds have one).
 function Joints.IsJoint(j)
 	return j ~= nil and (j:IsA("Motor6D") or j:IsA("AnimationConstraint"))

@@ -19,6 +19,7 @@ local Remotes = require(Shared:WaitForChild("Remotes"))
 local Sounds = require(Shared:WaitForChild("Sounds"))
 local Weapons = require(Shared:WaitForChild("Weapons"))
 local Joints = require(Shared:WaitForChild("Joints"))
+local Swings = require(Shared:WaitForChild("Swings"))
 local Movement = require(script.Parent:WaitForChild("Movement"))
 Movement.Start()
 -- Sounds for combat events, played at the character they happened to.
@@ -223,11 +224,21 @@ local KIND_COLORS = {
 	Kill = Color3.fromRGB(230, 230, 230), Info = Color3.fromRGB(120, 220, 255), District = Color3.fromRGB(200, 200, 255),
 }
 local bannerToken = 0
+local placeSeen = {} -- place name -> os.clock() its banner last showed (Config.Places.BannerCooldown)
 local function announce(text, kind)
+	if kind == "District" then
+		-- a place names itself as you enter, then keeps quiet for a while: walking the border does not spam
+		local place = tostring(text):match("^(.-)%s%s%-") or tostring(text)
+		local last = placeSeen[place]
+		if last and os.clock() - last < Config.Places.BannerCooldown then
+			return
+		end
+		placeSeen[place] = os.clock()
+	end
 	bannerToken += 1
 	local token = bannerToken
 	banner.Text, banner.TextColor3, banner.TextTransparency = text, KIND_COLORS[kind] or Color3.new(1, 1, 1), 0
-	task.delay(5, function()
+	task.delay(Config.Places.BannerSeconds, function()
 		if token == bannerToken then
 			banner.TextTransparency = 1
 		end
@@ -1098,7 +1109,7 @@ local function bloodPool(position, size)
 end
 
 local dematerializing = false
--- World markers: a beacon you can see through everything, with a label and the distance to it.
+-- Marked places (director drops, landmarks, route, sites): see setMarker.
 local markers = {}
 -- ===== clues: anomalies flicker, fragments you cannot read yet are hidden =====
 local visibleClues = nil -- nil = nothing known yet (show everything); set by World "Clues"
@@ -1142,39 +1153,36 @@ workspace.ChildAdded:Connect(function(child)
 	end
 end)
 
+-- Markers are places, not beacons: nothing is drawn through the world. A marked place names itself in the
+-- top banner when you come within Config.Places.EnterRadius, at most once per BannerCooldown per name.
 local function setMarker(key, position, label, seconds, color)
-	local old = markers[key]
-	if old then
-		old.anchor:Destroy()
-		markers[key] = nil
-	end
 	if not position then
+		markers[key] = nil
 		return
 	end
-	local anchor = Instance.new("Attachment")
-	anchor.WorldPosition = position
-	anchor.Parent = workspace.Terrain
-	local billboard = make("BillboardGui", { Size = UDim2.fromOffset(160, 44), AlwaysOnTop = true, MaxDistance = 2000, StudsOffset = Vector3.new(0, 4, 0) }, anchor)
-	local dot = make("Frame", { Size = UDim2.fromOffset(10, 10), Position = UDim2.new(0.5, -5, 0, 0), BackgroundColor3 = color or Color3.new(1, 1, 1), Rotation = 45, BorderSizePixel = 0 }, billboard)
-	local text = make("TextLabel", { Size = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 14), BackgroundTransparency = 1, Text = label or key, TextColor3 = color or Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 14, TextStrokeTransparency = 0.3 }, billboard)
-	markers[key] = { anchor = anchor, text = text, label = label or key, position = position, dot = dot }
+	local m = { label = label or key, position = position }
+	markers[key] = m
 	if seconds then
 		task.delay(seconds, function()
-			if markers[key] and markers[key].anchor == anchor then
-				setMarker(key, nil)
+			if markers[key] == m then
+				markers[key] = nil
 			end
 		end)
 	end
 end
-RunService.Heartbeat:Connect(function()
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if not root then
-		return
-	end
-	for _, m in markers do
-		local d = (m.position - root.Position).Magnitude
-		m.text.Text = ("%s  %dm"):format(m.label, math.floor(d / 3.5)) -- 3.5 studs to the metre
-		m.dot.BackgroundTransparency = 0.3 + 0.3 * math.sin(os.clock() * 4)
+task.spawn(function()
+	while true do
+		task.wait(0.5)
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			for _, m in markers do
+				local near = (m.position - root.Position).Magnitude <= Config.Places.EnterRadius
+				if near and not m.inside then
+					announce(m.label, "District")
+				end
+				m.inside = near
+			end
+		end
 	end
 end)
 
@@ -1771,7 +1779,7 @@ local function pose(char, name, offset, seconds, style)
 	Joints.Pose(char, name, offset, seconds, style)
 end
 local function relax(char, seconds)
-	for _, name in { "RightShoulder", "LeftShoulder", "RightElbow", "LeftElbow", "Waist", "Neck" } do
+	for _, name in { "RightShoulder", "LeftShoulder", "RightElbow", "LeftElbow", "RightWrist", "Waist", "Neck" } do
 		pose(char, name, CFrame.identity, seconds or 0.3)
 	end
 end
@@ -1818,8 +1826,20 @@ local function swingAnim(char, heavy)
 	end)
 end
 -- flinch: head and torso snap back, arms come up, then recover
-local function staggerAnim(char, hard)
-	pose(char, "Waist", CFrame.Angles(math.rad(if hard then -22 else -12), 0, math.rad(6)), 0.06, Enum.EasingStyle.Quart)
+local function staggerAnim(char, hard, contact)
+	-- the body gives where it was struck: a blow from the right twists and tips it left, and the reverse
+	local side, high = 1, false
+	local torso = typeof(char) == "Instance" and char:FindFirstChild("UpperTorso")
+	if contact and torso then
+		local rel = torso.CFrame:PointToObjectSpace(contact)
+		side = if rel.X >= 0 then 1 else -1
+		high = rel.Y > 0.6
+	end
+	local k = if hard then 1.6 else 1
+	pose(char, "Waist", CFrame.Angles(math.rad(-10 * k), math.rad(side * 16 * k), math.rad(side * 9 * k)), 0.05, Enum.EasingStyle.Quart)
+	if high then
+		pose(char, "Neck", CFrame.Angles(math.rad(-26 * k), math.rad(side * 20), math.rad(side * 10)), 0.05, Enum.EasingStyle.Quart)
+	end
 	pose(char, "Neck", CFrame.Angles(math.rad(if hard then -30 else -18), 0, 0), 0.06, Enum.EasingStyle.Quart)
 	pose(char, "RightShoulder", CFrame.Angles(math.rad(30), 0, math.rad(20)), 0.08)
 	pose(char, "LeftShoulder", CFrame.Angles(math.rad(30), 0, math.rad(-20)), 0.08)
@@ -1853,12 +1873,131 @@ local function guardHitAnim(char)
 end
 
 -- A swing: pose the rig, draw a quick arc in front of whoever swung and punch our camera.
-local function swingFx(char, label)
+-- ===== Traced swings (shared/Swings): the arm follows the same arc the server traces for hits =====
+-- Wind-up coils past the start of the arc, the strike sweeps it fast with the torso uncoiling, the
+-- follow-through carries past the end and settles. A hit freezes the swing for a beat (hitstop); a clash or
+-- a wall throws the arm back. The trail is drawn where the blade actually went.
+local swinging = setmetatable({}, { __mode = "k" }) -- char -> state
+local swingFx, endSwing
+do
+local DOWN = Vector3.new(0, -1, 0)
+local function armTo(dirTorso)
+	local d = dirTorso.Unit
+	local axis = DOWN:Cross(d)
+	local dot = math.clamp(DOWN:Dot(d), -1, 1)
+	if axis.Magnitude < 1e-4 then
+		return if dot > 0 then CFrame.identity else CFrame.Angles(math.pi, 0, 0)
+	end
+	return CFrame.fromAxisAngle(axis.Unit, math.acos(dot))
+end
+local REST_YAW, REST_PITCH = 12, -75
+local function lerpN(a, b, f)
+	return a + (b - a) * f
+end
+local function swingPose(char, yaw, pitch, twist, lean)
+	local twistRad = math.rad(-twist)
+	local dirRoot = Vector3.new(math.sin(math.rad(yaw)) * math.cos(math.rad(pitch)), math.sin(math.rad(pitch)), -math.cos(math.rad(yaw)) * math.cos(math.rad(pitch)))
+	local dirTorso = CFrame.Angles(0, -twistRad, 0):VectorToWorldSpace(dirRoot)
+	Joints.Set(char, "RightShoulder", armTo(dirTorso))
+	Joints.Set(char, "RightElbow", CFrame.identity)
+	Joints.Set(char, "RightWrist", CFrame.Angles(math.rad(-90), 0, 0)) -- the weapon in line with the arm
+	Joints.Set(char, "Waist", CFrame.Angles(math.rad(lean), twistRad, 0))
+	Joints.Set(char, "LeftShoulder", CFrame.Angles(math.rad(25 + twist * 0.3), 0, math.rad(-12)))
+end
+local function trailSegment(from, to, heavy)
+	local length = (to - from).Magnitude
+	if length < 0.05 then
+		return
+	end
+	local seg = make("Part", { Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, Material = Enum.Material.Neon,
+		Color = if heavy then Color3.fromRGB(255, 180, 80) else Color3.fromRGB(225, 235, 255), Transparency = 0.25,
+		Size = Vector3.new(0.12, 0.12, length), CFrame = CFrame.lookAt((from + to) / 2, to) }, workspace)
+	TweenService:Create(seg, TweenInfo.new(0.14), { Transparency = 1, Size = Vector3.new(0.02, 0.02, length) }):Play()
+	Debris:AddItem(seg, 0.16)
+end
+endSwing = function(char, recoil)
+	local st = swinging[char]
+	swinging[char] = nil
+	if st and recoil then
+		Joints.Pose(char, "RightShoulder", CFrame.Angles(math.rad(-40), 0, math.rad(25)), 0.08, Enum.EasingStyle.Quart)
+		Joints.Pose(char, "Waist", CFrame.Angles(math.rad(-10), 0, 0), 0.08, Enum.EasingStyle.Quart)
+		task.delay(0.12, function()
+			if not swinging[char] then
+				relax(char, 0.3)
+			end
+		end)
+	else
+		relax(char, 0.25)
+	end
+end
+RunService.RenderStepped:Connect(function()
+	local now = os.clock()
+	for char, st in swinging do
+		local root = char.Parent and char:FindFirstChild("HumanoidRootPart")
+		if not root then
+			swinging[char] = nil
+			continue
+		end
+		local e = now - st.t0 - st.frozen
+		if now < st.frozenUntil then
+			e = st.frozenAt -- hitstop: the swing holds where it bit
+		end
+		local sy, sp = Swings.Angles(st.shape, 0)
+		local my, mp = Swings.Angles(st.shape, 0.5)
+		local ey, ep = Swings.Angles(st.shape, 1)
+		if e < st.windup then
+			-- wind-up: from rest to past the start of the arc (the coil), torso turned with it
+			local w = 1 - (1 - e / math.max(st.windup, 1e-3)) ^ 3
+			local cy, cp = sy + (sy - my) * 0.25, sp + (sp - mp) * 0.25
+			swingPose(char, lerpN(REST_YAW, cy, w), lerpN(REST_PITCH, cp, w), cy * 0.4 * w, -6 * w)
+		elseif e < st.windup + st.active then
+			-- the strike: the arc itself, the torso uncoiling through it, weight forward
+			local u = (e - st.windup) / st.active
+			if not st.released then
+				st.released = true
+				Sounds.Play(if st.heavy then "SwingHeavy" else "SwingLight", root)
+				if char == player.Character then
+					local look = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
+					if look.Magnitude > 0.01 then
+						root.AssemblyLinearVelocity += look.Unit * (if st.heavy then 14 else 7) -- step into it
+					end
+					local cam = workspace.CurrentCamera
+					cam.CFrame = cam.CFrame * CFrame.Angles(math.rad(if st.heavy then -1.4 else -0.6), 0, 0)
+				end
+			end
+			local y, p = Swings.Angles(st.shape, u)
+			swingPose(char, y, p, lerpN(sy * 0.4, ey * 0.4, u), lerpN(-6, 10, u))
+			local _, tip = Swings.Blade(root.CFrame, st.shape, u, st.range * st.scale, st.scale)
+			if st.lastTip then
+				trailSegment(st.lastTip, tip, st.heavy)
+			end
+			st.lastTip = tip
+		elseif e < st.finish then
+			-- follow-through: carries past the end of the arc, then settles back to rest
+			local r = (e - st.windup - st.active) / math.max(st.finish - st.windup - st.active, 1e-3)
+			local over = math.sin(math.min(r * 2, 1) * math.pi / 2) * 0.18
+			local fy, fp = ey + (ey - my) * over, ep + (ep - mp) * over
+			local back = math.clamp((r - 0.35) / 0.65, 0, 1)
+			back = back * back * (3 - 2 * back)
+			swingPose(char, lerpN(fy, REST_YAW, back), lerpN(fp, REST_PITCH, back), lerpN(ey * 0.4, 0, back), lerpN(10, 0, back))
+		else
+			endSwing(char, false)
+		end
+	end
+end)
+
+swingFx = function(char, label, shape, windup, active, finish, range)
 	local root = typeof(char) == "Instance" and char:FindFirstChild("HumanoidRootPart")
 	if not root then
 		return
 	end
 	local heavy = label == "Heavy"
+	if typeof(shape) == "string" and tonumber(active) then
+		swinging[char] = { shape = shape, t0 = os.clock(), frozen = 0, frozenUntil = 0, frozenAt = 0, windup = tonumber(windup) or 0.2,
+			active = tonumber(active) or 0.15, finish = math.max(tonumber(finish) or 0.6, (tonumber(windup) or 0.2) + (tonumber(active) or 0.15) + 0.15),
+			range = tonumber(range) or 7, scale = Swings.ScaleOf(char), heavy = heavy }
+		return
+	end
 	swingAnim(char, heavy)
 	Sounds.Play(if heavy then "SwingHeavy" else "SwingLight", root)
 	local arc = make("Part", { Shape = Enum.PartType.Cylinder, Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon,
@@ -1871,11 +2010,30 @@ local function swingFx(char, label)
 		cam.CFrame = cam.CFrame * CFrame.Angles(math.rad(if heavy then -1.2 else -0.5), 0, 0)
 	end
 end
+end -- traced swings
 
-Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
+Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if kind == "Swing" then
-		swingFx(a, b)
+		swingFx(a, b, c, d, e, f)
+	elseif kind == "Clash" and typeof(b) == "Vector3" then
+		-- two blades met: both swings are thrown back
+		sparks(b, IMP.Parry.Sparks)
+		ring(b, IMP.Parry.Ring)
+		Sounds.Play("HitClang", b, { Volume = 1 })
+		endSwing(a, true)
+		if typeof(c) == "Instance" then
+			endSwing(c, true)
+		end
+		if a == player.Character or c == player.Character then
+			shake(IMP.Block.Shake * 1.5)
+			hitstop(0.08)
+		end
+		floatWord(a, "CLASH", Color3.fromRGB(255, 230, 140), true)
+	elseif kind == "Glance" and typeof(b) == "Vector3" then
+		sparks(b, IMP.Block.Sparks)
+		Sounds.Play("HitClang", b)
+		endSwing(a, true)
 	elseif kind == "DodgeMove" or kind == "Knockback" then
 		-- a dodge already moved us (client/Movement); the server only adds Enemy Step's hop
 		if root and not (kind == "DodgeMove" and Movement.ServerDodge(a)) then
@@ -1921,8 +2079,19 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b)
 	end
 	local WORDS = { Block = "BLOCKED", Parry = "PARRIED", GuardBreak = "GUARD BREAK", Dodged = "DODGED" }
 	if kind == "Hit" then
-		staggerAnim(a, false)
+		local contact = if typeof(c) == "Vector3" then c else nil
+		staggerAnim(a, false, contact)
 		impact("Hit", a, nil, false)
+		if contact then
+			sparks(contact, IMP.Hit.Sparks) -- where the blade bit
+		end
+		-- the attacker's swing holds for a beat where it connected
+		local st = typeof(e) == "Instance" and swinging[e]
+		if st and os.clock() >= st.frozenUntil then
+			st.frozenAt = os.clock() - st.t0 - st.frozen
+			st.frozenUntil = os.clock() + 0.07
+			st.frozen += 0.07
+		end
 		if a == player.Character then
 			local amount = tonumber(b) or 0
 			floatWord(a, ("-%d"):format(math.floor(amount + 0.5)), HUD.DamageNumbers.Colors.Taken, amount >= HUD.DamageNumbers.HeavyAmount)

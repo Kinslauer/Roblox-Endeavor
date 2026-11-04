@@ -11,6 +11,7 @@ local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local Weapons = require(Shared.Weapons)
+local Swings = require(Shared.Swings)
 local Hideout = require(Shared.Hideout)
 local Gear = require(script.Parent.Gear)
 local Stats = require(script.Parent.Stats)
@@ -22,7 +23,8 @@ local C, F = Config.Combat, Config.Flicker
 local BUFFER = 0.08 -- input buffer: an attack may start this early before the last one ends
 
 local Combat = {}
-Combat.World = nil -- set by Destruction: { Swing, Bolt, ImprovisedHit }
+Combat.World = nil -- set by Destruction: { Swing, Bolt, ImprovisedHit, Hit }
+Combat.Clashed = Instance.new("BindableEvent") -- (charA, charB, point): two blades met
 Combat.Resolved = Instance.new("BindableEvent") -- (attackerChar, victimChar, result)
 Combat.Used = Instance.new("BindableEvent") -- (abilityName, player)
 
@@ -60,8 +62,8 @@ local function isAlive(char)
 	return hum ~= nil and hum.Health > 0
 end
 
-local function fx(kind, char, extra)
-	Remotes.CombatEvent:FireAllClients(kind, char, extra)
+local function fx(kind, char, ...)
+	Remotes.CombatEvent:FireAllClients(kind, char, ...)
 end
 Combat.FX = fx
 
@@ -472,6 +474,15 @@ local function applyDamage(attacker, victim, amount, opts)
 	local aroot, vroot = attacker:FindFirstChild("HumanoidRootPart"), victim:FindFirstChild("HumanoidRootPart")
 	local away = if aroot and vroot then Vector3.new(vroot.Position.X - aroot.Position.X, 0, vroot.Position.Z - aroot.Position.Z) else Vector3.zero
 	local direction = if away.Magnitude > 0.1 then away.Unit else Vector3.zero
+	if opts.ContactDir and vroot then
+		-- a traced blade pushes along its own path, from where it touched the body (shared/Swings)
+		local from = opts.ContactPoint and Vector3.new(vroot.Position.X - opts.ContactPoint.X, 0, vroot.Position.Z - opts.ContactPoint.Z) or Vector3.zero
+		local along = Vector3.new(opts.ContactDir.X, 0, opts.ContactDir.Z)
+		local mix = (if along.Magnitude > 0.01 then along.Unit * 0.65 else Vector3.zero) + (if from.Magnitude > 0.01 then from.Unit * 0.35 else direction * 0.35)
+		if mix.Magnitude > 0.05 then
+			direction = mix.Unit
+		end
+	end
 
 	local result = "hit"
 	local facing = aroot and vroot and vroot.CFrame.LookVector:Dot(-direction) > C.BlockMinFacing
@@ -536,7 +547,7 @@ local function applyDamage(attacker, victim, amount, opts)
 		end
 	end
 	if result == "hit" then
-		fx("Hit", victim, amount)
+		fx("Hit", victim, amount, opts.ContactPoint, opts.ContactDir, attacker)
 	end
 	return result
 end
@@ -550,7 +561,7 @@ function Combat.Damage(attacker, victim, amount, opts)
 end
 
 -- One hitbox pulse for an attack spec. `seen` makes each target take at most one hit per swing.
-local function pulse(char, spec, mods, seen)
+local function pulse(char, spec, mods, seen, tracer)
 	local root = char:FindFirstChild("HumanoidRootPart")
 	if not root then
 		return
@@ -571,15 +582,19 @@ local function pulse(char, spec, mods, seen)
 	local opts = { Posture = posture, Type = if mods.hitType and spec.Type ~= "Arc" then mods.hitType else spec.Type, Knockback = spec.Knockback, Stun = spec.Stun, Unblockable = mods.unblockable, GuardBreak = mods.guardBreak,
 		Launches = mods.label == "Heavy" and not spec.Ranged and not spec.NoLaunch, StartedAt = mods.startedAt }
 
-	local function strike(model)
+	local function strike(model, contact)
 		seen[model] = true
 		if seen.__flick == nil then
 			seen.__flick = judgeFlick(s, d) or false
 		end
 		local flick = seen.__flick
 		local hitDamage, hitOpts = damage, opts
-		if flick then
+		if contact then
 			hitOpts = table.clone(opts)
+			hitOpts.ContactPoint, hitOpts.ContactDir = contact.Point, contact.Dir
+		end
+		if flick then
+			hitOpts = table.clone(hitOpts)
 			if flick.flash then
 				hitDamage = damage * (F.BlackFlashMult + d.FlashBonus)
 				hitOpts.Posture = (opts.Posture or 0) * F.BlackFlashPosture
@@ -617,6 +632,10 @@ local function pulse(char, spec, mods, seen)
 		if mods.onHit then
 			mods.onHit(result, model)
 		end
+	end
+
+	if tracer and not spec.Ranged then
+		return tracer(strike, damage)
 	end
 
 	local params = OverlapParams.new()
@@ -661,8 +680,210 @@ local function pulse(char, spec, mods, seen)
 	end
 end
 
+-- ===== The traced blade (shared/Swings; Mordhau-style) =====
+-- During the live window the blade sweeps its arc every frame: whatever it passes through is hit at the
+-- point of contact; a wall stops it (a glance); another live blade it meets cancels both swings (a clash).
+local liveBlades = {} -- char -> { base, tip, token, s }
+Combat.LiveBlades = function()
+	return liveBlades
+end
+
+local function cancelSwing(char, recover)
+	local s = st(char)
+	s.token += 1
+	s.windupUntil, s.activeUntil, s.swingArmorUntil = 0, 0, 0
+	s.busyUntil = os.clock() + recover
+	liveBlades[char] = nil
+end
+
+local function clash(a, b, point)
+	cancelSwing(a, C.ClashRecover)
+	cancelSwing(b, C.ClashRecover)
+	for _, pair in { { a, b }, { b, a } } do
+		local me, other = pair[1], pair[2]
+		local r1, r2 = me:FindFirstChild("HumanoidRootPart"), other:FindFirstChild("HumanoidRootPart")
+		if r1 and r2 then
+			local away = Vector3.new(r1.Position.X - r2.Position.X, 0, r1.Position.Z - r2.Position.Z)
+			if away.Magnitude > 0.1 then
+				knockback(me, away.Unit, C.ClashPush)
+			end
+		end
+	end
+	fx("Clash", a, point, b)
+	Combat.Clashed:Fire(a, b, point)
+end
+
+-- bodies a blade could reach this frame
+local function nearbyBodies(char, origin, radius)
+	local out = {}
+	local function consider(model)
+		if model ~= char and model.Parent and getHum(model) and getHum(model).Health > 0 then
+			local r = model:FindFirstChild("HumanoidRootPart")
+			if r and (r.Position - origin).Magnitude <= radius then
+				table.insert(out, model)
+			end
+		end
+	end
+	-- any humanoid body whose parts are near (dummies, mannequins, untagged rigs), then the tagged ones
+	local seen = {}
+	local params = OverlapParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { char }
+	local ok, parts = pcall(function()
+		return workspace:GetPartBoundsInRadius(origin, radius, params)
+	end)
+	for _, part in (ok and parts) or {} do
+		local model = part:FindFirstAncestorOfClass("Model")
+		while model and not getHum(model) do
+			model = model.Parent and model.Parent:FindFirstAncestorOfClass("Model")
+		end
+		if model and not seen[model] then
+			seen[model] = true
+			consider(model)
+		end
+	end
+	for _, model in CollectionService:GetTagged("NPC") do
+		if not seen[model] then
+			seen[model] = true
+			consider(model)
+		end
+	end
+	for _, player in Players:GetPlayers() do
+		if player.Character and not seen[player.Character] then
+			seen[player.Character] = true
+			consider(player.Character)
+		end
+	end
+	return out
+end
+
+-- a body as a capsule: its root's vertical axis, radius from the rig's width
+local function capsule(model, cache)
+	local c = cache[model]
+	if not c then
+		local hum = getHum(model)
+		local half = math.max(2.2, ((hum and hum.HipHeight) or 2) + 0.6)
+		local r = model:FindFirstChild("HumanoidRootPart")
+		c = { half = half, radius = math.max(C.BodyRadius, (r and r.Size.X or 2) * 0.55) }
+		cache[model] = c
+	end
+	return c
+end
+
+local SAMPLES = 5
+local function traceBlade(char, spec, mods, seen, strike, damage)
+	local s = st(char)
+	local token = s.token
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	local id, scale = mods.shape, Swings.ScaleOf(char)
+	local reach = spec.Range * scale
+	local elapsed, last, pauseUntil = 0, os.clock(), 0
+	local prevBase, prevTip = Swings.Blade(root.CFrame, id, 0, reach, scale)
+	local cache = {}
+	local ray = RaycastParams.new()
+	ray.FilterType = Enum.RaycastFilterType.Exclude
+	ray.FilterDescendantsInstances = { char }
+	local overlap = OverlapParams.new()
+	overlap.FilterType = Enum.RaycastFilterType.Exclude
+	overlap.FilterDescendantsInstances = { char }
+	ray.RespectCanCollide = false
+	while elapsed < spec.Active and s.token == token and isAlive(char) do
+		RunService.Heartbeat:Wait()
+		local now = os.clock()
+		local dt = now - last
+		last = now
+		if s.token ~= token or not root.Parent then
+			break
+		end
+		if now >= pauseUntil then
+			elapsed += dt
+		end
+		local u = math.min(elapsed / spec.Active, 1)
+		local base, tip = Swings.Blade(root.CFrame, id, u, reach, scale)
+		liveBlades[char] = { base = base, tip = tip, prevBase = prevBase, prevTip = prevTip, token = token, s = s }
+		-- 1. blade meets blade mid-air: both swings are gone. Both blades are swept from where they were last
+		-- frame to where they are now, so two fast arcs cannot pass through each other between frames.
+		for other, b in liveBlades do
+			if other ~= char and other.Parent and b.s.token == b.token then
+				for k = 0, SAMPLES - 1 do
+					local f = k / (SAMPLES - 1)
+					local dist, pa, pb = Swings.SegmentDistance(prevBase:Lerp(base, f), prevTip:Lerp(tip, f), b.prevBase:Lerp(b.base, f), b.prevTip:Lerp(b.tip, f))
+					if dist <= C.ClashRadius then
+						clash(char, other, (pa + pb) / 2)
+						return
+					end
+				end
+			end
+		end
+		-- 2. bodies the blade passed through since last frame, hit where it touched
+		for _, model in nearbyBodies(char, root.Position, reach + 6) do
+			if not seen[model] then
+				local vr = model:FindFirstChild("HumanoidRootPart")
+				local cap = capsule(model, cache)
+				local axisA, axisB = vr.Position - Vector3.new(0, cap.half, 0), vr.Position + Vector3.new(0, cap.half * 0.75, 0)
+				local hitAt, hitDir
+				for k = 1, SAMPLES do
+					local f = (k - 1) / (SAMPLES - 1)
+					local p0, p1 = prevBase:Lerp(prevTip, f), base:Lerp(tip, f)
+					local dist, onBlade = Swings.SegmentDistance(p0, p1, axisA, axisB)
+					if dist <= cap.radius then
+						hitAt, hitDir = onBlade, (if (p1 - p0).Magnitude > 0.01 then (p1 - p0).Unit else (tip - base).Unit)
+						break
+					end
+				end
+				if not hitAt then
+					local dist, onBlade = Swings.SegmentDistance(base, tip, axisA, axisB) -- a thrust's tip driving in
+					if dist <= cap.radius then
+						hitAt, hitDir = onBlade, (tip - base).Unit
+					end
+				end
+				if hitAt then
+					strike(model, { Point = hitAt, Dir = hitDir })
+					pauseUntil = now + C.HitStop -- the blade bites and holds for a beat
+				end
+			end
+		end
+		-- 3. the world: props break where struck; a wall stops the swing
+		for k = 2, SAMPLES do
+			local f = (k - 1) / (SAMPLES - 1)
+			local p0, p1 = prevBase:Lerp(prevTip, f), base:Lerp(tip, f)
+			local d = p1 - p0
+			if d.Magnitude > 0.05 then
+				local res = workspace:Raycast(p0, d, ray)
+				local inst = res and res.Instance
+				local body = inst and inst:FindFirstAncestorOfClass("Model")
+				if inst and not (body and getHum(body)) then
+					local struck = Combat.World and Combat.World.Hit and Combat.World.Hit(char, inst, damage, mods.weapon, mods.label == "Heavy", seen)
+					if not struck and inst.CanCollide and inst.Anchored and math.abs(res.Normal.Y) < 0.5 and inst.Transparency < 0.9 then
+						cancelSwing(char, C.GlanceRecover)
+						fx("Glance", char, res.Position)
+						return
+					end
+				end
+			end
+		end
+		-- thin rays slip past posts and crates: the blade's middle and tip also sweep a small sphere for props
+		if Combat.World and Combat.World.Hit then
+			for _, at in { base:Lerp(tip, 0.55), tip } do
+				for _, part in workspace:GetPartBoundsInRadius(at, C.BladeProbe, overlap) do
+					local body = part:FindFirstAncestorOfClass("Model")
+					if not (body and getHum(body)) then
+						Combat.World.Hit(char, part, damage, mods.weapon, mods.label == "Heavy", seen)
+					end
+				end
+			end
+		end
+		prevBase, prevTip = base, tip
+	end
+	liveBlades[char] = nil
+end
+
 -- Runs a full swing: marks the character busy, waits out the windup, then pulses the hitbox
 -- for `Active` seconds. Being hit-stunned during the windup (token bump) cancels the swing.
+-- mods.shape (a Swings shape id) traces a blade along that arc instead of pulsing a cone.
 -- mods: damageMult, postureMult, noStatScaling, unblockable, chargeBonus, onHit(result, model)
 function Combat.Swing(char, spec, mods)
 	mods = mods or {}
@@ -674,13 +895,19 @@ function Combat.Swing(char, spec, mods)
 	s.swingReach = spec.Range
 	s.swingId = (s.swingId or 0) + 1
 	s.swingArmorUntil = if spec.Hyperarmor then t0 + spec.Windup + spec.Active else 0
-	fx("Swing", char, mods.label)
+	fx("Swing", char, mods.label, mods.shape, spec.Windup, spec.Active, spec.End, spec.Range)
 
 	task.delay(spec.Windup, function()
 		if s.token ~= token or not isAlive(char) then
 			return
 		end
 		local seen = {}
+		if mods.shape and not spec.Ranged then
+			pulse(char, spec, mods, seen, function(strike, damage)
+				traceBlade(char, spec, mods, seen, strike, damage)
+			end)
+			return
+		end
 		local endAt = os.clock() + spec.Active
 		repeat
 			pulse(char, spec, mods, seen)
@@ -765,7 +992,7 @@ function Combat.Attack(player)
 	s.block = false
 	char:SetAttribute("Blocking", false)
 	s.combo, s.comboWeapon = combo, weapon
-	local mods = { chargeBonus = weapon.ChargeBonus, label = combo, weapon = weapon, improvised = improvised }
+	local mods = { chargeBonus = weapon.ChargeBonus, label = combo, weapon = weapon, improvised = improvised, shape = Swings.ShapeFor(weapon.Family, combo, false) }
 	if improvised then
 		mods.onHit = function(result)
 			if (result == "hit" or result == "blocked" or result == "guardbreak") and Combat.World then
@@ -798,7 +1025,7 @@ function Combat.Heavy(player)
 	Combat.Used:Fire("Heavy", player)
 	char:SetAttribute("Blocking", false)
 	-- Heavies are criticals: they crush blocks (extra posture damage).
-	local mods = { chargeBonus = weapon.ChargeBonus, label = "Heavy", postureMult = C.CriticalPostureMult, weapon = weapon, hitType = "Heavy", startedAt = t }
+	local mods = { chargeBonus = weapon.ChargeBonus, label = "Heavy", postureMult = C.CriticalPostureMult, weapon = weapon, hitType = "Heavy", startedAt = t, shape = Swings.ShapeFor(weapon.Family, 1, true) }
 	if not weapon.Heavy.Ranged and not weapon.Heavy.NoLaunch then
 		holdForLauncher(char, weapon.Heavy, t)
 	end

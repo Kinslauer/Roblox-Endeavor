@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Items = require(Shared.Items)
 local Weapons = require(Shared.Weapons)
+local Swings = require(Shared.Swings)
 local Remotes = require(Shared.Remotes)
 local Config = require(Shared.Config)
 local Combat = require(script.Parent.Combat)
@@ -211,9 +212,12 @@ local function bark(model, kind)
 end
 NPCs.Bark = bark
 
-local function telegraph(model, seconds, color)
+-- quiet: a traced swing already tells the clients its wind-up (Combat.Swing's "Swing"), so only the flash shows
+local function telegraph(model, seconds, color, quiet)
 	bark(model, "Attack")
-	Combat.FX("Windup", model, seconds)
+	if not quiet then
+		Combat.FX("Windup", model, seconds)
+	end
 	local warn = Instance.new("Highlight")
 	warn.FillColor, warn.OutlineColor = color, color
 	warn.FillTransparency = 0.3
@@ -274,13 +278,30 @@ function NPCs.Spawn(typeName, position, opts)
 		alive = false
 	end)
 
+	local family = (Weapons.Defs[def.Weapon or ""] or {}).Family or "Blunt"
+	local step = 0
 	local function strike(target, spec)
 		local troot = target:FindFirstChild("HumanoidRootPart")
 		if not troot then
 			return
 		end
 		model:PivotTo(facing(root, troot))
-		telegraph(model, spec.Telegraph, if spec.Unblockable then Color3.fromRGB(255, 120, 0) else Color3.fromRGB(255, 40, 40))
+		local color = if spec.Unblockable then Color3.fromRGB(255, 120, 0) else Color3.fromRGB(255, 40, 40)
+		if not spec.Radius and not spec.Dash then
+			-- a traced swing (shared/Swings): the telegraph is its wind-up; the blade is only dangerous along its
+			-- arc while live, and it can be dodged, parried, or clashed by a blade meeting it
+			step += 1
+			task.spawn(telegraph, model, spec.Telegraph, color, true)
+			local active = 0.2
+			Combat.Swing(model, {
+				Damage = spec.Damage * scale, Posture = spec.Posture * scale, Windup = spec.Telegraph, Active = active, End = spec.Telegraph + active + 0.25,
+				Range = (spec.Range or def.Range) + 1, Knockback = spec.Knockback or def.Knockback or 15, Stun = spec.Stun or def.Stun, Type = def.Type,
+				Unblockable = spec.Unblockable,
+			}, { noStatScaling = true, label = "NPC", shape = Swings.ShapeFor(family, step, spec ~= nil and spec.Name ~= nil) })
+			task.wait(spec.Telegraph + active + 0.25)
+			return
+		end
+		telegraph(model, spec.Telegraph, color)
 		if not alive or hum.Health <= 0 or (Combat.IsStunned(model) and not def.Hyperarmor) then
 			return -- staggered (or launched) during the wind-up: the strike is lost
 		end

@@ -64,4 +64,7 @@ def render(obj, out, size=(900, 700), azimuth=0.9, elevation=0.28):
     print("wrote", out, "faces", len(faces))
 
 if __name__ == "__main__":
-    render(sys.argv[1], sys.argv[2])
+    # preview.py model.obj out.png [azimuth radians] [elevation]; the face (-Z) is at azimuth -pi/2
+    az = float(sys.argv[3]) if len(sys.argv) > 3 else 0.9
+    el = float(sys.argv[4]) if len(sys.argv) > 4 else 0.28
+    render(sys.argv[1], sys.argv[2], azimuth=az, elevation=el)
