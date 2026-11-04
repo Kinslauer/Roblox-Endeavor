@@ -27,6 +27,7 @@ Swings.Families = {
 	Hammer = { "SlashR", "Overhead", Heavy = "Overhead" },
 	Spear = { "Thrust", "Thrust", "SlashR", "Thrust", Heavy = "Thrust" },
 	Fists = { "Jab", "Jab", "Jab", "Uppercut", Heavy = "Uppercut" },
+	Sidearm = false, -- guns are aimed, not swung: no arc (the client's aim-and-recoil pose instead)
 }
 
 Swings.HandReach = 2.1 -- shoulder to hand along the arm (studs, at scale 1)
@@ -34,7 +35,11 @@ Swings.ShoulderOffset = Vector3.new(1.0, 1.25, 0) -- right shoulder from the roo
 
 -- The shape id for a swing: a family's combo step or its heavy.
 function Swings.ShapeFor(family, step, heavy)
-	local f = Swings.Families[family] or Swings.Families.Blade
+	local f = Swings.Families[family]
+	if f == false then
+		return nil
+	end
+	f = f or Swings.Families.Blade
 	if heavy then
 		return f.Heavy or f[1]
 	end

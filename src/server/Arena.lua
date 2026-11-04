@@ -143,7 +143,8 @@ local function console(position, title, action, color, onUse)
 	glow(screen, color)
 
 	local billboard = Instance.new("BillboardGui")
-	billboard.Size, billboard.StudsOffset, billboard.AlwaysOnTop = UDim2.fromOffset(180, 40), Vector3.new(0, 5, 0), true
+	billboard.Size, billboard.StudsOffset, billboard.AlwaysOnTop = UDim2.fromOffset(180, 40), Vector3.new(0, 5, 0), false
+	billboard.MaxDistance = 45 -- read up close, never through the arena walls
 	local text = Instance.new("TextLabel")
 	text.Size, text.BackgroundTransparency, text.Text = UDim2.fromScale(1, 1), 1, title
 	text.TextColor3, text.Font, text.TextScaled = color, Enum.Font.GothamBold, true
@@ -301,7 +302,8 @@ local function buildArmory()
 				Rigs.Animate(model, hum)
 				HeldWeapons.Attach(model, (NPCs.Types[typeName] or {}).Weapon)
 				local label = Instance.new("BillboardGui")
-				label.Size, label.StudsOffset, label.AlwaysOnTop = UDim2.fromOffset(160, 30), Vector3.new(0, 4.5, 0), true
+				label.Size, label.StudsOffset, label.AlwaysOnTop = UDim2.fromOffset(160, 30), Vector3.new(0, 4.5, 0), false
+				label.MaxDistance = 45
 				local text = Instance.new("TextLabel")
 				text.Size, text.BackgroundTransparency, text.Text = UDim2.fromScale(1, 1), 1, typeName
 				text.TextColor3, text.Font, text.TextScaled = MAGENTA, Enum.Font.GothamBold, true

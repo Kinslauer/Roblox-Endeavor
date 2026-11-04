@@ -126,6 +126,21 @@ store `ConduitCharacter_v2`) is shared by both places.
   is the Platformer roll/air dash any way; otherwise forward (dir . look > Config.Movement.ForwardDot) rolls, sides/back
   are `Step` (Config.Movement.Step: speed/length lose SlowPerWeight per weight point, Quad-out bleed, Step_* anims),
   no air dash; Combat.Dodge cuts i-frames by IFrameLossPerWeight for the same case.
+- Frame data (owner, 2026-11-04: "defined startup recovery and active frames for every attack"): Weapons attacks are
+  `frames(damage, posture, startup, active, recovery, range, extra)` at Weapons.FPS 60 (stores Startup/ActiveFrames/
+  Recovery, derives Windup/Active/End); `Weapons.FrameLine` in tooltips; NPCs.Types carry Active/Recovery frames
+  (Telegraph = startup). Weapon `Mass` Medium/Heavy -> group launch. Guns have no swing arc (Swings.Families.Sidearm
+  = false; Combat.Swing drops shape when Ranged).
+- Juggles (owner, 2026-11-04): Combat `hang` adds a VectorForce "JuggleHang" past HangBelow (HangGravity of gravity)
+  until `land`; `groupLaunch` launches NPCs within Config.Momentum.GroupLaunch[Mass] of the contact; Enemy Step
+  aims the spring at StepFront in front of the juggled body at its height, extends its juggle by StepExtend, and sends
+  DodgeMove(velocity, hover, enemy) -> Movement.ServerDodge hangs the player (StepHover, Config.Movement.StepHoverHold)
+  facing it.
+- Reactions + guard (owner, 2026-11-04): Hit fx carries the stun (7th arg); the client stretches Hit_* to it, Hit_Heavy
+  at IMP.Hit.HeavyAmount. Block/Parry/Block_Hit animations are body-only (arms keyed to rest); the client's guard
+  driver (`guardSet`/`guardJolt`, in the traced-swing block) holds the weapon across the front with the off hand
+  bracing it, turns toward the nearest incoming blade (`threatFor` from `swinging`), sweeps out on Parry, shoves back
+  on Block. Visual only: the server's block test is unchanged.
 - Lore (owner, 2026-10-31; docs/DESIGN.md "The stack"): conduits upload their consciousness stack through the hideout
   computer (first log-in = initialization, `Knowledge.Uploaded`); every death is a reboot of the stack; on the Front the
   stack links to the recruit's; the rich uploaded and escaped the world. Mechanically: Knowledge survives permadeath only

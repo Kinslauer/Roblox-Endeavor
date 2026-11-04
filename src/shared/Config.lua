@@ -61,18 +61,28 @@ Config.Momentum = {
 	SideIFrameMult = 1.3, -- side dodges (|dot(dir, look)| < 0.5) get this much more i-frame time
 	LaunchVelocity = 70, -- studs/s up (~12 studs of height, ~0.7 s of hang)
 	LaunchDrift = 8, -- studs/s away from the attacker
-	LaunchAirTime = 0.8, -- seconds the target counts as Juggled after a launch
+	LaunchAirTime = 1.5, -- seconds the target counts as Juggled after a launch (long enough for two hits and a step)
 	LaunchGrace = 0.6, -- a heavy launches if you *start* it while the target is staggered or up to this long after
 	LaunchHold = true, -- starting that heavy keeps the open target staggered until it lands
 	LaunchHoldReach = 1, -- studs past the heavy's range a target can be and still be held
 	AirDamageMult = 1.35, -- damage multiplier against a Juggled target
-	AirPopVelocity = 32, -- upward studs/s each hit gives a Juggled target
-	AirPopExtend = 0.3, -- seconds each pop adds to the juggle
-	MaxJuggleHits = 4, -- pops stop after this many hits
+	AirPopVelocity = 18, -- upward studs/s each hit gives a Juggled target (it is floating: a little goes far)
+	AirPopExtend = 0.5, -- seconds each pop adds to the juggle
+	MaxJuggleHits = 5, -- pops stop after this many hits
+	-- hang: past the top of the launch a juggled body floats down on HangGravity of normal gravity, so it lingers
+	-- in front of you instead of dropping straight out of the combo
+	HangBelow = 16, -- studs/s: the float starts once the body rises slower than this
+	HangGravity = 0.2,
+	-- group launch: a Medium or Heavy weapon's launcher throws up every hostile within this many studs of the
+	-- impact point (Weapons Mass), not just the one it hit
+	GroupLaunch = { Medium = 6, Heavy = 10 },
 	LandStun = 0.45, -- hit-stun after the juggle ends (the get-up)
 	EnemyStepRange = 9, -- studs from the airborne enemy a dodge springs off it
 	EnemyStepRefund = 12, -- stamina back
-	EnemyStepHop = 34, -- extra upward studs/s on that dodge
+	EnemyStepHop = 34, -- minimum upward studs/s on that dodge
+	-- Enemy Step carries you up to the juggled body's height, StepFront studs in front of it, holds you there for
+	-- StepHover seconds (facing it) and keeps it up StepExtend seconds longer: room for two more hits
+	StepFront = 3.5, StepHover = 0.7, StepExtend = 0.45, StepMaxRise = 22,
 }
 
 -- Visible implants (client, ported from combat-feel): what is in a body shows on it, for everyone. Limbs get a metal
@@ -406,6 +416,7 @@ Config.Movement = {
 	-- ...in light gear only (every worn piece Light, not overweight: GearWeight 0). Armoured, Q toward where you
 	-- face or travel still rolls; Q to the sides or back is a heavy step that loses speed, length and i-frames
 	-- per point of armour weight (Light 0, Medium 1, Heavy 2 per piece: 0..6), and there is no air dash.
+	StepHoverHold = 0.88, -- share of gravity held off while hanging in front of a juggled enemy after Enemy Step
 	ForwardDot = 0.5, -- dodge direction . facing/travel above this = "forward" (a roll)
 	Step = { Speed = 46, Time = 0.34, SlowPerWeight = 0.09, MinMult = 0.45, IFrameLossPerWeight = 0.08, MinIFrameMult = 0.5 },
 	-- jump within this long after a roll starts = a long jump; flying into a wall stuns you
@@ -481,7 +492,7 @@ Config.Combat = {
 	ChargePerHit = 8,
 	MaxResist = 0.75,
 	HeavyCooldown = 1.2,
-	InputQueue = 0.4, -- an attack/heavy pressed this long (s) before you're free is held and played then
+	InputQueue = 0.6, -- an attack/heavy pressed this long (s) before you're free is held and played then
 	KillCreditSeconds = 15,
 }
 

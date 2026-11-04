@@ -172,24 +172,47 @@ JAB = swing(
          "LeftUpperArm": (50, 0, -16), "LeftLowerArm": (95, 0, 0)},
 )
 
-def react(peak, settle=None, length=0.5):
-    settle = settle or {k: tuple(a * 0.35 for a in v) for k, v in peak.items()}
+def react(peak, length=0.7):
+    """A hit reaction: snaps to the peak, holds most of it (the hit-stun), then recovers."""
+    def part(f):
+        return {k: tuple(a * f for a in v) for k, v in peak.items()}
     return dict(length=length, loop=False, priority="Action", keys=[
         (0.0, {}, "Cubic", "Out"),
-        (length * 0.14, peak, "Cubic", "Out"),
-        (length * 0.45, settle, "CubicV2", "InOut"),
+        (length * 0.09, peak, "CubicV2", "InOut"),
+        (length * 0.32, part(0.8), "CubicV2", "InOut"),
+        (length * 0.66, part(0.28), "CubicV2", "InOut"),
         (length, {}, "Linear", "InOut"),
     ])
 
-ARMS_FLUNG = {"LeftUpperArm": (30, 0, -35), "LeftLowerArm": (30, 0, 0), "RightUpperArm": (30, 0, 35), "RightLowerArm": (30, 0, 0)}
-HIT_FRONT = react(merge(ARMS_FLUNG, {"LowerTorso": (8, 0, 0, 0, -0.1, 0.35), "UpperTorso": (20, 0, 0), "Head": (24, 0, 0),
-                                     "LeftUpperLeg": (-6, 0, 0), "RightUpperLeg": (-10, 0, 0), "RightLowerLeg": (-16, 0, 0)}))
-# struck on the right side: the body twists and folds to the left, away from the blow
-HIT_RIGHT = react(merge(ARMS_FLUNG, {"LowerTorso": (4, 10, 6, -0.3, -0.1, 0.1), "UpperTorso": (8, 26, 14), "Head": (6, 24, 16),
-                                     "RightUpperArm": (10, 0, 50), "LeftUpperLeg": (0, 0, -8), "RightUpperLeg": (0, 0, -6)}))
+# hit reactions (v2: "the reactions still fall short"): bigger, a step back to catch the weight, arms thrown,
+# held through the hit-stun (the client stretches them to the stun the server applied)
+ARMS_FLUNG = {"LeftUpperArm": (35, 0, -32), "LeftLowerArm": (45, 0, 0), "RightUpperArm": (35, 0, 32), "RightLowerArm": (45, 0, 0)}
+CATCH = {"RightUpperLeg": (-32, 0, 6), "RightLowerLeg": (-40, 0, 0), "RightFoot": (24, 0, 0),
+         "LeftUpperLeg": (14, 0, -4), "LeftLowerLeg": (-22, 0, 0)}
+HIT_FRONT = react(merge(ARMS_FLUNG, CATCH, {"LowerTorso": (8, 0, 0, 0, -0.3, 0.75), "UpperTorso": (22, 0, 0), "Head": (22, 0, 0)}))
+# struck on the right side: the body twists and folds to the left, away from the blow, stepping out
+HIT_RIGHT = react(merge(ARMS_FLUNG, {"LowerTorso": (4, 16, 6, -0.6, -0.25, 0.2), "UpperTorso": (10, 32, 16), "Head": (8, 24, 16),
+                                     "RightUpperArm": (20, 0, 55), "LeftUpperArm": (30, 0, -25),
+                                     "LeftUpperLeg": (6, 0, -22), "LeftLowerLeg": (-20, 0, 0),
+                                     "RightUpperLeg": (-6, 0, -6), "RightLowerLeg": (-34, 0, 0), "RightFoot": (20, 0, 0)}))
 HIT_LEFT = react(mirror(HIT_RIGHT["keys"][1][1]))
-HIT_HIGH = react(merge(ARMS_FLUNG, {"LowerTorso": (6, 0, 0, 0, -0.05, 0.25), "UpperTorso": (14, 0, 0), "Head": (38, 0, 0),
-                                    "LeftUpperArm": (50, 0, -30), "RightUpperArm": (50, 0, 30)}))
+HIT_HIGH = react(merge(ARMS_FLUNG, CATCH, {"LowerTorso": (6, 0, 0, 0, -0.2, 0.5), "UpperTorso": (16, 0, 0), "Head": (40, 0, 0),
+                                           "LeftUpperArm": (60, 0, -30), "RightUpperArm": (60, 0, 30)}))
+# a heavy blow: thrown back off the feet for a beat, two stumbling steps
+HIT_HEAVY = dict(length=1.1, loop=False, priority="Action", keys=[
+    (0.0, {}, "Cubic", "Out"),
+    (0.08, merge(ARMS_FLUNG, {"LowerTorso": (12, 0, 0, 0, -0.25, 1.2), "UpperTorso": (26, 0, 0), "Head": (24, 0, 0),
+                              "LeftUpperArm": (60, 0, -45), "RightUpperArm": (60, 0, 45),
+                              "LeftUpperLeg": (14, 0, -6), "LeftLowerLeg": (-16, 0, 0), "RightUpperLeg": (-8, 0, 6), "RightLowerLeg": (-24, 0, 0)}), "CubicV2", "InOut"),
+    (0.35, merge(ARMS_FLUNG, {"LowerTorso": (10, 0, 0, 0, -0.55, 0.6), "UpperTorso": (6, 0, 0), "Head": (10, 0, 0),
+                              "RightUpperLeg": (-36, 0, 6), "RightLowerLeg": (-60, 0, 0), "RightFoot": (30, 0, 0),
+                              "LeftUpperLeg": (30, 0, -6), "LeftLowerLeg": (-40, 0, 0)}), "CubicV2", "InOut"),
+    (0.6, merge({"LowerTorso": (0, 0, 0, 0, -0.45, 0.2), "UpperTorso": (-20, 0, 0), "Head": (-4, 0, 0),
+                 "LeftUpperLeg": (-24, 0, -6), "LeftLowerLeg": (-50, 0, 0), "LeftFoot": (26, 0, 0),
+                 "RightUpperLeg": (30, 0, 6), "RightLowerLeg": (-36, 0, 0),
+                 "LeftUpperArm": (20, 0, -30), "RightUpperArm": (20, 0, 30), "LeftLowerArm": (40, 0, 0), "RightLowerArm": (40, 0, 0)}), "CubicV2", "InOut"),
+    (1.1, {}, "Linear", "InOut"),
+])
 STAGGER = dict(length=0.9, loop=False, priority="Action", keys=[  # guard broken: stumble back, arms out, catch the weight
     (0.0, {}, "Cubic", "Out"),
     (0.12, merge(ARMS_FLUNG, {"LowerTorso": (12, 6, 0, 0, -0.15, 0.6), "UpperTorso": (24, 8, 6), "Head": (26, 0, 0),
@@ -201,24 +224,34 @@ STAGGER = dict(length=0.9, loop=False, priority="Action", keys=[  # guard broken
                   "LeftLowerArm": (40, 0, 0), "RightLowerArm": (40, 0, 0)}), "CubicV2", "InOut"),
     (0.9, {}, "Linear", "InOut"),
 ])
-RECOIL = react(merge({"LowerTorso": (6, -8, 0, 0, -0.2, 0.4), "UpperTorso": (14, -16, 0), "Head": (8, 10, 0),
-                      "LeftUpperArm": (20, 0, -40), "RightUpperLeg": (-14, 0, 6), "RightLowerLeg": (-24, 0, 0)}), length=0.45)
-GUARD = {"LowerTorso": (0, -6, 0, 0, -0.25, 0.05), "UpperTorso": (-8, 6, 0), "Head": (6, -4, 0),
-         "LeftUpperLeg": (18, 6, -6), "LeftLowerLeg": (-24, 0, 0), "LeftFoot": (6, 0, 0),
-         "RightUpperLeg": (-10, 6, 6), "RightLowerLeg": (-22, 0, 0), "RightFoot": (16, 0, 0),
-         "LeftUpperArm": (80, -10, 30), "LeftLowerArm": (80, 0, 0), "LeftHand": (0, 0, 0),
-         "RightUpperArm": (85, 10, -10), "RightLowerArm": (50, 0, 0), "RightHand": (-40, 0, 0)}
+RECOIL = react({"LowerTorso": (6, -8, 0, 0, -0.2, 0.4), "UpperTorso": (14, -16, 0), "Head": (8, 10, 0),
+                "LeftUpperArm": (20, 0, -40), "RightUpperLeg": (-14, 0, 6), "RightLowerLeg": (-24, 0, 0)}, length=0.45)
+# the guard (v2): body only; the client holds the weapon across the front, braced by the off hand, and turns
+# it toward the incoming blade (the arms are keyed to rest so nothing underneath moves them)
+ARMS_FREE = {k: (0, 0, 0) for k in ("LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand")}
+GUARD = merge(ARMS_FREE, {"LowerTorso": (0, -6, 0, 0, -0.28, 0.05), "UpperTorso": (-8, 6, 0), "Head": (6, -4, 0),
+         "LeftUpperLeg": (18, 6, -6), "LeftLowerLeg": (-26, 0, 0), "LeftFoot": (8, 0, 0),
+         "RightUpperLeg": (-10, 6, 6), "RightLowerLeg": (-24, 0, 0), "RightFoot": (16, 0, 0)})
 BLOCK = dict(length=1.6, loop=True, priority="Action", keys=[
     (0.0, GUARD, "CubicV2", "InOut"),
-    (0.8, merge(GUARD, {"UpperTorso": (-6, 6, 0), "LowerTorso": (0, -6, 0, 0, -0.22, 0.05)}), "CubicV2", "InOut"),
+    (0.8, merge(GUARD, {"UpperTorso": (-6, 6, 0), "LowerTorso": (0, -6, 0, 0, -0.25, 0.05)}), "CubicV2", "InOut"),
     (1.6, GUARD, "Linear", "InOut"),
 ])
+# a parry: the body turns into the deflection and drives forward (the client sweeps the weapon outward)
 PARRY = dict(length=0.4, loop=False, priority="Action", keys=[
     (0.0, GUARD, "Cubic", "Out"),
-    (0.07, merge(GUARD, {"UpperTorso": (-4, -14, 0), "RightUpperArm": (100, 20, 20), "RightLowerArm": (20, 0, 0),
-                         "LeftUpperArm": (60, 0, -30), "LowerTorso": (0, -14, 0, 0, -0.3, -0.15)}), "CubicV2", "InOut"),
+    (0.07, merge(GUARD, {"UpperTorso": (-12, -18, 0), "LowerTorso": (0, -14, 0, 0, -0.32, -0.25), "Head": (4, 14, 0),
+                         "LeftUpperLeg": (28, 6, -6), "LeftLowerLeg": (-30, 0, 0)}), "CubicV2", "InOut"),
     (0.4, GUARD, "Linear", "InOut"),
 ])
+# guarding a hit: the guard is driven back into the body, the legs absorb it
+BLOCK_HIT = dict(length=0.35, loop=False, priority="Action", keys=[
+    (0.0, GUARD, "Cubic", "Out"),
+    (0.06, merge(GUARD, {"UpperTorso": (10, 6, 0), "LowerTorso": (4, -6, 0, 0, -0.4, 0.35), "Head": (10, -4, 0),
+                         "RightUpperLeg": (-18, 6, 6), "RightLowerLeg": (-36, 0, 0)}), "CubicV2", "InOut"),
+    (0.35, GUARD, "Linear", "InOut"),
+])
+
 # idle fighting stance with breathing and a slow weight shift
 IDLE = dict(length=2.4, loop=True, priority="Idle", keys=[
     (0.0, STANCE, "CubicV2", "InOut"),
@@ -273,7 +306,7 @@ ANIMS = {
     "Swing_SlashR": SLASH_R, "Swing_SlashL": SLASH_L, "Swing_Overhead": OVERHEAD, "Swing_Diagonal": DIAGONAL,
     "Swing_Uppercut": UPPERCUT, "Swing_Thrust": THRUST, "Swing_Jab": JAB,
     "Hit_Front": HIT_FRONT, "Hit_Left": HIT_LEFT, "Hit_Right": HIT_RIGHT, "Hit_High": HIT_HIGH,
-    "Stagger": STAGGER, "Recoil": RECOIL, "Block": BLOCK, "Parry": PARRY,
+    "Stagger": STAGGER, "Recoil": RECOIL, "Block": BLOCK, "Parry": PARRY, "Hit_Heavy": HIT_HEAVY, "Block_Hit": BLOCK_HIT,
     "Idle": IDLE, "Walk": WALK, "Run": RUN,
     "Step_Left": STEP_LEFT, "Step_Right": STEP_RIGHT, "Step_Back": STEP_BACK,
 }

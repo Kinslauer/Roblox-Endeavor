@@ -69,6 +69,24 @@ report). Versions: Endeavor v69, Front v19.
 - [ ] Blocking (F) is a raised guard with a slight breathing sway; a parry or blocked hit jolts it. A clash or a
       wall glance throws you back into a short recoil.
 - [ ] Enemies use the same swing and hit animations. Other players see your swings, hits and guard too.
+- [ ] (v2 reactions) Hits read clearly: the body rocks back and steps to catch itself, held for as long as the
+      hit-stun lasts (a baton's stun shows longer than a jab's). A heavy hit (20+ damage) throws the body back with two
+      stumbling steps.
+- [ ] The guard (F) with a weapon: the weapon is held across the front of the body and the other hand braces it. When
+      an enemy winds up or swings, the guard turns toward that blade: across the head for a high blow, upright on the
+      side it comes from. A parry sweeps the blade out and away; a blocked hit shoves the guard back into the chest.
+      With fists: both forearms up in front of the face. Releasing F drops the arms.
+- [ ] The Arc Pistol is aimed, not swung: shooting no longer winds the arm up and out to the right.
+- [ ] Weapon tooltips (Tab, hover a weapon) show frame data: "light 7f startup 8f active 14f recovery" and the heavy.
+- [ ] Light attacks have a little more recovery than before (a whiffed swing can be punished); pressing the next
+      attack or heavy early still queues it.
+
+## Endeavor: launchers and juggles
+- [ ] A heavy on a staggered hostile launches it. It rises, then floats down slowly enough to land two more hits.
+- [ ] Pipe Club (Medium) or Sledge (Heavy): the launcher throws up every hostile around the impact (about 6 / 10
+      studs), not just the one struck. Blades, batons, spears and fists launch only their target.
+- [ ] Q next to a floating enemy (Enemy Step) springs you up to its height, just in front of it, facing it, and
+      holds you there briefly; it stays up a little longer too, so you can keep hitting it.
 - [ ] Enemy mannequins (F2, Armory): arms hang at their sides and swing outward, not into the body; the weapon is in
       the right hand.
 

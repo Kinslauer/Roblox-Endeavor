@@ -363,6 +363,16 @@ local function describe(item)
 	if def.Type == "Pack" and def.Grid then
 		line ..= ("\ngrid %dx%d, carry %d"):format(def.Grid[1], def.Grid[2], def.Carry or 0)
 	end
+	local wdef = def.Type == "Weapon" and Weapons.Defs[item.Id]
+	if wdef then
+		-- frame data: the combo's first strike and the heavy (Weapons.frames)
+		if wdef.Attacks and wdef.Attacks[1] then
+			line ..= "\nlight  " .. Weapons.FrameLine(wdef.Attacks[1])
+		end
+		if wdef.Heavy then
+			line ..= "\nheavy  " .. Weapons.FrameLine(wdef.Heavy)
+		end
+	end
 	return line
 end
 -- cells of every drawn grid, so a drag can preview where it would land: [gridF] = { cells = {[y][x] = frame}, grid = grid }
@@ -1684,6 +1694,7 @@ end)
 -- ===== Tutorial panel =====
 local tutorialPanel = make("Frame", { Size = UDim2.fromOffset(560, 112), Position = UDim2.new(0.5, -280, 0, 110), BackgroundColor3 = Color3.fromRGB(10, 14, 20), BackgroundTransparency = 0.15, Visible = false })
 make("UIStroke", { Color = Color3.fromRGB(0, 220, 255), Thickness = 1.5 }, tutorialPanel)
+do
 local tutorialTitle = label({ Size = UDim2.new(1, -110, 0, 26), Position = UDim2.fromOffset(12, 6), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(0, 220, 255), Font = Enum.Font.GothamBold, TextSize = 18, Text = "", Parent = tutorialPanel })
 local tutorialText = label({ Size = UDim2.new(1, -24, 1, -40), Position = UDim2.fromOffset(12, 32), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextSize = 16, Text = "", Parent = tutorialPanel })
 local tutorialStep = label({ Size = UDim2.fromOffset(60, 26), Position = UDim2.new(1, -140, 0, 6), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(150, 150, 160), TextSize = 14, Text = "", Parent = tutorialPanel })
@@ -1699,6 +1710,7 @@ Remotes.Tutorial.OnClientEvent:Connect(function(index, total, title, text)
 	tutorialStep.Text = ("%d/%d"):format(index, total)
 	tutorialTitle.Text, tutorialText.Text = title, text
 end)
+end
 
 -- ===== Phase =====
 Remotes.PhaseChanged.OnClientEvent:Connect(function(phase)
@@ -1832,7 +1844,8 @@ local function swingAnim(char, heavy)
 	end)
 end
 -- flinch: head and torso snap back, arms come up, then recover
-local function staggerAnim(char, hard, contact)
+local guardSet, guardJolt -- the visible guard (defined with the traced swings below)
+local function staggerAnim(char, hard, contact, amount, stun)
 	-- the body gives where it was struck: a blow from the right twists and tips it left, and the reverse
 	local side, high = 1, false
 	local torso = typeof(char) == "Instance" and char:FindFirstChild("UpperTorso")
@@ -1842,11 +1855,18 @@ local function staggerAnim(char, hard, contact)
 		high = rel.Y > 0.6
 	end
 	-- the keyframed reactions (tools/anims): which side was struck, or a guard break's stumble
-	local reaction = if hard then "Stagger" elseif high then "Hit_High"
+	local heavyHit = (tonumber(amount) or 0) >= IMP.Hit.HeavyAmount
+	local reaction = if hard then "Stagger" elseif heavyHit and Anims.Has("Hit_Heavy") then "Hit_Heavy" elseif high then "Hit_High"
 		elseif contact and torso and math.abs(torso.CFrame:PointToObjectSpace(contact).X) > 0.35 then (if side > 0 then "Hit_Right" else "Hit_Left")
 		else "Hit_Front"
 	if Anims.Has(reaction) then
-		Anims.Play(char, reaction, { fade = 0.04, weight = 6 }) -- over a swing or guard still fading out
+		local track = Anims.Play(char, reaction, { fade = 0.03, weight = 6 }) -- over a swing or guard still fading out
+		stun = tonumber(stun)
+		if track and stun and stun > 0 and reaction ~= "Stagger" and reaction ~= "Hit_Heavy" then
+			-- held through the hit-stun the server applied: a long stun is a long reaction
+			local length = if track.Length > 0 then track.Length else 0.7
+			track:AdjustSpeed(length / math.clamp(stun + 0.3, 0.45, 1.4))
+		end
 		return
 	end
 	local k = if hard then 1.6 else 1
@@ -1869,6 +1889,9 @@ local function blockPose(char, on)
 		else
 			Anims.Stop(char, "Block", 0.18)
 		end
+		if guardSet then
+			guardSet(char, on)
+		end
 		return
 	end
 	if on then
@@ -1882,9 +1905,13 @@ local function blockPose(char, on)
 	end
 end
 -- parry / block impact: the guard jolts and comes back
-local function guardHitAnim(char)
+local function guardHitAnim(char, kind)
 	if Anims.Has("Parry") then
-		Anims.Play(char, "Parry", { fade = 0.03, weight = 8 })
+		local parry = kind == "Parry"
+		Anims.Play(char, if parry or not Anims.Has("Block_Hit") then "Parry" else "Block_Hit", { fade = 0.03, weight = 8 })
+		if guardJolt then
+			guardJolt(char, parry) -- a parry sweeps the blade away; a block is driven back
+		end
 		return
 	end
 	pose(char, "RightShoulder", CFrame.Angles(math.rad(95), 0, math.rad(-35)), 0.05, Enum.EasingStyle.Quart)
@@ -1966,6 +1993,123 @@ endSwing = function(char, recoil)
 		relax(char, 0.25)
 	end
 end
+-- ===== The guard (F): the weapon held across the front, braced by the off hand, turned toward the blade coming in =====
+-- Body from the Block animation; both arms from here (Joints.Set), every frame, for every guarding body (Blocking
+-- replicates). The guard reads the nearest live or winding-up swing and puts the weapon between it and the body:
+-- across the head for a high blow, upright on the side it comes from. A parry sweeps the blade out and away; a
+-- blocked hit drives the guard back into the chest. Fists cover up with both forearms instead.
+do
+local guarding = setmetatable({}, { __mode = "k" }) -- char -> { hand, blade, jolt, joltSide, joltAt }
+local FWD = Vector3.new(0, 0, -1)
+local function rotFromTo(a, b)
+	local axis = a:Cross(b)
+	local dot = math.clamp(a:Dot(b), -1, 1)
+	if axis.Magnitude < 1e-4 then
+		return if dot > 0 then CFrame.identity else CFrame.Angles(0, math.pi, 0)
+	end
+	return CFrame.fromAxisAngle(axis.Unit, math.acos(dot))
+end
+guardSet = function(char, on)
+	if on then
+		guarding[char] = guarding[char] or { hand = Vector3.new(0.4, 1.3, -1.5), blade = Vector3.new(-0.9, 0.45, -0.1).Unit }
+	elseif guarding[char] then
+		guarding[char] = nil
+		relax(char, 0.2)
+	end
+end
+guardJolt = function(char, parry)
+	local g = guarding[char]
+	if g then
+		g.jolt, g.joltAt = if parry then "Parry" else "Block", os.clock()
+	end
+end
+-- the incoming blade nearest this body, as a point in its root space (nil: nothing coming)
+local function threatFor(char, root)
+	local best, bestD = nil, 16
+	local now = os.clock()
+	for other, st in swinging do
+		local oroot = other ~= char and other.Parent and other:FindFirstChild("HumanoidRootPart")
+		if oroot then
+			local e = now - st.t0 - st.frozen
+			if e < st.windup + st.active then
+				local u = if e < st.windup then 0.35 else (e - st.windup) / math.max(st.active, 1e-3)
+				local base, tip = Swings.Blade(oroot.CFrame, st.shape, u, st.range * st.scale, st.scale)
+				local mid = base:Lerp(tip, 0.6)
+				local d = (mid - root.Position).Magnitude
+				if d < bestD then
+					best, bestD = root.CFrame:PointToObjectSpace(mid), d
+				end
+			end
+		end
+	end
+	return best
+end
+RunService.RenderStepped:Connect(function(dt)
+	local now = os.clock()
+	for char, g in guarding do
+		local root = char.Parent and char:FindFirstChild("HumanoidRootPart")
+		if not root or not char:GetAttribute("Blocking") then
+			guardSet(char, false)
+			continue
+		end
+		if swinging[char] then
+			continue
+		end
+		local scale = Swings.ScaleOf(char)
+		local p = threatFor(char, root)
+		local yaw, high = 0, false
+		if p then
+			yaw = math.clamp(math.deg(math.atan2(p.X, -p.Z)), -75, 75)
+			high = p.Y > 1.9 * scale
+		end
+		local w = math.clamp(math.abs(yaw) / 55, 0, 1)
+		local side = if yaw >= 0 then 1 else -1
+		-- where the right hand holds it, and which way the blade runs from the hand (root space)
+		local hand = Vector3.new(0.35 + 0.5 * side * w, (if high then 2.1 else 1.25) * scale, -1.45 * scale)
+		local across = Vector3.new(-1, if high then 0.12 else 0.45, -0.05)
+		local upright = Vector3.new(0.12 * side, 1, -0.2)
+		local blade = (across * (1 - w) + upright * w).Unit
+		-- a parry sweeps hand and blade out past the threat side; a blocked hit pushes the guard into the chest
+		if g.jolt then
+			local k = (now - g.joltAt) / (if g.jolt == "Parry" then 0.22 else 0.14)
+			if k >= 1 then
+				g.jolt = nil
+			else
+				local f = math.sin(k * math.pi)
+				if g.jolt == "Parry" then
+					hand += Vector3.new(0.9 * side, 0.3, -0.4) * f
+					blade = (blade + Vector3.new(0.8 * side, -0.4, -0.6) * f).Unit
+				else
+					hand += Vector3.new(0, -0.1, 0.5) * f
+				end
+			end
+		end
+		local a = 1 - math.exp(-dt * 16)
+		g.hand = g.hand:Lerp(hand, a)
+		g.blade = g.blade:Lerp(blade, a).Unit
+		local shoulderR = Swings.ShoulderOffset * scale
+		local shoulderL = Vector3.new(-shoulderR.X, shoulderR.Y, shoulderR.Z)
+		if char:FindFirstChild("HeldWeapon") then
+			local arm = armTo(g.hand - shoulderR)
+			Joints.Set(char, "RightShoulder", arm)
+			Joints.Set(char, "RightElbow", CFrame.identity)
+			-- the weapon leaves the fist along hand -Z: turn the wrist so it runs along the guard line
+			Joints.Set(char, "RightWrist", rotFromTo(FWD, arm:VectorToObjectSpace(g.blade)))
+			-- the off hand braces the blade a little way up from the grip
+			local brace = g.hand + g.blade * (0.9 * scale)
+			Joints.Set(char, "LeftShoulder", armTo(brace - shoulderL))
+			Joints.Set(char, "LeftElbow", CFrame.identity)
+		else
+			-- fists: forearms up in front of the face, leaning toward the threat
+			local lean = CFrame.Angles(0, math.rad(-yaw * 0.4), 0)
+			Joints.Set(char, "RightShoulder", lean * CFrame.Angles(math.rad(if high then 95 else 70), 0, math.rad(-25)))
+			Joints.Set(char, "LeftShoulder", lean * CFrame.Angles(math.rad(if high then 95 else 70), 0, math.rad(25)))
+			Joints.Set(char, "RightElbow", CFrame.Angles(math.rad(75), 0, 0))
+			Joints.Set(char, "LeftElbow", CFrame.Angles(math.rad(75), 0, 0))
+		end
+	end
+end)
+end -- the guard
 RunService.RenderStepped:Connect(function()
 	local now = os.clock()
 	for char, st in swinging do
@@ -2033,6 +2177,23 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
+-- safety net: a guard or swing body animation never outlives what it shows (a missed event can't leave the
+-- arms up): the guard stops when Blocking is off, a swing body stops when no swing is running
+task.spawn(function()
+	while true do
+		task.wait(0.5)
+		local char = player.Character
+		if char then
+			if not char:GetAttribute("Blocking") then
+				Anims.Stop(char, "Block", 0.2)
+			end
+			if not swinging[char] then
+				Anims.StopPrefix(char, "Swing_", 0.2)
+			end
+		end
+	end
+end)
+
 swingFx = function(char, label, shape, windup, active, finish, range)
 	local root = typeof(char) == "Instance" and char:FindFirstChild("HumanoidRootPart")
 	if not root then
@@ -2089,7 +2250,7 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 		endSwing(a, true)
 	elseif kind == "DodgeMove" or kind == "Knockback" then
 		-- a dodge already moved us (client/Movement); the server only adds Enemy Step's hop
-		if root and not (kind == "DodgeMove" and Movement.ServerDodge(a)) then
+		if root and not (kind == "DodgeMove" and Movement.ServerDodge(a, b, c)) then
 			root.AssemblyLinearVelocity = a -- we own our character's physics
 		end
 	elseif kind == "BlackFlash" then
@@ -2133,7 +2294,7 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 	local WORDS = { Block = "BLOCKED", Parry = "PARRIED", GuardBreak = "GUARD BREAK", Dodged = "DODGED" }
 	if kind == "Hit" then
 		local contact = if typeof(c) == "Vector3" then c else nil
-		staggerAnim(a, false, contact)
+		staggerAnim(a, false, contact, b, f)
 		impact("Hit", a, nil, false)
 		if contact then
 			sparks(contact, IMP.Hit.Sparks) -- where the blade bit
@@ -2158,7 +2319,7 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 			flashDamage(0.5)
 		end
 	elseif kind == "Parry" or kind == "Block" then
-		guardHitAnim(a)
+		guardHitAnim(a, kind)
 		impact(kind, a, nil, false)
 	elseif kind == "Dodged" then
 		impact("Dodged", a, nil, false)

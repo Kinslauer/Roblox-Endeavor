@@ -127,5 +127,33 @@ CE.OnClientEvent:Fire("GuardBreak", char)
 char:SetAttribute("Blocking", true)
 M.step(1/30)
 check("anims: parry, guard break and the guard play", playedId("Parry", mark) and playedId("Stagger", mark) and playedId("Block", mark))
+-- the guard: with a weapon in hand the arms are driven (weapon across the front, off hand bracing it) and turn
+-- toward an incoming swing; letting go of F relaxes them
+do
+	local function joint(name) local j = M.newInstance("Motor6D"); j.Name = name; j.C0 = M.CF.new(); j.Parent = char; return j end
+	local rs, ls, rw = joint("RightShoulder"), joint("LeftShoulder"), joint("RightWrist")
+	joint("RightElbow"); joint("LeftElbow")
+	local held = M.newInstance("Model"); held.Name = "HeldWeapon"; held.Parent = char
+	char:SetAttribute("Blocking", false); M.step(1/30)
+	char:SetAttribute("Blocking", true)
+	for _ = 1, 10 do M.step(1/30) end
+	local DOWN = M.V3.new(0, -1, 0)
+	local function angle(cf) return math.acos(math.clamp(cf:VectorToWorldSpace(DOWN):Dot(DOWN), -1, 1)) end -- how far the limb is lifted
+	check("guard: the weapon arm is raised into the guard", angle(rs.C0) > 0.5)
+	check("guard: the off hand comes up to brace it", angle(ls.C0) > 0.5)
+	-- an enemy winding up a slash off to the right: the guard swings toward it
+	local foe = M.newInstance("Model"); foe.Name = "Foe"
+	local froot = M.newInstance("Part"); froot.Name = "HumanoidRootPart"; froot.Parent = foe
+	local fh = M.newInstance("Humanoid"); fh.Parent = foe
+	froot.CFrame = M.CF.lookAt(root.Position + M.V3.new(5, 0, -3), root.Position)
+	foe.Parent = workspace_
+	local before = rs.C0:VectorToWorldSpace(DOWN)
+	CE.OnClientEvent:Fire("Swing", foe, "Light", "SlashL", 0.5, 0.2, 0.9, 6)
+	for _ = 1, 8 do M.step(1/30) end
+	check("guard: turns toward the blade coming in", (rs.C0:VectorToWorldSpace(DOWN) - before).Magnitude > 0.05)
+	char:SetAttribute("Blocking", false)
+	for _ = 1, 3 do M.step(1/30) end
+	check("guard: released, the arms are let go", not Anims.Track(char, "Block").IsPlaying)
+end
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

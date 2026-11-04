@@ -34,19 +34,20 @@ function NPCs.Alert(position, radius)
 	end
 end
 
--- Telegraph: seconds of red flash before the hit lands (dodge/parry window).
+-- Frame data for every strike: Telegraph = startup in seconds (the red flash: the dodge/parry window), Active and
+-- Recovery in frames at 60/s (Weapons.FPS); a Move may set its own Active/Recovery, else the type's.
 -- Moves: optional list of special attacks { Name, Chance, Telegraph, Damage, Posture, Radius?, Knockback, Stun?, Unblockable? }
 NPCs.Types = {
-	Raider = { Health = 70, Speed = 13, Damage = 9, Posture = 10, Range = 6, Cooldown = 1.4, Telegraph = 0.45, Aggro = 90, Xp = 35, Loot = "Raider",
+	Raider = { Health = 70, Speed = 13, Damage = 9, Posture = 10, Range = 6, Cooldown = 1.4, Telegraph = 0.45, Active = 12, Recovery = 18, Aggro = 90, Xp = 35, Loot = "Raider",
 		Color = Color3.fromRGB(110, 40, 40), Size = Vector3.new(2, 5, 1), Weapon = "PipeClub" },
-	Brute = { Health = 220, Speed = 10, Damage = 22, Posture = 30, Range = 7, Cooldown = 2.4, Telegraph = 0.8, Aggro = 80, Xp = 90, Loot = "Raider",
+	Brute = { Health = 220, Speed = 10, Damage = 22, Posture = 30, Range = 7, Cooldown = 2.4, Telegraph = 0.8, Active = 14, Recovery = 30, Aggro = 80, Xp = 90, Loot = "Raider",
 		Color = Color3.fromRGB(90, 60, 30), Size = Vector3.new(3, 6.5, 1.6), Knockback = 40, Hyperarmor = true, Weapon = "Sledge" },
-	Shocker = { Health = 90, Speed = 15, Damage = 12, Posture = 8, Range = 9, Cooldown = 1.6, Telegraph = 0.5, Aggro = 110, Xp = 60, Loot = "Raider",
+	Shocker = { Health = 90, Speed = 15, Damage = 12, Posture = 8, Range = 9, Cooldown = 1.6, Telegraph = 0.5, Active = 10, Recovery = 16, Aggro = 110, Xp = 60, Loot = "Raider",
 		Color = Color3.fromRGB(40, 90, 140), Size = Vector3.new(2, 5, 1), Type = "Arc", Stun = 0.6, Weapon = "ShockBaton" },
 	-- rival conduits: a crew working the frontier's contracts; faster and meaner than raiders, and worth it
-	Rival = { Health = 170, Speed = 15, Damage = 15, Posture = 22, Range = 6.5, Cooldown = 1.25, Telegraph = 0.4, Aggro = 100, Xp = 140, Loot = "Rival",
+	Rival = { Health = 170, Speed = 15, Damage = 15, Posture = 22, Range = 6.5, Cooldown = 1.25, Telegraph = 0.4, Active = 10, Recovery = 14, Aggro = 100, Xp = 140, Loot = "Rival",
 		Color = Color3.fromRGB(70, 60, 90), Size = Vector3.new(2, 5, 1), Weapon = "RebarBlade" },
-	Warden = { Health = 900, Speed = 11, Damage = 26, Posture = 35, Range = 8, Cooldown = 2.0, Telegraph = 0.7, Aggro = 140, Xp = 600, Loot = "Supply",
+	Warden = { Health = 900, Speed = 11, Damage = 26, Posture = 35, Range = 8, Cooldown = 2.0, Telegraph = 0.7, Active = 14, Recovery = 26, Aggro = 140, Xp = 600, Loot = "Supply",
 		Color = Color3.fromRGB(150, 30, 60), Size = Vector3.new(3.5, 8, 2), Knockback = 45, Hyperarmor = true, Boss = true, Weapon = "RebarBlade",
 		Moves = {
 			{ Name = "Slam", Chance = 0.35, Telegraph = 1.1, Damage = 40, Posture = 60, Radius = 14, Knockback = 70, Unblockable = true, Stun = 1.0 },
@@ -292,13 +293,14 @@ function NPCs.Spawn(typeName, position, opts)
 			-- arc while live, and it can be dodged, parried, or clashed by a blade meeting it
 			step += 1
 			task.spawn(telegraph, model, spec.Telegraph, color, true)
-			local active = 0.2
+			local active = (spec.Active or def.Active or 12) / 60
+			local recovery = (spec.Recovery or def.Recovery or 15) / 60
 			Combat.Swing(model, {
-				Damage = spec.Damage * scale, Posture = spec.Posture * scale, Windup = spec.Telegraph, Active = active, End = spec.Telegraph + active + 0.25,
+				Damage = spec.Damage * scale, Posture = spec.Posture * scale, Windup = spec.Telegraph, Active = active, End = spec.Telegraph + active + recovery,
 				Range = (spec.Range or def.Range) + 1, Knockback = spec.Knockback or def.Knockback or 15, Stun = spec.Stun or def.Stun, Type = def.Type,
 				Unblockable = spec.Unblockable,
 			}, { noStatScaling = true, label = "NPC", shape = Swings.ShapeFor(family, step, spec ~= nil and spec.Name ~= nil) })
-			task.wait(spec.Telegraph + active + 0.25)
+			task.wait(spec.Telegraph + active + recovery)
 			return
 		end
 		telegraph(model, spec.Telegraph, color)

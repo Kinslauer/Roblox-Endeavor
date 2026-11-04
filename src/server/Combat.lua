@@ -377,7 +377,37 @@ local function land(victim, vs)
 	vs.juggledUntil = nil
 	if victim.Parent then
 		victim:SetAttribute("Juggled", false)
+		local root = victim:FindFirstChild("HumanoidRootPart")
+		local float = root and root:FindFirstChild("JuggleHang")
+		if float then
+			float:Destroy()
+		end
 	end
+end
+-- the float: once the launch has spent most of its rise, gravity mostly lets go so the body lingers
+local function hang(victim, root)
+	local M = Config.Momentum
+	if root:FindFirstChild("JuggleHang") then
+		return
+	end
+	local rise = math.max(0, root.AssemblyLinearVelocity.Y - M.HangBelow)
+	task.delay(rise / math.max(workspace.Gravity, 1), function()
+		if not (root.Parent and victim:GetAttribute("Juggled")) or root:FindFirstChild("JuggleHang") then
+			return
+		end
+		local a = root:FindFirstChild("JuggleAttachment") or Instance.new("Attachment")
+		a.Name = "JuggleAttachment"
+		a.Parent = root
+		local f = Instance.new("VectorForce")
+		f.Name = "JuggleHang"
+		f.Attachment0 = a
+		f.RelativeTo = Enum.ActuatorRelativeTo.World
+		f.ApplyAtCenterOfMass = true
+		f.Force = Vector3.new(0, root.AssemblyMass * workspace.Gravity * (1 - M.HangGravity), 0)
+		f.Parent = root
+		local v = root.AssemblyLinearVelocity
+		root.AssemblyLinearVelocity = Vector3.new(v.X * 0.4, math.min(v.Y, M.HangBelow), v.Z * 0.4) -- stay in front
+	end)
 end
 local function launch(attacker, victim, vs, t, direction)
 	local M = Config.Momentum
@@ -389,8 +419,32 @@ local function launch(attacker, victim, vs, t, direction)
 	Combat.Stun(victim, M.LaunchAirTime + M.LandStun)
 	root.AssemblyLinearVelocity = Vector3.new(0, M.LaunchVelocity, 0) + direction * M.LaunchDrift
 	victim:SetAttribute("Juggled", true)
+	hang(victim, root)
 	fx("Launch", victim, attacker)
 	task.delay(M.LaunchAirTime, land, victim, vs)
+end
+-- A Medium/Heavy weapon's launcher throws up everything around the impact, not just the body it hit.
+local function groupLaunch(attacker, victim, opts, t)
+	local radius = opts.Mass and Config.Momentum.GroupLaunch[opts.Mass]
+	local vroot = victim:FindFirstChild("HumanoidRootPart")
+	if not (radius and vroot) then
+		return 0
+	end
+	local center = opts.ContactPoint or vroot.Position
+	local aroot = attacker and attacker:FindFirstChild("HumanoidRootPart")
+	local n = 0
+	for _, model in CollectionService:GetTagged("NPC") do
+		local root = model ~= victim and model ~= attacker and model:FindFirstChild("HumanoidRootPart")
+		local hum = root and getHum(model)
+		if hum and hum.Health > 0 and launchable(model) and not model:GetAttribute("Contact") and not Combat.IsJuggled(model)
+			and (root.Position - center).Magnitude <= radius then
+			local away = if aroot then root.Position - aroot.Position else root.Position - center
+			away = Vector3.new(away.X, 0, away.Z)
+			launch(attacker, model, st(model), t, if away.Magnitude > 0.01 then away.Unit else Vector3.zero)
+			n += 1
+		end
+	end
+	return n
 end
 -- A hit on a Juggled target keeps it up (until MaxJuggleHits) and keeps it stunned past the landing.
 local function pop(victim, vs, t)
@@ -403,7 +457,8 @@ local function pop(victim, vs, t)
 	vs.juggledUntil = math.max(vs.juggledUntil or t, t) + M.AirPopExtend
 	Combat.Stun(victim, (vs.juggledUntil - t) + M.LandStun)
 	local v = root.AssemblyLinearVelocity
-	root.AssemblyLinearVelocity = Vector3.new(v.X * 0.5, M.AirPopVelocity, v.Z * 0.5)
+	root.AssemblyLinearVelocity = Vector3.new(v.X * 0.3, M.AirPopVelocity, v.Z * 0.3)
+	hang(victim, root)
 	fx("Juggle", victim, vs.juggleHits)
 end
 -- Launcher hold: a melee heavy started on an open hostile in front of you keeps it staggered until the heavy
@@ -537,6 +592,7 @@ local function applyDamage(attacker, victim, amount, opts)
 			pop(victim, vs, t) -- keep it up there
 		elseif launchOk then
 			launch(attacker, victim, vs, t, direction) -- a heavy on an open hostile sends it up
+			groupLaunch(attacker, victim, opts, t) -- and a big enough weapon takes the crowd around it too
 		end
 	elseif result ~= "blocked" and launchOk and not juggled then
 		-- the launcher killed it: the body still goes up, so the launch reads even on a kill
@@ -547,7 +603,9 @@ local function applyDamage(attacker, victim, amount, opts)
 		end
 	end
 	if result == "hit" then
-		fx("Hit", victim, amount, opts.ContactPoint, opts.ContactDir, attacker)
+		-- the reaction plays for as long as the victim is stunned (0 when armour shrugged it off)
+		local stunned = if t >= math.max(vs.hyperarmorUntil, vs.swingArmorUntil) then (opts.Stun or C.HitStunDefault) else 0
+		fx("Hit", victim, amount, opts.ContactPoint, opts.ContactDir, attacker, stunned)
 	end
 	return result
 end
@@ -580,7 +638,7 @@ local function pulse(char, spec, mods, seen, tracer)
 		damage += s.arcBonus
 	end
 	local opts = { Posture = posture, Type = if mods.hitType and spec.Type ~= "Arc" then mods.hitType else spec.Type, Knockback = spec.Knockback, Stun = spec.Stun, Unblockable = mods.unblockable, GuardBreak = mods.guardBreak,
-		Launches = mods.label == "Heavy" and not spec.Ranged and not spec.NoLaunch, StartedAt = mods.startedAt }
+		Mass = mods.weapon and mods.weapon.Mass, Launches = mods.label == "Heavy" and not spec.Ranged and not spec.NoLaunch, StartedAt = mods.startedAt }
 
 	local function strike(model, contact)
 		seen[model] = true
@@ -895,6 +953,9 @@ function Combat.Swing(char, spec, mods)
 	s.swingReach = spec.Range
 	s.swingId = (s.swingId or 0) + 1
 	s.swingArmorUntil = if spec.Hyperarmor then t0 + spec.Windup + spec.Active else 0
+	if spec.Ranged then
+		mods.shape = nil -- a shot has no blade arc to trace or to pose the arm along
+	end
 	fx("Swing", char, mods.label, mods.shape, spec.Windup, spec.Active, spec.End, spec.Range)
 
 	task.delay(spec.Windup, function()
@@ -1107,12 +1168,27 @@ function Combat.Dodge(player, direction)
 	-- Enemy Step: a dodge next to a Juggled enemy springs off it - stamina back and a hop
 	local velocity = direction.Unit * C.DodgeSpeed
 	local step = root and Combat.NearestJuggled(root.Position, Config.Momentum.EnemyStepRange)
+	local hover = 0
 	if step then
-		Combat.AddStamina(char, Config.Momentum.EnemyStepRefund)
-		velocity += Vector3.new(0, Config.Momentum.EnemyStepHop, 0)
+		-- spring up to its height, landing StepFront in front of it, and keep it up a little longer
+		local M = Config.Momentum
+		Combat.AddStamina(char, M.EnemyStepRefund)
+		local eroot = step:FindFirstChild("HumanoidRootPart")
+		local toMe = Vector3.new(root.Position.X - eroot.Position.X, 0, root.Position.Z - eroot.Position.Z)
+		local spot = eroot.Position + (if toMe.Magnitude > 0.1 then toMe.Unit else -eroot.CFrame.LookVector) * M.StepFront
+		local g = math.max(workspace.Gravity, 1)
+		local rise = math.clamp(spot.Y - root.Position.Y + 1, 2, M.StepMaxRise)
+		local vy = math.max(M.EnemyStepHop, math.sqrt(2 * g * rise))
+		local tUp = vy / g
+		local flat = Vector3.new(spot.X - root.Position.X, 0, spot.Z - root.Position.Z)
+		velocity = flat / math.max(tUp, 0.15) + Vector3.new(0, vy, 0)
+		local es = st(step)
+		es.juggledUntil = math.max(es.juggledUntil or t, t) + M.StepExtend
+		Combat.Stun(step, (es.juggledUntil - t) + M.LandStun)
+		hover = M.StepHover
 		fx("EnemyStep", char, step)
 	end
-	Remotes.CombatEvent:FireClient(player, "DodgeMove", velocity)
+	Remotes.CombatEvent:FireClient(player, "DodgeMove", velocity, hover, step)
 	fx("Dodge", char)
 end
 

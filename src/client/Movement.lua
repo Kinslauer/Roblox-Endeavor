@@ -400,15 +400,53 @@ end
 
 -- The server's answer to a dodge (Combat.Dodge -> "DodgeMove"). The motion already happened here, so only
 -- what the server adds is applied: Enemy Step's hop.
-function Movement.ServerDodge(velocity)
+-- Enemy Step (hover > 0): the server aimed the spring at a spot in front of the juggled enemy at its height;
+-- take that velocity whole, then hang there facing it for `hover` seconds so the next hits land.
+function Movement.ServerDodge(velocity, hover, enemy)
 	local self = ctl
 	if not self then
 		return false
 	end
 	if os.clock() - lastPredictedDodge < 0.6 then
-		if velocity.Y > 1 then
-			setVerticalVelocity(self.root, velocity.Y)
+		if (hover or 0) > 0 then
+			for _, name in { "RollVelocity", "StepVelocity", "DashVelocity", "LongJumpVelocity" } do
+				local push = self.root:FindFirstChild(name)
+				if push then
+					push:Destroy()
+				end
+			end
+			self.root.AssemblyLinearVelocity = velocity
 			self.canDoubleJump, self.canDash = true, true -- springing off an enemy gives the air back
+			setAction(self, "Jump")
+			local root = self.root
+			task.delay(velocity.Y / math.max(workspace.Gravity, 1), function()
+				if not root.Parent then
+					return
+				end
+				local a = attachment(root, "MoveAttachment")
+				local float = Instance.new("VectorForce")
+				float.Name = "StepHover"
+				float.Attachment0 = a
+				float.RelativeTo = Enum.ActuatorRelativeTo.World
+				float.ApplyAtCenterOfMass = true
+				float.Force = Vector3.new(0, root.AssemblyMass * workspace.Gravity * M.StepHoverHold, 0)
+				float.Parent = root
+				local v = root.AssemblyLinearVelocity
+				root.AssemblyLinearVelocity = Vector3.new(v.X * 0.2, math.max(v.Y, 0), v.Z * 0.2)
+				local eroot = typeof(enemy) == "Instance" and enemy:FindFirstChild("HumanoidRootPart")
+				if eroot then
+					local at = Vector3.new(eroot.Position.X, root.Position.Y, eroot.Position.Z)
+					if (at - root.Position).Magnitude > 0.1 then
+						root.CFrame = CFrame.lookAt(root.Position, at)
+					end
+				end
+				task.delay(hover, function()
+					float:Destroy()
+				end)
+			end)
+		elseif velocity.Y > 1 then
+			setVerticalVelocity(self.root, velocity.Y)
+			self.canDoubleJump, self.canDash = true, true
 		end
 		return true
 	end

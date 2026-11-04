@@ -675,6 +675,38 @@ run(1.5)
 check("it lands and the juggle ends", dummyR:GetAttribute("Juggled") == false)
 dummyR:Destroy()
 
+-- group launch: a Medium weapon's launcher throws up the pack around the impact; they hang; Enemy Step springs
+-- you up in front of one and keeps it up longer
+do
+	as(player)
+	local pack = {}
+	for i, off in { M.V3.new(0, 0, -3), M.V3.new(2.5, 0, -4), M.V3.new(-2.5, 0, -4), M.V3.new(0, 0, -30) } do
+		local m = NPCsL.Spawn("Raider", lr.Position + off, { Parent = game_.Workspace })
+		m.Humanoid.MaxHealth, m.Humanoid.Health = 5000, 5000
+		m.HumanoidRootPart.Anchored = true
+		pack[i] = m
+	end
+	run(1.0)
+	lr.CFrame = M.CF.lookAt(lr.Position, pack[1].HumanoidRootPart.Position); run(0.1)
+	Remotes.Attack:FireServer(); run(0.7)
+	Remotes.Heavy:FireServer(); run(0.8)
+	check("group launch: the struck raider goes up", pack[1]:GetAttribute("Juggled") == true)
+	check("group launch: the ones beside it go up too", pack[2]:GetAttribute("Juggled") == true and pack[3]:GetAttribute("Juggled") == true)
+	check("group launch: one far away does not", pack[4]:GetAttribute("Juggled") ~= true)
+	run(0.4)
+	check("hang: a launched body floats past the top of its rise", pack[1].HumanoidRootPart:FindFirstChild("JuggleHang") ~= nil)
+	local CombatG = M.mockEnv.__require(SSS.Server.Combat)
+	local mark = #M.FireLog
+	player.Character:SetAttribute("Stamina", 100)
+	run(0.2)
+	CombatG.Dodge(player, M.V3.new(0, 0, -1))
+	local hover, enemy
+	for i = mark + 1, #M.FireLog do local e = M.FireLog[i]; if e[1] == "CombatEvent" and e[3] == "DodgeMove" then hover, enemy = e[5], e[6] end end
+	check("enemy step: springs you at a juggled enemy and hangs you there", (hover or 0) > 0 and enemy ~= nil)
+	for _, m in pack do m:Destroy() end
+	run(2.5)
+end
+
 -- spacing (Config.City.AI.Spacing): a rival reads your swing, presses your recovery, circles your guard
 do
 	as(player)
@@ -1090,6 +1122,17 @@ do
 	check("blade: a clash lands neither swing", a.Humanoid.Health == ha and b.Humanoid.Health == hb)
 	a:Destroy(); b:Destroy()
 	run(0.5)
+	-- guns are aimed, not swung: a shot announces no arc, so the client doesn't pose a slash wind-up
+	local SwingsB = M.mockEnv.__require(game_:GetService("ReplicatedStorage").Shared.Swings)
+	check("blade: a sidearm has no swing arc", SwingsB.ShapeFor("Sidearm", 1, false) == nil and SwingsB.ShapeFor("Sidearm", 1, true) == nil)
+	local g = body("Gunner", origin + M.V3.new(20, 0, 0), origin)
+	local mark = #M.FireLog
+	CombatB.Swing(g, { Damage = 5, Posture = 1, Windup = 0.05, Active = 0.05, End = 0.3, Range = 60, Ranged = true, Type = "Arc" }, { noStatScaling = true, label = "Test", shape = "SlashR" })
+	local shaped = false
+	for i = mark + 1, #M.FireLog do local e = M.FireLog[i]; if e[1] == "CombatEvent" and e[3] == "Swing" and e[4] == g and e[6] ~= nil then shaped = true end end
+	check("blade: a shot is announced without an arc", not shaped)
+	run(0.5)
+	g:Destroy()
 end
 
 check("no script errors", #M.errors == 0)
