@@ -63,6 +63,11 @@ function Rigs.Build(assetId, name)
 	for _, p in model:GetChildren() do
 		if p:IsA("BasePart") then
 			local base = baseName(p)
+			-- remember the material suffix before limbs are renamed (server/Body.lua recolours by it)
+			local suffix = p.Name:match("_(%w+)$")
+			if suffix then
+				p:SetAttribute("Mat", suffix)
+			end
 			if table.find(LIMBS, base) then
 				p.Name = base
 				limbs[base] = p

@@ -16,22 +16,10 @@ Sounds.Loop("AmbFront", 0.4) -- wind over the mud and guns on the horizon
 
 -- Procedural soldier poses: Motor6D C0 offsets under the walk/idle animations. Every soldier holds
 -- the rifle with both hands; shots kick the right arm; a reload drops the left hand to the magazine.
-local baseC0 = setmetatable({}, { __mode = "k" })
-local jointTweens = setmetatable({}, { __mode = "k" })
+-- shared/Joints poses both joint systems (Motor6D and the newer avatar AnimationConstraints)
+local Joints = require(game:GetService("ReplicatedStorage").Shared:WaitForChild("Joints"))
 local function pose(char, name, offset, seconds)
-	local m = typeof(char) == "Instance" and char:FindFirstChild(name, true)
-	if not (m and m:IsA("Motor6D")) then
-		return
-	end
-	if baseC0[m] == nil then
-		baseC0[m] = m.C0
-	end
-	if jointTweens[m] then
-		jointTweens[m]:Cancel()
-	end
-	local tw = TweenService:Create(m, TweenInfo.new(seconds, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { C0 = baseC0[m] * offset })
-	jointTweens[m] = tw
-	tw:Play()
+	Joints.Pose(char, name, offset, seconds)
 end
 local function holdPose(char, seconds)
 	pose(char, "RightShoulder", CFrame.Angles(math.rad(78), 0, math.rad(-12)), seconds or 0.2)

@@ -885,6 +885,8 @@ do
 	end
 	print("frontier encounters: ambush " .. tostring(ambushCell ~= nil) .. " patrol " .. tostring(patrolCell ~= nil) .. " bounty " .. tostring(bountyCell ~= nil))
 	check("frontier: the valley rolled encounters", ambushCell ~= nil or patrolCell ~= nil or bountyCell ~= nil)
+	Frontier.StandDownAll() -- a clean valley, so the encounter cap left by earlier steps does not decide these checks
+	run(0.2)
 	if patrolCell then
 		player.Character:PivotTo(M.CF.new(patrolCell.Center.X + 100, 0, patrolCell.Center.Z))
 		run(1.6)
@@ -892,12 +894,16 @@ do
 		check("frontier: a patrol wakes when someone comes near", e and e.models and #e.models > 0)
 	end
 	if bountyCell then
+		Frontier.StandDownAll(); run(0.2)
 		player.Character:PivotTo(M.CF.new(bountyCell.Center.X + 100, 0, bountyCell.Center.Z))
 		run(1.6)
 		local e = Frontier.Encounters()[bountyCell]
 		check("frontier: the bounty wears its name", e and e.models[1] and e.models[1].Name == bountyCell.Encounter.Boss)
 	end
 	if ambushCell then
+		-- earlier steps may have woken enough encounters to fill the cap, or sprung this one: reset the valley as a cycle does
+		Frontier.StandDownAll()
+		run(0.2)
 		local npcsBefore = #CS:GetTagged("NPC")
 		player.Character:PivotTo(M.CF.new(ambushCell.Center.X, 0, ambushCell.Center.Z))
 		run(1.6)

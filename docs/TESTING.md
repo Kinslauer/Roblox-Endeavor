@@ -24,6 +24,20 @@ report). Versions: Endeavor v69, Front v19.
 - [ ] City hum and wind are audible from the start (ambient loops).
 - [ ] The city reads as late night: purple haze, neon bloom, cold grade; you can still see where you're going.
 
+## Endeavor: your body, swings and the look of the screens
+- [ ] You spawn as the Conduit (hood, visor slit, respirator, high-collar jacket with neon seams, plated right forearm,
+      cargo trousers, boots), not your Roblox avatar. It idles, walks, runs, jumps, falls and climbs.
+- [ ] Each life rolls its own jacket colour (gunmetal, olive, oxblood, navy, bone, black) and trim colour (cyan,
+      magenta, amber, acid, red, white) on the seams, armband, stack port and visor. Dying gives you a new combination.
+- [ ] Your own swings move your arms: windup and slash per weapon family, a block pose on F, a flinch when hit, and the
+      lean into movement. Other players see them too.
+- [ ] Worn armor, cybernetic implants and the weapon in your right hand sit on the new body correctly.
+- [ ] Every panel (Tab inventory, L loadout, J attributes, O hideout, N recruit app, the computer, the market, F2 dev):
+      rounded dark glass with a thin cyan edge, a wide sci-fi title face for section headers with a line under them,
+      text that wraps instead of being cut off, uppercase buttons that brighten on hover.
+- [ ] The HUD bars are rounded with a subtle shade; banners use the title face with an outline.
+- [ ] Front: soldiers still hold the rifle in both hands, kick on shots and reach for the magazine on reload.
+
 ## Endeavor: movement (ported from Roblox's Platformer template)
 - [ ] The body has weight: starting, stopping and turning ease in over a fraction of a second; jumps feel a little
       floatier (gravity 160, jump height 8) and the body leans into turns and runs.

@@ -34,6 +34,11 @@ local ok, err = pcall(function()
 	local ImplantLibrary = require(Server.ImplantLibrary)
 
 	workspace.Gravity = require(game:GetService("ReplicatedStorage").Shared.Config).Movement.Gravity -- the template's weight (client/Movement.lua)
+	-- the Conduit body: players spawn as it (before anyone loads a character)
+	local bodyOk, bodyErr = pcall(require(Server.Body).Init)
+	if not bodyOk then
+		warn("[Body] failed:", bodyErr)
+	end
 	Gore.Init()
 	Destruction.Init() -- before City, which places props and breach points
 	City.Init()

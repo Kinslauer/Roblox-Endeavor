@@ -416,6 +416,26 @@ Config.Movement = {
 	},
 }
 
+-- The Conduit body (server/Body.lua): each life rolls a jacket and a trim colour.
+Config.Body = {
+	Jackets = {
+		Color3.fromRGB(44, 46, 54), -- gunmetal
+		Color3.fromRGB(58, 62, 44), -- olive drab
+		Color3.fromRGB(70, 42, 34), -- oxblood
+		Color3.fromRGB(32, 40, 60), -- night navy
+		Color3.fromRGB(150, 146, 134), -- bone
+		Color3.fromRGB(24, 24, 26), -- black
+	},
+	Trims = {
+		Color3.fromRGB(0, 215, 255), -- cyan
+		Color3.fromRGB(255, 50, 170), -- magenta
+		Color3.fromRGB(255, 170, 30), -- amber
+		Color3.fromRGB(110, 255, 90), -- acid
+		Color3.fromRGB(255, 60, 60), -- red
+		Color3.fromRGB(230, 230, 255), -- white
+	},
+}
+
 Config.Combat = {
 	SprintMult = 1.45,
 	SprintStaminaPerSecond = 9,

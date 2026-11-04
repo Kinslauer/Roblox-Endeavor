@@ -72,6 +72,21 @@ store `ConduitCharacter_v2`) is shared by both places.
   joint Transform. Roblox-owned template animations in Config.Movement.Anims. Server: workspace.Gravity =
   Config.Movement.Gravity (160) in Main, JumpHeight = Config.Movement.JumpHeight (8) * JumpMult in Stats. Client test
   `tools/smoke/client.lua` builds the client folder like Rojo does and runs 13 movement checks.
+- Joints: Roblox now builds every R15 avatar with AnimationConstraints (the "Avatar Joint Upgrade"; verified live
+  2026-11-04), not Motor6Ds, so pose code that only looked for Motor6D did nothing on players. `src/shared/Joints.lua`
+  (`Joints.Pose(char, name, offset, seconds, style)`, `Find`, `IsJoint`) offsets Motor6D.C0 or the AnimationConstraint's
+  Attachment0.CFrame; both clients' pose() and the Movement lean use it.
+- The Conduit body (owner, 2026-11-04: "the player character model doesn't change from default"): `tools/models/
+  conduit.py` -> Assets.Rigs.Conduit; `src/server/Body.lua` Init builds it with Rigs.Build into StarterPlayer.
+  StarterCharacter at startup (Main, before anyone loads); `Body.Apply` (Lifecycle.Spawn after LoadCharacter) paints
+  this life's colours from profile.Look {Jacket, Trim} (Config.Body palettes; rolled when missing, wiped with the
+  life) on parts whose `Mat` attribute (set by Rigs.Build from the name suffix) is ConduitJacket/Trim/Visor.
+  `src/character/Animate.client.lua` -> StarterCharacterScripts.Animate (Roblox's R15 idle/walk/run/jump/fall/climb/swim
+  ids) so the default Animate is not inserted.
+- UI theme (owner, 2026-11-04: "UI is awful"): the client's `UI` table (Michroma titles, TitilliumWeb text, RobotoMono,
+  GothamBold buttons; Panel/Line/Text/Dim/Accent colours), `corner()`/`stroke()`, `panel()` = rounded glass with an
+  accent stroke, padding and a LayoutOrder list; `addRow()` wraps text, makes all-caps button-less rows section headers
+  with a divider, buttons 66x24 uppercase; a gui.DescendantAdded pass rounds/re-fonts anything built elsewhere.
 - Enemy spacing (owner, 2026-11-04, from KrugKrew's "best swordfighting ai" in the uncopylocked archive the user
   linked; ideas only, no code copied): `Combat.Threat(char)` -> phase Windup/Active/Recovery/Idle (Swing stores
   activeUntil, swingReach, swingId; feint clears activeUntil), reach, blocking, stunned, swingId. In NPCs.Spawn's loop,

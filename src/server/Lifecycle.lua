@@ -6,6 +6,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local City = require(script.Parent.City)
 local Combat = require(script.Parent.Combat)
 local Gear = require(script.Parent.Gear)
+local Body = require(script.Parent.Body)
 local Hideouts = require(script.Parent.Hideouts)
 local Inventory = require(script.Parent.Inventory)
 local Permadeath = require(script.Parent.Permadeath)
@@ -35,6 +36,9 @@ function Lifecycle.Spawn(player)
 	local spawnAt = Hideouts.SpawnCFrame(player) or WorldPhase.GetSpawnCFrame(player)
 	player:LoadCharacter()
 	local char = player.Character
+	if char then
+		Body.Apply(player, char) -- this life's colours on the Conduit body
+	end
 	local root = char and char:WaitForChild("HumanoidRootPart", 10)
 	local hum = char and char:WaitForChild("Humanoid", 10)
 	if not (root and hum) then

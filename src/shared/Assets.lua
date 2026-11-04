@@ -71,6 +71,7 @@ Assets.Buildings = {
 -- Character rigs (R15 limb meshes, see server/Rigs.lua): [npcType] = assetId
 Assets.Rigs = {
 	Rival = 106712459976546, -- the raider mesh in other colours (NPCs.Types.Rival)
+	Conduit = 124459656705086, -- the player's body (tools/models/conduit.py; server/Body.lua makes it the StarterCharacter)
 	Raider = 106712459976546,
 	Brute = 89905917757019,
 	Shocker = 117184966040084,
@@ -277,6 +278,10 @@ Assets.Materials = {
 	Char = { Color = Color3.fromRGB(28, 26, 25), Material = Enum.Material.CorrodedMetal },
 	Olive = { Color = Color3.fromRGB(70, 78, 46), Material = Enum.Material.Metal },
 	Rubber = { Color = Color3.fromRGB(23, 23, 26), Material = Enum.Material.Rubber },
+	-- the Conduit body (server/Body.lua recolours these per life)
+	ConduitJacket = { Color = Color3.fromRGB(44, 46, 54), Material = Enum.Material.Fabric },
+	ConduitTrim = { Color = Color3.fromRGB(0, 215, 255), Material = Enum.Material.Neon },
+	ConduitVisor = { Color = Color3.fromRGB(0, 215, 255), Material = Enum.Material.Neon, Light = Color3.fromRGB(0, 215, 255) },
 	-- buildings
 	DarkConcrete = { Color = Color3.fromRGB(44, 44, 51), Material = Enum.Material.Concrete },
 	Panel = { Color = Color3.fromRGB(66, 69, 84), Material = Enum.Material.Metal },

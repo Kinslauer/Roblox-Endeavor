@@ -18,6 +18,7 @@ local Items = require(Shared:WaitForChild("Items"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local Sounds = require(Shared:WaitForChild("Sounds"))
 local Weapons = require(Shared:WaitForChild("Weapons"))
+local Joints = require(Shared:WaitForChild("Joints"))
 local Movement = require(script.Parent:WaitForChild("Movement"))
 Movement.Start()
 -- Sounds for combat events, played at the character they happened to.
@@ -38,7 +39,35 @@ end
 
 local gui = Instance.new("ScreenGui")
 gui.Name, gui.ResetOnSpawn = "ConduitHUD", false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
+
+-- ===== Theme =====
+-- One look for every screen: glass-dark panels with a thin neon edge, a wide sci-fi face for titles, a
+-- readable tech face for text, a mono face for numbers and machine text. Colours encode meaning only where
+-- callers say so (green buy, red close); everything else comes from here.
+local UI = {
+	Panel = Color3.fromRGB(12, 15, 21), PanelAlt = Color3.fromRGB(20, 25, 34), Line = Color3.fromRGB(46, 58, 74),
+	Text = Color3.fromRGB(226, 232, 240), Dim = Color3.fromRGB(140, 150, 166), Accent = Color3.fromRGB(0, 214, 255),
+	Button = Color3.fromRGB(34, 44, 60),
+	Title = Enum.Font.Michroma, Body = Enum.Font.TitilliumWeb, Mono = Enum.Font.RobotoMono, Bold = Enum.Font.GothamBold,
+	PanelAlpha = 0.08, Radius = 8,
+}
+local function corner(inst, r)
+	if not inst:FindFirstChildOfClass("UICorner") then
+		local c = Instance.new("UICorner")
+		c.CornerRadius = UDim.new(0, r or UI.Radius)
+		c.Parent = inst
+	end
+end
+local function stroke(inst, color, transparency, thickness)
+	if not inst:FindFirstChildOfClass("UIStroke") then
+		local st = Instance.new("UIStroke")
+		st.Color, st.Transparency, st.Thickness = color or UI.Line, transparency or 0, thickness or 1
+		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		st.Parent = inst
+	end
+end
 
 local function make(class, props, parent)
 	local inst = Instance.new(class)
@@ -51,11 +80,40 @@ end
 
 local function label(props)
 	props.BackgroundTransparency = props.BackgroundTransparency or 1
-	props.TextColor3 = props.TextColor3 or Color3.new(1, 1, 1)
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.TextColor3 = props.TextColor3 or UI.Text
+	props.Font = props.Font or UI.Body
 	props.TextSize = props.TextSize or 16
 	return make("TextLabel", props, props.Parent)
 end
+
+-- A safety net for everything built outside panel/addRow: buttons get the theme's shape, font and a hover;
+-- opaque boxes get rounded corners. Callers' colours are kept.
+local OLD_FONTS = { [Enum.Font.Legacy] = true, [Enum.Font.SourceSans] = true, [Enum.Font.Arial] = true, [Enum.Font.GothamMedium] = true, [Enum.Font.Gotham] = true }
+gui.DescendantAdded:Connect(function(d)
+	if d:IsA("TextButton") then
+		d.AutoButtonColor = false
+		if OLD_FONTS[d.Font] then
+			d.Font = UI.Bold
+		end
+		corner(d, 5)
+		local base
+		d.MouseEnter:Connect(function()
+			base = d.BackgroundColor3
+			d.BackgroundColor3 = base:Lerp(Color3.new(1, 1, 1), 0.15)
+		end)
+		d.MouseLeave:Connect(function()
+			if base then
+				d.BackgroundColor3 = base
+			end
+		end)
+	elseif d:IsA("TextLabel") or d:IsA("TextBox") then
+		if OLD_FONTS[d.Font] then
+			d.Font = UI.Body
+		end
+	elseif (d:IsA("Frame") or d:IsA("ScrollingFrame")) and d.BackgroundTransparency < 0.6 and (d.Size.X.Offset >= 60 or d.Size.X.Scale >= 0.1) and d.Size.Y.Offset ~= 1 then
+		corner(d, 6)
+	end
+end)
 
 local function flash(char, color)
 	if typeof(char) ~= "Instance" then
@@ -73,8 +131,12 @@ local HUD = Config.Hud
 local BAR_W = HUD.BarWidth
 local barValue = {}
 local function bar(pos, size, color, name)
-	local back = make("Frame", { Size = size, Position = pos, BackgroundColor3 = Color3.fromRGB(20, 20, 24), BackgroundTransparency = 0.25, BorderSizePixel = 0 })
+	local back = make("Frame", { Size = size, Position = pos, BackgroundColor3 = UI.Panel, BackgroundTransparency = 0.2, BorderSizePixel = 0, ClipsDescendants = true })
+	corner(back, math.min(4, math.floor(size.Y.Offset / 2)))
+	stroke(back, Color3.new(0, 0, 0), 0.5)
 	local fill = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = color, BorderSizePixel = 0 }, back)
+	corner(fill, math.min(4, math.floor(size.Y.Offset / 2)))
+	make("UIGradient", { Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(190, 190, 190)), Rotation = 90 }, fill)
 	if name then
 		label({ Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.fromOffset(4, 0), Text = name, TextSize = 11, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(235, 235, 240), ZIndex = 2, Parent = back })
 		barValue[fill] = label({ Size = UDim2.new(0.5, -4, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), Text = "", TextSize = 11, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(235, 235, 240), ZIndex = 2, Parent = back })
@@ -93,16 +155,22 @@ pcall(function() -- our own health bar replaces Roblox's; no player list (Tab is
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
 end)
-local banner = label({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 60), TextSize = 26, Text = "", TextTransparency = 1 })
-local questLabel = label({ Size = UDim2.fromOffset(360, 24), Position = UDim2.new(1, -380, 0, 20), TextXAlignment = Enum.TextXAlignment.Right, Text = "" })
+local banner = label({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 60), TextSize = 22, Font = UI.Title, Text = "", TextTransparency = 1 })
+make("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.35, Thickness = 1.5 }, banner)
+local questLabel = label({ Size = UDim2.fromOffset(360, 24), Position = UDim2.new(1, -380, 0, 20), TextXAlignment = Enum.TextXAlignment.Right, Text = "", TextSize = 15 })
+make("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.5, Thickness = 1 }, questLabel)
 
 -- ===== Panels =====
 local function panel(size, position)
 	local frame = make("ScrollingFrame", {
-		Size = size, Position = position, BackgroundColor3 = Color3.fromRGB(15, 15, 20), Visible = false,
-		CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 4,
+		Size = size, Position = position, BackgroundColor3 = UI.Panel, BackgroundTransparency = UI.PanelAlpha, BorderSizePixel = 0, Visible = false,
+		CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 3, ScrollBarImageColor3 = UI.Accent,
+		ScrollingDirection = Enum.ScrollingDirection.Y,
 	})
-	make("UIListLayout", { Padding = UDim.new(0, 4) }, frame)
+	corner(frame, UI.Radius)
+	stroke(frame, UI.Accent, 0.7)
+	make("UIPadding", { PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) }, frame)
+	make("UIListLayout", { Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder }, frame)
 	return frame
 end
 
@@ -114,20 +182,38 @@ local function clear(frame)
 	end
 end
 
--- buttons: { { text, fn, color? } }, laid out right-to-left
+-- buttons: { { text, fn, color? } }, laid out right-to-left. A row with no buttons whose text is all capitals
+-- is a section header (title face, accent colour, a divider under it); everything else wraps instead of
+-- being cut off.
+local rowOrder = 0
 local function addRow(frame, text, buttons, textColor)
-	local row = make("Frame", { Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1 }, frame)
-	label({ Size = UDim2.new(1, -8 - 58 * #buttons, 1, 0), Position = UDim2.fromOffset(6, 0), Text = text, TextColor3 = textColor, TextXAlignment = Enum.TextXAlignment.Left, TextSize = 14, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
+	rowOrder += 1
+	text = tostring(text or "")
+	local letters = text:gsub("[^%a]", "")
+	local header = #buttons == 0 and #letters >= 3 and letters == letters:upper()
+	local row = make("Frame", { Size = UDim2.new(1, 0, 0, if header then 24 else 28), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = rowOrder }, frame)
+	local BW, GAP = 66, 6
+	local width = #buttons * (BW + GAP)
+	if header then
+		local title = text:gsub("^%-%-%s*", ""):gsub("%s*%-%-$", "")
+		label({ Size = UDim2.new(1, 0, 0, 20), Text = title, Font = UI.Title, TextSize = 12, TextColor3 = textColor or UI.Accent,
+			TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, Parent = row })
+		make("Frame", { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, 2), BackgroundColor3 = UI.Line, BorderSizePixel = 0 }, row)
+		return
+	end
+	label({ Size = UDim2.new(1, -width - 4, 0, 28), Text = text, TextColor3 = textColor or UI.Text, TextXAlignment = Enum.TextXAlignment.Left,
+		TextSize = 15, TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, Parent = row })
 	for i, b in buttons do
 		local btn = make("TextButton", {
-			Size = UDim2.fromOffset(54, 24), Position = UDim2.new(1, -58 * (#buttons - i + 1), 0, 2), Text = b.text,
-			BackgroundColor3 = b.color or Color3.fromRGB(60, 80, 120), TextColor3 = Color3.new(1, 1, 1), TextSize = 13,
+			Size = UDim2.fromOffset(BW, 24), Position = UDim2.new(1, -(BW + GAP) * (#buttons - i + 1) + GAP, 0, 2), Text = string.upper(b.text),
+			BackgroundColor3 = b.color or UI.Button, TextColor3 = UI.Text, TextSize = 11, Font = UI.Bold,
 		}, row)
+		stroke(btn, Color3.new(1, 1, 1), 0.88)
 		btn.Activated:Connect(b.fn)
 	end
 end
 
-local statsPanel = panel(UDim2.fromOffset(260, 220), UDim2.fromOffset(20, 120))
+local statsPanel = panel(UDim2.fromOffset(280, 240), UDim2.fromOffset(20, 120))
 local invPanel = panel(UDim2.fromOffset(380, 400), UDim2.new(0.5, -190, 0.5, -200))
 local loadoutPanel = panel(UDim2.fromOffset(420, 400), UDim2.new(1, -440, 0.5, -200))
 
@@ -1678,33 +1764,11 @@ local function blackFlashFx(attacker, victim)
 	end
 end
 
--- Procedural animation: Motor6D C0 offsets tweened on top of whatever the Animator is doing
--- (the Animator writes Transform, not C0, so idle/walk keep playing underneath). Works on player
--- R15 rigs and on the Blender enemy rigs, which use the same joint names.
-local baseC0 = setmetatable({}, { __mode = "k" })
-local jointTweens = setmetatable({}, { __mode = "k" })
-local function joint(char, name)
-	local m = typeof(char) == "Instance" and char:FindFirstChild(name, true)
-	if m and m:IsA("Motor6D") then
-		if baseC0[m] == nil then
-			baseC0[m] = m.C0
-		end
-		return m
-	end
-	return nil
-end
+-- Procedural animation: joint offsets tweened on top of whatever the Animator is doing (it writes
+-- Transform, so idle/walk keep playing underneath). shared/Joints handles both joint systems: Motor6D
+-- (our rigs, the Conduit body) and AnimationConstraint (Roblox's newer avatar joints).
 local function pose(char, name, offset, seconds, style)
-	local m = joint(char, name)
-	if not m then
-		return
-	end
-	local old = jointTweens[m]
-	if old then
-		old:Cancel()
-	end
-	local tw = TweenService:Create(m, TweenInfo.new(seconds, style or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { C0 = baseC0[m] * offset })
-	jointTweens[m] = tw
-	tw:Play()
+	Joints.Pose(char, name, offset, seconds, style)
 end
 local function relax(char, seconds)
 	for _, name in { "RightShoulder", "LeftShoulder", "RightElbow", "LeftElbow", "Waist", "Neck" } do

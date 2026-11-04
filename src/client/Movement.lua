@@ -17,6 +17,7 @@ local TweenService = game:GetService("TweenService")
 local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
+local Joints = require(Shared.Joints)
 
 local M = Config.Movement
 local C = Config.Combat
@@ -390,7 +391,7 @@ local function onStepped(_, dt)
 		local root = char and char:FindFirstChild("HumanoidRootPart")
 		local lower = char and char:FindFirstChild("LowerTorso")
 		local joint = lower and lower:FindFirstChild("Root")
-		if hum and root and joint and joint:IsA("Motor6D") then
+		if hum and root and Joints.IsJoint(joint) then
 			local rel = root.CFrame:VectorToObjectSpace(hum:GetMoveVelocity())
 			local pitch, roll = 0, 0
 			if hum.WalkSpeed > 0 then
