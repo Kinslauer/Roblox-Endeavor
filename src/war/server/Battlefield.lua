@@ -485,8 +485,41 @@ function Battlefield.Init()
 	local L = FrontMap.Generate(WC.Seed)
 	rng = Random.new(L.Seed)
 	folder:SetAttribute("Seed", L.Seed)
+	-- load every model the dressing uses at once (one by one this took ~15 s on a live server)
+	do
+		local ids = {}
+		local function collect(t)
+			for _, v in t do
+				if type(v) == "number" then
+					ids[v] = true
+				elseif type(v) == "table" then
+					collect(v)
+				end
+			end
+		end
+		collect(FW)
+		collect(Assets.Front)
+		collect(Assets.Base)
+		collect({ Assets.Frontier.Dead, Assets.Frontier.Broad, Assets.Frontier.Pines })
+		for _, kit in Assets.FrontBuildings do
+			collect(kit.Stages)
+		end
+		local pending = 0
+		for id in ids do
+			pending += 1
+			task.spawn(function()
+				ModelAssets.Template(id)
+				pending -= 1
+			end)
+		end
+		local waited = os.clock()
+		while pending > 0 and os.clock() - waited < 30 do
+			task.wait(0.05)
+		end
+	end
+	local loadSeconds = os.clock() - started
 	local chunks = WarTerrain.Write()
-	local terrainSeconds = os.clock() - started
+	local terrainSeconds = os.clock() - started - loadSeconds
 	local counts = buildWorld(L)
 	local total = 0
 	for _, n in counts do
@@ -496,7 +529,7 @@ function Battlefield.Init()
 	for _ in structures do
 		nStructures += 1
 	end
-	print(("[Front] world seed %d: %d terrain chunks in %.1fs, %d structures, %d props, built in %.1fs"):format(L.Seed, chunks, terrainSeconds, nStructures, total, os.clock() - started))
+	print(("[Front] world seed %d: models loaded in %.1fs, %d terrain chunks in %.1fs, %d structures, %d props, built in %.1fs"):format(L.Seed, loadSeconds, chunks, terrainSeconds, nStructures, total, os.clock() - started))
 	-- faction bases: a bunker each at the back of its rear, facing the field
 	for _, faction in W.Factions do
 		local home = L.Bases[faction]

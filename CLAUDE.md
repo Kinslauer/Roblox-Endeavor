@@ -223,6 +223,8 @@ Client tab screenshot, because Andy cannot read logs another way.
   "Upload stack / log in".
 
 ## State (2026-11-10)
+- Front v22 published (2026-11-10, the open world) and starting cleanly on a real server: startup 1.8s (models
+  loaded in parallel 1.0s, terrain 0.7s), 0 warnings, ~3,850 parts (3,780 MeshParts), ~1,650 props.
 - Endeavor v76 published (2026-11-10, geometric blocking) and starting cleanly on a real server: startup 52.6s,
   0 warnings (Front v19, unchanged since). Latest rounds: traced blades, keyframed animations, armoured dodge, frame
   data, group launches, guard, geometric blocking (see Decisions above).
