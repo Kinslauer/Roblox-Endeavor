@@ -2025,16 +2025,14 @@ guardJolt = function(char, parry)
 end
 -- the incoming blade nearest this body, as a point in its root space (nil: nothing coming)
 local function threatFor(char, root)
-	local best, bestD = nil, 16
+	local best, bestD = nil, Config.Combat.GuardSight
 	local now = os.clock()
 	for other, st in swinging do
 		local oroot = other ~= char and other.Parent and other:FindFirstChild("HumanoidRootPart")
 		if oroot then
 			local e = now - st.t0 - st.frozen
 			if e < st.windup + st.active then
-				local u = if e < st.windup then 0.35 else (e - st.windup) / math.max(st.active, 1e-3)
-				local base, tip = Swings.Blade(oroot.CFrame, st.shape, u, st.range * st.scale, st.scale)
-				local mid = base:Lerp(tip, 0.6)
+				local mid = Swings.ThreatPoint(oroot.CFrame, st.shape, 0, st.range * st.scale, st.scale, root.Position)
 				local d = (mid - root.Position).Magnitude
 				if d < bestD then
 					best, bestD = root.CFrame:PointToObjectSpace(mid), d
@@ -2056,19 +2054,10 @@ RunService.RenderStepped:Connect(function(dt)
 			continue
 		end
 		local scale = Swings.ScaleOf(char)
-		local p = threatFor(char, root)
-		local yaw, high = 0, false
-		if p then
-			yaw = math.clamp(math.deg(math.atan2(p.X, -p.Z)), -75, 75)
-			high = p.Y > 1.9 * scale
-		end
-		local w = math.clamp(math.abs(yaw) / 55, 0, 1)
+		-- where the right hand holds it, and which way the blade runs from the hand (root space): the same shape
+		-- the server blocks with (Swings.GuardPose), so a blade that gets past what you see gets past the guard
+		local hand, blade, yaw, high = Swings.GuardPose(threatFor(char, root), scale)
 		local side = if yaw >= 0 then 1 else -1
-		-- where the right hand holds it, and which way the blade runs from the hand (root space)
-		local hand = Vector3.new(0.35 + 0.5 * side * w, (if high then 2.1 else 1.25) * scale, -1.45 * scale)
-		local across = Vector3.new(-1, if high then 0.12 else 0.45, -0.05)
-		local upright = Vector3.new(0.12 * side, 1, -0.2)
-		local blade = (across * (1 - w) + upright * w).Unit
 		-- a parry sweeps hand and blade out past the threat side; a blocked hit pushes the guard into the chest
 		if g.jolt then
 			local k = (now - g.joltAt) / (if g.jolt == "Parry" then 0.22 else 0.14)
@@ -2084,7 +2073,7 @@ RunService.RenderStepped:Connect(function(dt)
 				end
 			end
 		end
-		local a = 1 - math.exp(-dt * 16)
+		local a = 1 - math.exp(-dt * Config.Combat.GuardFollow)
 		g.hand = g.hand:Lerp(hand, a)
 		g.blade = g.blade:Lerp(blade, a).Unit
 		local shoulderR = Swings.ShoulderOffset * scale

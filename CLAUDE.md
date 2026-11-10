@@ -185,7 +185,18 @@ Client tab screenshot, because Andy cannot read logs another way.
   at IMP.Hit.HeavyAmount. Block/Parry/Block_Hit animations are body-only (arms keyed to rest); the client's guard
   driver (`guardSet`/`guardJolt`, in the traced-swing block) holds the weapon across the front with the off hand
   bracing it, turns toward the nearest incoming blade (`threatFor` from `swinging`), sweeps out on Parry, shoves back
-  on Block. Visual only: the server's block test is unchanged.
+  on Block. The pose comes from `Swings.GuardPose`, the same shape the server blocks with (below).
+- Geometric blocking (owner, 2026-11-10: "start work on the mordhau style blocking"): a traced blade is blocked only
+  where it meets the guard before the body. `src/shared/Swings.lua`: `ThreatPoint(rootCF, id, 0, reach, scale,
+  target)` = where the swing's arc first comes within ThreatReach of the target (the guard holds there all swing, it
+  does not chase the blade), `GuardPose(threat, scale)` = hand + blade dir (turn clamped to GuardTurn 75, brace on
+  GuardRing 1.6 at the threat's height), `GuardSegment` (armed: weapon from below the grip to GuardLength(range);
+  fists: a short forearm bar). Combat: `Combat.Guard(char, down)` (SetBlock uses it; any rig can), `guards` followed
+  every Heartbeat toward the nearest shaped swing (`swingers`, Config.Combat.GuardFollow/GuardSight), `bladeContact`
+  samples the real arc (ARC_STEPS in time x ALONG the blade) so guard vs body is decided by which the blade reaches
+  first; the guard only counts if the swinger is within GuardCover (100 deg) of the facing. A guarded strike carries
+  `Guarded`; applyDamage blocks traced blows only when Guarded, untraced ones (shots, throws, area strikes) still by
+  facing. A blocked or parried blade stops (cancelSwing, BlockRecoil). Tests: "guard:" checks in scenario.lua.
 - Lore (owner, 2026-10-31; docs/DESIGN.md "The stack"): conduits upload their consciousness stack through the hideout
   computer (first log-in = initialization, `Knowledge.Uploaded`); every death is a reboot of the stack; on the Front the
   stack links to the recruit's; the rich uploaded and escaped the world. Mechanically: Knowledge survives permadeath only
@@ -362,8 +373,8 @@ Client tab screenshot, because Andy cannot read logs another way.
 ## Open items
 - Awaiting the user's in-game look at v75: the Conduit body v2, the 24 keyframed animations, the guard, reactions,
   launches (animation playback can't be verified from the Luau execution API: it does not run the simulation).
-- Offered, not started: make blocking geometric (the guard must actually be in the blade's path, Mordhau-style);
-  today the guard is visual and the server's block test is the old one.
+- Geometric blocking (2026-11-10) awaits Andy's in-game feel: frontal and side blows should stop on the guard,
+  blows from behind and a second attacker's should land. Tuning knobs: Config.Combat.Guard*, Swings.Guard*.
 - Publishing returns 409 "server busy" while the owner has the place open in Studio: ask them to close it.
 - The owner's interactive checklist artifact: https://claude.ai/artifact/XEZw7en3WtuKyYqoQryQvz (ticks in its db
   collection "ticks"); it predates the 2026-11-04 rounds. docs/TESTING.md is the full list.

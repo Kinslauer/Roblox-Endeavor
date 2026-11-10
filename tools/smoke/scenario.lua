@@ -1135,6 +1135,83 @@ do
 	g:Destroy()
 end
 
+-- ===== the guard (Mordhau-style blocking): a raised guard stops only the blade that meets it on the way in =====
+do
+	local CombatG = M.mockEnv.__require(SSS.Server.Combat)
+	local NPCsG = M.mockEnv.__require(SSS.Server.NPCs)
+	local origin = M.V3.new(5200, 5, 5200)
+	local results = {}
+	local conn = CombatG.Resolved.Event:Connect(function(att, vic, r) table.insert(results, { att, vic, r }) end)
+	local function body(name, pos, look, armed)
+		local m = NPCsG.BuildRig(name, { Health = 500, Speed = 0 })
+		m.Parent = game_.Workspace
+		m.HumanoidRootPart.CFrame = M.CF.lookAt(pos, look)
+		if armed then local hw = M.newInstance("Part"); hw.Name = "HeldWeapon"; hw.Parent = m end
+		return m
+	end
+	local spec = { Damage = 10, Posture = 1, Windup = 0.15, Active = 0.15, End = 0.5, Range = 6, Knockback = 0, Stun = 0.3, Type = "Slash" }
+	local function bout(shape, turn, opts)
+		opts = opts or {}
+		local a = body("Guard A", origin, origin + M.V3.new(0, 0, -5))
+		local vpos = origin + M.V3.new(0, 0, -5)
+		local r = math.rad(turn)
+		local v = body("Guard V", vpos, vpos + M.V3.new(math.sin(r), 0, math.cos(r)), true)
+		table.clear(results)
+		if opts.late then
+			-- raised as the blow comes: a parry
+			CombatG.Swing(a, spec, { noStatScaling = true, label = "Test", shape = shape })
+			run(0.1)
+			CombatG.Guard(v, true)
+		else
+			CombatG.Guard(v, true)
+			run(0.6) -- held well before the blow: a block, not a parry
+			table.clear(results)
+			CombatG.Swing(a, spec, { noStatScaling = true, label = "Test", shape = shape })
+			run(0.1)
+		end
+		local live = false
+		for _ = 1, 15 do run(1 / 30); if CombatG.LiveBlades()[a] then live = true end end
+		local got = results[1] and results[1][3] or "miss"
+		local stopped = CombatG.LiveBlades()[a] == nil
+		a:Destroy(); v:Destroy(); run(0.6)
+		return got, stopped
+	end
+	local front = true
+	for _, shape in { "SlashR", "SlashL", "Overhead", "Diagonal", "Thrust" } do
+		if bout(shape, 0) ~= "blocked" then front = false; print("  front " .. shape .. " not blocked") end
+	end
+	check("guard: blows from the front meet the guard (slashes, overhead, diagonal, thrust)", front)
+	local side = bout("SlashR", 60) == "blocked" and bout("Overhead", -60) == "blocked"
+	check("guard: it turns to meet a blow from the side", side)
+	check("guard: a blow from behind comes round a raised guard", bout("SlashR", 180) == "hit" and bout("Overhead", 150) == "hit")
+	local _, stopped = bout("SlashR", 0)
+	check("guard: a blocked blade stops on the guard", stopped)
+	check("guard: a parry is a guard raised just in time, in the blade's path", bout("SlashR", 0, { late = true }) == "parried")
+	check("guard: a late guard facing away is no parry", bout("SlashR", 180, { late = true }) == "hit")
+	-- two at once: the guard turns to one, the other comes round it
+	local v = body("Guard V2", origin, origin + M.V3.new(0, 0, -5), true)
+	local a1 = body("Guard F", origin + M.V3.new(0, 0, -5), origin)
+	local a2 = body("Guard R", origin + M.V3.new(5, 0, 0), origin)
+	CombatG.Guard(v, true)
+	run(0.6)
+	table.clear(results)
+	CombatG.Swing(a1, spec, { noStatScaling = true, label = "Test", shape = "Overhead" })
+	run(0.1)
+	CombatG.Swing(a2, spec, { noStatScaling = true, label = "Test", shape = "Thrust" })
+	run(0.8)
+	local hits, blocks = 0, 0
+	for _, e in results do if e[2] == v then if e[3] == "hit" then hits += 1 elseif e[3] == "blocked" then blocks += 1 end end end
+	check("guard: two attackers at once, one gets round it", hits >= 1)
+	-- untraced attacks still block by facing
+	CombatG.Guard(v, false); CombatG.Guard(v, true); run(0.6)
+	table.clear(results)
+	CombatG.Damage(a1, v, 5, { Posture = 1 })
+	check("guard: an untraced blow from the front is still blocked", results[1] and results[1][3] == "blocked")
+	conn:Disconnect()
+	v:Destroy(); a1:Destroy(); a2:Destroy()
+	run(0.5)
+end
+
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

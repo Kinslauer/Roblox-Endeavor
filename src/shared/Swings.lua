@@ -95,6 +95,80 @@ function Swings.Blade(rootCF, id, u, reach, scale)
 	return shoulder + dir * hand, shoulder + dir * tip
 end
 
+-- ===== The guard (F) =====
+-- Held across the front, braced by the off hand, turned toward the blade coming in. The server blocks with
+-- exactly this shape (Combat: a traced blade is only blocked when it meets the guard before the body) and the
+-- clients pose the arms on it, so the guard you see is the guard that blocks. Root space, like the swings.
+Swings.GuardTurn = 75 -- degrees the guard turns off your facing toward a blade; past that it comes in around it
+Swings.ThreatReach = 2.4 -- studs from a body's axis at which an incoming blade counts as arriving (ThreatPoint)
+Swings.GuardRing = 1.6 -- studs from the body's axis the guard is held out at (scale 1)
+Swings.GuardHigh = 1.9 -- a blade this high (studs above the root, at scale 1) is met with the guard over the head
+
+-- Where an incoming swing will first reach a body standing at `target` (world space): stepping along the rest of
+-- its arc from progress u (0 during the windup), the point of the blade nearest the body at the first step it
+-- comes within reach of it. That is where a guard has to be. Without a target, or if the arc never gets there,
+-- the blade's middle at mid-arc.
+local THREAT_STEPS = 12
+function Swings.ThreatPoint(rootCF, id, u, reach, scale, target)
+	u = u or 0
+	if target then
+		local lo, hi = target - Vector3.new(0, 2.5, 0), target + Vector3.new(0, 2.2, 0)
+		for i = 0, THREAT_STEPS do
+			local uu = u + (1 - u) * i / THREAT_STEPS
+			local base, tip = Swings.Blade(rootCF, id, uu, reach, scale)
+			local dist, onBlade = Swings.SegmentDistance(base, tip, lo, hi)
+			if dist <= Swings.ThreatReach then
+				return onBlade
+			end
+		end
+	end
+	local base, tip = Swings.Blade(rootCF, id, math.max(u, 0.5), reach, scale)
+	return base:Lerp(tip, 0.6)
+end
+
+-- The guard pose toward a threat (a point in the guarding body's root space, or nil: nothing coming): the hand
+-- that holds it and the direction the weapon runs from that hand (both root space), the turn (degrees, positive
+-- to the right) and whether it is held high. The guard is laid across the front, upright on the side a blow comes
+-- from, over the head for a high one, and placed so the off hand's brace sits on a ring round the body
+-- (Swings.GuardRing) toward where the blade will arrive, at its height.
+function Swings.GuardPose(threat, scale)
+	scale = scale or 1
+	local yaw, high, y = 0, false, 1.45
+	if threat then
+		yaw = math.clamp(math.deg(math.atan2(threat.X, -threat.Z)), -Swings.GuardTurn, Swings.GuardTurn)
+		high = threat.Y > Swings.GuardHigh * scale
+		y = math.clamp(threat.Y / scale, 0.6, 2.5)
+	end
+	local w = math.clamp(math.abs(yaw) / 55, 0, 1)
+	local side = if yaw >= 0 then 1 else -1
+	local across = Vector3.new(-1, if high then 0.12 else 0.45, -0.05)
+	local upright = Vector3.new(0.12 * side, 1, -0.2)
+	local blade = (across * (1 - w) + upright * w).Unit
+	local r = math.rad(yaw)
+	local brace = Vector3.new(math.sin(r) * Swings.GuardRing, y, -math.cos(r) * Swings.GuardRing) * scale
+	local hand = brace - blade * (0.9 * scale)
+	return Vector3.new(hand.X, math.clamp(hand.Y, 0.5 * scale, 2.4 * scale), hand.Z), blade, yaw, high
+end
+
+-- How long a weapon's guard is (studs from the hand along the blade, scale 1) from its reach.
+function Swings.GuardLength(range)
+	return math.clamp((range or 6) - Swings.HandReach * 1.1, 2.4, 5)
+end
+
+-- The guard as a segment in world space, from a pose (GuardPose's hand and blade). Armed: the weapon from
+-- just below the grip out to its tip. Unarmed: both forearms, a short bar across the brace point.
+function Swings.GuardSegment(rootCF, hand, blade, scale, length, armed, yaw)
+	scale = scale or 1
+	if armed then
+		return rootCF:PointToWorldSpace(hand - blade * (0.5 * scale)), rootCF:PointToWorldSpace(hand + blade * ((length or 3.5) * scale))
+	end
+	-- forearms: across the guard ring at the brace, square to the way the blow comes in
+	local r = math.rad(yaw or 0)
+	local centre = hand + blade * (0.9 * scale)
+	local across = Vector3.new(math.cos(r), 0, math.sin(r)) * (0.85 * scale)
+	return rootCF:PointToWorldSpace(centre - across), rootCF:PointToWorldSpace(centre + across)
+end
+
 -- A body's size relative to a standard one, from its humanoid (bigger rigs swing from higher and wider).
 function Swings.ScaleOf(char)
 	local hum = char and char:FindFirstChildOfClass("Humanoid")

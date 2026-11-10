@@ -136,6 +136,11 @@ report). Versions: Endeavor v69, Front v19.
       crate or breach point still breaks it.
 - [ ] Each weapon family swings its own arcs: blades right-left-right-diagonal, blunt/batons right-left-overhead,
       hammers right-overhead, spears thrust-thrust-slash-thrust, fists jabs then an uppercut. Heavies use the big arc.
+- [ ] Blocking needs the guard in the way (F): an enemy's blow from the front or either side (up to about 100 degrees
+      round) stops on your guard with a clang and the enemy's swing ends there. A blow from behind lands even with F
+      held. With two enemies swinging at once, the guard turns to one and the other's blow gets round it. A parry
+      (F pressed just before the blow) only works if the guard meets the blade too. Fists cover with the forearms.
+      Say if a blow you could see coming went through a guard that looked like it was in the way.
 
 ## Endeavor: inventory (Tab)
 - [ ] Tab shows a grid (pockets 6x4 without a pack). Items are coloured blocks sized by footprint: materials 1x1 stacking

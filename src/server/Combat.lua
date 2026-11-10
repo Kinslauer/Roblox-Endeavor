@@ -540,8 +540,15 @@ local function applyDamage(attacker, victim, amount, opts)
 	end
 
 	local result = "hit"
-	local facing = aroot and vroot and vroot.CFrame.LookVector:Dot(-direction) > C.BlockMinFacing
-	if vs.block and facing and not opts.Unblockable then
+	-- A traced blade (opts.Guarded set) is blocked only if it met the guard on its way in (traceBlade); one that came
+	-- around it, over it or from behind lands even on a raised guard. Everything else still blocks by facing.
+	local covered
+	if opts.Guarded ~= nil then
+		covered = opts.Guarded == true
+	else
+		covered = aroot and vroot and vroot.CFrame.LookVector:Dot(-direction) > C.BlockMinFacing
+	end
+	if vs.block and covered and not opts.Unblockable then
 		if t - vs.blockStart <= vd.ParryWindow then
 			Combat.Stun(attacker, C.ParryStun)
 			Combat.AddPosture(victim, -C.ParryPostureRelief)
@@ -650,6 +657,7 @@ local function pulse(char, spec, mods, seen, tracer)
 		if contact then
 			hitOpts = table.clone(opts)
 			hitOpts.ContactPoint, hitOpts.ContactDir = contact.Point, contact.Dir
+			hitOpts.Guarded = contact.Guarded == true
 		end
 		if flick then
 			hitOpts = table.clone(hitOpts)
@@ -690,6 +698,7 @@ local function pulse(char, spec, mods, seen, tracer)
 		if mods.onHit then
 			mods.onHit(result, model)
 		end
+		return result
 	end
 
 	if tracer and not spec.Ranged then
@@ -745,6 +754,84 @@ local liveBlades = {} -- char -> { base, tip, token, s }
 Combat.LiveBlades = function()
 	return liveBlades
 end
+
+-- ===== The guard (F), server side: the same shape the clients pose (shared/Swings.GuardPose/GuardSegment) =====
+-- A raised guard follows the nearest incoming blade (winding up or live) at Config.Combat.GuardFollow, turning at
+-- most Swings.GuardTurn off the body's facing. A traced blade is blocked only where it meets this segment before
+-- it meets the body: a swing from behind, past the turn, or from a second attacker while the guard is turned to
+-- the first comes around it and lands.
+local swingers = {} -- char -> { id, t0, windup, active, reach, scale, token, s } for shaped swings in progress
+local guards = {} -- char -> { hand, blade, yaw, high, length, armed }
+Combat.Guards = function()
+	return guards
+end
+
+local function guardThreat(char, root)
+	local best, bestD = nil, C.GuardSight
+	local now = os.clock()
+	for other, w in swingers do
+		if not other.Parent or w.s.token ~= w.token or now > w.t0 + w.windup + w.active + 0.05 then
+			swingers[other] = nil
+			continue
+		end
+		local oroot = other ~= char and other:FindFirstChild("HumanoidRootPart")
+		if oroot then
+			-- where its arc first reaches this body: the guard holds there through the whole swing, not chasing the blade
+			local mid = Swings.ThreatPoint(oroot.CFrame, w.id, 0, w.reach, w.scale, root.Position)
+			local d = (mid - root.Position).Magnitude
+			if d < bestD then
+				best, bestD = root.CFrame:PointToObjectSpace(mid), d
+			end
+		end
+	end
+	return best
+end
+
+local function raiseGuard(char)
+	local player = Players:GetPlayerFromCharacter(char)
+	local data = player and PlayerData.Get(player)
+	local def = data and Weapons.Defs[data.Equipped]
+	local range = def and def.Attacks and def.Attacks[1] and def.Attacks[1].Range
+	local hand, blade, yaw, high = Swings.GuardPose(nil, Swings.ScaleOf(char))
+	guards[char] = { hand = hand, blade = blade, yaw = yaw, high = high, length = Swings.GuardLength(range),
+		armed = char:FindFirstChild("HeldWeapon") ~= nil and not (def and def.Ranged) }
+end
+
+local function followGuards(dt)
+	local a = 1 - math.exp(-dt * C.GuardFollow)
+	for char, g in guards do
+		local root = char.Parent and char:FindFirstChild("HumanoidRootPart")
+		if not root or not st(char).block then
+			guards[char] = nil
+			continue
+		end
+		local hand, blade, yaw, high = Swings.GuardPose(guardThreat(char, root), Swings.ScaleOf(char))
+		g.hand = g.hand:Lerp(hand, a)
+		g.blade = g.blade:Lerp(blade, a).Unit
+		g.yaw += (yaw - g.yaw) * a
+		g.high = high
+	end
+end
+
+-- the guard as a world segment, or nil when it is down (or `from`, the swinger, is too far round to be covered:
+-- past Config.Combat.GuardCover degrees off the guarding body's facing)
+local function guardSegment(model, from)
+	local g = guards[model]
+	local root = g and model:FindFirstChild("HumanoidRootPart")
+	if not root or not st(model).block then
+		return nil
+	end
+	if from then
+		local to = Vector3.new(from.X - root.Position.X, 0, from.Z - root.Position.Z)
+		local look = root.CFrame.LookVector
+		look = Vector3.new(look.X, 0, look.Z)
+		if to.Magnitude > 0.1 and look.Magnitude > 0.1 and to.Unit:Dot(look.Unit) < math.cos(math.rad(C.GuardCover)) then
+			return nil
+		end
+	end
+	return Swings.GuardSegment(root.CFrame, g.hand, g.blade, Swings.ScaleOf(model), g.length, g.armed, g.yaw)
+end
+Combat.GuardSegment = guardSegment
 
 local function cancelSwing(char, recover)
 	local s = st(char)
@@ -829,6 +916,38 @@ local function capsule(model, cache)
 end
 
 local SAMPLES = 5
+local ARC_STEPS, ALONG = 6, 8
+-- Where a blade swept this frame first comes within `radius` of segment a-b. `bladeAt(f)` gives the blade (base,
+-- tip) at fraction f of this frame (0 = last frame, 1 = now), following the real arc rather than a straight chord.
+-- Returns the point on the blade, the way it was moving there, when (the time step it touched; ARC_STEPS + 1 =
+-- only found by the coarse sweep) and how far along the blade from the hand (0..1). The guard and the body are
+-- told apart by these: whichever the blade reached first in time, or nearer its hand in the same step.
+local function bladeContact(bladeAt, prevBase, prevTip, base, tip, a, b, radius)
+	local lastB, lastT
+	for j = 0, ARC_STEPS do
+		local bb, bt = bladeAt(j / ARC_STEPS)
+		for i = 0, ALONG do
+			local k = i / ALONG
+			local p = bb:Lerp(bt, k)
+			if Swings.SegmentDistance(p, p, a, b) <= radius then
+				local move = if lastB then p - lastB:Lerp(lastT, k) else Vector3.zero
+				return p, (if move.Magnitude > 0.01 then move.Unit else (bt - bb).Unit), j, k
+			end
+		end
+		lastB, lastT = bb, bt
+	end
+	-- a fast blade can pass clean through between steps: sweep each point along it from last frame to now
+	for i = 0, ALONG do
+		local k = i / ALONG
+		local p0, p1 = prevBase:Lerp(prevTip, k), base:Lerp(tip, k)
+		local dist, onBlade = Swings.SegmentDistance(p0, p1, a, b)
+		if dist <= radius then
+			return onBlade, (if (p1 - p0).Magnitude > 0.01 then (p1 - p0).Unit else (tip - base).Unit), ARC_STEPS + 1, k
+		end
+	end
+	return nil
+end
+
 local function traceBlade(char, spec, mods, seen, strike, damage)
 	local s = st(char)
 	local token = s.token
@@ -840,6 +959,7 @@ local function traceBlade(char, spec, mods, seen, strike, damage)
 	local reach = spec.Range * scale
 	local elapsed, last, pauseUntil = 0, os.clock(), 0
 	local prevBase, prevTip = Swings.Blade(root.CFrame, id, 0, reach, scale)
+	local prevU = 0
 	local cache = {}
 	local ray = RaycastParams.new()
 	ray.FilterType = Enum.RaycastFilterType.Exclude
@@ -861,6 +981,13 @@ local function traceBlade(char, spec, mods, seen, strike, damage)
 		end
 		local u = math.min(elapsed / spec.Active, 1)
 		local base, tip = Swings.Blade(root.CFrame, id, u, reach, scale)
+		local uFrom, fromBase, fromTip, rootCF = prevU, prevBase, prevTip, root.CFrame
+		local function bladeAt(f)
+			if f <= 0 then
+				return fromBase, fromTip
+			end
+			return Swings.Blade(rootCF, id, uFrom + (u - uFrom) * f, reach, scale)
+		end
 		liveBlades[char] = { base = base, tip = tip, prevBase = prevBase, prevTip = prevTip, token = token, s = s }
 		-- 1. blade meets blade mid-air: both swings are gone. Both blades are swept from where they were last
 		-- frame to where they are now, so two fast arcs cannot pass through each other between frames.
@@ -882,24 +1009,25 @@ local function traceBlade(char, spec, mods, seen, strike, damage)
 				local vr = model:FindFirstChild("HumanoidRootPart")
 				local cap = capsule(model, cache)
 				local axisA, axisB = vr.Position - Vector3.new(0, cap.half, 0), vr.Position + Vector3.new(0, cap.half * 0.75, 0)
-				local hitAt, hitDir
-				for k = 1, SAMPLES do
-					local f = (k - 1) / (SAMPLES - 1)
-					local p0, p1 = prevBase:Lerp(prevTip, f), base:Lerp(tip, f)
-					local dist, onBlade = Swings.SegmentDistance(p0, p1, axisA, axisB)
-					if dist <= cap.radius then
-						hitAt, hitDir = onBlade, (if (p1 - p0).Magnitude > 0.01 then (p1 - p0).Unit else (tip - base).Unit)
-						break
-					end
-				end
-				if not hitAt then
-					local dist, onBlade = Swings.SegmentDistance(base, tip, axisA, axisB) -- a thrust's tip driving in
-					if dist <= cap.radius then
-						hitAt, hitDir = onBlade, (tip - base).Unit
+				local hitAt, hitDir, when, along = bladeContact(bladeAt, prevBase, prevTip, base, tip, axisA, axisB, cap.radius)
+				-- a raised guard in the blade's way takes it if the blade gets there first
+				local guarded = false
+				local ga, gb = guardSegment(model, root.Position)
+				if ga then
+					local gAt, gDir, gWhen, gAlong = bladeContact(bladeAt, prevBase, prevTip, base, tip, ga, gb, C.GuardRadius)
+					if gAt and (not hitAt or gWhen < when or (gWhen == when and gAlong <= along)) then
+						hitAt, hitDir, guarded = gAt, gDir, true
 					end
 				end
 				if hitAt then
-					strike(model, { Point = hitAt, Dir = hitDir })
+					local result = strike(model, { Point = hitAt, Dir = hitDir, Guarded = guarded })
+					if guarded and (result == "blocked" or result == "parried") then
+						-- the blade stops on the guard: the rest of the arc is gone (a parry also stunned the swinger)
+						local keep = s.busyUntil
+						cancelSwing(char, C.BlockRecoil)
+						s.busyUntil = math.max(keep, s.busyUntil)
+						return
+					end
 					pauseUntil = now + C.HitStop -- the blade bites and holds for a beat
 				end
 			end
@@ -934,7 +1062,7 @@ local function traceBlade(char, spec, mods, seen, strike, damage)
 				end
 			end
 		end
-		prevBase, prevTip = base, tip
+		prevBase, prevTip, prevU = base, tip, u
 	end
 	liveBlades[char] = nil
 end
@@ -957,6 +1085,11 @@ function Combat.Swing(char, spec, mods)
 		mods.shape = nil -- a shot has no blade arc to trace or to pose the arm along
 	end
 	fx("Swing", char, mods.label, mods.shape, spec.Windup, spec.Active, spec.End, spec.Range)
+	if mods.shape then
+		-- a guard can see it coming (guardThreat) from the first frame of the windup
+		local scale = Swings.ScaleOf(char)
+		swingers[char] = { id = mods.shape, t0 = t0, windup = spec.Windup, active = spec.Active, reach = spec.Range * scale, scale = scale, token = token, s = s }
+	end
 
 	task.delay(spec.Windup, function()
 		if s.token ~= token or not isAlive(char) then
@@ -1120,13 +1253,27 @@ function Combat.SetBlock(player, down)
 	if down then
 		s.queued = nil -- guarding drops a queued swing
 		if Combat.CanAct(char) and not s.block and os.clock() >= s.busyUntil and not handsFull(char) then
-			local t = os.clock()
 			Combat.SetSprint(player, false)
-			s.block = true
-			-- Tapping block repeatedly must not re-arm the parry window every press.
-			s.blockStart = if t - s.lastBlockRelease >= C.ParryRearm then t else -10
-			char:SetAttribute("Blocking", true)
+			Combat.Guard(char, true)
 		end
+	else
+		Combat.Guard(char, false)
+	end
+end
+
+-- Raises or drops a body's guard (players through SetBlock; any rig may use it directly).
+function Combat.Guard(char, down)
+	local s = st(char)
+	if down then
+		if s.block then
+			return
+		end
+		local t = os.clock()
+		s.block = true
+		raiseGuard(char)
+		-- Tapping block repeatedly must not re-arm the parry window every press.
+		s.blockStart = if t - s.lastBlockRelease >= C.ParryRearm then t else -10
+		char:SetAttribute("Blocking", true)
 	else
 		if s.block then
 			s.lastBlockRelease = os.clock()
@@ -1201,6 +1348,7 @@ function Combat.Init()
 	Net.On("Sprint", { rate = 4, burst = 8, args = { "boolean" } }, Combat.SetSprint)
 	Net.On("Dodge", { rate = 4, burst = 6, args = { "vector" } }, Combat.Dodge)
 
+	RunService.Heartbeat:Connect(followGuards)
 	local accumulator = 0
 	RunService.Heartbeat:Connect(function(dt)
 		accumulator += dt
