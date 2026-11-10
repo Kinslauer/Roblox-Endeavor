@@ -87,8 +87,8 @@ animations, so motion is checked only with stick-figure previews.
   branch; one commit per round; no pull requests).
 - Built with Rojo; code in Luau. Smoke tests run the real scripts against a mock of Roblox (215 game checks,
   28 client checks, 34 Front checks). A real-server check runs scripts on the published place through Open Cloud.
-- Publishing uses an Open Cloud API key that the owner made. It is never stored in the repository, so a new session
-  asks the owner for it. Publishing fails with 409 "server busy" while Studio has the place open: ask them to close it.
+- Publishing uses an Open Cloud API key that the owner made. It is saved as a secret on the owner's personal cloud
+  environment "Roblox-Endeavor" and is never stored in the repository. Start coding sessions on that environment. Publishing fails with 409 "server busy" while Studio has the place open: ask them to close it.
 - Models are Blender scripts, animations are keyframes written in code, sounds are synthesized; all are uploaded
   through Open Cloud and wired in by asset id.
 - Every feature that lands gets a line in `docs/TESTING.md`; every decision the owner makes goes in `CLAUDE.md`.

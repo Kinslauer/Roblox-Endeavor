@@ -38,7 +38,10 @@ store `ConduitCharacter_v2`) is shared by both places.
   `cloud/v2/universes/{u}/places/{p}/luau-execution-session-tasks`, poll, read `/logs`). Use it to reproduce errors.
 - **Publish**: `ROBLOX_API_KEY=... ROJO=/home/user/scratch-rojo/rojo tools/publish.sh [endeavor|front|all]`.
   The key is an Open Cloud key the user created (Place Management: Write + Luau Execution: Write on Endeavor).
-  It is NOT in the repo; a new session must ask the user for it again (or they store it as an environment secret).
+  It is saved as a network secret on the personal cloud environment "Roblox-Endeavor" (2026-11-10): the proxy
+  injects it as `x-api-key` on every request to apis.roblox.com. Scripts only need a placeholder:
+  `ROBLOX_API_KEY=proxy-injected` (publish.sh, tools/models/upload.py, tools/anims/anims.py --upload, run_luau.py).
+  Run sessions on that environment; on any other environment the key is absent. Never write the key to a file.
   Roblox sometimes answers 409 "server busy" on the start place; the script retries, and a later retry works.
 - Maps: `tools/smoke/dumpworld.lua` / `dumpfront.lua` + `tools/smoke/map.py` draw the generated worlds.
 - Commit style: one commit per round, push to `claude/roblox-permadeath-openworld-cj3jfk` (the only branch; no PRs).
@@ -320,7 +323,6 @@ store `ConduitCharacter_v2`) is shared by both places.
 - Offered, not started: make blocking geometric (the guard must actually be in the blade's path, Mordhau-style);
   today the guard is visual and the server's block test is the old one.
 - Publishing returns 409 "server busy" while the owner has the place open in Studio: ask them to close it.
-- The Open Cloud key is kept only in the session scratchpad (never in the repo); a new session asks for it again.
 - The owner's interactive checklist artifact: https://claude.ai/artifact/XEZw7en3WtuKyYqoQryQvz (ticks in its db
   collection "ticks"); it predates the 2026-11-04 rounds. docs/TESTING.md is the full list.
 - `.claude/skills/fable-prompt` builds and audits Fable 5.2 prompts for this kind of project.
