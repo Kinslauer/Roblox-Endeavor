@@ -182,6 +182,7 @@ local function figure(sim, cf, color, health, name)
 	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 	hum.HipHeight = 2
+	hum.RequiresNeck = false -- these bodies are welded blocks with no neck joint; with it they would die at once
 	hum.Parent = model
 	model.PrimaryPart = root
 	model.Parent = sim.Folder
