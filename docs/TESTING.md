@@ -267,6 +267,39 @@ report). Versions: Endeavor v69, Front v19.
 - [ ] The Pit and the Test Armory still exist, 3000 studs east off the map on their own slab; F2 "Go to: Armory" gets
       there and back ("Go" on any district). Nobody spawns there any more.
 
+## Endeavor: the megacity (the industrial ring, green pockets, smog)
+- [ ] Walk out of the core city east, west or south: the ground goes on into seven new districts, each with its own
+      banner as you cross in (map: docs/maps/world_map_megacity.png). Roads run along the core's sides and the
+      south artery, with streetlights and wrecks.
+- [ ] The Stacks (west, north half): smokestacks pouring dark smoke, tank farms with ladders you can climb, flare stacks
+      burning, pipe racks with a walkway on top, one giant stack by the plaza with a red light on top.
+- [ ] Slag Flats (west, south half): glowing green pools. Standing in one hurts and tints the screen green; stepping
+      out clears it. Slag heaps, dead cranes, conveyors, a tipped giant ladle glowing orange by the plaza.
+- [ ] Pylon Fields (east, north half): power lines on lattice pylons, fenced transformer yards (one sparks), cooling
+      towers steaming, a blue coil spire by the plaza. Mostly Shockers here.
+- [ ] The Hab Blocks (east, south half): huge apartment blocks on stilts with neon floors and signs; market stalls in
+      the shade under them; low terrace blocks with a ladder up and skybridges between their roofs; a very tall
+      spire block with a pink crown.
+- [ ] Scrap Sea (south-west): junk mountains you can climb, walls of crushed cubes, magnet cranes with a car hanging.
+- [ ] The Foundry (south): furnace halls you can walk through (molten channel down the middle, a catwalk with a
+      ladder), blast furnaces with a glowing taphole, ore piles and rails; the mother furnace by the plaza. Brutes.
+- [ ] The Sumps (south-east): islands between sunken canals of sludge, bridges between them. Fall in and it burns;
+      a ramp in each stretch lets you climb out. Stilt shacks, pump houses, outfall pipes, a water tower by the plaza.
+- [ ] Each new district has a Neural Net terminal by its plaza, caches that refill, a locked building with a breach
+      door (the Foundry also a red Sealed one), and its own pack of hostiles.
+- [ ] The edge: a wall of dark megablocks with lit windows closes the map. Past it the skyline goes on into the smog:
+      huge dark towers and a few chimneys smoking far away. You cannot reach or touch them.
+- [ ] The air: thicker, browner smog in the Stacks, Foundry and Scrap Sea; green-tinged over the Slag Flats and the
+      Sumps; ash drifting in the air there; grey ash north of the wall. It blends, with no text.
+- [ ] Green pockets (no banner text explains them): The Last Garden (a broken glass dome full of trees, flowers and
+      a pond, between the Foundry and the Sumps), The Rootwork (one huge old tree in a ruined courtyard, glowing
+      caps in its roots, between Scrap Sea and the Foundry), Fernwell (a spring with ferns and a shaft of light,
+      inside the Hab Blocks). Inside one the air clears, pollen and fireflies drift, and after about 8 seconds
+      without being hurt your health slowly comes back. No hostiles settle there (they can still follow you in).
+- [ ] North of the wall the valley is mostly dead now: grey ground, dead trees, rusted tanks and toppled pylons;
+      only rare glades and the meadows around Verdant Reach are still green.
+- [ ] Performance: walk the whole ring and say if any district drops your frame rate.
+
 ## Endeavor: north of the wall (the frontier)
 Maps: `docs/maps/world_map_seed7919.png` and `world_map_seed23757.png` (two rolls). The valley is a 9x8 grid of
 200-stud chunks dealt by a seed each server: the Reach, the sites, the hairpins, the trail and the checkpoints all

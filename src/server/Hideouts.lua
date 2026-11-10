@@ -823,6 +823,9 @@ function Hideouts.Init()
 	-- sites: the corners of each district plus the outskirts
 	local spots = {}
 	for _, d in City.Districts do
+		if d.Outer then
+			continue -- the core's sites keep their old numbers (saved hideouts point at them)
+		end
 		local s = d.Size / 2 - 40
 		table.insert(spots, d.Center + Vector3.new(s, 0, -s))
 		table.insert(spots, d.Center + Vector3.new(-s, 0, s))

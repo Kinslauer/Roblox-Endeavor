@@ -270,7 +270,7 @@ for _, d in workspace_:GetDescendants() do if d:GetAttribute("Label") == "Raid V
 check("raid vault spawned", vault ~= nil)
 run(28)
 local home = player.Character.HumanoidRootPart.Position
-check("extracted back to the city after the raid", math.abs(home.X) < 700 and math.abs(home.Z) < 700)
+check("extracted back to the city after the raid", math.abs(home.X) <= 1700 and home.Z >= -1700 and home.Z <= 700)
 check("raid folder cleaned up", enemies ~= nil and #enemies:GetChildren() == 0)
 
 
@@ -524,7 +524,7 @@ for _, m in game_:GetService("CollectionService"):GetTagged("NPC") do
 end
 print("population: standing hostiles=" .. populated .. " alive=" .. Population.Alive())
 check("population spawned district packs at world open", populated >= 8)
-check("population stays under its cap", populated <= 36)
+check("population stays under its cap", populated <= ConfigM.City.Population.Cap)
 
 -- grid inventory: footprints, stacks, overflow, moves, packs, weight
 as(player)
@@ -1209,6 +1209,62 @@ do
 	check("guard: an untraced blow from the front is still blocked", results[1] and results[1][3] == "blocked")
 	conn:Disconnect()
 	v:Destroy(); a1:Destroy(); a2:Destroy()
+	run(0.5)
+end
+
+-- megacity: the industrial ring, the green pockets, sludge and the edge (shared/Megacity.lua, server/Megacity.lua)
+do
+	local MS = M.mockEnv.__require(RS.Shared.Megacity)
+	local CityM = M.mockEnv.__require(SSS.Server.City)
+	local FS = M.mockEnv.__require(RS.Shared.Frontier)
+	local mega = workspace_:FindFirstChild("City") and workspace_.City:FindFirstChild("Megacity")
+	check("megacity: the industrial ring is built", mega ~= nil and #mega:GetChildren() > 1500)
+	local marked = {}
+	for _, d in workspace_:GetDescendants() do
+		local name = d:GetAttribute("District")
+		if name then marked[name] = true end
+	end
+	local all = true
+	for _, d in MS.Districts do
+		if not marked[d.Name] then all = false; print("  no landmark for " .. d.Name) end
+	end
+	check("megacity: every district has its landmark", all)
+	check("megacity: districts join the city's list (population, terminals)", #CityM.Districts == 11)
+	local sumps = MS.GetDistrict("Sumps")
+	check("megacity: banners know the ring and the pockets", CityM.DistrictAt(sumps.Center).Name == "The Sumps" and CityM.DistrictAt(MS.Pockets[1].Center).Name == "The Last Garden" and CityM.DistrictAt(M.V3.new(0, 0, 0)).Name == "The Crossroads")
+	check("megacity: Fernwell lies inside the Hab Blocks and wins there", CityM.DistrictAt(MS.Pockets[3].Center).Name == "Fernwell")
+	check("megacity: the frontier's terrain no longer covers the city", FS.InCity(1500, -1500) and not FS.InCity(0, 900) and FS.Bounds.Z0 >= 700)
+	local anchors = true
+	for _, d in MS.Districts do
+		if not d.Anchors or #d.Anchors < 3 then anchors = false; print("  few anchors in " .. d.Name) end
+	end
+	check("megacity: each district left open ground for packs and caches", anchors)
+	local sky = workspace_:FindFirstChild("Skyline")
+	local solid = false
+	for _, p in sky and sky:GetChildren() or {} do if p.CanCollide then solid = true end end
+	check("megacity: the skyline stands past the wall and blocks nothing", sky ~= nil and #sky:GetChildren() >= 150 and not solid)
+	-- sludge burns, a pocket heals
+	local char = player.Character
+	local hum, root = char.Humanoid, char.HumanoidRootPart
+	hum.Health = hum.MaxHealth
+	local pool
+	for _, s in MS.Sludge do if s.Radius then pool = s break end end
+	char:PivotTo(M.CF.new(pool.Center.X, pool.Center.Y + 2.5, pool.Center.Z))
+	run(2)
+	check("sludge: standing in a toxic pool burns", hum.Health < hum.MaxHealth - 5 and char:GetAttribute("Toxic") == true)
+	local canal
+	for _, s in MS.Sludge do if s.Half then canal = s break end end
+	check("sludge: the Sumps' canals are toxic, the bridges over them are not", MS.InSludge(canal.Center + M.V3.new(0, 1, 0)) and not MS.InSludge(canal.Center + M.V3.new(0, 8, 0)))
+	local garden = MS.Pockets[1]
+	char:PivotTo(M.CF.new(garden.Center.X, 5, garden.Center.Z))
+	run(1)
+	check("pocket: the toxic mark clears when you leave", char:GetAttribute("Toxic") == false and char:GetAttribute("Pocket") == "The Last Garden")
+	hum.Health = hum.MaxHealth * 0.5
+	local before = hum.Health
+	run(ConfigM.Megacity.PocketCalm + 4)
+	check("pocket: wounds close in a green pocket once nothing hurts you", hum.Health > before + 3)
+	hum.Health = hum.MaxHealth
+	char:PivotTo(M.CF.new(0, 5, 0))
 	run(0.5)
 end
 

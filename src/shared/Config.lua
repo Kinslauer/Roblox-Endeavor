@@ -209,7 +209,7 @@ Config.City = {
 	},
 	-- standing hostiles per district Danger (server/Population.lua)
 	Population = {
-		Cap = 36, -- hostiles alive at once from all sources, before Population stops adding
+		Cap = 48, -- hostiles alive at once from all sources, before Population stops adding (11 districts since the industrial ring)
 		Respawn = 150, -- seconds before a dead pack member returns
 		PackRadius = 35, -- how far a pack wanders from its anchor
 		Tiers = {
@@ -516,6 +516,27 @@ Config.Combat = {
 	HeavyCooldown = 1.2,
 	InputQueue = 0.6, -- an attack/heavy pressed this long (s) before you're free is held and played then
 	KillCreditSeconds = 15,
+}
+
+-- The megacity's industrial ring, green pockets and air (shared/Megacity.lua, server/Megacity.lua, client/Air.lua).
+Config.Megacity = {
+	SludgeDamage = 6, -- health per second standing in toxic sludge (pools, the Sumps' canals)
+	SludgeTick = 0.5, -- seconds between sludge checks
+	PocketRegen = 1.5, -- health per second inside a green pocket while nothing has hurt you for PocketCalm seconds
+	PocketCalm = 8,
+	SkylineTowers = 150, -- unreachable silhouettes past the edge wall
+	SkylineStacks = 14, -- of which smoking chimneys
+	-- Air profiles the client blends to by where the camera is (Megacity.AirAt). Atmosphere fields plus
+	-- Tint (colour grade) and Motes (drifting particles: Ash, Smut, Pollen, Spores or nil).
+	Air = {
+		City = { Density = 0.42, Offset = 0.35, Haze = 2.2, Glare = 0.25, Color = Color3.fromRGB(120, 90, 160), Decay = Color3.fromRGB(60, 40, 90), Tint = Color3.fromRGB(225, 235, 255), Saturation = -0.08 },
+		Smog = { Density = 0.52, Offset = 0.3, Haze = 3.2, Glare = 0.1, Color = Color3.fromRGB(150, 120, 90), Decay = Color3.fromRGB(90, 60, 40), Tint = Color3.fromRGB(255, 232, 205), Saturation = -0.2, Motes = "Ash" },
+		Toxic = { Density = 0.5, Offset = 0.3, Haze = 3.0, Glare = 0.15, Color = Color3.fromRGB(140, 160, 80), Decay = Color3.fromRGB(70, 90, 30), Tint = Color3.fromRGB(230, 255, 205), Saturation = -0.15, Motes = "Smut" },
+		Haze = { Density = 0.46, Offset = 0.32, Haze = 2.6, Glare = 0.2, Color = Color3.fromRGB(120, 110, 150), Decay = Color3.fromRGB(70, 50, 90), Tint = Color3.fromRGB(230, 232, 255), Saturation = -0.12 },
+		Ash = { Density = 0.4, Offset = 0.25, Haze = 2.4, Glare = 0.1, Color = Color3.fromRGB(140, 130, 120), Decay = Color3.fromRGB(80, 70, 66), Tint = Color3.fromRGB(240, 236, 230), Saturation = -0.3, Motes = "Ash" },
+		Clean = { Density = 0.22, Offset = 0.15, Haze = 0.6, Glare = 0.3, Color = Color3.fromRGB(170, 210, 200), Decay = Color3.fromRGB(90, 130, 120), Tint = Color3.fromRGB(240, 255, 240), Saturation = 0.12, Motes = "Pollen" },
+	},
+	AirBlend = 2.5, -- seconds to blend from one air to the next
 }
 
 return Config

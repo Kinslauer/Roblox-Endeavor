@@ -23,6 +23,7 @@ local Swings = require(Shared:WaitForChild("Swings"))
 local Anims = require(Shared:WaitForChild("Anims")) -- the game's own keyframed animations (tools/anims)
 local Movement = require(script.Parent:WaitForChild("Movement"))
 Movement.Start()
+require(script.Parent:WaitForChild("Air")).Start() -- smog, clean air in the green pockets, the toxic tint
 -- Sounds for combat events, played at the character they happened to.
 local SOUND = { Hit = "HitFlesh", Block = "BlockThud", Parry = "HitClang", GuardBreak = "GuardBreak", Devour = "Devour", Flick = "FlickerTick" }
 -- Sounds for props breaking, by prop id; anything else is metal. Chunks hitting the ground thud.

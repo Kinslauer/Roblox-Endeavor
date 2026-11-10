@@ -55,6 +55,13 @@ every player has finished or skipped (and 30s have passed) the world opens early
   The Sprawl (medium), Blackout Zone (high). Ruined towers with ledges, rubble, neon signage, a pylon per district for
   navigation, refilling loot caches, and a banner when you cross into a district. Replace any district with hand-built
   art later; the generator is only there so the world exists now.
+- **The megacity** (`src/shared/Megacity.lua` = layout, sludge, air; `src/server/Megacity.lua` = builders; `src/client/Air.lua`
+  = smog per place; map: `docs/maps/world_map_megacity.png`): the core is ringed by seven industrial districts out to
+  X ±1700, Z -1700 - The Stacks (refinery), Slag Flats (toxic pools), Pylon Fields (power), The Hab Blocks (arcology on
+  stilts), Scrap Sea (junk mountains), The Foundry (furnace halls), The Sumps (sludge canals and islands) - closed by a
+  wall of dead megablocks with the skyline going on past it. Toxic sludge burns; three green pockets left from before
+  (The Last Garden, The Rootwork, Fernwell) clear the air and slowly heal the unhurt. Industrial shapes come from the
+  Blender kit `tools/models/industry.py` (`Assets.Industry`) with part fallbacks.
 - **The frontier** (`src/shared/Frontier.lua` = seeded layout + ground height, `src/server/Frontier.lua` = chunk
   builders, maps: `docs/maps/world_map_seed*.png`): the map is four quadrants; the city fills the two southern ones.
   The north is a 9x8 grid of 200-stud prebuilt chunks (forest, glade, boulders, ruin, marsh, crater, meadow, peaks,

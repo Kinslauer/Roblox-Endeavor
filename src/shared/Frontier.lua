@@ -16,12 +16,13 @@
 --     at the foot of the peaks
 -- The route is rolled too: a winding walk across the grid from the scarp foot to the Reach gate, with
 -- a held checkpoint every other cell. Nothing north of the wall is ever a straight road.
+local Megacity = require(script.Parent.Megacity)
 local Frontier = {}
 
 Frontier.CityEdge = 700 -- the city ground runs to |x|, |z| <= 700
 Frontier.CityTop = 2 -- the city plateau's surface
 Frontier.Floor = -70 -- the valley floor
-Frontier.Bounds = { X0 = -1000, X1 = 1000, Z0 = -1000, Z1 = 2350 } -- terrain extent (studs)
+Frontier.Bounds = { X0 = -1000, X1 = 1000, Z0 = 700, Z1 = 2350 } -- terrain extent (studs); south of Z 700 is the megacity's ground
 Frontier.Cell = 200
 Frontier.Cols, Frontier.Rows = 9, 8
 Frontier.GridX0, Frontier.GridZ0 = -900, 700
@@ -102,7 +103,8 @@ local ENCOUNTERS = {
 }
 
 -- Valley chunk templates and how often they are dealt (server/Frontier.lua builds each).
-local VALLEY_CHUNKS = { "Forest", "Forest", "Forest", "Forest", "Glade", "Glade", "Boulders", "Ruin", "Marsh", "Crater" }
+-- The valley is mostly dead now (the world outside the city is ash and rust); a forest or a glade is rare.
+local VALLEY_CHUNKS = { "Deadwood", "Deadwood", "Deadwood", "Deadwood", "Forest", "Glade", "Boulders", "Ruin", "Ruin", "Marsh", "Crater", "Rustfield", "Rustfield" }
 
 Frontier.Regions = {
 	Reach = { Name = "Verdant Reach", Danger = "Safe", Safe = true },
@@ -385,8 +387,9 @@ function Frontier.Height(x, z)
 	return h
 end
 
+-- The megacity (core + industrial ring) covers everything south of the scarp.
 function Frontier.InCity(x, z)
-	return math.abs(x) <= Frontier.CityEdge and math.abs(z) <= Frontier.CityEdge
+	return Megacity.InCity(x, z)
 end
 
 -- Where a position is: "Reach", "Scarp", "Valley", "Ridge" or nil for the city.

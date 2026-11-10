@@ -88,12 +88,21 @@ function Population.Populate()
 	for _, district in City.Districts do
 		local tier = P.Tiers[district.Danger]
 		if tier then
+			-- the industrial ring's districts carry their own open-ground anchors and their own mix
+			local types = district.Types or tier.Types
+			local anchors = if district.Anchors and #district.Anchors > 0 then table.clone(district.Anchors) else nil
 			for _ = 1, tier.Packs do
-				local angle, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(district.Size * 0.12, district.Size * 0.42)
-				local anchor = Vector3.new(district.Center.X + math.cos(angle) * r, 0, district.Center.Z + math.sin(angle) * r)
-				anchor = Vector3.new(anchor.X, groundAt(anchor.X, anchor.Z), anchor.Z)
+				local anchor
+				if anchors and #anchors > 0 then
+					local a = table.remove(anchors, rng:NextInteger(1, #anchors))
+					anchor = Vector3.new(a.X, a.Y + 3, a.Z)
+				else
+					local angle, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(district.Size * 0.12, district.Size * 0.42)
+					anchor = Vector3.new(district.Center.X + math.cos(angle) * r, 0, district.Center.Z + math.sin(angle) * r)
+					anchor = Vector3.new(anchor.X, groundAt(anchor.X, anchor.Z), anchor.Z)
+				end
 				for _ = 1, rng:NextInteger(tier.Size[1], tier.Size[2]) do
-					if spawnOne(tier.Types[rng:NextInteger(1, #tier.Types)], anchor, P.PackRadius, tier.Scale or 1) then
+					if spawnOne(types[rng:NextInteger(1, #types)], anchor, P.PackRadius, tier.Scale or 1) then
 						spawned += 1
 					end
 				end

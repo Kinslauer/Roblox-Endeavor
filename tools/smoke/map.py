@@ -6,12 +6,12 @@ from PIL import Image, ImageDraw, ImageFont
 rows = json.load(open(sys.argv[1]))
 FRONT = len(sys.argv) > 3 and sys.argv[3] == "front"
 WORLD = len(sys.argv) > 3 and sys.argv[3] == "world"
-S = 0.4 if WORLD else 0.9  # px per stud
+S = 0.25 if WORLD else 0.9  # px per stud
 PAD = 60
-LIM = 1100 if WORLD else 900
+LIM = 1950 if WORLD else 900
 xs = [r["x"] for r in rows if abs(r["x"]) < LIM]; zs = [r["z"] for r in rows if abs(r["z"]) < 2400 if not WORLD or True]
 if WORLD:
-    minx, maxx, minz, maxz = -1000, 1000, -1000, 2350
+    minx, maxx, minz, maxz = -1850, 1850, -1850, 2380
 else:
     zs = [r["z"] for r in rows if abs(r["z"]) < 900]
     minx, maxx, minz, maxz = min(xs) - 40, max(xs) + 40, min(zs) - 40, max(zs) + 40
@@ -34,7 +34,7 @@ if WORLD and os.path.exists(sys.argv[1] + ".heights"):
                 if i + 1 < len(row) and j + 1 < len(grid): slope = abs(row[i + 1] - h) + abs(grid[j + 1][i] - h)
                 if h > 250: col = (225, 225, 235)
                 elif slope > 10: col = (int(80 + t * 90), int(78 + t * 90), int(82 + t * 90))
-                elif z > 700: col = (int(30 + t * 60), int(70 + t * 90), int(30 + t * 60))
+                elif z > 700: col = (int(58 + t * 70), int(56 + t * 66), int(50 + t * 60))  # the valley is ash now
                 else: col = (int(60 + t * 80), int(56 + t * 70), int(50 + t * 60))
             p = px(x, z)
             d.rectangle([p, (p[0] + step * S + 1, p[1] + step * S + 1)], fill=col)
@@ -52,7 +52,8 @@ def rect(r, fill, outline=None):
 order = {"City": 0, "Arena": 1, "RaidArena": 1, "Destruction": 2, "RaidGate": 3, "Gore": 4}
 rows.sort(key=lambda r: (order.get(r["f"], 5), r["y"]))
 for r in rows:
-    if abs(r["x"]) > LIM or (not WORLD and abs(r["z"]) > 900) or r["z"] > 2400 or r["z"] < -1100: continue
+    if abs(r["x"]) > LIM or (not WORLD and abs(r["z"]) > 900) or r["z"] > 2400 or r["z"] < (-1900 if WORLD else -1100): continue
+    if r["f"] == "Skyline": continue
     f, n = r["f"], r["n"]
     if n in ("CityGround", "ArenaFloor", "Ground"): continue
     col = (r["r"], r["g"], r["b"])
@@ -103,13 +104,16 @@ try: font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold
 except Exception: font = small = ImageFont.load_default()
 labels = {"UNION BASE": (-310, 0), "PACT BASE": (310, 0), "THE FRONT": (0, -300)} if FRONT else {"TRANSIT HUB": (0, -420), "CORP PLAZA": (420, 0), "THE SPRAWL": (-420, 0), "BLACKOUT ZONE": (0, 420)}
 if WORLD:
-    labels.update({"THE SCARP": (120, 745), "SWITCHBACKS": (-420, 860), "THE PEAKS": (560, 2200)})
+    labels.update({"THE SCARP": (120, 745), "SWITCHBACKS": (-420, 860), "THE PEAKS": (560, 2200),
+        "THE STACKS": (-1200, 350), "SLAG FLATS": (-1200, -350), "PYLON FIELDS": (1200, 350), "THE HAB BLOCKS": (1200, -350),
+        "SCRAP SEA": (-1150, -1200), "THE FOUNDRY": (0, -1200), "THE SUMPS": (1150, -1200),
+        "The Last Garden": (575, -1250), "The Rootwork": (-575, -1050), "Fernwell": (1400, -560)})
     if os.path.exists(sys.argv[1] + ".labels"):
         for name, x, z in json.load(open(sys.argv[1] + ".labels")): labels[name] = (x, z)
 for name, (x, z) in labels.items():
     big = "Armory" not in name and not (WORLD and not name.isupper())
     p = px(x, z); d.text((p[0] - (60 if big else len(name) * 3), p[1] - 12), name, fill=(255, 255, 255) if (big or name[0].isupper()) else (170, 190, 170), font=font if big else small)
-legend = ["brown blocks = structures (4 stages)", "dark strips = trenches, tan = sandbags", "yellow ring = the hill (hot sector)", "grey = faction bases"] if FRONT else ["tower (lighter = taller)", "neon signage / pylon", "lockup + breach door: brown Weak, grey Standard, blue Reinforced, red Sealed", "tan = breakable props", "gold = loot caches", "red gate = Blackout raid gate"]
+legend = ["brown blocks = structures (4 stages)", "dark strips = trenches, tan = sandbags", "yellow ring = the hill (hot sector)", "grey = faction bases"] if FRONT else ["tower (lighter = taller)", "neon signage / pylon", "lockup + breach door: brown Weak, grey Standard, blue Reinforced, red Sealed", "tan = breakable props", "gold = loot caches", "red gate = Blackout raid gate", "green neon = toxic sludge (pools, the Sumps' canals)", "pale discs = the green pockets"]
 y = 10
 for t in legend:
     d.text((10, y), t, fill=(220, 220, 220), font=small); y += 18

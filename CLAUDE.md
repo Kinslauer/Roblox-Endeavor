@@ -216,6 +216,17 @@ Client tab screenshot, because Andy cannot read logs another way.
   crest grows (terrain FillBall Limestone, World "CrestGrew" -> client dust + groan), oldest past CalcifiedCap sink
   into the ground. Client `src/war/client/Ambience.lua`: ash around the camera, horizon gun flashes. Map tool:
   `tools/smoke/dumpfront.lua` + `tools/smoke/frontmap.py` -> docs/maps/front_world_map.png.
+- The megacity (owner, 2026-11-10: "the whole planet almost is industrialized and polluted except for sparse pockets of
+  lush green"): `src/shared/Megacity.lua` (layout, Roads, Sludge circles/rects + `InSludge`, Pockets + `PocketAt`,
+  `AirAt`), `src/server/Megacity.lua` (Build from City.Init: ground slabs, roads, edge wall, Skyline folder, one builder
+  per Style Stacks/Slag/Pylon/Hab/Scrap/Foundry/Sumps, pocket builders Garden/Rootwork/Fernwell, gap ruins; a Heartbeat
+  loop sets character attrs `Toxic`/`Pocket`, burns Config.Megacity.SludgeDamage, heals PocketRegen after PocketCalm),
+  `src/client/Air.lua` (blends Atmosphere + CityGrade to Config.Megacity.Air[AirAt], motes round the camera, ambient
+  loop volumes, ToxicGrade). The outer districts are appended to City.Districts with `Outer = true` (City's own
+  buildDistrict and Hideouts' site list skip them; Population uses `d.Types` and `d.Anchors`); City.DistrictAt checks
+  pockets first. Frontier.InCity = Megacity.InCity, frontier terrain starts at Z 700, valley chunks are mostly
+  Deadwood/Rustfield, terrain colours ash (LeafyGrass is the only real green: the Reach, glades, meadows). Kit:
+  `tools/models/industry.py` -> `Assets.Industry` (materials with `NoCollide` in Assets.Materials stop colliding).
 - Lore (owner, 2026-10-31; docs/DESIGN.md "The stack"): conduits upload their consciousness stack through the hideout
   computer (first log-in = initialization, `Knowledge.Uploaded`); every death is a reboot of the stack; on the Front the
   stack links to the recruit's; the rich uploaded and escaped the world. Mechanically: Knowledge survives permadeath only

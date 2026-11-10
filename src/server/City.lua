@@ -17,6 +17,8 @@ local Destruction = require(script.Parent.Destruction)
 local ModelAssets = require(script.Parent.Common.ModelAssets)
 local Loot = require(script.Parent.Loot)
 local Quests = require(script.Parent.Quests)
+local MegaShared = require(Shared.Megacity)
+local Megacity = require(script.Parent.Megacity)
 
 local City = {}
 City.Entered = Instance.new("BindableEvent") -- (player, districtName)
@@ -35,6 +37,14 @@ City.Districts = {
 	{ Name = "Blackout Zone", Style = "Blackout", Center = Vector3.new(0, 0, 420), Size = 420, Blocks = 4, Height = { 20, 70 }, Caches = 6, Danger = "High",
 		Color = Color3.fromRGB(30, 30, 38), Neon = Color3.fromRGB(255, 30, 30), Collapse = 0.5, Raid = true, Lockup = "Reinforced" },
 }
+
+-- The industrial ring around the core (shared/Megacity.lua): its districts join the list so population,
+-- terminals, clues and events reach them; server/Megacity.lua builds them (Outer = true).
+for _, d in MegaShared.Districts do
+	d.Outer = true
+	table.insert(City.Districts, d)
+end
+City.Pockets = MegaShared.Pockets
 
 local folder
 
@@ -278,6 +288,10 @@ end
 -- The Crossroads counts as a district for banners and population (radius 110 around the origin).
 local CROSSROADS_RADIUS = 110
 function City.DistrictAt(position)
+	local pocket = MegaShared.PocketAt(position)
+	if pocket then
+		return pocket
+	end
 	if Vector3.new(position.X, 0, position.Z).Magnitude <= CROSSROADS_RADIUS then
 		return CROSSROADS
 	end
@@ -339,10 +353,13 @@ function City.Init()
 	-- ground large enough for all districts (the arena adds its own slab in the middle)
 	part({ Name = "CityGround", Size = Vector3.new(1400, 4, 1400), Position = Vector3.new(0, 0, 0), Color = Color3.fromRGB(42, 44, 50), Material = Enum.Material.Asphalt })
 	for _, district in City.Districts do
-		buildDistrict(district)
+		if not district.Outer then
+			buildDistrict(district)
+		end
 	end
 	buildOutskirts()
 	buildCrossroads()
+	Megacity.Build(folder, { cache = cache, lockup = lockup, tower = tower })
 
 	-- district banners (1 Hz; cheap)
 	task.spawn(function()

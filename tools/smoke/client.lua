@@ -155,5 +155,27 @@ do
 	for _ = 1, 3 do M.step(1/30) end
 	check("guard: released, the arms are let go", not Anims.Track(char, "Block").IsPlaying)
 end
+-- air: the smog follows where you stand (client/Air.lua)
+do
+	local Air = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.Air)
+	local MS = M.mockEnv.__require(RS.Shared.Megacity)
+	local saved = root.CFrame
+	root.CFrame = M.CF.new(0, 5, 0)
+	for _ = 1, 20 do M.step(1/30) end
+	check("air: the core breathes city air", Air.Current() == "City")
+	root.CFrame = M.CF.new(MS.Pockets[1].Center.X, 5, MS.Pockets[1].Center.Z)
+	for _ = 1, 20 do M.step(1/30) end
+	check("air: a green pocket clears it", Air.Current() == "Clean")
+	local slag = MS.GetDistrict("Slag")
+	root.CFrame = M.CF.new(slag.Center.X, 5, slag.Center.Z)
+	for _ = 1, 20 do M.step(1/30) end
+	check("air: over the slag it turns toxic", Air.Current() == "Toxic")
+	char:SetAttribute("Toxic", true)
+	M.step(1/30)
+	check("air: standing in sludge tints the screen", game_:GetService("Lighting"):FindFirstChild("ToxicGrade") ~= nil)
+	char:SetAttribute("Toxic", false)
+	root.CFrame = saved
+	for _ = 1, 20 do M.step(1/30) end
+end
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

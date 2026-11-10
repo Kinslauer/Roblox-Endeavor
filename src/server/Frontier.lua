@@ -95,6 +95,9 @@ local function flat(v)
 end
 
 -- ===== terrain =====
+-- The valley is ash and rust now: grey ground, slate, sickly grass in patches. Only the Reach and the
+-- rare green cells (glades, the meadows round the Reach) keep LeafyGrass, which is still green.
+local LUSH = { Glade = 1, Meadow = 1, Reach = 1, Forest = 0.7 }
 local function materialAt(x, z, h, slope, dRoad, dTrail)
 	if dRoad < 7 then
 		return Enum.Material.Asphalt
@@ -112,7 +115,21 @@ local function materialAt(x, z, h, slope, dRoad, dTrail)
 	elseif z < 930 then
 		return if slope > 20 then Enum.Material.Slate else Enum.Material.Ground
 	end
-	return Enum.Material.Grass
+	local cell = F.CellAt(x, z)
+	local lush = cell and LUSH[cell.Type]
+	if lush and lush >= 1 then
+		local d = (Vector3.new(x, 0, z) - cell.Center).Magnitude
+		if d < 80 + 20 * math.noise(x / 40, z / 40, 9.1) then
+			return Enum.Material.LeafyGrass
+		end
+	end
+	local n = math.noise(x / 90, z / 90, 5.5)
+	if n > 0.22 then
+		return Enum.Material.Grass -- sickly, see Terrain colours in Init
+	elseif n < -0.3 or slope > 26 then
+		return Enum.Material.Slate
+	end
+	return Enum.Material.Ground
 end
 
 -- Nearest distance to a polyline (X/Z).
@@ -360,10 +377,16 @@ local function scatter(cell, pitch, chance, fn)
 end
 
 local counts = { trees = 0, rocks = 0, dead = 0 }
+local lushness = 0.2 -- share of living trees in the cell being built (set per cell by buildChunks)
 local function treeIf(px, pz, y, s)
 	if s < 30 and y < 170 then
-		tree(px, pz, y)
-		counts.trees += 1
+		if rng:NextNumber() < lushness then
+			tree(px, pz, y)
+			counts.trees += 1
+		else
+			deadTree(px, pz, y)
+			counts.dead += 1
+		end
 		return true
 	elseif s >= 30 and y < 260 and rng:NextNumber() < 0.4 then
 		rock(px, pz, y, rng:NextNumber(4, 11))
@@ -476,6 +499,43 @@ function CHUNKS.Ruin(cell)
 	end
 	scatter(cell, 30, 0.2, treeIf)
 end
+function CHUNKS.Deadwood(cell)
+	-- what the forest became: grey trunks, stumps, a few pines still holding on
+	scatter(cell, 24, 0.55, treeIf)
+	scatter(cell, 50, 0.3, function(px, pz, y)
+		part({ Name = "Stump", Shape = Enum.PartType.Cylinder, Size = Vector3.new(1.4, 2.2, 2.2), CFrame = CFrame.new(px, y + 0.6, pz) * CFrame.Angles(0, 0, math.pi / 2), Color = PAL.Dead, Material = Enum.Material.Wood })
+		return true
+	end)
+end
+function CHUNKS.Rustfield(cell)
+	-- the industry that spread out here before it died: a toppled pylon, rusted tanks, a cold stack
+	local c = cell.Center
+	local y = H(c.X, c.Z)
+	local rust = Color3.fromRGB(110, 62, 40)
+	for k = 1, 3 do
+		local a = cell.Rot + k * 2.1
+		local p = c + Vector3.new(math.cos(a) * 40, 0, math.sin(a) * 40)
+		if clearOf(p.X, p.Z) then
+			local py = H(p.X, p.Z)
+			part({ Name = "RustTank", Shape = Enum.PartType.Cylinder, Size = Vector3.new(16, 18, 18), CFrame = CFrame.new(p.X, py + 7, p.Z) * CFrame.Angles(0, 0, math.pi / 2 + (if k == 2 then 0.25 else 0)), Color = rust, Material = Enum.Material.CorrodedMetal })
+		end
+	end
+	if clearOf(c.X, c.Z) then
+		part({ Name = "ColdStack", Shape = Enum.PartType.Cylinder, Size = Vector3.new(70, 9, 9), CFrame = CFrame.new(c.X, y + 34, c.Z) * CFrame.Angles(0, 0, math.pi / 2), Color = Color3.fromRGB(90, 80, 72), Material = Enum.Material.Brick })
+	end
+	local p = c + Vector3.new(math.cos(cell.Rot) * -60, 0, math.sin(cell.Rot) * -60)
+	if clearOf(p.X, p.Z) then
+		part({ Name = "FallenPylon", Size = Vector3.new(4, 4, 60), CFrame = CFrame.new(p.X, H(p.X, p.Z) + 2, p.Z) * CFrame.Angles(0, cell.Rot, 0.1), Color = Color3.fromRGB(80, 82, 86), Material = Enum.Material.CorrodedMetal })
+	end
+	for _ = 1, 4 do
+		local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(10, 70)
+		local q = c + Vector3.new(math.sin(a) * d, 0, math.cos(a) * d)
+		if clearOf(q.X, q.Z) then
+			Destruction.SpawnProp(({ "Barrel", "Barrel", "Crate", "Slab" })[rng:NextInteger(1, 4)], CFrame.new(q.X, H(q.X, q.Z), q.Z) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0))
+		end
+	end
+	scatter(cell, 34, 0.25, treeIf)
+end
 function CHUNKS.Peaks(cell)
 	scatter(cell, 34, 0.3, function(px, pz, y, s)
 		if s >= 25 and y < 260 then
@@ -483,9 +543,7 @@ function CHUNKS.Peaks(cell)
 			counts.rocks += 1
 			return true
 		elseif s < 25 and y < 150 then
-			tree(px, pz, y)
-			counts.trees += 1
-			return true
+			return treeIf(px, pz, y, s)
 		end
 		return false
 	end)
@@ -512,6 +570,7 @@ local function buildChunks()
 		for c = 1, F.Cols do
 			local cell = F.L.Cells[r][c]
 			local builder = CHUNKS[cell.Type] or CHUNKS.Forest
+			lushness = LUSH[cell.Type] or 0.15
 			builder(cell)
 			built[cell.Type] = (built[cell.Type] or 0) + 1
 		end
@@ -1315,6 +1374,16 @@ function Frontier.Init()
 	folder.Name = "Frontier"
 	folder:SetAttribute("Seed", seed)
 	folder.Parent = workspace
+	-- the ground's colours: ash for Ground, sickly olive for Grass, LeafyGrass stays the only real green
+	pcall(function()
+		local terrain = workspace.Terrain
+		terrain:SetMaterialColor(Enum.Material.Ground, Color3.fromRGB(92, 86, 80))
+		terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(98, 100, 62))
+		terrain:SetMaterialColor(Enum.Material.LeafyGrass, Color3.fromRGB(70, 140, 60))
+		terrain:SetMaterialColor(Enum.Material.Slate, Color3.fromRGB(70, 68, 66))
+	end)
+	workspace:SetAttribute("ReachCenter", F.Reach.Center)
+	workspace:SetAttribute("ReachRadius", F.Reach.Radius)
 	local t0 = os.clock()
 	local chunks, voxels = writeTerrain()
 	local t1 = os.clock()

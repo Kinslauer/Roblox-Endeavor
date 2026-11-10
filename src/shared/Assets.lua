@@ -227,6 +227,19 @@ Assets.Frontier = {
 	Tower = 86663060548171,
 }
 
+-- The megacity's industrial kit (tools/models/industry.py; server/Megacity.lua scales each to its size and
+-- falls back to parts): reference sizes stack 120 tall, tank r 12, cooling tower 100, pylon 60, furnace 70,
+-- junk pile 50 across, giant tree ~80.
+Assets.Industry = {
+	Smokestack = 73312579286374,
+	Tank = 91873180896771,
+	CoolingTower = 118993071636663,
+	Pylon = 111982823458563,
+	BlastFurnace = 124966171523141,
+	JunkPile = 111373200463571,
+	GiantTree = 70596173999727,
+}
+
 Assets.Loot = {
 	CrateA = 135218922360091, -- supply / cache crate
 	CrateB = 116144381772246, -- vault cache, glowing lock
@@ -322,6 +335,14 @@ Assets.Materials = {
 	Char = { Color = Color3.fromRGB(28, 26, 25), Material = Enum.Material.CorrodedMetal },
 	Olive = { Color = Color3.fromRGB(70, 78, 46), Material = Enum.Material.Metal },
 	Rubber = { Color = Color3.fromRGB(23, 23, 26), Material = Enum.Material.Rubber },
+	-- the industrial kit (NoCollide: lattices, canopies and roots never become a solid hull)
+	TankPaint = { Color = Color3.fromRGB(158, 153, 140), Material = Enum.Material.CorrodedMetal },
+	Cooling = { Color = Color3.fromRGB(150, 146, 138), Material = Enum.Material.Concrete },
+	Lattice = { Color = Color3.fromRGB(86, 88, 96), Material = Enum.Material.Metal, NoCollide = true },
+	Insulator = { Color = Color3.fromRGB(128, 76, 52), Material = Enum.Material.Glass, NoCollide = true },
+	Canopy = { Color = Color3.fromRGB(66, 128, 56), Material = Enum.Material.Grass, NoCollide = true },
+	RootBark = { Color = Color3.fromRGB(70, 52, 36), Material = Enum.Material.Wood, NoCollide = true },
+	Moss = { Color = Color3.fromRGB(70, 110, 52), Material = Enum.Material.Grass },
 	-- the Conduit body (server/Body.lua recolours these per life)
 	ConduitJacket = { Color = Color3.fromRGB(44, 46, 54), Material = Enum.Material.Fabric },
 	ConduitTrim = { Color = Color3.fromRGB(0, 215, 255), Material = Enum.Material.Neon },
@@ -364,6 +385,9 @@ function Assets.Dress(model)
 				part.Color = spec.Color
 				part.Material = spec.Material
 				part.Transparency = spec.Transparency or 0
+				if spec.NoCollide then
+					part.CanCollide = false
+				end
 				if spec.Light and not part:FindFirstChildOfClass("PointLight") then
 					local light = Instance.new("PointLight")
 					light.Color, light.Range, light.Brightness = spec.Light, 16, 1
