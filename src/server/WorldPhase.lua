@@ -165,7 +165,8 @@ function WorldPhase.Emerge()
 			profile.Awakened = true
 		end
 		if char then
-			char:PivotTo(WorldPhase.GetSpawnCFrame(player))
+			-- set by Lifecycle: the freight lifts, the computer, the bunks (falls back to the street spawns)
+			char:PivotTo((WorldPhase.Place and WorldPhase.Place(player)) or WorldPhase.GetSpawnCFrame(player))
 		end
 		WorldPhase.ReleasePlot(player)
 	end

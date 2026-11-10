@@ -329,12 +329,47 @@ local y = makePlayer("Yellow", 4, "Pact")
 run(0.2)
 local ydata = M.mockEnv.__require(SSS.Server.Common.PlayerData).Get(y)
 check("intro: second player gets its own slot", workspace_:FindFirstChild("IntroCell_4") ~= nil and Intro.Active(y) ~= nil and Intro.Active(y).slot == 1)
+check("story: the stasis tanks carry the Line 9 crate stencil", (function()
+	for _, d in workspace_.IntroCell_4:GetDescendants() do
+		if d.Name == "TankPlate" then
+			local label = d:FindFirstChildOfClass("SurfaceGui") and d:FindFirstChildOfClass("SurfaceGui"):FindFirstChildOfClass("TextLabel")
+			return label ~= nil and label.Text:find("LINE 9") ~= nil
+		end
+	end
+	return false
+end)())
 Intro.Active(y).kit.Issued.Primary = nil -- pretend the rifle came from the locker
 Intro.Active(y).kit.Original.Grenades = 1
 y.Parent = nil
 Players.PlayerRemoving:Fire(y)
 run(0.3)
 check("intro: leaving mid-link refunds the locker and clears the cell", ydata.War.Locker.AKM ~= nil and ydata.War.Locker.Grenade ~= nil and workspace_:FindFirstChild("IntroCell_4") == nil)
+-- the way home: unlink at your own base's locker; the recruit's gear goes back in the locker
+do
+	local gdata = M.mockEnv.__require(SSS.Server.Common.PlayerData).Get(g)
+	local s = Soldiers.State(g)
+	local function fired(kind) for _, e in M.FireLog do if e[1] == "Soldier" and e.player == g and e[3] == kind then return true end end return false end
+	-- give the recruit something of its own to hand back
+	s.Weapons.Primary = s.Weapons.Primary or s.Weapons.Sidearm
+	s.Issued = {}
+	s.Grenades = 2
+	local primaryId = s.Weapons.Primary and s.Weapons.Primary.Id
+	check("unlink: refused away from your own locker", Soldiers.Unlink(g) == false)
+	local mine
+	for _, l in Battlefield.Lockers do if l:GetAttribute("Faction") == "Union" then mine = l end end
+	local lp = (if mine:IsA("Model") then mine.PrimaryPart else mine).Position
+	g.Character.HumanoidRootPart.CFrame = M.CF.new(lp + M.V3.new(0, 0, 4))
+	s.LastHit = { by = g, t = os.clock() }
+	check("unlink: refused under fire", Soldiers.Unlink(g) == false)
+	s.LastHit = nil
+	game_:GetService("TeleportService").TeleportAsync = function() error("no teleports in the mock") end
+	local nadesBefore = (gdata.War.Locker.Grenade and gdata.War.Locker.Grenade.count) or 0
+	check("unlink: at your locker the link closes", Soldiers.Unlink(g) == true and fired("Unlinking"))
+	check("unlink: the recruit's gear goes back in the locker", primaryId ~= nil and gdata.War.Locker[primaryId] ~= nil and gdata.War.Locker.Grenade.count == nadesBefore + 2)
+	run(Config.War.UnlinkSeconds + 0.5)
+	-- the teleport fails here: the failure path puts a fresh recruit on the field with the same locker
+	check("unlink: a failed teleport hands the conduit a new recruit", fired("UnlinkFailed") and Soldiers.IsDeployed(g))
+end
 local probe = Intro.Probe(M.V3.new(0, 1500, 5000))
 check("intro: the probe builds and clears a cell and a simulation", type(probe) == "string" and probe:find("benches 5") ~= nil and workspace_:FindFirstChild("IntroCell_0") == nil)
 

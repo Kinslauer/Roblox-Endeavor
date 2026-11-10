@@ -10,6 +10,7 @@ local Gear = require(script.Parent.Gear)
 local Body = require(script.Parent.Body)
 local Hideouts = require(script.Parent.Hideouts)
 local Inventory = require(script.Parent.Inventory)
+local NeuralNet = require(script.Parent.NeuralNet)
 local Permadeath = require(script.Parent.Permadeath)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local Quests = require(script.Parent.Quests)
@@ -42,13 +43,67 @@ local function arrive(player, char)
 	Quests.Assign(player)
 end
 
+-- Where a body comes into the open world, and why (the story's order of things):
+--   "Front"  back through the Neural Net: at the terminal it tapped in from (first spawn after a Front teleport)
+--   "Reboot" an uploaded stack wakes at its hideout's computer
+--   "Bunks"  the crew's bunks
+--   "Lift"   every other body comes up Line 9: its own bay's freight lift, else a free bay's (with a manifest
+--            to sign for it, once per life)
+--   "City"   no bay free (or the prologue): the old street spawns
+local fromFront = {} -- player -> true until the first spawn after arriving from the Front has used it
+
+local function placeFor(player)
+	if not WorldPhase.IsOpen() then
+		return WorldPhase.GetSpawnCFrame(player), "City" -- the prologue's plots; Emerge places them again
+	end
+	if fromFront[player] then
+		fromFront[player] = nil
+		local cf = NeuralNet.ReturnCFrame(player)
+		if cf then
+			return cf, "Front"
+		end
+	end
+	local data = PlayerData.Get(player)
+	if data and data.Knowledge and data.Knowledge.Uploaded then
+		local cf = Hideouts.RebootCFrame(player)
+		if cf then
+			return cf, "Reboot"
+		end
+	end
+	local bunks = Hideouts.SpawnCFrame(player)
+	if bunks then
+		return bunks, "Bunks"
+	end
+	local lift, site = Hideouts.ArrivalCFrame(player)
+	if lift then
+		if not site.Owner then
+			Tutorial.Consign(player)
+		end
+		return lift, "Lift"
+	end
+	return WorldPhase.GetSpawnCFrame(player), "City"
+end
+Lifecycle.PlaceFor = placeFor
+
+-- The machine's line for how a body arrived (none for a lift or a street: the place says it).
+local function announceArrival(player, how)
+	if how == "Front" then
+		NeuralNet.Returned(player)
+	elseif how == "Reboot" then
+		Remotes.Announce:FireClient(player, "> STACK RESIDENT . . . REBOOTED", "Emergence")
+	end
+end
+
 function Lifecycle.Spawn(player)
 	if not player.Parent then
 		return
 	end
 	-- Decide where first, so the ground exists (and has replicated) before the character does.
 	local arriving = Tutorial.Active(player)
-	local spawnAt = Tutorial.SpawnCFrame(player) or Hideouts.SpawnCFrame(player) or WorldPhase.GetSpawnCFrame(player)
+	local spawnAt, how = Tutorial.SpawnCFrame(player), "Station"
+	if not spawnAt then
+		spawnAt, how = placeFor(player)
+	end
 	player:LoadCharacter()
 	local char = player.Character
 	if char then
@@ -77,6 +132,7 @@ function Lifecycle.Spawn(player)
 		Tutorial.Start(player)
 	elseif WorldPhase.IsOpen() then
 		arrive(player, char)
+		announceArrival(player, how)
 	else
 		Remotes.Announce:FireClient(player, "> STACK RESIDENT . . . LINKING", "Info")
 		WorldPhase.MarkReady(player, "returning") -- nothing to learn; the city opens as soon as everyone here is ready
@@ -91,6 +147,12 @@ local function onPlayerAdded(player)
 	if not PlayerData.Load(player) then
 		return
 	end
+	local ok, join = pcall(function()
+		return player:GetJoinData()
+	end)
+	local td = ok and type(join) == "table" and join.TeleportData
+	fromFront[player] = type(td) == "table" and td.From == "Front" or nil
+	Hideouts.Restore(player) -- the hideout stands before the body arrives, so it can wake there
 	WorldPhase.StartTimer()
 	Lifecycle.Spawn(player)
 end
@@ -100,6 +162,7 @@ local function onPlayerRemoving(player)
 		Permadeath.CombatLog(player) -- wipes the data before ProfileService saves it on release
 	end
 	Tutorial.Release(player)
+	fromFront[player] = nil
 	PlayerData.Release(player)
 	Gear.Release(player)
 	WorldPhase.ReleasePlot(player)
@@ -110,12 +173,19 @@ function Lifecycle.Init()
 	Players.CharacterAutoLoads = false
 	WorldPhase.Busy = Tutorial.Active
 	Tutorial.Spawn = Lifecycle.Spawn
+	WorldPhase.Place = function(player)
+		local cf, how = placeFor(player)
+		announceArrival(player, how)
+		return cf
+	end
 	-- up through the lift: into the city if it is open, else the world opens for them (WorldPhase.Emerge moves them)
 	Tutorial.Finished.Event:Connect(function(player)
 		local char = player.Character
 		if char and WorldPhase.IsOpen() then
-			char:PivotTo(Hideouts.SpawnCFrame(player) or WorldPhase.GetSpawnCFrame(player))
+			local cf, how = placeFor(player)
+			char:PivotTo(cf)
 			arrive(player, char)
+			announceArrival(player, how)
 			Quests.Push(player)
 		end
 	end)

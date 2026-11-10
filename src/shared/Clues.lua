@@ -8,7 +8,7 @@
 --              conduit who has read these can see or take it). Anomaly: "Static" (a glitching cube), "Echo"
 --              (a flickering silhouette), "Wrong" (a sign that reads wrong).
 --   Where      "City" (a district plaza edge), "Crossroads", "Scarp" (a switchback), "Trail" (a trail point),
---              "Site" (beside a site), "Reach" (inside the hedge). server/Clues.lua resolves them per layout.
+--              "Site" (beside a site), "Reach" (inside the hedge), "Pocket" (in one of the city's green pockets). server/Clues.lua resolves them per layout.
 local Clues = {}
 
 Clues.Lines = {
@@ -18,18 +18,21 @@ Clues.Lines = {
 		{ "Someone was asking about you. Didn't leave a name. Nobody does.", 2 },
 		{ "You asked me that last hour. You won't remember.", 1 },
 		{ "Do you ever count the lamps on the switchbacks? Count them twice.", 1 },
+		{ "New hardware came up Line 9 again. Forty crates. Never forty-one.", 1 },
 	},
 	Fixer = {
 		{ "Anything for the house, delivered. Credits up front. Don't ask where it comes from.", 3 },
 		{ "Everything I sell comes back. That's not a complaint.", 2 },
 		{ "Same crack in the overpass. Same wreck under it. Every time. Funny, that.", 1 },
 		{ "Your hideout's the only thing out here that keeps. Ever wondered why?", 1 },
+		{ "Stand in the Garden on the hour sometime. Tell me what you didn't see.", 1 },
 	},
 	Dealer = {
 		{ "Cores, arms, lenses. Pulled from people who no longer need them. Credits only.", 3 },
 		{ "I've stood here before. Different spot. Same cliff.", 2 },
 		{ "The Gatekeeper's been killed a hundred times. He doesn't know.", 1 },
 		{ "Stock refreshes on the hour. So does everything.", 1 },
+		{ "Recruits come back as hills. You come back as you. Somebody's paying for the difference.", 1 },
 	},
 }
 
@@ -73,6 +76,11 @@ Clues.Fragments = {
 		Name = "Fragment: The Departed", Anomaly = "Wrong", Where = "City",
 		Text = "A brokerage receipt, stamped PAID IN FULL: one consciousness stack, one upload, one exit. The signature is a name you have seen on a tower. Nobody by that name lives in the city.",
 		Rule = { Every = 2 },
+	},
+	Pressed = {
+		Name = "Fragment: Pressed", Anomaly = "Static", Where = "Pocket",
+		Text = "Two Line 9 tickets with a leaf pressed between them. Both stamped for the same hour; neither was punched. On the back of one, in pencil: 'here the hour doesn't turn.'",
+		Rule = { Every = 2, Needs = { "HourZero" } },
 	},
 	TheDoor = {
 		Name = "Fragment: The Door", Anomaly = "Echo", Where = "Site",

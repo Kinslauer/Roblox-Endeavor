@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local F = require(Shared.Frontier)
+local Megacity = require(Shared.Megacity)
 local Remotes = require(Shared.Remotes)
 local SC = require(Shared.Clues)
 local PlayerData = require(script.Parent.Common.PlayerData)
@@ -53,6 +54,10 @@ local function spotFor(where, rng)
 		local s = F.Sites[rng:NextInteger(1, #F.Sites)]
 		local a = rng:NextNumber(0, math.pi * 2)
 		return s.Position + Vector3.new(math.cos(a) * 16, 0, math.sin(a) * 16)
+	elseif where == "Pocket" then
+		local pk = Megacity.Pockets[rng:NextInteger(1, #Megacity.Pockets)]
+		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0.2, 0.55) * pk.Radius
+		return pk.Center + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
 	else -- Reach
 		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(70, 140)
 		return F.Reach.Center + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)

@@ -25,6 +25,9 @@ Items.Defs = {
 	Satchel = { Name = "Satchel", Type = "Pack", Grid = { 7, 5 }, Carry = 25, Size = { 2, 2 }, Weight = 1 },
 	Rucksack = { Name = "Rucksack", Type = "Pack", Grid = { 9, 6 }, Carry = 40, Size = { 3, 3 }, Weight = 2 },
 	FramePack = { Name = "Frame Pack", Type = "Pack", Grid = { 11, 7 }, Carry = 60, Size = { 3, 4 }, Weight = 3.5 },
+	-- the Line 9 consignment (server/Tutorial.lua, server/Hideouts.lua): signing it at a freight-lift bay claims that
+	-- site and unpacks the crates into a computer. One per life; it drops with everything else.
+	Manifest = { Name = "Line 9 Manifest", Type = "Material", Size = { 1, 1 }, Weight = 0.05, Stack = 1 },
 }
 
 -- Grid footprint { w, h }, weight (kg-ish) and stack size per item. Anything not listed here takes

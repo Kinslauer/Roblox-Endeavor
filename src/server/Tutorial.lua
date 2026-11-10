@@ -93,6 +93,7 @@ local function build(player)
 		if data then
 			introOf(data).Intel = true
 		end
+		Tutorial.Consign(player)
 		level.ConsolePrompt.Enabled = false
 		level.ConsoleText.Text = "> MANIFEST . . . COPIED"
 		level.LiftGlow.Color = Color3.fromRGB(80, 230, 140)
@@ -105,6 +106,22 @@ local function build(player)
 		end
 	end)
 	return ctx
+end
+
+-- A copy of the Line 9 manifest in the pack: signing it at a freight-lift bay claims that site and unpacks the
+-- consignment into a computer (server/Hideouts.lua). One per life (data.Consigned is wiped with the body), and only
+-- for a conduit with no site to go home to.
+function Tutorial.Consign(player)
+	local data = PlayerData.Get(player)
+	if not data or data.Consigned or (data.Hideout and data.Hideout.Plot ~= 0) then
+		return false
+	end
+	data.Consigned = true
+	if Inventory.Count(player, "Manifest") == 0 then
+		Inventory.Add(player, "Manifest", 1, true)
+		Inventory.Push(player)
+	end
+	return true
 end
 
 -- Where this player spawns while the station has them (nil once it does not).
@@ -252,6 +269,7 @@ function Tutorial.Init()
 		if ctx and Config.Dev.Enabled then
 			endIntro(ctx)
 			ctx.intel = true
+			Tutorial.Consign(player)
 			Tutorial.Finish(player)
 		end
 	end)

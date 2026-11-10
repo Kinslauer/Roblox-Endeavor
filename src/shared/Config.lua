@@ -30,7 +30,7 @@ Config.Tutorial = {
 	KitWeapon = "Whisper",
 	Kit = { Whisper = 1, Subsonic = 9 },
 	Locker = { RebarBlade = 1, ScrapVest = 1, Medkit = 2, Subsonic = 12, Scrap = 4 },
-	Manifest = { Name = "LINE 9 MANIFEST", Text = "INBOUND: 1 . OUTBOUND: 0\nCARGO: STACK HARDWARE, 40 CRATES\nCONSIGNEE: [WITHHELD]\nNOTE: NOTHING ON THIS LINE COMES BACK DOWN." },
+	Manifest = { Name = "LINE 9 MANIFEST", Text = "INBOUND: 1 . OUTBOUND: 0\nCARGO: STACK HARDWARE, 40 CRATES\nDELIVERY: FREIGHT LIFTS, CITY BAYS 01-12\nCONSIGNEE: WHOEVER SIGNS\nNOTE: NOTHING ON THIS LINE COMES BACK DOWN." },
 }
 -- Stealth (server/Stealth.lua, shared/Stealth.lua): light-level hiding, noise, guard awareness, takedowns.
 -- Exposure 0..1 = the level's ambient plus every lit StealthLight that can see you (falloff by distance, blocked by
@@ -352,6 +352,11 @@ Config.Gore = {
 -- Neural Net terminal and control a recruit there. The recruit's gear is the conduit's money.
 Config.War = {
 	PlaceId = 81481823786216, -- the Front place inside the Endeavor experience (universe 10773835758)
+	HomePlaceId = 120490278050491, -- Endeavor: where an unlinked conduit goes back to (war/server/Soldiers.lua Unlink)
+	UnlinkHold = 2.5, -- seconds holding X at the base locker to unlink
+	UnlinkReach = 14, -- studs from your own faction's locker
+	UnlinkCalm = 10, -- no unlinking within this many seconds of being hit
+	UnlinkSeconds = 2.5, -- the link closing before the teleport
 	Factions = { "Union", "Pact" },
 	FactionColors = { Union = Color3.fromRGB(70, 110, 200), Pact = Color3.fromRGB(200, 60, 60) },
 	UplinkSeconds = 4, -- the neural-net dive animation before the teleport
@@ -457,6 +462,10 @@ Config.Hideouts = {
 	RaidersPerMember = 2,
 	TurretHostileNPC = true,
 	MedbayHealPerSecond = 2,
+	-- the Line 9 freight lift in each site's back corner (server/Hideouts.lua buildLift): new bodies come up here
+	LiftOffset = Vector3.new(24, 0, 24),
+	LiftHeight = 11,
+	LiftShaft = 34, -- the shaft stands this far above the cab roof, a red lamp on top
 }
 
 Config.SpawnSettle = 1.5 -- seconds the character is held in place after a spawn so the client receives the ground first

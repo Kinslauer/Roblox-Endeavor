@@ -1362,22 +1362,27 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b, c, d, e)
 			dematerializing = false
 		end)
 	elseif kind == "Flicker" then
-		-- the last seconds before the reset: colour drains, the world hums
+		-- the last seconds before the reset: colour drains, the world hums. Inside a green pocket nothing drains:
+		-- the pockets stand outside the hour (the reset passes them by; server/Cycle.lua spares what lies there)
+		local inPocket = player.Character and player.Character:GetAttribute("Pocket") ~= nil
 		local cc = make("ColorCorrectionEffect", { Saturation = 0, Contrast = 0 }, Lighting)
-		TweenService:Create(cc, TweenInfo.new(tonumber(a) or 5), { Saturation = -0.9, Contrast = 0.3 }):Play()
+		TweenService:Create(cc, TweenInfo.new(tonumber(a) or 5), if inPocket then { Saturation = 0.15, Contrast = 0.05 } else { Saturation = -0.9, Contrast = 0.3 }):Play()
 		task.delay((tonumber(a) or 5) + 1.5, function()
 			cc:Destroy()
 		end)
 	elseif kind == "Dematerialize" then
-		-- a second of white, then the world is back as it was
+		-- a second of white, then the world is back as it was. In a green pocket the white only grazes the edges
+		local inPocket = player.Character and player.Character:GetAttribute("Pocket") ~= nil
 		local white = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, ZIndex = 50 }, gui)
-		TweenService:Create(white, TweenInfo.new(0.15), { BackgroundTransparency = 0 }):Play()
+		TweenService:Create(white, TweenInfo.new(0.15), { BackgroundTransparency = if inPocket then 0.85 else 0 }):Play()
 		task.delay(tonumber(a) or 1, function()
 			TweenService:Create(white, TweenInfo.new(0.8), { BackgroundTransparency = 1 }):Play()
 			task.delay(1, function()
 				white:Destroy()
 			end)
 		end)
+	elseif kind == "Consigned" and typeof(a) == "Vector3" then
+		Sounds.Play("Unlatch", a) -- the crates open; the computer stands where they were
 	elseif kind == "Clues" and type(a) == "table" then
 		-- which fragments this conduit may see; the rest are hidden locally until the prerequisites are read
 		visibleClues = {}

@@ -176,6 +176,7 @@ lvl.ConsolePrompt.Triggered:Fire(player); run(0.2)
 local sawManifest = false
 for _, e in M.FireLog do if e[1] == "World" and e[3] == "Fragment" and e[4] == "Manifest" then sawManifest = true end end
 check("arrival: the manifest is copied and the lift wakes", sawManifest and lvl.LiftPrompt.Enabled == true and prof0.Intro.Intel == true)
+check("story: a copy of the Line 9 manifest goes in the pack", Inventory0.Count(player, "Manifest") == 1 and prof0.Consigned == true)
 lvl.LiftPrompt.Triggered:Fire(player); run(0.3)
 check("arrival: the lift ends it", sawIntro("End") and prof0.Intro.Done == true and player:GetAttribute("Stealth") == nil)
 
@@ -189,6 +190,35 @@ run(8)
 local pos = root().CFrame.Position
 check("player teleported into the arena", math.abs(pos.Y - 6.9) < 3 or pos.Y < 100)
 print("   player position after emergence:", pos.X, pos.Y, pos.Z)
+do
+	-- the station's lift comes up in a hideout site's freight lift (Line 9), not on a street
+	local HideoutsS = M.mockEnv.__require(SSS.Server.Hideouts)
+	local atLift = false
+	for _, site in HideoutsS.Sites do
+		if site.LiftCFrame and (site.LiftCFrame.Position - pos).Magnitude < 5 then atLift = true end
+	end
+	check("story: the station lift comes up in a bay's freight lift", atLift)
+	-- every bay has its lift, its shaft and an unsigned consignment, and nothing of the city stands inside the cab
+	local all, clear = true, true
+	local blockers = {}
+	for _, site in HideoutsS.Sites do
+		all = all and site.Lift ~= nil and site.Lift:FindFirstChild("LiftShaft") ~= nil and site.Crates ~= nil and site.Crates.Parent == site.Lift
+		local L = site.Position + ConfigM.Hideouts.LiftOffset
+		for _, d in workspace_:GetDescendants() do
+			if d:IsA("BasePart") and not d:IsDescendantOf(site.Lift) and not (d.Parent and d.Parent:FindFirstChildOfClass("Humanoid")) and d.CanCollide ~= false and (d.Transparency or 0) < 1 and d.Size and d.Position then
+				local p, sz = d.Position, d.Size
+				local hx, hz = math.abs(p.X - L.X), math.abs(p.Z - L.Z)
+				if hx < 3 + sz.X / 2 and hz < 3 + sz.Z / 2 and p.Y + sz.Y / 2 > 3 and p.Y - sz.Y / 2 < 48 and sz.Y < 400 then
+					clear = false
+					table.insert(blockers, ("bay %d: %s at %d,%d,%d size %d,%d,%d"):format(site.Index, d.Name, p.X, p.Y, p.Z, sz.X, sz.Y, sz.Z))
+				end
+			end
+		end
+	end
+	check("story: every bay has a freight lift, a shaft and a consignment", all)
+	check("story: no city geometry inside any freight lift cab or shaft", clear)
+	for i = 1, math.min(6, #blockers) do print("   ", blockers[i]) end
+end
 run(8)
 check("arrival: the station is cleared away", workspace_:FindFirstChild("Subway_1") == nil)
 
@@ -547,9 +577,14 @@ local PlayerData = M.mockEnv.__require(SSS.Server.Common.PlayerData)
 check("hideout sites placed", #Hideouts.Sites >= 10)
 as(player)
 Inventory.Add(player, "Scrap", 200); Inventory.Add(player, "SheetMetal", 60); Inventory.Add(player, "Wire", 40); Inventory.Add(player, "Battery", 12); Inventory.Add(player, "Pipe", 10); Inventory.Add(player, "Cloth", 30); Inventory.Add(player, "Powder", 8)
+local scrapBefore, hadManifest = Inventory.Count(player, "Scrap"), Inventory.Count(player, "Manifest")
 Remotes.HideoutClaim:FireServer(1); run(0.3)
 local site = Hideouts.Sites[1]
 check("claimed a site", site.Owner == player.UserId and site.Built ~= nil)
+check("story: signing the manifest claims the bay free and unpacks a computer", hadManifest == 1 and Inventory.Count(player, "Manifest") == 0
+	and Inventory.Count(player, "Scrap") == scrapBefore and PlayerData.Get(player).Hideout.Modules.Computer == true and site.Built:FindFirstChild("Computer") ~= nil)
+run(2.5)
+check("story: the consignment crates are gone from a signed bay", site.Crates.Parent == nil)
 Remotes.HideoutBuild:FireServer("Vault"); Remotes.HideoutBuild:FireServer("Walls"); Remotes.HideoutBuild:FireServer("Bunks"); run(0.5)
 local pd = PlayerData.Get(player)
 check("built vault, walls and bunks", pd.Hideout.Modules.Vault and pd.Hideout.Modules.Walls and pd.Hideout.Modules.Bunks and site.Gate ~= nil)
@@ -1124,6 +1159,31 @@ do
 			print("computer: module not built (hideout full at this tier); console check skipped")
 		end
 	end
+	-- the story's spawn order: an uploaded stack reboots at its computer; a conduit back from the Front reads the link
+	do
+		local Lifecycle_ = M.mockEnv.__require(SSS.Server.Lifecycle)
+		local NeuralNet_ = M.mockEnv.__require(SSS.Server.NeuralNet)
+		local cf, how = Lifecycle_.PlaceFor(player)
+		check("story: an uploaded stack reboots at its hideout computer", pd.Knowledge.Uploaded == true and how == "Reboot" and cf ~= nil)
+		pd.War.Tap = { At = "Corp Plaza", Credits = 100, Deaths = pd.War.RecruitDeaths, Kills = pd.War.RecruitKills }
+		pd.War.Credits = 340; pd.War.RecruitDeaths += 2; pd.War.RecruitKills += 1
+		local line = NeuralNet_.Returned(player)
+		check("story: back from the Front, the link reads what it cost", line == "> LINK CLOSED . . . RECRUITS LOST 2 . . . KILLS 1 . . . CREDIT +240" and pd.War.Tap == nil)
+		check("story: the way back stands at a Neural Net terminal", NeuralNet_.ReturnCFrame(player) ~= nil)
+		-- a body with no stack and no bay of its own comes up a free bay's lift with a manifest, once per life
+		local p3 = makePlayer("Newcomer", 789)
+		Players.PlayerAdded:Fire(p3); as(p3); run(2)
+		local pd3 = PlayerData.Get(p3)
+		local Inv = M.mockEnv.__require(SSS.Server.Inventory)
+		local liftCount = 0
+		for _, st in Hideouts_.Sites do
+			if st.LiftCFrame and not st.Owner and (st.LiftCFrame.Position - p3.Character.HumanoidRootPart.Position).Magnitude < 5 then liftCount += 1 end
+		end
+		check("story: a new body comes up a free bay's freight lift with a manifest", liftCount == 1 and Inv.Count(p3, "Manifest") == 1)
+		Lifecycle_.PlaceFor(p3)
+		check("story: one manifest per life", Inv.Count(p3, "Manifest") == 1)
+		p3:Destroy(); Players.PlayerRemoving:Fire(p3); as(player); run(0.5)
+	end
 	-- the cycle: the world resets and the draw redeals contacts, lines and fragments
 	do
 		local Cycle = M.mockEnv.__require(SSS.Server.Cycle)
@@ -1136,8 +1196,15 @@ do
 		local dfolder = workspace_.Destruction
 		local intactBefore = 0
 		for _, m in dfolder:GetChildren() do if m:GetAttribute("Prop") then intactBefore += 1 end end
+		-- remains in a green pocket outlive the hour; remains on a street do not
+		local Mega = M.mockEnv.__require(RS.Shared.Megacity)
+		local inPocket = M.newInstance("Part"); inPocket.Name = "Lootable"; inPocket:SetAttribute("Label", "Remains")
+		inPocket.Position = Mega.Pockets[1].Center + M.V3.new(5, 3, 5); inPocket.Parent = workspace_
+		local onStreet = M.newInstance("Part"); onStreet.Name = "Lootable"; onStreet:SetAttribute("Label", "Remains")
+		onStreet.Position = M.V3.new(0, 3, -300); onStreet.Parent = workspace_
 		local result = Cycle.Trigger()
 		run(0.3)
+		check("story: the green pockets stand outside the hour", inPocket.Parent ~= nil and onStreet.Parent == nil)
 		local intactAfter = 0
 		for _, m in dfolder:GetChildren() do if m:GetAttribute("Prop") then intactAfter += 1 end end
 		check("cycle: a run advances the index and restores the props", result and result.Index == before + 1 and intactAfter >= intactBefore)

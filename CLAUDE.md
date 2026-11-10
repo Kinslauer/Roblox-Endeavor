@@ -36,7 +36,7 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (261 checks), `war` = Front (69), `warclient` = the Front client plays the first link's stages (11), `stress` = budgets under load (5), `client` = the
+  `scenario` = Endeavor end to end (273 checks), `war` = Front (75), `warclient` = the Front client plays the first link's stages (11), `stress` = budgets under load (5), `client` = the
   Endeavor client boots + movement, dodge, animation, guard and air checks (32). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
@@ -274,6 +274,20 @@ Client tab screenshot, because Andy cannot read logs another way.
   whose "Chrome" plate with a title strip follows it (AbsolutePosition/Size/Visible signals) and dims + blurs the world
   unless `plain`; hotbar slots are plates with key caps; banner fades over a rule; death screen FLATLINE; controls
   card is a plate. Main is near Luau's 200-local limit at top level: put new UI in `do` blocks or tables.
+- The story joined up (owner, 2026-11-10: "fill in the gaps between the story elements and gameplay"; Claude chose
+  the links): Line 9 carries stack hardware (new bodies, recruit tanks) up into the city. Every hideout site is a
+  consignment bay with a freight lift in its back corner (`Hideouts` buildLift: cab, "LINE 9 . BAY nn", shaft with a
+  red lamp, STACK HARDWARE crates while unclaimed; Config.Hideouts.Lift*). The station console also puts a
+  "Manifest" item in the pack (`Tutorial.Consign`, once per life via data.Consigned, only with no site); claiming a
+  site while carrying it costs nothing and builds a free Computer that takes no module slot (h.Consigned).
+  Spawn order (`Lifecycle.PlaceFor`, also `WorldPhase.Place` for Emerge): back from the Front -> the terminal tapped
+  from (`NeuralNet.ReturnCFrame`, join data From = "Front", line from `NeuralNet.Returned` using war.Tap) ->
+  uploaded stack -> its hideout computer (`Hideouts.RebootCFrame`) -> bunks -> a freight lift (own bay, else a free
+  one) -> street spawns. Front: `Soldiers.Unlink` (hold X "Unlink" on your own base locker, refused under fire
+  Config.War.UnlinkCalm; or U between recruits, Remote "Unlink") hands the recruit's gear back to the locker and
+  teleports to Config.War.HomePlaceId. Stasis tanks carry "LINE 9 . STACK HARDWARE . nn/40" plates. Green pockets
+  stand outside the hour: Cycle spares loose lootables inside them, the client skips the colour drain and most of the
+  white-out there; fragment "Pressed" (Where = "Pocket"); one new hinting line per contact.
 - Lore (owner, 2026-10-31; docs/DESIGN.md "The stack"): conduits upload their consciousness stack through the hideout
   computer (first log-in = initialization, `Knowledge.Uploaded`); every death is a reboot of the stack; on the Front the
   stack links to the recruit's; the rich uploaded and escaped the world. Mechanically: Knowledge survives permadeath only

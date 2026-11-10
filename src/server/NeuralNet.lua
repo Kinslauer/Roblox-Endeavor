@@ -21,6 +21,8 @@ local WorldPhase = require(script.Parent.WorldPhase)
 local W = Config.War
 local NeuralNet = {}
 local uplinking = {}
+local terminals = {} -- [label] = where a conduit stands when the link drops them back here
+local lastTerminal = {} -- player -> label of the terminal they last used
 
 local function warOf(player)
 	local data = PlayerData.Get(player)
@@ -62,6 +64,8 @@ local function uplink(player)
 	end
 	pickFaction(war)
 	uplinking[player] = true
+	-- what the conduit held when it tapped in: the way back reads the difference (NeuralNet.Returned)
+	war.Tap = { At = lastTerminal[player], Credits = war.Credits, Deaths = war.RecruitDeaths, Kills = war.RecruitKills, Deployments = war.Deployments }
 	Combat.Stun(char, W.UplinkSeconds + 1)
 	Combat.GrantIFrames(char, W.UplinkSeconds + 2)
 	Remotes.Uplink:FireClient(player, "Begin", W.UplinkSeconds, war.Faction)
@@ -122,7 +126,11 @@ local function buildTerminal(position, label)
 	tap.ObjectText, tap.ActionText, tap.HoldDuration = "Neural Net", "Tap in", 1.5
 	tap.MaxActivationDistance, tap.RequiresLineOfSight, tap.KeyboardKeyCode = 10, false, Enum.KeyCode.X
 	tap.Parent = body
-	tap.Triggered:Connect(uplink)
+	terminals[label] = CFrame.lookAt(position + Vector3.new(0, 3, 7), position + Vector3.new(0, 3, 0))
+	tap.Triggered:Connect(function(player)
+		lastTerminal[player] = label
+		uplink(player)
+	end)
 
 	local app = Instance.new("ProximityPrompt")
 	app.ObjectText, app.ActionText, app.HoldDuration = "Neural Net", "Recruit app", 0.3
@@ -139,6 +147,35 @@ local function buildTerminal(position, label)
 	end)
 	model.Parent = workspace
 	return model
+end
+
+-- Back from the Front: in front of the terminal this conduit tapped in from (any terminal if that one is gone).
+function NeuralNet.ReturnCFrame(player)
+	local war = warOf(player)
+	local at = war and war.Tap and war.Tap.At
+	if at and terminals[at] then
+		return terminals[at]
+	end
+	for _, cf in terminals do
+		return cf
+	end
+	return nil
+end
+
+-- The link closes: what the recruits cost and earned since the tap-in, in the machine's words. Returns the line.
+function NeuralNet.Returned(player)
+	local war = warOf(player)
+	local tap = war and war.Tap
+	if not tap then
+		return nil
+	end
+	war.Tap = nil
+	local lost = (war.RecruitDeaths or 0) - (tap.Deaths or 0)
+	local kills = (war.RecruitKills or 0) - (tap.Kills or 0)
+	local gained = (war.Credits or 0) - (tap.Credits or 0)
+	local line = ("> LINK CLOSED . . . RECRUITS LOST %d . . . KILLS %d . . . CREDIT %s%d"):format(lost, kills, if gained >= 0 then "+" else "-", math.abs(gained))
+	Remotes.Announce:FireClient(player, line, "Emergence")
+	return line
 end
 
 function NeuralNet.Init()
@@ -181,6 +218,7 @@ function NeuralNet.Init()
 	end)
 	Players.PlayerRemoving:Connect(function(player)
 		uplinking[player] = nil
+		lastTerminal[player] = nil
 	end)
 end
 

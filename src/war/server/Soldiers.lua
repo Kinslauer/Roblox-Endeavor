@@ -400,6 +400,117 @@ function Soldiers.OnDied(player, char)
 	end)
 end
 
+-- ===== unlinking: the way back to the city =====
+-- A conduit leaves the Front through its own base's locker (hold X), or between recruits (U while the last one is
+-- dead). A recruit stood down at the locker hands its gear back in its current state; a dead one has already
+-- dropped it. Then the stack goes home: TeleportService to Endeavor with From = "Front", where the conduit stands
+-- at the terminal it tapped in from and reads what the link cost (server/NeuralNet.lua Returned).
+local unlinking = {} -- [player] = true while the teleport is in flight
+
+local function standDown(player, s)
+	local war = warOf(player)
+	if not war then
+		return
+	end
+	local mags = 0
+	for slot, w in s.Weapons do
+		if not s.Issued[slot] then
+			local worst = 100
+			for _, name in Firearms.Parts do
+				worst = math.min(worst, w.Parts[name] or 100)
+			end
+			Recruit.LockerAdd(war, w.Id, worst, 1)
+			for _, att in w.Attachments do
+				Recruit.LockerAdd(war, att.Id, att.Condition, 1)
+			end
+		end
+		if slot == "Primary" then
+			mags += #w.Spare
+		end
+	end
+	for _, slot in { "Armor", "Helmet" } do
+		local piece = s[slot]
+		if piece and not s.Issued[slot] then
+			Recruit.LockerAdd(war, piece.Id, piece.Condition, 1)
+		end
+	end
+	if mags > 0 then
+		Recruit.LockerAdd(war, "Ammo", 100, mags)
+	end
+	if (s.Grenades or 0) > 0 then
+		Recruit.LockerAdd(war, "Grenade", 100, s.Grenades)
+	end
+	if (s.Medkits or 0) > 0 then
+		Recruit.LockerAdd(war, "Medkit", 100, s.Medkits)
+	end
+	if (s.Sandbags or 0) >= 3 then
+		Recruit.LockerAdd(war, "Sandbags", 100, 1)
+	end
+end
+
+local function nearOwnLocker(player, s)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return false
+	end
+	for _, locker in Battlefield.Lockers do
+		local target = if locker:IsA("Model") then locker.PrimaryPart else locker
+		if target and locker:GetAttribute("Faction") == s.Faction and (target.Position - root.Position).Magnitude <= W.UnlinkReach then
+			return true
+		end
+	end
+	return false
+end
+
+-- Returns true when the link is closing, or false and why not.
+function Soldiers.Unlink(player)
+	if unlinking[player] or spawning[player] then
+		return false, "busy"
+	end
+	if Soldiers.Intro and Soldiers.Intro.Active and Soldiers.Intro.Active(player) then
+		return false, "intro"
+	end
+	local s = soldiers[player]
+	if s then
+		if s.Intro then
+			return false, "intro"
+		end
+		if not nearOwnLocker(player, s) then
+			return false, "locker"
+		end
+		if s.LastHit and os.clock() - s.LastHit.t < W.UnlinkCalm then
+			Remotes.Announce:FireClient(player, "> LINK HELD . . . UNDER FIRE", "Info")
+			return false, "fire"
+		end
+		standDown(player, s)
+		soldiers[player] = nil
+		if player.Character then
+			player.Character:Destroy()
+		end
+	end
+	unlinking[player] = true
+	deathToken[player] = (deathToken[player] or 0) + 1 -- no next recruit
+	local war = warOf(player)
+	Remotes.Soldier:FireClient(player, "Unlinking", W.UnlinkSeconds)
+	task.delay(W.UnlinkSeconds, function()
+		if not player.Parent then
+			return
+		end
+		local ok, err = pcall(function()
+			local options = Instance.new("TeleportOptions")
+			options:SetTeleportData({ From = "Front", Faction = war and war.Faction })
+			game:GetService("TeleportService"):TeleportAsync(W.HomePlaceId, { player }, options)
+		end)
+		if not ok then
+			warn("[Soldiers] unlink teleport failed:", err)
+			unlinking[player] = nil
+			Remotes.Soldier:FireClient(player, "UnlinkFailed")
+			Soldiers.Spawn(player) -- the gear is in the locker: the next recruit takes it
+		end
+	end)
+	return true
+end
+
 function Soldiers.IsDeployed(player)
 	local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 	return soldiers[player] ~= nil and not soldiers[player].Intro and hum ~= nil and hum.Health > 0
@@ -620,6 +731,26 @@ function Soldiers.Init()
 			end)
 		end
 	end
+	-- and the same lockers are the way home: hold X to unlink
+	for _, locker in Battlefield.Lockers do
+		local target = if locker:IsA("Model") then locker.PrimaryPart else locker
+		if target then
+			local prompt = Instance.new("ProximityPrompt")
+			prompt.ObjectText, prompt.ActionText, prompt.HoldDuration = "Neural Net", "Unlink", W.UnlinkHold
+			prompt.MaxActivationDistance, prompt.RequiresLineOfSight, prompt.KeyboardKeyCode = 10, false, Enum.KeyCode.X
+			prompt.UIOffset = Vector2.new(0, 60)
+			prompt.Parent = target
+			prompt.Triggered:Connect(function(player)
+				Soldiers.Unlink(player)
+			end)
+		end
+	end
+	-- between recruits (the last one dead, the next not yet out) the conduit may leave from anywhere
+	Net.On("Unlink", { rate = 1, burst = 2 }, function(player)
+		if soldiers[player] == nil then
+			Soldiers.Unlink(player)
+		end
+	end)
 	Players.CharacterAutoLoads = false
 	Factions.IsDeployed = Soldiers.IsDeployed
 	Net.On("Fire", { rate = 20, burst = 30, args = { "vector" } }, onFire)
@@ -784,13 +915,14 @@ function Soldiers.Init()
 		local s = soldiers[player]
 		if s and s.Intro and Soldiers.Intro then
 			Soldiers.Intro.Abort(player, s) -- left during the first link: the gear goes back to the locker
-		elseif s and player.Character and not s.Kit.Conscript then
+		elseif s and player.Character and not s.Kit.Conscript and not unlinking[player] then
 			dropBody(player, player.Character, s) -- quitting mid-fight leaves your gear on the field like dying would
 		end
 		soldiers[player] = nil
 		digging[player] = nil
 		spawning[player] = nil
 		deathToken[player] = nil
+		unlinking[player] = nil
 		PlayerData.Release(player)
 	end)
 	for _, p in Players:GetPlayers() do

@@ -526,17 +526,31 @@ local function claim(player, index)
 		Remotes.Announce:FireClient(player, "You already have a hideout. Leave it first.", "Info")
 		return
 	end
-	local ok, why = hasMaterials(player, HideoutDefs.ClaimCost)
-	if not ok then
-		Remotes.Announce:FireClient(player, "Claim: " .. why, "Info")
-		return
+	-- the Line 9 Manifest signs for the bay's consignment: no scrap, and the crates unpack into the computer
+	local signed = Inventory.Count(player, "Manifest") > 0
+	if signed then
+		Inventory.Remove(player, "Manifest", 1)
+	else
+		local ok, why = hasMaterials(player, HideoutDefs.ClaimCost)
+		if not ok then
+			Remotes.Announce:FireClient(player, "Claim: " .. why, "Info")
+			return
+		end
+		spend(player, HideoutDefs.ClaimCost)
 	end
-	spend(player, HideoutDefs.ClaimCost)
-	data.Hideout.Plot, data.Hideout.Tier, data.Hideout.Modules = index, 1, {}
+	data.Hideout.Plot, data.Hideout.Tier, data.Hideout.Modules = index, 1, if signed then { Computer = true } else {}
+	data.Hideout.Consigned = signed or nil
 	data.Hideout.Name = player.DisplayName .. "'s bench"
 	site.Owner = player.UserId
 	build(site, data.Hideout)
 	Remotes.Announce:FireAllClients(("%s claimed a site in %s."):format(player.DisplayName, (City.DistrictAt(site.Position) or { Name = "the outskirts" }).Name), "Event")
+	if site.Crates then
+		site.Crates.Parent = nil
+	end
+	if signed then
+		Remotes.Announce:FireClient(player, ("> LINE 9 . BAY %02d . . . CONSIGNMENT SIGNED"):format(site.Index), "Emergence")
+		Remotes.World:FireClient(player, "Consigned", site.Position)
+	end
 	push(player)
 end
 
@@ -561,8 +575,10 @@ local function buildModule(player, moduleId)
 		return
 	end
 	local built = 0
-	for _ in h.Modules do
-		built += 1
+	for id in h.Modules do
+		if not (id == "Computer" and h.Consigned) then -- the consignment's computer came in the crates, not out of a slot
+			built += 1
+		end
 	end
 	if built >= tier.Modules and not (leveled and h.Modules[moduleId]) then
 		Remotes.Announce:FireClient(player, ("A %s holds %d modules. Upgrade the workshop."):format(tier.Name, tier.Modules), "Info")
@@ -776,6 +792,9 @@ local function restore(player)
 		return
 	end
 	local site = sites[h.Plot]
+	if site and site.Owner == player.UserId and site.Built then
+		return -- already standing (Lifecycle restores before the first spawn, the old hook runs again after it)
+	end
 	if not site or (site.Owner and site.Owner ~= player.UserId) then
 		-- someone else holds the site in this server: the claim is lost (the vault contents stay in the profile)
 		h.Plot = 0
@@ -795,6 +814,103 @@ local function release(player)
 	end
 end
 
+-- ===== the freight lifts (Line 9) =====
+-- Every site is a consignment bay: a freight lift up from Line 9 in its back corner, its shaft standing over the
+-- roofs, and a stack of crates stencilled STACK HARDWARE beside it while nobody holds the site. New bodies come
+-- up these lifts (Hideouts.ArrivalCFrame); signing the Line 9 Manifest at a bay claims it and the crates unpack
+-- into the computer (claim below). Nothing here says so: the crates, the stencil and the lift do.
+local LIFT_AMBER, LIFT_DARK = Color3.fromRGB(255, 170, 40), Color3.fromRGB(46, 48, 54)
+
+local function stencil(p, face, text, color, font)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face, gui.LightInfluence = face, 0.3
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.Parent = p
+	local label = Instance.new("TextLabel")
+	label.Size, label.BackgroundTransparency, label.TextScaled = UDim2.fromScale(1, 1), 1, true
+	label.Text, label.TextColor3, label.Font = text, color, font or Enum.Font.Code
+	label.Parent = gui
+	return label
+end
+
+local function buildLift(site)
+	local L = site.Position + HC.LiftOffset
+	local model = Instance.new("Model")
+	model.Name = "FreightLift_" .. site.Index
+	local g = GROUND_TOP
+	local h = HC.LiftHeight
+	part(model, { Name = "LiftFloor", Size = Vector3.new(8, 0.6, 8), Position = L + Vector3.new(0, g + 0.3, 0), Color = Color3.fromRGB(70, 66, 58), Material = Enum.Material.DiamondPlate })
+	part(model, { Name = "LiftWall", Size = Vector3.new(8.6, h, 0.6), Position = L + Vector3.new(0, g + h / 2, 4), Color = LIFT_DARK, Material = Enum.Material.CorrodedMetal })
+	for _, sx in { -1, 1 } do
+		part(model, { Name = "LiftWall", Size = Vector3.new(0.6, h, 8), Position = L + Vector3.new(sx * 4, g + h / 2, 0), Color = LIFT_DARK, Material = Enum.Material.CorrodedMetal })
+	end
+	part(model, { Name = "LiftRoof", Size = Vector3.new(8.6, 0.6, 8.6), Position = L + Vector3.new(0, g + h + 0.3, 0), Color = LIFT_DARK, Material = Enum.Material.Metal })
+	local header = part(model, { Name = "LiftHeader", Size = Vector3.new(8.6, 2, 0.6), Position = L + Vector3.new(0, g + h - 1, -4), Color = Color3.fromRGB(30, 30, 34), Material = Enum.Material.Metal })
+	stencil(header, Enum.NormalId.Front, ("LINE 9 . BAY %02d"):format(site.Index), LIFT_AMBER)
+	-- hazard strip on the sill and a caged lamp inside
+	part(model, { Name = "LiftSill", Size = Vector3.new(8, 0.2, 0.8), Position = L + Vector3.new(0, g + 0.65, -3.6), Color = Color3.fromRGB(230, 180, 40), Material = Enum.Material.SmoothPlastic, CanCollide = false })
+	local lamp = part(model, { Name = "LiftLamp", Size = Vector3.new(2, 0.3, 2), Position = L + Vector3.new(0, g + h - 0.3, 0), Color = LIFT_AMBER, Material = Enum.Material.Neon, CanCollide = false })
+	local light = Instance.new("PointLight")
+	light.Color, light.Range, light.Brightness = LIFT_AMBER, 14, 0.9
+	light.Parent = lamp
+	-- the shaft over the roofs, with a red light on top: the bays can be found by looking up
+	local shaft = HC.LiftShaft
+	part(model, { Name = "LiftShaft", Size = Vector3.new(5, shaft, 5), Position = L + Vector3.new(0, g + h + shaft / 2, 1), Color = LIFT_DARK, Material = Enum.Material.CorrodedMetal })
+	local beacon = part(model, { Name = "LiftBeacon", Size = Vector3.new(1.2, 1.2, 1.2), Position = L + Vector3.new(0, g + h + shaft + 0.6, 1), Color = Color3.fromRGB(255, 40, 30), Material = Enum.Material.Neon, CanCollide = false })
+	local glow = Instance.new("PointLight")
+	glow.Color, glow.Range, glow.Brightness = beacon.Color, 10, 1
+	glow.Parent = beacon
+	-- the consignment, while the bay is unsigned
+	local crates = Instance.new("Model")
+	crates.Name = "Consignment"
+	local n = 0
+	for _, spot in { Vector3.new(-8.5, 1.5, 1.5), Vector3.new(-8.5, 1.5, -2), Vector3.new(-8.5, 4.5, 0) } do
+		n += 1
+		local crate = part(crates, { Name = "StackCrate", Size = Vector3.new(3, 3, 3), Position = L + spot + Vector3.new(0, g, 0), Color = Color3.fromRGB(60, 66, 60), Material = Enum.Material.Metal })
+		if ModelAssets.Spawn(Assets.Loot.CrateA, crate.CFrame * CFrame.new(0, -1.5, 0), "Mesh", crate) then
+			crate.Transparency = 1
+		end
+		stencil(crate, Enum.NormalId.Front, ("STACK HARDWARE\nLINE 9 . %02d/40"):format((site.Index * 3 + n) % 40 + 1), Color3.fromRGB(235, 225, 200))
+	end
+	crates.Parent = model
+	model.Parent = folder
+	site.Lift, site.Crates = model, crates
+	site.LiftCFrame = CFrame.lookAt(L + Vector3.new(0, g + 3.6, 1), L + Vector3.new(0, g + 3.6, -10))
+	return model
+end
+
+-- Where a body comes up: its own (or its crew's) bay, else a free bay, else nil.
+function Hideouts.ArrivalCFrame(player)
+	local site = siteOfPlayer(player)
+	if site and site.LiftCFrame then
+		return site.LiftCFrame, site
+	end
+	local free = {}
+	for _, s in sites do
+		if not s.Owner and s.LiftCFrame then
+			table.insert(free, s)
+		end
+	end
+	if #free == 0 then
+		return nil
+	end
+	local pick = free[rng:NextInteger(1, #free)]
+	return pick.LiftCFrame, pick
+end
+
+-- Where an uploaded stack reboots: in front of the computer of the hideout it belongs to.
+function Hideouts.RebootCFrame(player)
+	local site = siteOfPlayer(player)
+	local owner = site and ownerPlayer(site)
+	local h = owner and hideoutOf(owner)
+	if not (site and site.Built and h and h.Modules.Computer) then
+		return nil
+	end
+	local c = site.Position
+	return CFrame.lookAt(c + Vector3.new(-12, GROUND_TOP + 3, -4), c + Vector3.new(-12, GROUND_TOP + 3, -12))
+end
+
 local function makeSiteMarker(site)
 	local post = part(folder, { Name = "SitePost", Size = Vector3.new(1, 6, 1), Position = site.Position + Vector3.new(0, GROUND_TOP + 3, 0), Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 170, 40), CanCollide = false })
 	post:SetAttribute("Site", site.Index)
@@ -806,11 +922,15 @@ local function makeSiteMarker(site)
 		claim(player, site.Index)
 	end)
 	site.Marker = post
-	-- hide the marker while the site is owned
+	buildLift(site)
+	-- hide the marker (and the unsigned consignment) while the site is owned
 	task.spawn(function()
 		while post.Parent do
 			post.Transparency = if site.Owner then 1 else 0
 			prompt.Enabled = site.Owner == nil
+			if site.Crates then
+				site.Crates.Parent = if site.Owner then nil else site.Lift
+			end
 			task.wait(2)
 		end
 	end)
@@ -891,5 +1011,6 @@ function Hideouts.Init()
 end
 
 Hideouts.Sites = sites
+Hideouts.Restore = restore
 Hideouts.Push = push
 return Hideouts

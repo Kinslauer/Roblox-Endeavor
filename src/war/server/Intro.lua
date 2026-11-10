@@ -170,7 +170,7 @@ local function silhouette(parent, base)
 	end
 end
 
-local function tank(parent, base, occupied)
+local function tank(parent, base, occupied, n)
 	if not occupied then -- the occupied tank stands on its hatch instead
 		cylinder(parent, { Name = "TankBase", Color = DARK }, 1.2, TANK_D + 1.4, base + Vector3.new(0, 0.6, 0))
 	end
@@ -191,6 +191,16 @@ local function tank(parent, base, occupied)
 	if not occupied then
 		silhouette(parent, base)
 	end
+	-- the lid's stencil: these tanks are the crates that come up Line 9 in the city (shared/Config Tutorial.Manifest)
+	local plate = part(parent, { Name = "TankPlate", Size = Vector3.new(3.2, 0.7, 0.1), CFrame = CFrame.new(base + Vector3.new(0, TANK_H + 0.7, TANK_D / 2 + 0.76)),
+		Color = Color3.fromRGB(70, 66, 58), Material = Enum.Material.Metal, CanCollide = false, CanQuery = false })
+	local gui = Instance.new("SurfaceGui")
+	gui.Face, gui.LightInfluence = Enum.NormalId.Back, 0.4
+	gui.Parent = plate
+	local label = Instance.new("TextLabel")
+	label.Size, label.BackgroundTransparency, label.TextScaled, label.Font = UDim2.fromScale(1, 1), 1, true, Enum.Font.Code
+	label.Text, label.TextColor3 = ("LINE 9 . STACK HARDWARE . %02d/40"):format(n or 1), Color3.fromRGB(230, 220, 190)
+	label.Parent = gui
 	return glass, liquid
 end
 
@@ -260,9 +270,10 @@ local function buildCell(o, ctx)
 		light(strip, TEAL, 16, 0.6)
 	end
 	local base = Vector3.new(o.X, floorY, o.Z + TANK_Z)
-	local glass, liquid = tank(chamber, base, true)
-	tank(chamber, base + Vector3.new(-8.5, 0, 0), false)
-	tank(chamber, base + Vector3.new(8.5, 0, 0), false)
+	local crate = ((ctx.player.UserId or 0) * 7 + (ctx.slot or 0)) % 38 + 2
+	local glass, liquid = tank(chamber, base, true, crate)
+	tank(chamber, base + Vector3.new(-8.5, 0, 0), false, crate - 1)
+	tank(chamber, base + Vector3.new(8.5, 0, 0), false, crate + 1)
 	-- the hatch under this recruit's tank
 	local hatch = part(chamber, { Name = "Hatch", Size = Vector3.new(6.4, 0.6, 6.4), CFrame = CFrame.new(base + Vector3.new(0, 0.2, 0)), Color = Color3.fromRGB(40, 44, 46), Material = Enum.Material.DiamondPlate })
 	cell.Glass, cell.Liquid, cell.Hatch = glass, liquid, hatch

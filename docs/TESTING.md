@@ -511,6 +511,31 @@ and F2 skips to the next stage).
 - [ ] On the Front: Shift sprints (no firing while sprinting), Space at a wall pulls you up onto ledges.
 - [ ] If you die later, the issued kit is not dropped as loot. Leaving during the intro gives ordered gear back to the locker.
 
+## The story joined up (2026-11-10, new this round: Endeavor v80, Front v25)
+Play these on the published places (Studio's Play button cannot teleport between places).
+- [ ] At the bottom of the station, copying the manifest at the console also puts a "Line 9 Manifest" in your pack (Tab).
+- [ ] The station lift comes up inside a freight lift in the city, not on a street: a dark cab with "LINE 9 . BAY nn"
+      over the door, a tall shaft above it with a red lamp on top, and three crates stencilled STACK HARDWARE beside it.
+- [ ] Every hideout site in the city has one of these lifts; the red lamps on the shafts can be seen over the roofs.
+- [ ] At that bay's orange post, claim the site (X) while carrying the manifest: no scrap is taken, the crates are gone,
+      "> LINE 9 . BAY nn . . . CONSIGNMENT SIGNED", and a computer stands in the new hideout. It does not use up one
+      of the hideout's module slots.
+- [ ] Log in at that computer (it uploads your stack), then die: you wake standing at your computer, with
+      "> STACK RESIDENT . . . REBOOTED".
+- [ ] Die before you ever upload (or with no hideout): the new body comes up a freight lift, at your own bay if you
+      have one, else at a free bay, with a fresh manifest if you have no site (once per life).
+- [ ] On the Front, at your own base's locker, hold X on "Unlink" (2.5 s): the screen goes black,
+      "> UNLINKING . . . STACK RETURNING", and you arrive in Endeavor at the Neural Net terminal you tapped in from.
+      The recruit's gear (guns, armor, spare magazines, frags, dressings) is back in your locker.
+- [ ] Unlinking is refused away from your own locker and within 10 seconds of being hit ("> LINK HELD . . . UNDER FIRE").
+- [ ] When a recruit dies, "> LINK OPEN . . . [U] UNLINK" shows until the next recruit: U takes you home from anywhere.
+- [ ] Back in Endeavor: "> LINK CLOSED . . . RECRUITS LOST n . . . KILLS n . . . CREDIT +n" (what the trip cost and earned).
+- [ ] The stasis tanks on the Front's first link have a plate on the lid: "LINE 9 . STACK HARDWARE . nn/40".
+- [ ] Stand in a green pocket (the Last Garden, the Rootwork, Fernwell) when the hour turns: the colour does not drain
+      and the white-out only grazes the screen. Remains dropped in a pocket are still there after the reset.
+- [ ] New contact lines now and then (Broker about Line 9, Fixer about the Garden, Dealer about the hills), and a new
+      fragment ("Pressed") that lies in a green pocket every second cycle once you have read Hour Zero.
+
 ## Known / expected
 - Weapon grip angles and sound levels are first guesses: say what feels off.
 - Collapsed building stumps may collide as solid hulls (MeshPart collision can't be set from scripts).

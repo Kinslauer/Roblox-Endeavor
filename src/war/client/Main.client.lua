@@ -132,6 +132,7 @@ local function feed(text)
 	end)
 end
 
+local linkLost = false -- true between a recruit's death and the next one: U unlinks from anywhere
 local function announce(text, kind, seconds)
 	if kind == "Kill" then
 		feed(text)
@@ -232,6 +233,28 @@ Remotes.Soldier.OnClientEvent:Connect(function(kind, a, b)
 		announce(("Deployed with the %s%s."):format(a, if b then " as a conscript: order a loadout (M) before next time" else ""), "Info", 6)
 	elseif kind == "Died" then
 		announce(if a then ("Your recruit was killed by %s. Their gear is on the field."):format(a) else "Your recruit is dead. Their gear is on the field.", "Kill", Config.War.RespawnSeconds)
+		linkLost = true
+		task.delay(Config.War.RespawnSeconds, function()
+			linkLost = false
+		end)
+		task.delay(1.2, function()
+			if linkLost then
+				announce("> LINK OPEN . . . [U] UNLINK", "Info", Config.War.RespawnSeconds - 1.5)
+			end
+		end)
+	elseif kind == "Unlinking" then
+		-- the stack goes home: the view closes to black, the teleport follows
+		linkLost = false
+		announce("> UNLINKING . . . STACK RETURNING", "Info", 10)
+		local black = Instance.new("Frame")
+		black.Size, black.BackgroundColor3, black.BackgroundTransparency, black.ZIndex = UDim2.fromScale(1, 1), Color3.new(0, 0, 0), 1, 40
+		black.Parent = gui
+		TweenService:Create(black, TweenInfo.new(tonumber(a) or 2), { BackgroundTransparency = 0 }):Play()
+		task.delay(12, function()
+			black:Destroy() -- still here: the teleport failed or is slow; the server says which
+		end)
+	elseif kind == "UnlinkFailed" then
+		announce("> LINK HELD . . . NO ROUTE HOME", "Kill", 4)
 	end
 end)
 
@@ -495,6 +518,8 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		Remotes.Entrench:FireServer("Sandbag")
 	elseif key == Enum.KeyCode.M then
 		app.Visible = not app.Visible
+	elseif key == Enum.KeyCode.U and linkLost then
+		Remotes.Unlink:FireServer()
 	elseif key == Enum.KeyCode.LeftShift or key == Enum.KeyCode.RightShift then
 		sprinting = true
 		if aiming then

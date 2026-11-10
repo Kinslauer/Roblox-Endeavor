@@ -1,6 +1,6 @@
 -- The cycle: every Config.Destruction.CycleSeconds the world dematerializes and comes back exactly as it was.
 -- Restored: every broken prop, breach and structure (Destruction.Reset). Cleared: loose remains and drops
--- nobody looted, hands emptied, every woken frontier encounter and sprung ambush. Redrawn: where each contact
+-- nobody looted (except inside a green pocket), hands emptied, every woken frontier encounter and sprung ambush. Redrawn: where each contact
 -- stands, each contact's line, which fragments lie where (Clues.Draw). Players stay where they stand with
 -- what they carry; the hideout is untouched. The clock starts when the world opens.
 --   T-Warning: banner + World "DematerializeWarning" (debris flickers)
@@ -13,6 +13,7 @@ local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local Clues = require(Shared.Clues)
+local Megacity = require(Shared.Megacity)
 local CluesServer = require(script.Parent.CluesServer)
 local Contacts = require(script.Parent.Contacts)
 local Destruction = require(script.Parent.Destruction)
@@ -34,7 +35,8 @@ end
 local function clearLoose()
 	local n = 0
 	for _, part in workspace:GetDescendants() do
-		if part.Name == "Lootable" and LOOSE[part:GetAttribute("Label")] then
+		-- the green pockets stand outside the hour: what lies in one is still there after the reset
+		if part.Name == "Lootable" and LOOSE[part:GetAttribute("Label")] and not (part:IsA("BasePart") and Megacity.PocketAt(part.Position)) then
 			part:Destroy()
 			n += 1
 		end
