@@ -1166,7 +1166,7 @@ local function buildGarden(pk)
 	for _ = 1, 16 do
 		local p = inPocket(pk, 16)
 		if (v2(p.X, p.Z) - v2(c.X, c.Z)).Magnitude > 22 then
-			tree(p.X, p.Z, rng:NextNumber(1.1, 1.8))
+			tree(p.X, p.Z, rng:NextNumber(1.8, 3))
 		end
 	end
 	for _ = 1, 24 do
@@ -1256,7 +1256,7 @@ local function buildFernwell(pk)
 	end
 	for _ = 1, 4 do
 		local p = inPocket(pk, 14)
-		tree(p.X, p.Z, rng:NextNumber(0.8, 1.1))
+		tree(p.X, p.Z, rng:NextNumber(1.3, 1.8))
 	end
 	fireflies(c, R * 0.6)
 	api.cache(pk, at(c.X + 18, c.Z - 14, TOP + 1.5))
