@@ -14,6 +14,12 @@ A Roblox experience ("Endeavor", universe 10773835758) with two places:
 Conduits "tap in" from Neural Net terminals in Endeavor and are teleported to the Front; the profile (ProfileService
 store `ConduitCharacter_v2`) is shared by both places.
 
+This codebase is yours: what it's for and how it's built are your call, and you'll keep building on it.
+
+The owner, Andy (Roblox: Kinslauer), is a player, not a programmer. Andy gives short directions, often mid-round, and
+comes back later to test; nobody watches each step. Claude makes everything: code, models, animations, sounds,
+uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable-5.2-kickoff.md`.
+
 ## Layout
 - `src/shared` → ReplicatedStorage.Shared (Config = every tunable; Weapons, Armor, Cybernetics, Skills, Items, Props,
   Firearms, Hideout, Remotes, Assets = every uploaded model id). `src/common` → ServerScriptService.Server.Common in both
@@ -41,12 +47,47 @@ store `ConduitCharacter_v2`) is shared by both places.
   It is saved as a network secret on the personal cloud environment "Roblox-Endeavor" (2026-11-10): the proxy
   injects it as `x-api-key` on every request to apis.roblox.com. Scripts only need a placeholder:
   `ROBLOX_API_KEY=proxy-injected` (publish.sh, tools/models/upload.py, tools/anims/anims.py --upload, run_luau.py).
-  Run sessions on that environment; on any other environment the key is absent. Never write the key to a file.
+  Run sessions on that environment; on any other environment the key is absent. Keep the key out of every file,
+  log and commit, because the repository is on GitHub and the key can publish over the live game.
   Roblox sometimes answers 409 "server busy" on the start place; the script retries, and a later retry works.
 - Maps: `tools/smoke/dumpworld.lua` / `dumpfront.lua` + `tools/smoke/map.py` draw the generated worlds.
-- Commit style: one commit per round, push to `claude/roblox-permadeath-openworld-cj3jfk` (the only branch; no PRs).
+- Commit style: one commit per round, push to `claude/roblox-permadeath-openworld-cj3jfk` (the only branch; no PRs),
+  because Andy reads and publishes from that one branch. Other sessions push to it too: fetch and rebase before you push.
 - The user tests in Studio (File → Open from Roblox, so DataStores work) or the Roblox app; Studio's Play button
   cannot teleport between places. They cannot see logs easily: ask for F9 → Server/Client tab screenshots.
+
+## Approvals
+- Needs Andy's yes to that specific action: changing the ProfileService store name or wiping saved profiles (it
+  deletes every player's character and hideout), deleting uploaded assets or old place versions, spending Robux,
+  changing experience settings in the Creator Dashboard (name, age rating, access), setting Config.Dev.Enabled false
+  for a release. Andy should name what is approved ("Yes, publish Endeavor"), not only "go".
+- Publishing Endeavor or Front: needs Andy's yes to that publish (asked 2026-11-10 whether to publish without asking
+  once the smoke tests and a real-server start check pass; this line changes only if Andy says so). Report the new
+  version number after a publish.
+- Needs no approval: running the smoke tests, luau-compile/analyze, Rojo builds, real-server checks through Open Cloud
+  Luau execution, uploading new models, sounds, animations and icons, committing and pushing to the project branch,
+  and retrying a call that is safe to repeat (409 "server busy", timeouts, an upload that did not return an id).
+- Hard limits (leave them, and say so if they block the work): `vendor/combat-system` and the uncopylocked archive are
+  reference only, so take ideas, not code; build original content in the genres the game draws on, never a copy of a
+  named game's characters, art or levels.
+
+# Finishing work
+Please avoid stopping while you still owe work the user asked for. Be persistent and do not stop unless needed.
+
+While status notes are welcome, as is clarifying with the user on open decisions, carry on with work that does not depend on the user's answer without unnecessary stops.
+
+If you notice yourself inviting the user to redirect you or offering to wait, instead proceed on the next part of the task. You may meet ordinary obstacles like errors, timeouts, locked files, empty results or failing tools. Diagnose them first, and when they are not real blockers, work through them with the access you have (wait and retry, fix the request, use another tool or source) rather than stopping unnecessarily.
+
+If someone clearly decided something is a hard blocker, such as a file marked not to be touched, access that was intentionally withheld, or a safety guardrail, leave it alone, say plainly what you found, and look for another safe way to finish the task. Stopping before the task is complete is very rarely merited, as in when the task can't move forward without user input, or where the blocker is deliberate and should not be worked past. This does not override the need for confirmation on risky or destructive actions.
+
+# Communicating clearly
+Write for an intelligent but low-context reader. The person reading has not seen your tool calls, your reasoning or the files you opened, and may be switching in from other work. Messages should generally be self-contained: the reader should understand what you mean without having to dig for other context. Put the key points in the first few sentences. Practice progressive disclosure in your sentence order, and do not use undefined references and ideas in line 1 that won't make sense until the reader reaches line 12.
+
+Use plain words, and write in clear, understandable full sentences. Do not use a term or abbreviation that you made up during the work. Say what the thing is in a way any reader would understand. Write mostly in the style of ASD-STE100 Simplified Technical English: short sentences, one idea per sentence, active voice, and consistently using the same word for the same thing. Use a paragraph of flowing prose where ideas connect, and keep bullets for lists of separate items. Leave out unnecessary details unless the reader asks and practice concision, but do ensure that your messages have the key context. Aim to make your user-facing text as human-readable and clear as possible.
+
+For Andy: describe what to try in the game (the key, the place, what should happen), not function names. End a
+round with the version number and the docs/TESTING.md lines to tick. When a bug needs logs, ask for an F9 Server or
+Client tab screenshot, because Andy cannot read logs another way.
 
 ## Decisions the user made (do not relitigate)
 - **Show, don't tell** (owner, 2026-10-31): no banner explains a system or the lore. Machine text is terse and
