@@ -236,6 +236,9 @@ Client tab screenshot, because Andy cannot read logs another way.
 ## State (2026-11-10)
 - Front v22 published (2026-11-10, the open world) and starting cleanly on a real server: startup 1.8s (models
   loaded in parallel 1.0s, terrain 0.7s), 0 warnings, ~3,850 parts (3,780 MeshParts), ~1,650 props.
+- Endeavor v78 published (2026-11-10, the megacity) and starting cleanly on a real server: startup 4.4s (was 52.6s
+  before City.Init preloaded every model in parallel), 0 warnings, ~12,250 parts in the workspace, megacity 2,800
+  parts + 112 kit models + 180 props, 60 lights, 63 emitters.
 - Endeavor v76 published (2026-11-10, geometric blocking) and starting cleanly on a real server: startup 52.6s,
   0 warnings (Front v19, unchanged since). Latest rounds: traced blades, keyframed animations, armoured dodge, frame
   data, group launches, guard, geometric blocking (see Decisions above).
@@ -404,6 +407,9 @@ Client tab screenshot, because Andy cannot read logs another way.
   ("The Crossroads", Medium: `City.Crossroads`, `City.DistrictAt` returns it within 110 studs; Population adds a pack).
 
 ## Open items
+- Megacity (v78) awaits Andy's walk-through: look, frame rate across the ring, sludge damage and pocket healing.
+  Ideas not built yet: a respirator item or Nose cybernetic that cuts sludge damage; an elevated rail line; station
+  entrances to the train intro's subway; StreamingEnabled (still off; the map is ~3400 x 4000 studs now).
 - Awaiting the user's in-game look at v75/v76: the Conduit body v2, the 24 keyframed animations, the guard, reactions,
   launches (animation playback can't be verified from the Luau execution API: it does not run the simulation).
 - Geometric blocking (2026-11-10, Endeavor v76) awaits Andy's in-game feel: frontal and side blows should stop on the guard,
