@@ -11,7 +11,7 @@ Made with the repo skill `.claude/skills/fable-prompt` (based on Anthropic's "Pr
 | Project context | Yes | Already in CLAUDE.md. The kickoff points at it instead of repeating it. |
 | Ownership sentence | Yes | Claude builds and keeps building all of this code. Expect bigger diffs and some unasked cleanup. |
 | Finishing work | Yes | Andy gives a direction and leaves, so a round that pauses to ask is a stalled round. |
-| Approvals | Yes | New section. Names what needs Andy's yes (publishing, profile wipes, deleting assets or versions, Robux, Dashboard settings, the release switch) and what needs none (tests, builds, real-server checks, asset uploads, pushes, safe retries). |
+| Approvals | Yes | New section. Names what needs Andy's yes (profile wipes, deleting assets or versions, Robux, Dashboard settings, the release switch) and what needs none (tests, builds, real-server checks, asset uploads, pushes, safe retries). |
 | Progress updates | No | Andy does not watch each step. The Claude app's project threads already show a progress checklist. |
 | Communicating clearly | Yes | Andy reads every result. Added one Endeavor line: describe what to try in the game, give the version, ask for F9 screenshots. |
 | Subagents | No | Nothing in the project asks for more or less delegation, so no line is needed. |
@@ -26,8 +26,7 @@ Made with the repo skill `.claude/skills/fable-prompt` (based on Anthropic's "Pr
   write reasoning out, and no hard style rule.
 - The stale memory line "ask for the API key each session" was corrected in the project memory: the key is now a
   secret on the "Roblox-Endeavor" cloud environment.
-- Publishing needs Andy's yes for now. If Andy decides rounds may publish without asking, change that one line in
-  CLAUDE.md "Approvals".
+- Publishing needs no yes once the smoke tests and a real-server start check pass (Andy's choice, 2026-11-10).
 - Not done yet, worth doing: CLAUDE.md is about 370 lines, most of it per-system notes under "State" and "Decisions".
   Fable follows every line, so a later round could move the per-system notes to `docs/SYSTEMS.md` and keep CLAUDE.md
   to the decisions, approvals and current state. It was left alone this round because another session is editing

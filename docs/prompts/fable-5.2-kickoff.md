@@ -22,7 +22,7 @@ A round is done when:
 - the change is in the code and passes the smoke tests in CLAUDE.md ("How to work"),
 - docs/TESTING.md has a line for each new thing Andy can try, and CLAUDE.md records any new decision and the state,
 - it is committed and pushed to the project branch named in CLAUDE.md,
-- it is published and starts cleanly on a real server, once Andy has said yes to that publish (CLAUDE.md "Approvals"),
+- it is published and starts cleanly on a real server (CLAUDE.md "Approvals": no yes needed once the checks pass),
 - the last message says what changed, what Andy should try (keys, places, what to look for) and the version number.
 
 # This round

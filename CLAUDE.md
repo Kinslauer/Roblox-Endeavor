@@ -61,9 +61,10 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   deletes every player's character and hideout), deleting uploaded assets or old place versions, spending Robux,
   changing experience settings in the Creator Dashboard (name, age rating, access), setting Config.Dev.Enabled false
   for a release. Andy should name what is approved ("Yes, publish Endeavor"), not only "go".
-- Publishing Endeavor or Front: needs Andy's yes to that publish (asked 2026-11-10 whether to publish without asking
-  once the smoke tests and a real-server start check pass; this line changes only if Andy says so). Report the new
-  version number after a publish.
+- Publishing Endeavor or Front needs no yes (Andy, 2026-11-10: "Publish when checks pass"): publish a finished round
+  once the smoke tests pass and a real-server start check shows no `STARTUP FAILED`, because Andy tests the published
+  place and Roblox keeps old versions to roll back to. If a check fails, fix it or leave the round unpublished and say
+  why. Report the new version number after a publish.
 - Needs no approval: running the smoke tests, luau-compile/analyze, Rojo builds, real-server checks through Open Cloud
   Luau execution, uploading new models, sounds, animations and icons, committing and pushing to the project branch,
   and retrying a call that is safe to repeat (409 "server busy", timeouts, an upload that did not return an id).
