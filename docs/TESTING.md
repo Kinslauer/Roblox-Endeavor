@@ -445,6 +445,36 @@ move; the city and the scarp overlook stay put. The server's seed is printed in 
 - [ ] Foxholes (F) dig into the terrain wherever you stand; sandbags (V) sit on the ground on slopes too.
 - [ ] Frame rate with many players stays playable (report your FPS with Shift+F5 if it drops).
 
+### Front: the first link (stasis tank, barracks, simulation) (2026-11-10)
+Your first join of the Front plays this once (while Config.Dev.Enabled is on it plays on your first join of each server,
+and F2 skips to the next stage).
+- [ ] You wake in black, then jolt awake in a glass tank of green fluid: the view darts around in a panic, blurred and
+      tinted, bubbles rising past your face, a heartbeat thudding. Two other tanks hold dark, unfinished bodies.
+- [ ] A few seconds in, the view cuts in quick white-framed flashes to places on the battlefield (the memories), then
+      whites out and settles; "> STACK SYNC . . . 100%" and "> RECRUIT ### . . . RESIDENT" type out at the bottom.
+      After that you can look around the tank yourself.
+- [ ] The fluid drains away (gurgling), you settle onto the tank floor; the cables on your back let go with a hiss and
+      clacks and fall; the floor slides open and you drop down a lit steel chute into a barracks.
+- [ ] The barracks: bunks at the back, a sealed blast door with a red lamp, and your kit laid out on benches, a rifle,
+      a pistol, a vest on a stand, a helmet, an ammo crate. X takes each one ("> SUPPLY . . . n/5"); your HUD shows them.
+      With an empty locker it is your faction's issue kit; with an order in the recruit app it is your ordered gear.
+- [ ] Once everything is taken the door lamp turns green, the room stutters into static and whites out, and you
+      stand in a dark wireframe city: glowing cyan blocks on a grid, a wall of light at the edge.
+- [ ] Drill 1 RANGE: six white figures in the open; shoot them (LMB, aim RMB, reload R, selector B).
+- [ ] Drill 2 BREACH: three figures sealed in a block bunker; break in (a frag, G, or enough rounds) and drop them.
+- [ ] Drill 3 ASCENT: climb the block steps to the green beacon: sprint (Shift) and pull yourself up a ledge
+      (Space at a wall up to one block high).
+- [ ] Drill 4 CONTACT: five red figures walk in through the streets and shoot back; walls stop their shots; dressing (H),
+      lean (Q/E). If they "kill" you, the screen flashes red ("> DESYNC . . . RELOAD") and you start the drill over.
+- [ ] Drill 5 FIRE MISSION: look at the tall tower and call artillery (K); the shells take its base out and it falls
+      apart block by block.
+- [ ] Everything in the city breaks: blocks shatter into cyan shards with a glassy crunch, the column above a broken
+      block falls, a building whose base is half gone collapses. Frags and dressings refill in the simulation.
+- [ ] "> SIMULATION . . . COMPLETE", a white-out, "> LINK 1/1 . . . FRONT", and you stand at your dugout with full
+      magazines, the Front's normal light and ash back.
+- [ ] On the Front: Shift sprints (no firing while sprinting), Space at a wall pulls you up onto ledges.
+- [ ] If you die later, the issued kit is not dropped as loot. Leaving during the intro gives ordered gear back to the locker.
+
 ## Known / expected
 - Weapon grip angles and sound levels are first guesses: say what feels off.
 - Collapsed building stumps may collide as solid hulls (MeshPart collision can't be set from scripts).

@@ -353,6 +353,54 @@ Config.War = {
 		MaxPerSector = 40, -- earthworks cap per sector; the oldest collapse first
 	},
 	SectorRebuildSeconds = 240, -- an empty sector the hill has left rebuilds after this
+	-- The first link into a recruit (war/server/Intro.lua + Simulation.lua, war/client/IntroFx.lua): the recruit
+	-- jolts awake in a stasis tank, the clone's memories sync, the tank drains, the cables unlatch, a chute
+	-- drops it into a barracks stocked by its conduit, and a simulation link drops it into a wireframe city
+	-- to learn to fight. Built per player in the sky, far off the battlefield.
+	Intro = {
+		Enabled = true,
+		ReplayInDev = true, -- with Config.Dev.Enabled the intro plays on every join and F2 skips a stage (testing)
+		Origin = Vector3.new(0, 1500, 0), -- slot 1; slot n sits at Origin + (n - 1) * SlotStep
+		SlotStep = Vector3.new(500, 0, 0),
+		WakeSeconds = 10, -- the frantic wake-up and the memory sync, before the tank drains
+		DrainSeconds = 6,
+		UnlatchSeconds = 2.5,
+		ChuteSeconds = 5, -- the fall is given this long before the recruit is set down in the barracks
+		BarracksSeconds = 150, -- whatever is still on the racks after this is fitted anyway
+		LinkSeconds = 3, -- the simulation link (white-out) before the wireframe city
+		DoneSeconds = 4, -- the drop out of the simulation onto the Front
+		-- what the conduit's supply fills in when the locker does not cover a slot (first-time conduits own
+		-- nothing). Issued pieces are the recruit's, not loot: they never drop on the body.
+		Issue = {
+			Union = { Primary = "M16A1", Sidearm = "M1911", Armor = "FlakVest", Helmet = "Helmet", Magazines = 3, Grenades = 2, Medkits = 1, Sandbags = 3 },
+			Pact = { Primary = "AKM", Sidearm = "Makarov", Armor = "FlakVest", Helmet = "Helmet", Magazines = 3, Grenades = 2, Medkits = 1, Sandbags = 3 },
+		},
+		Sim = {
+			Size = 300, -- the simulation floor is Size x Size studs
+			Block = 6, -- wireframe city blocks are Block-stud cubes; a recruit can mantle one block high
+			BlockHealth = 70,
+			BulletBlockDamage = 0.6, -- share of a round's damage a block takes (everything breaks in the simulation)
+			CollapseShare = 0.45, -- a building comes down once this share of its ground layer is gone
+			TargetHealth = 40,
+			Hostiles = 5,
+			HostileHealth = 60,
+			HostileDamage = 9,
+			HostileFireSeconds = 1.4,
+			HostileAccuracy = 0.45, -- hit chance at 20 studs; falls off with range and when the recruit sprints
+			Artillery = { Shells = 6, Radius = 14, Damage = 140, Spread = 7, Delay = 3, Cooldown = 12 },
+			ResupplyBelow = 2, -- spare magazines refill to 4 whenever they drop below this in the simulation
+		},
+	},
+}
+
+-- Front movement (war client): sprint and climbing over ledges. Grounded, first person; the
+-- simulation teaches the same moves the Front uses.
+Config.WarMovement = {
+	WalkSpeed = 14,
+	SprintSpeed = 22,
+	MantleHeight = 6.6, -- highest ledge (above the feet) a recruit can pull up onto
+	MantleReach = 3, -- studs ahead of the chest the ledge must be
+	MantleSeconds = 0.38,
 }
 
 Config.Hideouts = {

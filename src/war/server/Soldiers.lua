@@ -71,19 +71,116 @@ local function conscriptKit(faction)
 	return { Sidearm = { Id = if faction == "Union" then "M1911" else "Makarov", Condition = 70 }, Attachments = {}, Magazines = 2, Grenades = 0, Medkits = 0, Conscript = true }
 end
 
-local function buildWeapons(kit)
-	local weapons = {}
-	for _, slot in { "Primary", "Sidearm" } do
-		local entry = kit[slot]
-		if entry then
-			local w = Guns.Make(entry.Id, entry.Condition, if slot == "Primary" then kit.Attachments else nil)
-			if w then
-				Guns.AddMagazines(w, kit.Magazines or 0)
-				weapons[slot] = w
-			end
+-- The live state of a recruit. opts.Pending: the kit is laid out in the barracks and nothing is
+-- carried yet (Soldiers.Give hands each piece over); opts.Intro: the recruit is still in its first
+-- link (tank, barracks, simulation), which is not a deployment.
+function Soldiers.Arm(player, kit, faction, opts)
+	opts = opts or {}
+	local s = {
+		Kit = kit, Weapons = {}, Active = if kit.Primary then "Primary" else "Sidearm", Grenades = 0, Medkits = 0, Sandbags = 0,
+		Faction = faction, Protected = os.clock() + Config.SpawnProtection, Intro = opts.Intro == true, Issued = kit.Issued or {},
+	}
+	soldiers[player] = s
+	if opts.Pending then
+		s.Pending = {}
+		for _, piece in Soldiers.Pieces(kit) do
+			s.Pending[piece] = true
+		end
+	else
+		for _, piece in Soldiers.Pieces(kit) do
+			Soldiers.Give(player, piece)
 		end
 	end
-	return weapons
+	pushWeapon(player)
+	return s
+end
+
+-- What a kit hands over, as pieces the barracks can lay out one by one.
+function Soldiers.Pieces(kit)
+	local out = {}
+	for _, piece in { "Primary", "Sidearm", "Armor", "Helmet" } do
+		if kit[piece] then
+			table.insert(out, piece)
+		end
+	end
+	if (kit.Grenades or 0) > 0 or (kit.Medkits or 0) > 0 or (kit.Sandbags or 0) > 0 or (kit.Magazines or 0) > 0 then
+		table.insert(out, "Supplies")
+	end
+	return out
+end
+
+function Soldiers.Give(player, piece)
+	local s = soldiers[player]
+	if not s then
+		return false
+	end
+	if s.Pending then
+		if not s.Pending[piece] then
+			return false
+		end
+		s.Pending[piece] = nil
+	end
+	local kit = s.Kit
+	if piece == "Primary" or piece == "Sidearm" then
+		local entry = kit[piece]
+		local w = entry and Guns.Make(entry.Id, entry.Condition, if piece == "Primary" then kit.Attachments else nil)
+		if w then
+			s.Weapons[piece] = w
+			if not s.Weapons[s.Active] or piece == "Primary" then
+				s.Active = piece
+			end
+			-- the magazines come with the rifle (or the pistol, when there is no rifle)
+			if piece == "Primary" or not kit.Primary then
+				Guns.AddMagazines(w, kit.Magazines or 0)
+			end
+		end
+	elseif piece == "Armor" or piece == "Helmet" then
+		local entry = kit[piece]
+		s[piece] = entry and { Id = entry.Id, Condition = entry.Condition }
+	elseif piece == "Supplies" then
+		s.Grenades, s.Medkits, s.Sandbags = kit.Grenades or 0, kit.Medkits or 0, kit.Sandbags or 0
+	end
+	pushWeapon(player)
+	return true
+end
+
+function Soldiers.State(player)
+	return soldiers[player]
+end
+Soldiers.Push = pushWeapon
+
+-- Puts a recruit on the field at its base. opts.Fresh rebuilds the weapons and supplies from the
+-- kit (after the simulation, which spends nothing real).
+function Soldiers.Place(player, opts)
+	local s = soldiers[player]
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (s and root and hum) then
+		return
+	end
+	if opts and opts.Fresh then
+		s.Weapons, s.Pending = {}, nil
+		for _, piece in Soldiers.Pieces(s.Kit) do
+			Soldiers.Give(player, piece)
+		end
+	end
+	s.Intro = false
+	s.Protected = os.clock() + Config.SpawnProtection
+	local spawnAt = Battlefield.BaseCFrame(s.Faction)
+	char:PivotTo(spawnAt)
+	root.Anchored = true -- held until the client has the battlefield (see Config.SpawnSettle)
+	task.delay(Config.SpawnSettle, function()
+		if root.Parent then
+			char:PivotTo(spawnAt)
+			root.Anchored = false
+		end
+	end)
+	hum.Health = hum.MaxHealth
+	hum.WalkSpeed = Config.WarMovement.WalkSpeed
+	pushWeapon(player)
+	pushApp(player)
+	Remotes.Soldier:FireClient(player, "Deployed", s.Faction, s.Kit.Conscript == true)
 end
 
 function Soldiers.Spawn(player)
@@ -91,8 +188,11 @@ function Soldiers.Spawn(player)
 	if not war or not player.Parent or soldiers[player] or spawning[player] then
 		return
 	end
-	spawning[player] = true
 	local faction = Factions.Assign(player)
+	if Soldiers.Intro and Soldiers.Intro.Needed(player, war) then
+		return Soldiers.Intro.Begin(player, faction, Recruit.Deploy(war))
+	end
+	spawning[player] = true
 	local kit = Recruit.Deploy(war)
 	if not kit.Primary and not kit.Sidearm then
 		kit = conscriptKit(faction)
@@ -105,30 +205,20 @@ function Soldiers.Spawn(player)
 	if not (root and hum) then
 		return
 	end
-	local spawnAt = Battlefield.BaseCFrame(faction)
-	char:PivotTo(spawnAt)
-	root.Anchored = true -- held until the client has the battlefield (see Config.SpawnSettle)
-	task.delay(Config.SpawnSettle, function()
-		if root.Parent then
-			char:PivotTo(spawnAt)
-			root.Anchored = false
-		end
-	end)
 	char:SetAttribute("Faction", faction)
 	hum.MaxHealth, hum.Health = 100, 100
-	hum.WalkSpeed = 14
-	local s = {
-		Kit = kit, Weapons = buildWeapons(kit), Active = if kit.Primary then "Primary" else "Sidearm",
-		Armor = kit.Armor and { Id = kit.Armor.Id, Condition = kit.Armor.Condition }, Helmet = kit.Helmet and { Id = kit.Helmet.Id, Condition = kit.Helmet.Condition },
-		Grenades = kit.Grenades or 0, Medkits = kit.Medkits or 0, Sandbags = kit.Sandbags or 0, Faction = faction, Protected = os.clock() + Config.SpawnProtection,
-	}
-	soldiers[player] = s
-	pushWeapon(player)
-	pushApp(player)
-	Remotes.Soldier:FireClient(player, "Deployed", faction, kit.Conscript == true)
-	hum.Died:Once(function()
-		Soldiers.OnDied(player, char)
-	end)
+	Soldiers.Arm(player, kit, faction)
+	Soldiers.Place(player)
+	Soldiers.WatchDeath(player, char)
+end
+
+function Soldiers.WatchDeath(player, char)
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if hum then
+		hum.Died:Once(function()
+			Soldiers.OnDied(player, char)
+		end)
+	end
 end
 
 -- ===== damage =====
@@ -163,9 +253,15 @@ function Soldiers.Damage(victimModel, amount, attacker, zone, pen, kind)
 	if s then
 		amount = armorAbsorb(s, zone or "Torso", amount, pen or 0)
 		s.LastHit = { by = attacker, t = os.clock(), kind = kind }
+		-- in the simulation nothing kills: a fatal blow desyncs the recruit back to the drill's start
+		if s.Intro and hum.Health - amount <= 1 and Soldiers.Intro then
+			Soldiers.Intro.Desync(victim)
+			Remotes.Soldier:FireClient(victim, "Hurt", amount, zone)
+			return amount
+		end
 		if digging[victim] then
 			digging[victim] = nil -- a hit stops the shovel; you stand back up
-			hum.WalkSpeed = 14
+			hum.WalkSpeed = Config.WarMovement.WalkSpeed
 			Remotes.Soldier:FireClient(victim, "Entrenching", nil)
 		end
 	end
@@ -188,7 +284,7 @@ local function dropBody(player, char, s)
 	local loot = {}
 	for _, slot in { "Primary", "Sidearm" } do
 		local w = s.Weapons[slot]
-		if w then
+		if w and not s.Issued[slot] then
 			local worst = 100
 			for _, name in Firearms.Parts do
 				w.Parts[name] = math.max(0, w.Parts[name] - W.Death.PartDamage)
@@ -200,8 +296,9 @@ local function dropBody(player, char, s)
 			end
 		end
 	end
-	for _, piece in { s.Armor, s.Helmet } do
-		if piece then
+	for _, slot in { "Armor", "Helmet" } do
+		local piece = s[slot]
+		if piece and not s.Issued[slot] then
 			table.insert(loot, { Id = piece.Id, Condition = math.max(0, piece.Condition - W.Death.ArmorDamage) })
 		end
 	end
@@ -256,6 +353,21 @@ function Soldiers.OnDied(player, char)
 		return
 	end
 	soldiers[player] = nil
+	if s.Intro then
+		-- something killed a recruit still in its first link (it should not happen): the gear goes back
+		-- to the locker and the link starts over
+		if Soldiers.Intro then
+			Soldiers.Intro.Abort(player, s)
+		end
+		deathToken[player] = (deathToken[player] or 0) + 1
+		local token = deathToken[player]
+		task.delay(W.RespawnSeconds, function()
+			if player.Parent and deathToken[player] == token then
+				Soldiers.Spawn(player)
+			end
+		end)
+		return
+	end
 	local war = warOf(player)
 	if war then
 		war.RecruitDeaths += 1
@@ -290,7 +402,7 @@ end
 
 function Soldiers.IsDeployed(player)
 	local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-	return soldiers[player] ~= nil and hum ~= nil and hum.Health > 0
+	return soldiers[player] ~= nil and not soldiers[player].Intro and hum ~= nil and hum.Health > 0
 end
 
 -- ===== explosions on the Front (grenades, artillery) =====
@@ -311,6 +423,10 @@ function Soldiers.Explode(origin, radius, damage, attacker)
 				end
 			end
 		end
+	end
+	-- the simulation takes its own blasts (blocks, targets, hostiles) and leaves the battlefield alone
+	if Soldiers.ExplodeHook and Soldiers.ExplodeHook(origin, radius, damage, attacker) then
+		return
 	end
 	for _, model in Battlefield.StructuresNear(origin, radius) do
 		Battlefield.DamageStructure(model, damage)
@@ -409,7 +525,7 @@ local function onEntrench(player, mode)
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if not (s and root and hum and hum.Health > 0) or digging[player] then
+	if not (s and root and hum and hum.Health > 0) or digging[player] or s.Intro then
 		return
 	end
 	local E = W.Entrench
@@ -433,7 +549,7 @@ local function onEntrench(player, mode)
 		if not (player.Parent and player.Character == char and hum.Health > 0) then
 			return
 		end
-		hum.WalkSpeed = 14
+		hum.WalkSpeed = Config.WarMovement.WalkSpeed
 		if mode == "Dig" then
 			foxhole(player, Vector3.new(spot.X, 2, spot.Z))
 		else
@@ -508,8 +624,12 @@ function Soldiers.Init()
 	Factions.IsDeployed = Soldiers.IsDeployed
 	Net.On("Fire", { rate = 20, burst = 30, args = { "vector" } }, onFire)
 	Net.On("Reload", { rate = 2, burst = 3 }, function(player)
-		local _, w = active(player)
+		local s, w = active(player)
 		if w then
+			-- the simulation keeps the pouches full: magazines are only data there
+			if s.Intro and #w.Spare < W.Intro.Sim.ResupplyBelow then
+				Guns.AddMagazines(w, 4 - #w.Spare)
+			end
 			Guns.Reload(w)
 			pushWeapon(player)
 			task.delay(0.5, function() pushWeapon(player) end)
@@ -588,6 +708,10 @@ function Soldiers.Init()
 	-- Artillery: each faction can call a strike on a point inside the hill, once per cooldown.
 	Net.On("Artillery", { rate = 1, burst = 2, args = { "vector" } }, function(player, target)
 		local s = active(player)
+		if s and s.Intro and Soldiers.Intro then
+			Soldiers.Intro.Artillery(player, target)
+			return
+		end
 		if not s or not Hill.Inside(target) then
 			return
 		end
@@ -658,7 +782,9 @@ function Soldiers.Init()
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(function(player)
 		local s = soldiers[player]
-		if s and player.Character and not s.Kit.Conscript then
+		if s and s.Intro and Soldiers.Intro then
+			Soldiers.Intro.Abort(player, s) -- left during the first link: the gear goes back to the locker
+		elseif s and player.Character and not s.Kit.Conscript then
 			dropBody(player, player.Character, s) -- quitting mid-fight leaves your gear on the field like dying would
 		end
 		soldiers[player] = nil

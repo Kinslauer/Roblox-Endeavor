@@ -228,6 +228,9 @@ function Guns.Shoot(shooter, w, origin, dir, onHit)
 					onHit(model, zone, damage, ammo.Pen, hit.Position)
 				else
 					Remotes.Weapon:FireAllClients("Impact", hit.Position, hit.Normal)
+					if Guns.OnSurface then -- the simulation's blocks break under fire (Simulation.lua)
+						Guns.OnSurface(hit.Instance, hit.Position, ammo.Damage, shooter)
+					end
 				end
 				return
 			end

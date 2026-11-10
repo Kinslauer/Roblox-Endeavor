@@ -44,6 +44,19 @@ Sounds.Ids = {
 	AmbWind = 78591666343512,
 	AmbFront = 102348000683973,
 	ArtilleryWhistle = 121714797919348,
+	-- the Front's first link (tools/sounds/synth_intro.py): stasis tank, chute, simulation
+	TankGasp = 78117829368290,
+	Heartbeat = 128580928098668,
+	SyncRise = 120557665494587,
+	SyncSettle = 77583170549197,
+	TankDrain = 85675099613236,
+	Unlatch = 98230563155733,
+	ChuteDrop = 112576648044429,
+	SimLink = 76104342995531,
+	SimClear = 121021663980350,
+	SimBreak = 106391119448085,
+	SimBreakSoft = 138898839681875,
+	Mantle = 119697430319826,
 }
 
 -- Per-sound defaults: Volume, Range (RollOffMaxDistance), Pitch jitter
@@ -73,6 +86,9 @@ Sounds.Defaults = {
 	ImpactFlesh = { Volume = 0.8, Range = 60, Jitter = 0.15 },
 	Dig = { Volume = 0.7, Range = 40, Jitter = 0.1 },
 	ArtilleryWhistle = { Volume = 1, Range = 500 },
+	SimBreak = { Volume = 0.8, Range = 120, Jitter = 0.15 },
+	SimBreakSoft = { Volume = 0.4, Range = 80, Jitter = 0.2 },
+	Mantle = { Volume = 0.5, Range = 20, Jitter = 0.1 },
 	BarkBruteAlert = { Volume = 0.9, Range = 90, Jitter = 0.08 },
 	BarkBruteAttack = { Volume = 0.9, Range = 90, Jitter = 0.08 },
 	BarkBruteDeath = { Volume = 0.9, Range = 90, Jitter = 0.08 },

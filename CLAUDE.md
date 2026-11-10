@@ -36,7 +36,7 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (215 checks), `war` = Front (42), `stress` = budgets under load (5), `client` = the
+  `scenario` = Endeavor end to end (215 checks), `war` = Front (69), `warclient` = the Front client plays the first link's stages (11), `stress` = budgets under load (5), `client` = the
   Endeavor client boots + movement, dodge, animation and guard checks (28). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
@@ -227,6 +227,26 @@ Client tab screenshot, because Andy cannot read logs another way.
   pockets first. Frontier.InCity = Megacity.InCity, frontier terrain starts at Z 700, valley chunks are mostly
   Deadwood/Rustfield, terrain colours ash (LeafyGrass is the only real green: the Reach, glades, meadows). Kit:
   `tools/models/industry.py` -> `Assets.Industry` (materials with `NoCollide` in Assets.Materials stop colliding).
+- Front first link (owner, 2026-11-10: "wakeup in a stasis tank, the pov frantic ... Then you remember ... fall down a
+  chute into a barracks ... a simulation where a city sandbox is created in wireframe ... crackdown style first person
+  only"): `src/war/server/Intro.lua` runs it per player (Soldiers.Spawn hands off when `Intro.Needed`: profile
+  War.IntroDone unset, or once per server while Config.Dev.Enabled and Config.War.Intro.ReplayInDev; F2 =
+  Remotes.TutorialSkip skips a stage in dev). A cell per slot at Config.War.Intro.Origin (Y 1500) + SlotStep: chamber
+  with three tanks (two hold clone silhouettes), cables (Beams + welded latches), hatch over a chute into a barracks.
+  Stages go to the client as Remotes.Tutorial("Front", stage, data): Wake, Drain, Unlatch, Chute, Barracks, Equip,
+  Equipped, Link, Sim, Drill, DrillDone, Desync, SimDone, Done, Landed. The kit = Recruit.Deploy (the order) +
+  `Intro.Curate` filling empty slots from Config.War.Intro.Issue (kit.Issued: never dropped as loot); `Soldiers.Arm(..,
+  {Pending, Intro})` then `Soldiers.Give(piece)` per bench prompt (pieces Primary/Sidearm/Armor/Helmet/Supplies);
+  `Soldiers.Place(player, {Fresh})` drops at Battlefield.BaseCFrame with fresh weapons. s.Intro: not IsDeployed, fatal
+  damage -> `Intro.Desync`, artillery -> the sim's own guns, no entrenching, reload refills spare mags. Abort (leave or
+  die) refunds the locker. `src/war/server/Simulation.lua`: wireframe city of Block-stud ForceField cubes with
+  SelectionBox edges (blockInfo; Guns.OnSurface chips them, Soldiers.ExplodeHook takes blasts inside a sim), a column
+  falls when its footing breaks, a building collapses at CollapseShare of its ground layer; drills RANGE, BREACH,
+  ASCENT, CONTACT (SimHostile figures: MoveTo + raycast shots through Soldiers.Damage), FIRE MISSION (tower).
+  `src/war/client/IntroFx.lua` draws it (scripted panic camera, memory cuts to real battlefield parts, local Lighting
+  per stage, shards, machine lines). "Crackdown style" read as free movement in a fully breakable city, kept grounded
+  (Config.WarMovement: Shift sprint, Space mantle up to 6.6 studs, in Main.client) so the Front's realistic handling
+  holds. Sounds: tools/sounds/synth_intro.py. Real-server check: tools/realserver/frontcheck.py (startup + Intro.Probe).
 - Lore (owner, 2026-10-31; docs/DESIGN.md "The stack"): conduits upload their consciousness stack through the hideout
   computer (first log-in = initialization, `Knowledge.Uploaded`); every death is a reboot of the stack; on the Front the
   stack links to the recruit's; the rich uploaded and escaped the world. Mechanically: Knowledge survives permadeath only
@@ -421,4 +441,6 @@ Client tab screenshot, because Andy cannot read logs another way.
 - The playtest checklist is `docs/TESTING.md`: add a line for every feature that lands; the user ticks it.
 - Front: real 20-player frame-rate test (the open world adds ~1,600 props and terrain); vehicles are intentionally absent.
 - Front open world (2026-11-10) awaits Andy's walk-through: docs/TESTING.md "Front open world".
+- Front first link (stasis tank, barracks, wireframe simulation; 2026-11-10) awaits Andy's play-through: docs/TESTING.md
+  "Front: the first link". Next: the drop panel in the barracks (the blast door) for later deployments.
 - Experience internal name is still "Conduit" (cosmetic; rename in Configurations → Basic Settings).

@@ -10,6 +10,7 @@ local Players = game_:GetService("Players")
 M.task.spawn(function() M.loadSource(SSS.Server.Main)() end)
 local Remotes = RS.Remotes
 local Config = M.mockEnv.__require(RS.Shared.Config)
+Config.War.Intro.Enabled = false -- the first link (stasis tank intro) gets its own run at the end
 local function run(seconds, cond) for _ = 1, math.floor(seconds * 30) do M.step(1/30); if cond and cond() then return true end end return cond == nil end
 local function check(label, ok) print((ok and "PASS  " or "FAIL  ") .. label) end
 local function as(p) M.setPlayer(p) end
@@ -226,6 +227,105 @@ for _, d in workspace_:GetDescendants() do if d:GetAttribute("Fallen") then fall
 local grew for _, e in M.FireLog do if e[1] == "World" and e[3] == "CrestGrew" then grew = true end end
 check("world: the fallen calcify where they lay", fallen >= Config.War.World.GrowEvery)
 check("world: the crest grows from the dead", grew == true and Battlefield.Crest(hot).Y > crestBefore.Y)
+-- ===== the first link: stasis tank, drain, chute, barracks, simulation, drop =====
+local Soldiers = M.mockEnv.__require(SSS.Server.Soldiers)
+local Intro = M.mockEnv.__require(SSS.Server.Intro)
+local Simulation = M.mockEnv.__require(SSS.Server.Simulation)
+local I = Config.War.Intro
+I.Enabled = true
+I.WakeSeconds, I.DrainSeconds, I.UnlatchSeconds, I.ChuteSeconds, I.LinkSeconds, I.DoneSeconds = 0.6, 0.5, 0.3, 0.5, 0.3, 0.3
+local function stages(player) local out = {} for _, e in M.FireLog do if e[1] == "Tutorial" and e.player == player and e[3] == "Front" then table.insert(out, e[4]) end end return out end
+local function lastStage(player, name) local last for _, e in M.FireLog do if e[1] == "Tutorial" and e.player == player and e[3] == "Front" and e[4] == name then last = e[5] end end return last end
+local g = makePlayer("Green", 3, "Union")
+as(g)
+run(0.3)
+local cell = workspace_:FindFirstChild("IntroCell_3")
+check("intro: first link wakes cabled in a stasis tank", table.find(stages(g), "Wake") ~= nil and g.Character.HumanoidRootPart.Anchored == true and cell ~= nil and g.Character.HumanoidRootPart:FindFirstChild("Cable1") ~= nil)
+check("intro: a recruit in its first link is not deployed (no hill, no income)", Soldiers.IsDeployed(g) == false and Soldiers.State(g) ~= nil and Soldiers.State(g).Intro == true)
+run(1.3)
+local fluid = cell.Chamber:FindFirstChild("TankFluid")
+check("intro: the tank drains and the cables unlatch", fluid.Size.X < 1 and table.find(stages(g), "Unlatch") ~= nil and g.Character.HumanoidRootPart:FindFirstChild("Cable1") == nil)
+run(0.4)
+check("intro: the hatch opens into the chute", table.find(stages(g), "Chute") ~= nil and cell.Chamber.Hatch.CanCollide == false)
+run(0.8)
+local supply = cell:FindFirstChild("Supply")
+check("intro: the barracks lays out five pieces of the conduit's supply", table.find(stages(g), "Barracks") ~= nil and supply ~= nil and #supply:GetChildren() == 5)
+check("intro: set down in the barracks", g.Character.HumanoidRootPart.Position.Y < I.Origin.Y + 10)
+local w0 = weaponState(g)
+check("intro: nothing carried before taking it", w0 == nil)
+for _, bench in supply:GetChildren() do
+	for _, d in bench:GetDescendants() do if d.ClassName == "ProximityPrompt" then d.Triggered:Fire(g) end end
+end
+run(0.3)
+local wg, _, kitg = weaponState(g)
+local st = Soldiers.State(g)
+check("intro: issue gear fills an empty locker (rifle, sidearm, vest, helmet, frags)", wg ~= nil and wg.Id == "M16A1" and st.Weapons.Sidearm ~= nil and st.Armor ~= nil and st.Armor.Id == "FlakVest" and st.Helmet ~= nil and st.Grenades == 2)
+check("intro: equip count reaches the client", (lastStage(g, "Equip") or {}).Taken == 5)
+run(3.5)
+local ctx = Intro.Active(g)
+local sim = ctx and ctx.sim
+check("intro: links into the wireframe simulation", table.find(stages(g), "Sim") ~= nil and sim ~= nil and workspace_:FindFirstChild("Simulation_3") ~= nil)
+check("intro: the city is built of breakable blocks", sim ~= nil and #sim.Buildings >= 10 and sim.Tower ~= nil)
+-- RANGE and BREACH: break every target
+for _, m in sim.Folder:GetChildren() do if m.Name == "SimTarget" then Soldiers.Damage(m, 100, g, "Torso", 0, "Bullet") end end
+run(4.5)
+local function drillsDone() local out = {} for _, e in M.FireLog do if e[1] == "Tutorial" and e.player == g and e[4] == "DrillDone" then out[e[5].Index] = true end end return out end
+check("intro: range and breach drills finish when their targets break", drillsDone()[1] and drillsDone()[2])
+-- a block breaks and the column above it falls
+local steps = sim.ByName.Steps
+local low = steps.Blocks["1,1,8"]
+local above = steps.Blocks["1,2,8"]
+Simulation.DamageBlock(low, 1000); run(0.6)
+check("intro: a broken block brings down the column above it", low.Parent == nil and above.Parent == nil and steps.Blocks["1,4,8"] == nil)
+-- ASCENT: reach the beacon
+g.Character.HumanoidRootPart.CFrame = M.CF.new(sim.Beacon + M.V3.new(0, 3, 0)); run(2.5)
+check("intro: ascent finishes at the beacon", drillsDone()[3])
+-- CONTACT: hostiles come and shoot back
+g.Character.HumanoidRootPart.CFrame = M.CF.new(sim.Center + M.V3.new(0, 3.5, 70))
+run(8)
+local hostiles = 0 for _, m in sim.Folder:GetChildren() do if m.Name == "SimHostile" then hostiles += 1 end end
+local shots = 0 for _, e in M.FireLog do if e[1] == "Weapon" and e.player == g and e[3] == "Shot" and type(e[4]) == "table" and e[4].Name == "SimHostile" then shots += 1 end end
+check("intro: contact drill spawns hostiles that shoot back", hostiles == Config.War.Intro.Sim.Hostiles and shots > 0)
+local hum = g.Character.Humanoid
+hum.Health = 5
+Soldiers.Damage(g.Character, 80, nil, "Torso", 0, "Bullet")
+check("intro: a fatal blow in the simulation desyncs instead of killing", hum.Health == hum.MaxHealth and table.find(stages(g), "Desync") ~= nil)
+for _, m in sim.Folder:GetChildren() do if m.Name == "SimHostile" then Soldiers.Damage(m, 200, g, "Torso", 0, "Bullet") end end
+run(2.5)
+check("intro: contact finishes when the hostiles break", drillsDone()[4])
+-- FIRE MISSION: artillery on the tower brings it down
+g.Character.HumanoidRootPart.CFrame = M.CF.new(sim.Center + M.V3.new(20, 3.5, 40))
+Remotes.Artillery:FireServer(sim.Center + M.V3.new(69, 2, 119)); run(Config.War.Intro.Sim.Artillery.Delay + 5)
+check("intro: a fire mission collapses the tower", sim.Tower.Collapsed == true and drillsDone()[5])
+check("intro: the battlefield takes no craters from the simulation", (function() for _, c in game_:GetService("CollectionService"):GetTagged("Crater") do if (c.Position - sim.Center).Magnitude < 400 then return false end end return true end)())
+run(2)
+local data = M.mockEnv.__require(SSS.Server.Common.PlayerData).Get(g)
+wg = weaponState(g)
+check("intro: drops onto the Front deployed, the cell and simulation gone", Soldiers.IsDeployed(g) and data.War.IntroDone == true and workspace_:FindFirstChild("IntroCell_3") == nil and workspace_:FindFirstChild("Simulation_3") == nil)
+check("intro: the simulation spent nothing real (fresh magazines, full frags)", wg ~= nil and wg.Spare == 3 and Soldiers.State(g).Grenades == 2)
+check("intro: lands near the faction base", math.abs(g.Character.HumanoidRootPart.Position.X - Battlefield.BaseCFrame("Union").Position.X) < 30)
+-- issued gear is the recruit's, not loot
+g.Character.HumanoidRootPart.CFrame = M.CF.new(0, 4, 300)
+run(Config.SpawnProtection + 0.5)
+local before = 0 for _, b in workspace_:GetChildren() do if b.Name == "RecruitRemains" then before += 1 end end
+g.Character.Humanoid.Health = 0; run(0.5)
+local after = 0 for _, b in workspace_:GetChildren() do if b.Name == "RecruitRemains" then after += 1 end end
+check("intro: issued gear does not drop as loot", after == before)
+run(Config.War.RespawnSeconds + 1)
+check("intro: the next recruit deploys straight to the field", Soldiers.IsDeployed(g) and #stages(g) == #stages(g))
+-- leaving in the middle of the first link gives the locker back what the order took
+local y = makePlayer("Yellow", 4, "Pact")
+run(0.2)
+local ydata = M.mockEnv.__require(SSS.Server.Common.PlayerData).Get(y)
+check("intro: second player gets its own slot", workspace_:FindFirstChild("IntroCell_4") ~= nil and Intro.Active(y) ~= nil and Intro.Active(y).slot == 1)
+Intro.Active(y).kit.Issued.Primary = nil -- pretend the rifle came from the locker
+Intro.Active(y).kit.Original.Grenades = 1
+y.Parent = nil
+Players.PlayerRemoving:Fire(y)
+run(0.3)
+check("intro: leaving mid-link refunds the locker and clears the cell", ydata.War.Locker.AKM ~= nil and ydata.War.Locker.Grenade ~= nil and workspace_:FindFirstChild("IntroCell_4") == nil)
+local probe = Intro.Probe(M.V3.new(0, 1500, 5000))
+check("intro: the probe builds and clears a cell and a simulation", type(probe) == "string" and probe:find("benches 5") ~= nil and workspace_:FindFirstChild("IntroCell_0") == nil)
 
 check("no script errors", #M.errors == 0)
 for _, e in M.errors do print(e) end

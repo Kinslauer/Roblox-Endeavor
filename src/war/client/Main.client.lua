@@ -101,6 +101,8 @@ local kitLabel = label({ Size = UDim2.fromOffset(240, 20), Position = UDim2.new(
 local hillLabel = label({ Size = UDim2.fromOffset(520, 44), Position = UDim2.new(0.5, -260, 0, 16), TextSize = 16, Text = "" })
 local scaleBack = make("Frame", { Size = UDim2.fromOffset(400, 10), Position = UDim2.new(0.5, -200, 0, 64), BackgroundColor3 = Config.War.FactionColors.Pact })
 local scaleFill = make("Frame", { Size = UDim2.fromScale(0.5, 1), BackgroundColor3 = Config.War.FactionColors.Union }, scaleBack)
+local IntroFx = require(script.Parent:WaitForChild("IntroFx"))
+IntroFx.Init({ Hud = gui }) -- the first link: stasis tank, barracks, simulation (war/server/Intro.lua)
 local banner = label({ Size = UDim2.new(1, 0, 0, 36), Position = UDim2.fromOffset(0, 84), TextSize = 22, Text = "", TextTransparency = 1 })
 local hitMarker = label({ Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0.5, -20, 0.5, -20), Text = "x", TextSize = 26, TextColor3 = Color3.fromRGB(255, 80, 80), TextTransparency = 1 })
 local hurtFrame = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(180, 0, 0), BackgroundTransparency = 1, ZIndex = 5 })
@@ -367,6 +369,88 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b)
 	end
 end)
 
+-- ===== movement: sprint (Shift) and pulling up over a ledge (Space at a wall) =====
+local MV = Config.WarMovement
+local sprinting = false
+local mantling = false
+RunService.Heartbeat:Connect(function()
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not hum or mantling then
+		return
+	end
+	-- the server freezes a recruit (WalkSpeed 0: digging, the tank); anything else is ours to pace
+	if hum.WalkSpeed >= MV.WalkSpeed - 0.5 then
+		local running = sprinting and not aiming and hum.MoveDirection.Magnitude > 0.1
+		hum.WalkSpeed = if running then MV.SprintSpeed else MV.WalkSpeed
+		local fov = if running then 78 elseif aiming then nil else 70
+		if fov and not IntroFx.Active and math.abs(camera.FieldOfView - fov) > 0.5 then
+			camera.FieldOfView += (fov - camera.FieldOfView) * 0.15
+		end
+	end
+end)
+
+local function tryMantle()
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if mantling or not (root and hum) or hum.Health <= 0 or root.Anchored or hum.WalkSpeed < 1 then
+		return
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { char }
+	local flat = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
+	if flat.Magnitude < 0.1 then
+		return
+	end
+	flat = flat.Unit
+	local feet = root.Position.Y - hum.HipHeight - root.Size.Y / 2
+	-- a wall in front of the chest...
+	local wall = workspace:Raycast(Vector3.new(root.Position.X, feet + 2.2, root.Position.Z), flat * MV.MantleReach, params)
+	if not wall or math.abs(wall.Normal.Y) > 0.5 then
+		return
+	end
+	-- ...with a top within reach and room to stand on it
+	local probe = wall.Position + flat * 1.2 + Vector3.new(0, 0, 0)
+	local top = workspace:Raycast(Vector3.new(probe.X, feet + MV.MantleHeight + 0.6, probe.Z), Vector3.new(0, -(MV.MantleHeight + 0.4), 0), params)
+	if not top or top.Normal.Y < 0.7 then
+		return
+	end
+	local rise = top.Position.Y - feet
+	if rise < 1.5 or rise > MV.MantleHeight then
+		return
+	end
+	if workspace:Raycast(top.Position + Vector3.new(0, 0.2, 0), Vector3.new(0, 5, 0), params) then
+		return -- no headroom
+	end
+	mantling = true
+	local start = root.CFrame
+	local lift = root.Position.Y + rise + 0.3
+	local finish = CFrame.lookAt(Vector3.new(top.Position.X, top.Position.Y + hum.HipHeight + root.Size.Y / 2 + 0.1, top.Position.Z) + flat * 0.6,
+		Vector3.new(top.Position.X, top.Position.Y + hum.HipHeight + root.Size.Y / 2 + 0.1, top.Position.Z) + flat * 2)
+	Sounds.Play("Mantle", nil, { Volume = 0.5 })
+	local t0 = os.clock()
+	local conn
+	conn = RunService.RenderStepped:Connect(function()
+		local u = math.clamp((os.clock() - t0) / MV.MantleSeconds, 0, 1)
+		-- up first, then over the lip
+		local upU = math.clamp(u / 0.6, 0, 1)
+		local overU = math.clamp((u - 0.45) / 0.55, 0, 1)
+		local pos = start.Position:Lerp(Vector3.new(start.Position.X, lift, start.Position.Z), 1 - (1 - upU) ^ 2)
+		pos = pos:Lerp(finish.Position, overU * overU)
+		if root.Parent then
+			root.CFrame = CFrame.lookAt(pos, pos + flat)
+			root.AssemblyLinearVelocity = Vector3.zero
+		end
+		camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(-4 * math.sin(u * math.pi)), 0, 0)
+		if u >= 1 then
+			conn:Disconnect()
+			mantling = false
+		end
+	end)
+end
+
 -- ===== input (TTK/Tarkov layout) =====
 local firing = false
 
@@ -377,8 +461,10 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	local key = input.KeyCode
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		firing = true
+		sprinting = false -- the rifle comes up: no shooting at a run
 		Remotes.Fire:FireServer(camera.CFrame.LookVector)
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+		sprinting = false
 		setAim(true)
 	elseif key == Enum.KeyCode.R then
 		Remotes.Reload:FireServer()
@@ -409,6 +495,15 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		Remotes.Entrench:FireServer("Sandbag")
 	elseif key == Enum.KeyCode.M then
 		app.Visible = not app.Visible
+	elseif key == Enum.KeyCode.LeftShift or key == Enum.KeyCode.RightShift then
+		sprinting = true
+		if aiming then
+			setAim(false)
+		end
+	elseif key == Enum.KeyCode.Space then
+		tryMantle()
+	elseif key == Enum.KeyCode.F2 and Config.Dev.Enabled then
+		Remotes.TutorialSkip:FireServer() -- testing: skip the current stage of the first link
 	end
 end)
 UserInputService.InputEnded:Connect(function(input)
@@ -416,6 +511,8 @@ UserInputService.InputEnded:Connect(function(input)
 		firing = false
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 		setAim(false)
+	elseif input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
+		sprinting = false
 	elseif input.KeyCode == Enum.KeyCode.Q and lean == -1 then
 		lean = 0
 	elseif input.KeyCode == Enum.KeyCode.E and lean == 1 then

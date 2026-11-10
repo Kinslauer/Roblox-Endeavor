@@ -9,10 +9,12 @@ local ok, err = pcall(function()
 	local Factions = require(Server.Factions)
 	local Hill = require(Server.Hill)
 	local Soldiers = require(Server.Soldiers)
+	local Intro = require(Server.Intro)
 	Net.Init()
 	Battlefield.Init()
 	Factions.Init()
 	Hill.Init()
+	Intro.Init() -- before Soldiers.Init: the first deployment of a new recruit is the stasis tank intro
 	Soldiers.Init()
 end)
 if not ok then
