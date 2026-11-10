@@ -441,6 +441,6 @@ Client tab screenshot, because Andy cannot read logs another way.
 - The playtest checklist is `docs/TESTING.md`: add a line for every feature that lands; the user ticks it.
 - Front: real 20-player frame-rate test (the open world adds ~1,600 props and terrain); vehicles are intentionally absent.
 - Front open world (2026-11-10) awaits Andy's walk-through: docs/TESTING.md "Front open world".
-- Front first link (stasis tank, barracks, wireframe simulation; 2026-11-10) awaits Andy's play-through: docs/TESTING.md
+- Front first link (stasis tank, barracks, wireframe simulation; Front v24, 2026-11-10; real-server check 0 warnings) awaits Andy's play-through: docs/TESTING.md
   "Front: the first link". Next: the drop panel in the barracks (the blast door) for later deployments.
 - Experience internal name is still "Conduit" (cosmetic; rename in Configurations → Basic Settings).
