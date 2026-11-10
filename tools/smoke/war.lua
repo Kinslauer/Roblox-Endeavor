@@ -7,6 +7,9 @@ M.mkTree({ Shared = { class = "Folder", children = TREE_SHARED } }, RS)
 M.mkTree({ Server = { class = "Folder", children = TREE_WAR } }, SSS)
 M.mkTree({ Common = { class = "Folder", children = TREE_COMMON } }, SSS.Server)
 local Players = game_:GetService("Players")
+-- a fixed world roll: the firefight, artillery and entrenching checks place recruits at fixed spots, so a random
+-- roll can put a wall or a crest between them (set WAR_SEED to try another)
+M.mockEnv.__require(RS.Shared.Config).War.World.Seed = tonumber(WAR_SEED) or 783990213
 M.task.spawn(function() M.loadSource(SSS.Server.Main)() end)
 local Remotes = RS.Remotes
 local Config = M.mockEnv.__require(RS.Shared.Config)
@@ -80,7 +83,11 @@ local function fireAt(target)
 	uc.HumanoidRootPart.CFrame = M.CF.lookAt(target.HumanoidRootPart.Position + M.V3.new(0, 0, 30), target.HumanoidRootPart.Position)
 	Remotes.Fire:FireServer(uc.HumanoidRootPart.CFrame.LookVector)
 end
-pc.HumanoidRootPart.CFrame = M.CF.new(0, 4, 0)
+-- a fresh gun can still jam at random; the mechanism checks below need it not to
+local Firearms = M.mockEnv.__require(RS.Shared.Firearms)
+local malfunction = Firearms.MalfunctionChance
+Firearms.MalfunctionChance = function() return 0 end
+pc.HumanoidRootPart.CFrame = M.CF.new(3000, 4, 3000) -- out past the world, where no prop stands between them
 run(Config.SpawnProtection + 1)
 fireAt(pc); run(0.1)
 local lastClick for _, e in M.FireLog do if e[1] == "Weapon" and e.player == u and e[3] == "Click" then lastClick = e[4] end end
@@ -95,6 +102,7 @@ check("fired the magazine dry (bolt open)", w.Mag == 0 and w.BoltOpen == true an
 check("bullets hit the enemy through the ballistics path", pc.Humanoid.Health < hpBefore)
 check("armor-less enemy took real damage", pc.Humanoid.Health < hpBefore - 20)
 Remotes.Reload:FireServer(); run(2.5)
+Firearms.MalfunctionChance = malfunction
 w = weaponState(u)
 check("staged reload seats a fresh magazine and chambers", w.Mag == 19 and w.Chamber == true and w.Spare == 2)
 
@@ -143,7 +151,10 @@ check("found a structure in the hill", target ~= nil)
 local tpos = target:FindFirstChild("Stage1"):GetPivot().Position
 -- stand well clear of your own strike (still inside the hill sector)
 uc.HumanoidRootPart.CFrame = M.CF.new(center + (M.V3.new(center.X, 0, center.Z) - M.V3.new(tpos.X, 0, tpos.Z)).Unit * 60 + M.V3.new(0, 4, 0))
+local spread = Config.War.Artillery.Spread
+Config.War.Artillery.Spread = 4 -- shells land on the target (the real spread can miss it entirely)
 Remotes.Artillery:FireServer(M.V3.new(tpos.X, 2, tpos.Z)); run(Config.War.Artillery.Delay + 5)
+Config.War.Artillery.Spread = spread
 check("caller survived their own strike", uc.Humanoid.Health > 0)
 check("artillery damaged the structure into a later stage", target:GetAttribute("Stage") >= 2)
 check("craters left on the field", #game_:GetService("CollectionService"):GetTagged("Crater") >= 1)
