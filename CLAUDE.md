@@ -39,9 +39,11 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   `scenario` = Endeavor end to end (215 checks), `war` = Front (34), `stress` = budgets under load (5), `client` = the
   Endeavor client boots + movement, dodge, animation and guard checks (28). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
-- **Real-server check**: Open Cloud Luau execution (`ROBLOX_API_KEY` with Luau Execution Sessions: Write) runs a script
-  on a real server of the published place: see the pattern in this session's scratch `run_luau.py` (POST
-  `cloud/v2/universes/{u}/places/{p}/luau-execution-session-tasks`, poll, read `/logs`). Use it to reproduce errors.
+- **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
+  `python3 tools/realserver/run_luau.py <placeId> script.lua` (POST `.../luau-execution-session-tasks`, poll, print
+  `/logs`). Scripts do NOT run on their own there (workspace is empty), so the start check is
+  `python3 tools/realserver/startcheck.py > /tmp/start.lua` (Main's startup as a task) then run_luau on it: expect
+  `startup ok true` and `warnings 0`. Use run_luau to reproduce errors too.
 - **Publish**: `ROBLOX_API_KEY=... ROJO=/home/user/scratch-rojo/rojo tools/publish.sh [endeavor|front|all]`.
   The key is an Open Cloud key the user created (Place Management: Write + Luau Execution: Write on Endeavor).
   It is saved as a network secret on the personal cloud environment "Roblox-Endeavor" (2026-11-10): the proxy
@@ -204,8 +206,9 @@ Client tab screenshot, because Andy cannot read logs another way.
   "Upload stack / log in".
 
 ## State (2026-11-10)
-- Endeavor v75 published and starting cleanly on a real server (Front v19, unchanged since). Latest rounds: traced
-  blades, keyframed animations, armoured dodge, frame data, group launches, guard (see Decisions above).
+- Endeavor v76 published (2026-11-10, geometric blocking) and starting cleanly on a real server: startup 52.6s,
+  0 warnings (Front v19, unchanged since). Latest rounds: traced blades, keyframed animations, armoured dodge, frame
+  data, group launches, guard, geometric blocking (see Decisions above).
 - Earlier: both places published and starting cleanly (Endeavor v69, Front v19). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
@@ -371,9 +374,9 @@ Client tab screenshot, because Andy cannot read logs another way.
   ("The Crossroads", Medium: `City.Crossroads`, `City.DistrictAt` returns it within 110 studs; Population adds a pack).
 
 ## Open items
-- Awaiting the user's in-game look at v75: the Conduit body v2, the 24 keyframed animations, the guard, reactions,
+- Awaiting the user's in-game look at v75/v76: the Conduit body v2, the 24 keyframed animations, the guard, reactions,
   launches (animation playback can't be verified from the Luau execution API: it does not run the simulation).
-- Geometric blocking (2026-11-10) awaits Andy's in-game feel: frontal and side blows should stop on the guard,
+- Geometric blocking (2026-11-10, Endeavor v76) awaits Andy's in-game feel: frontal and side blows should stop on the guard,
   blows from behind and a second attacker's should land. Tuning knobs: Config.Combat.Guard*, Swings.Guard*.
 - Publishing returns 409 "server busy" while the owner has the place open in Studio: ask them to close it.
 - The owner's interactive checklist artifact: https://claude.ai/artifact/XEZw7en3WtuKyYqoQryQvz (ticks in its db
