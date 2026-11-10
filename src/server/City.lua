@@ -345,7 +345,42 @@ function City.Atmosphere()
 	end
 end
 
+-- Loads every world model at once before anything is built (one at a time this cost most of the
+-- server's startup; the Front cut its own from ~20 s to ~2 s the same way).
+local function preloadModels()
+	local ids = {}
+	local function collect(t)
+		for _, v in t do
+			if type(v) == "number" and v > 1e8 then
+				ids[v] = true
+			elseif type(v) == "table" then
+				collect(v)
+			end
+		end
+	end
+	for _, group in { "Props", "Chunks", "Buildings", "Frontier", "Industry", "Loot", "Compound", "Hideout", "Weapons", "Worn" } do
+		if type(Assets[group]) == "table" then
+			collect(Assets[group])
+		end
+	end
+	local pending, total = 0, 0
+	for id in ids do
+		pending += 1
+		total += 1
+		task.spawn(function()
+			pcall(ModelAssets.Template, id)
+			pending -= 1
+		end)
+	end
+	local t0 = os.clock()
+	while pending > 0 and os.clock() - t0 < 30 do
+		task.wait(0.05)
+	end
+	print(("[City] preloaded %d models in %.1fs"):format(total - pending, os.clock() - t0))
+end
+
 function City.Init()
+	preloadModels()
 	City.Atmosphere()
 	folder = Instance.new("Folder")
 	folder.Name = "City"
