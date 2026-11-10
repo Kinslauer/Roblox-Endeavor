@@ -295,6 +295,10 @@ Client tab screenshot, because Andy cannot read logs another way.
   "Upload stack / log in".
 
 ## State (2026-11-10)
+- Endeavor v80 + Front v25 published (2026-11-10, the story joined up) and starting cleanly on real servers
+  (Endeavor 5.8-9.6s, Front 2.4s, 0 warnings; intro probe ok); a real-server probe found 12 freight lifts, 12
+  consignments and no city geometry inside any cab or shaft. The unlink teleport itself is only testable in the live
+  game (the mock and Open Cloud cannot teleport). Awaits Andy's play-through: docs/TESTING.md "The story joined up".
 - Endeavor v79 published (2026-11-10, the arrival) and starting cleanly on a real server (startup 5.8s, 0 warnings);
   a real-server probe built the station (204 parts, 0.5s), loaded the car shell, the Sentry rig, the IntroKit props
   and the new animations, and read exposure 1.0 under a hall lamp and 0.05 in the dark tunnel. Train intro, stealth
