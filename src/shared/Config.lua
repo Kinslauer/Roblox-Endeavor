@@ -316,8 +316,24 @@ Config.War = {
 		CaptureTickets = 50,
 		CaptureHoldSeconds = 60, -- majority held this long = captured, hill moves on
 		MoveAfterSeconds = 420, -- it moves anyway after this
-		SectorSize = 160,
-		Sectors = 3, -- the front is a Sectors x Sectors grid; the hill walks it forever
+		SectorSize = 200,
+		Cols = 7, Rows = 5, -- the front is a Cols (west-east) x Rows grid of sectors; the hill walks it forever
+	},
+	-- The open world (shared/FrontMap.lua, war/server/Battlefield.lua + WarTerrain.lua): terrain from a seeded layout.
+	World = {
+		Seed = 0, -- 0 = a new layout every server; set a number to keep one (and to draw it with tools/smoke)
+		GroundLevel = 4, -- the mean ground height
+		RearDepth = 220, -- studs from the battlefield's edge back to a faction's base
+		Margin = 110, -- walkable ground beyond the bases and the north/south edges, before the outer barrows
+		EdgeHeight = 80, -- how high the outer barrows rise
+		TrenchWidth = 3.5, TrenchDepth = 5.5, -- half width and depth of a trench cut
+		CanalWidth = 16, CanalDepth = 8, CanalWater = 2.5, -- the east-west canal: half width, depth, standing water
+		Smokestacks = 9, -- on the skyline beyond the outer barrows
+		RearCraters = 70, RearDead = 40, RearStumps = 50, -- scattered outside the sector grid (rears and margins)
+		-- the fallen calcify: a recruit's body turns to a pale figure where it fell after CalcifySeconds, and every
+		-- GrowEvery of them in a sector raises that sector's crest by GrowStuds (up to MaxGrow per server). Past
+		-- CalcifiedCap figures in a sector the oldest sinks into the ground.
+		CalcifySeconds = 45, GrowEvery = 4, GrowStuds = 0.8, MaxGrow = 12, CalcifiedCap = 30,
 	},
 	-- Credits: each faction's income per minute per deployed conduit scales with its share of the scales.
 	Income = { BasePerMinute = 60, ShareWeight = 1.5 }, -- income = Base * (0.5 + ShareWeight * (share - 0.5)) clamped
@@ -326,7 +342,7 @@ Config.War = {
 	LootHold = 2,
 	RespawnSeconds = 8,
 	Artillery = { Cooldown = 120, Shells = 6, Radius = 16, Damage = 110, Spread = 25, Delay = 6 },
-	BodyCapPerSector = 60,
+	BodyCapPerSector = 12, -- lootable remains per sector (x Cols x Rows)
 	Entrench = {
 		DigSeconds = 4, -- hold to dig a foxhole with the entrenching tool every recruit carries
 		FoxholeDepth = 3.5,

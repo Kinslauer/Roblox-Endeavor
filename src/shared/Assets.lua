@@ -136,6 +136,21 @@ Assets.Front = {
 	AmmoCrate = 89789308888628,
 }
 
+-- The Front's open world (tools/models/front_world.py, war/server/Battlefield.lua): calcified clone bodies,
+-- the barrows they fuse into, wire, a ruined chimney and an intact smokestack (skyline, scaled up), the
+-- dugout entrances recruits deploy from, an abandoned field gun, blasted stumps and a broken pylon.
+Assets.FrontWorld = {
+	Calcified = { 109906364146745, 100723363513761 },
+	Barrow = { 138069370564335, 103130517740718 },
+	Wire = 115088029929904,
+	Chimney = 76062275408401,
+	Smokestack = 137578586826447,
+	Dugout = 108971902029950,
+	FieldGun = 101275246250091,
+	Stump = { 93753452796116, 139451660251442 },
+	Pylon = 119120807532736,
+}
+
 -- The Front's staged buildings (tools/models/front_buildings.py): Stages[1..4] = intact, damaged,
 -- ruined, rubble. Battlefield picks the kit nearest the footprint it wanted.
 Assets.FrontBuildings = {
@@ -333,6 +348,10 @@ Assets.Materials = {
 	Copper = { Color = Color3.fromRGB(184, 108, 50), Material = Enum.Material.Metal },
 	Powder = { Color = Color3.fromRGB(52, 52, 58), Material = Enum.Material.Fabric },
 	Rubble = { Color = Color3.fromRGB(84, 82, 79), Material = Enum.Material.Concrete },
+	-- the Front's calcified clone bodies (tools/models/front_world.py): pale mineral, darker in the folds
+	Calcified = { Color = Color3.fromRGB(184, 176, 160), Material = Enum.Material.Limestone },
+	CalcifiedDark = { Color = Color3.fromRGB(122, 116, 106), Material = Enum.Material.Limestone },
+	BrickDark = { Color = Color3.fromRGB(70, 44, 36), Material = Enum.Material.Brick },
 }
 
 -- Applies the named material to every part of a loaded model.

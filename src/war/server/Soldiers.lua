@@ -242,7 +242,7 @@ local function dropBody(player, char, s)
 		end
 	end)
 	game:GetService("Debris"):AddItem(body, Config.CorpseLifetime)
-	while #bodies > W.BodyCapPerSector * (Config.War.Hill.Sectors ^ 2) do
+	while #bodies > W.BodyCapPerSector * Config.War.Hill.Cols * Config.War.Hill.Rows do
 		local oldest = table.remove(bodies, 1)
 		if oldest.Parent then
 			oldest:Destroy()
@@ -274,6 +274,9 @@ function Soldiers.OnDied(player, char)
 	end
 	if not s.Kit.Conscript then
 		dropBody(player, char, s) -- a conscript's free pistol is not loot: no farming bodies for pistols
+	end
+	if root then
+		Battlefield.Fallen(root.Position) -- every body calcifies where it fell, and feeds its sector's crest
 	end
 	Remotes.Soldier:FireClient(player, "Died", killer and killer.DisplayName)
 	deathToken[player] = (deathToken[player] or 0) + 1
@@ -357,7 +360,7 @@ local function foxhole(player, position)
 			body:Destroy()
 		end
 	end
-	local ground = 2
+	local ground = Battlefield.GroundAt(position.X, position.Z)
 	local hole = Instance.new("Part")
 	hole.Name, hole.Shape = "Foxhole", Enum.PartType.Cylinder
 	hole.Size = Vector3.new(E.FoxholeDepth, E.FoxholeRadius * 2, E.FoxholeRadius * 2)
@@ -389,7 +392,8 @@ end
 local function sandbag(player, position, look)
 	local bag = Instance.new("Part")
 	bag.Name, bag.Size = "LowSandbags", Vector3.new(5, 1.6, 1.4)
-	bag.CFrame = CFrame.lookAt(Vector3.new(position.X, 2 + 0.8, position.Z), Vector3.new(position.X + look.X, 2 + 0.8, position.Z + look.Z))
+	local ground = Battlefield.GroundAt(position.X, position.Z)
+	bag.CFrame = CFrame.lookAt(Vector3.new(position.X, ground + 0.8, position.Z), Vector3.new(position.X + look.X, ground + 0.8, position.Z + look.Z))
 	bag.Color, bag.Material, bag.Anchored = Color3.fromRGB(140, 125, 90), Enum.Material.Fabric, true
 	bag.Parent = workspace
 	-- the uploaded sandbag model rides inside the collider; the plain part stays as the fallback look
@@ -411,7 +415,7 @@ local function onEntrench(player, mode)
 	local E = W.Entrench
 	local look = root.CFrame.LookVector
 	local spot = root.Position + Vector3.new(look.X, 0, look.Z).Unit * (if mode == "Dig" then 0 else 4)
-	local ok, why = openGround(Vector3.new(spot.X, 2, spot.Z), player)
+	local ok, why = openGround(Vector3.new(spot.X, Battlefield.GroundAt(spot.X, spot.Z), spot.Z), player)
 	if not ok then
 		Remotes.Announce:FireClient(player, "Can't entrench: " .. why, "Info")
 		return
@@ -599,7 +603,7 @@ function Soldiers.Init()
 			for i = 1, A.Shells do
 				task.delay(i * 0.6, function()
 					local at = target + Vector3.new(rng:NextNumber(-A.Spread, A.Spread), 0, rng:NextNumber(-A.Spread, A.Spread))
-					Soldiers.Explode(Vector3.new(at.X, 2, at.Z), A.Radius, A.Damage, player)
+					Soldiers.Explode(Vector3.new(at.X, Battlefield.GroundAt(at.X, at.Z) + 0.5, at.Z), A.Radius, A.Damage, player)
 				end)
 			end
 		end)

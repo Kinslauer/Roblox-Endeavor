@@ -13,6 +13,7 @@ local Firearms = require(Shared:WaitForChild("Firearms"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
 local Sounds = require(Shared:WaitForChild("Sounds"))
 Sounds.Loop("AmbFront", 0.4) -- wind over the mud and guns on the horizon
+require(script.Parent:WaitForChild("Ambience")).Init() -- ash, horizon flashes, crests growing from the dead
 
 -- Procedural soldier poses: Motor6D C0 offsets under the walk/idle animations. Every soldier holds
 -- the rifle with both hands; shots kick the right arm; a reload drops the left hand to the magazine.

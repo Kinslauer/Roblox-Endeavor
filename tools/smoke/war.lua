@@ -171,7 +171,7 @@ check("frag grenade hurt the enemy", p2.Humanoid.Health < hpN)
 as(u)
 local E = Config.War.Entrench
 uc = u.Character
-uc.HumanoidRootPart.CFrame = Battlefield.BaseCFrame("Union") + M.V3.new(0, 0, 40) -- open ground outside the grid
+uc.HumanoidRootPart.CFrame = Battlefield.HomeCFrame("Union") + M.V3.new(0, 0, 40) -- open ground in the rear
 run(0.2)
 Remotes.Entrench:FireServer("Dig"); run(E.DigSeconds + 0.5)
 check("dug a foxhole", workspace_:FindFirstChild("Foxhole") ~= nil)
@@ -182,6 +182,50 @@ uc.HumanoidRootPart.CFrame = uc.HumanoidRootPart.CFrame + M.V3.new(20, 0, 0); ru
 Remotes.Entrench:FireServer("Sandbag"); run(0.3)
 local bagMsg for _, e in M.FireLog do if e[1] == "Announce" and e.player == u and type(e[3]) == "string" and e[3]:find("No sandbags") then bagMsg = true end end
 check("sandbags need stock from the shop", bagMsg == true)
+
+-- the open world: a layout with every sector typed and crested, dugouts to deploy from, the dead calcifying
+local FrontMap = M.mockEnv.__require(RS.Shared.FrontMap)
+local L = FrontMap.Layout()
+local H = Config.War.Hill
+local typed, crested = 0, 0
+for _, sec in L.Sectors do
+	typed += (sec.Type and 1 or 0)
+	crested += (sec.Crest and sec.Crest.H > 0 and 1 or 0)
+end
+check("world: every sector typed and crested", #L.Sectors == H.Cols * H.Rows and typed == #L.Sectors and crested == #L.Sectors)
+local kinds = {}
+for _, s in L.Scatter do kinds[s.Kind] = (kinds[s.Kind] or 0) + 1 end
+check("world: barrows, the calcified dead, wire and dugouts laid out", (kinds.Barrow or 0) >= H.Cols * H.Rows and (kinds.Calcified or 0) > 200 and (kinds.Wire or 0) > 20 and kinds.Dugout == H.Cols * H.Rows * 2)
+local glade = 0
+for _, sec in L.Sectors do glade += (sec.Type == "Glade" and 1 or 0) end
+check("world: one pocket of green", glade == 1 and L.Glade ~= nil)
+local risen, hMax = 0, -math.huge
+for _, sec in L.Sectors do
+	local h, tag = FrontMap.Sample(sec.Crest.X, sec.Crest.Z)
+	local ok = (tag == "Barrow" or tag == "Glade") and h > Config.War.World.GroundLevel + 2
+	risen += ok and 1 or 0
+	hMax = math.max(hMax, h)
+end
+local hEdge = FrontMap.Height(L.PlayX + 150, 0)
+check("world: crests rise, the outer barrows wall it in", risen == #L.Sectors and hEdge > hMax + 20)
+-- deploying one sector behind the hill, on your own side
+local hot = Hill.Current()
+local hotSec = L.Sectors[hot]
+local deploy = Battlefield.BaseCFrame("Union").Position
+local behind = FrontMap.Index(hotSec.I - 1, hotSec.J)
+check("world: Union deploys at its dugout behind the hill", behind ~= nil and FrontMap.SectorAt(deploy.X, deploy.Z) == behind)
+local home = Battlefield.HomeCFrame("Pact").Position
+check("world: bases sit in the rears", home.X > L.HalfX + 100)
+-- the fallen calcify and feed the crest
+local crestBefore = Battlefield.Crest(hot)
+local fallAt = Battlefield.SectorCenter(hot)
+for _ = 1, Config.War.World.GrowEvery do Battlefield.Fallen(fallAt) end
+run(Config.War.World.CalcifySeconds + 1)
+local fallen = 0
+for _, d in workspace_:GetDescendants() do if d:GetAttribute("Fallen") then fallen += 1 end end
+local grew for _, e in M.FireLog do if e[1] == "World" and e[3] == "CrestGrew" then grew = true end end
+check("world: the fallen calcify where they lay", fallen >= Config.War.World.GrowEvery)
+check("world: the crest grows from the dead", grew == true and Battlefield.Crest(hot).Y > crestBefore.Y)
 
 check("no script errors", #M.errors == 0)
 for _, e in M.errors do print(e) end

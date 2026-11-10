@@ -15,7 +15,7 @@ local H = Config.War.Hill
 local Hill = {}
 Hill.Moved = Instance.new("BindableEvent") -- (oldIndex, newIndex)
 
-local current = 1
+local current = H.Cols * math.floor(H.Rows / 2) + math.floor(H.Cols / 2) + 1 -- the middle sector, on the Spine
 local since = 0
 local holder, heldSince = nil, 0
 local rng = Random.new()
@@ -44,26 +44,33 @@ local function countInside()
 end
 
 local function status(counts)
-	Remotes.Hill:FireAllClients({ Sector = current, Center = Battlefield.SectorCenter(current), Counts = counts, Holder = holder,
+	Remotes.Hill:FireAllClients({ Sector = current, Center = Battlefield.Crest(current), Counts = counts, Holder = holder,
 		Held = if holder then os.clock() - heldSince else 0, Need = H.CaptureHoldSeconds, MovesIn = math.max(0, H.MoveAfterSeconds - (os.clock() - since)) })
+end
+
+-- the marker stands on the crest the sector is held around
+local function placeMarker()
+	if marker then
+		local crest = Battlefield.Crest(current)
+		marker:PivotTo(CFrame.new(crest + Vector3.new(0, 60, 0)))
+	end
 end
 
 local function move(reason)
 	local old = current
-	local n = H.Sectors
-	local i, j = (current - 1) % n, math.floor((current - 1) / n)
+	local cols, rows = H.Cols, H.Rows
+	local i, j = (current - 1) % cols, math.floor((current - 1) / cols)
 	local options = {}
 	for _, d in { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } } do
 		local ni, nj = i + d[1], j + d[2]
-		if ni >= 0 and nj >= 0 and ni < n and nj < n then
-			table.insert(options, nj * n + ni + 1)
+		if ni >= 0 and nj >= 0 and ni < cols and nj < rows then
+			table.insert(options, nj * cols + ni + 1)
 		end
 	end
 	current = options[rng:NextInteger(1, #options)]
+	Battlefield.Hot = current
 	since, holder, heldSince = os.clock(), nil, 0
-	if marker then
-		marker.Position = Battlefield.SectorCenter(current) + Vector3.new(0, 60, 0)
-	end
+	placeMarker()
 	Remotes.Announce:FireAllClients(("The hill moves to sector %d (%s)."):format(current, reason), "Event")
 	Hill.Moved:Fire(old, current)
 	-- the sector it left rebuilds once it has been quiet for a while
@@ -83,12 +90,13 @@ end
 
 function Hill.Init()
 	since = os.clock()
+	Battlefield.Hot = current
 	-- a column of light from the ground to the sky with the beacon on top: visible from anywhere on the front
 	marker = Instance.new("Part")
 	marker.Name, marker.Anchored, marker.CanCollide, marker.CanQuery = "HillMarker", true, false, false
 	marker.Shape, marker.Size = Enum.PartType.Ball, Vector3.new(14, 14, 14)
 	marker.Material, marker.Color, marker.Transparency = Enum.Material.Neon, Color3.fromRGB(255, 220, 80), 0.3
-	marker.Position = Battlefield.SectorCenter(current) + Vector3.new(0, 60, 0)
+	marker.Position = Battlefield.Crest(current) + Vector3.new(0, 60, 0)
 	local column = Instance.new("Part")
 	column.Name, column.Anchored, column.CanCollide, column.CanQuery = "HillColumn", true, false, false
 	column.Shape, column.Size = Enum.PartType.Cylinder, Vector3.new(120, 3, 3)

@@ -1,4 +1,7 @@
--- Boots the Front server and prints every part as JSON for tools/smoke/map.py.
+-- Boots the Front server and prints the generated open world for tools/smoke/frontmap.py: the ground sampled
+-- every 8 studs (height, tag, water), the sectors (type, crest, dugouts) and every scattered prop.
+-- Usage: python3 tools/smoke/gen.py tools/smoke/dumpfront.lua > /tmp/f.lua && luau /tmp/f.lua > /tmp/front.txt
+--        python3 tools/smoke/frontmap.py /tmp/front.txt docs/maps/front_map.png
 local game_, workspace_ = M.game, M.workspace
 local RS = game_:GetService("ReplicatedStorage")
 local SSS = game_:GetService("ServerScriptService")
@@ -7,19 +10,30 @@ M.mkTree({ Server = { class = "Folder", children = TREE_WAR } }, SSS)
 M.mkTree({ Common = { class = "Folder", children = TREE_COMMON } }, SSS.Server)
 M.task.spawn(function() M.loadSource(SSS.Server.Main)() end)
 for _ = 1, 30 do M.step(1/30) end
-local rows = {}
-for _, d in workspace_:GetDescendants() do
-	if d:IsA("BasePart") and d.Size and d.CFrame then
-		local c = d.Color or { R = 0.5, G = 0.5, B = 0.5 }
-		local look = d.CFrame.LookVector
-		local model = d:FindFirstAncestorOfClass("Model")
-		local top = d
-		while top.Parent and top.Parent ~= workspace_ do top = top.Parent end
-		table.insert(rows, string.format('{"f":"%s","n":"%s","m":"%s","x":%.1f,"y":%.1f,"z":%.1f,"sx":%.1f,"sy":%.1f,"sz":%.1f,"lx":%.3f,"lz":%.3f,"r":%d,"g":%d,"b":%d,"neon":%s,"tier":"","prop":"","label":"%s"}',
-			top.Name, d.Name, model and model.Name or "", d.Position.X, d.Position.Y, d.Position.Z, d.Size.X, d.Size.Y, d.Size.Z, look.X, look.Z,
-			math.floor(c.R * 255), math.floor(c.G * 255), math.floor(c.B * 255), tostring(tostring(d.Material):find("Neon") ~= nil), tostring(d:GetAttribute("Label") or "")))
+local FrontMap = M.mockEnv.__require(RS.Shared.FrontMap)
+local L = FrontMap.Layout()
+local B = L.Bounds
+local STEP = 8
+print(("GRID %d %d %d %d %d %d %d"):format(B.X0, B.Z0, B.X1, B.Z1, STEP, L.Seed, L.S))
+local tags = {}
+for z = B.Z0, B.Z1 - 1, STEP do
+	local row = {}
+	for x = B.X0, B.X1 - 1, STEP do
+		local h, tag, water = FrontMap.Sample(x, z)
+		row[#row + 1] = ("%.1f:%s:%s"):format(h, tag:sub(1, 2), water and ("%.1f"):format(water) or "")
+	end
+	print(table.concat(row, " "))
+end
+print("END")
+for index, s in L.Sectors do
+	print(("SECTOR %d %s %.0f %.0f %.0f %.0f %.0f %.0f %.0f %.0f"):format(index, s.Type, s.Center.X, s.Center.Z, s.Crest.X, s.Crest.Z, s.Dugouts.Union.X, s.Dugouts.Union.Z, s.Dugouts.Pact.X, s.Dugouts.Pact.Z))
+	for _, p in s.Pads do
+		print(("PAD %.0f %.0f %.0f %s"):format(p.X, p.Z, p.R, p.Kit))
 	end
 end
-print("JSON_BEGIN")
-print("[" .. table.concat(rows, ",\n") .. "]")
-print("JSON_END")
+for _, s in L.Scatter do
+	print(("PROP %s %.0f %.0f"):format(s.Kind, s.X, s.Z))
+end
+for f, b in L.Bases do
+	print(("BASE %s %.0f %.0f"):format(f, b.X, b.Z))
+end

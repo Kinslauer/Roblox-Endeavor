@@ -36,7 +36,7 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (215 checks), `war` = Front (34), `stress` = budgets under load (5), `client` = the
+  `scenario` = Endeavor end to end (215 checks), `war` = Front (42), `stress` = budgets under load (5), `client` = the
   Endeavor client boots + movement, dodge, animation and guard checks (28). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
@@ -199,6 +199,23 @@ Client tab screenshot, because Andy cannot read logs another way.
   first; the guard only counts if the swinger is within GuardCover (100 deg) of the facing. A guarded strike carries
   `Guarded`; applyDamage blocks traced blows only when Guarded, untraced ones (shots, throws, area strikes) still by
   facing. A blocked or parried blade stops (cancelSwing, BlockRecoil). Tests: "guard:" checks in scenario.lua.
+- Front open world (owner, 2026-11-10: "endlessly war torn, the bodies of clones solidifying into hills along the
+  battlefields. Be creative with any gaps"): `src/shared/FrontMap.lua` = `Generate(seed)` (Config.War.World.Seed, 0 =
+  random per server) rolls a Config.War.Hill Cols x Rows (7 x 5) grid of 200-stud sectors between the two rears;
+  `Sample(x, z)` -> height, tag (Barrow/Trench/Crater/Canal/Pad/Road/Glade/Edge/Ground), water. Each sector is held
+  around its crest (a barrow mound; the hill marker stands on it, `Battlefield.Crest`); types Line (outer columns: a
+  continuous zigzag trench down the map, wire, field gun), Barrows (the middle column: the Spine ridge with saddles),
+  rolled Village/Trenches/Craters/Deadwood/Works, exactly one Glade (the last green). East-west canal with 3 fords,
+  the old highway base to base, outer barrows (cliffs of the dead, EdgeHeight) + invisible Boundary parts, smokestacks
+  on the skyline. `src/war/server/WarTerrain.lua` writes it with WriteVoxels (0.7 s live for 260 chunks); terrain
+  colours via SetMaterialColor (Limestone = calcite). Battlefield builds L.Scatter with `BUILD[kind]` (assets
+  `Assets.FrontWorld` from `tools/models/front_world.py`, part fallbacks), `GroundAt(x, z)` replaces the old flat
+  Y=2. Deploying: `Battlefield.BaseCFrame(faction)` = the faction's dugout one sector behind the hill on its side
+  (`Battlefield.Hot`, set by Hill), else `HomeCFrame` (the base). The fallen calcify: Soldiers.OnDied ->
+  `Battlefield.Fallen(pos)` -> after CalcifySeconds a Calcified figure (attr Fallen), every GrowEvery in a sector the
+  crest grows (terrain FillBall Limestone, World "CrestGrew" -> client dust + groan), oldest past CalcifiedCap sink
+  into the ground. Client `src/war/client/Ambience.lua`: ash around the camera, horizon gun flashes. Map tool:
+  `tools/smoke/dumpfront.lua` + `tools/smoke/frontmap.py` -> docs/maps/front_world_map.png.
 - Lore (owner, 2026-10-31; docs/DESIGN.md "The stack"): conduits upload their consciousness stack through the hideout
   computer (first log-in = initialization, `Knowledge.Uploaded`); every death is a reboot of the stack; on the Front the
   stack links to the recruit's; the rich uploaded and escaped the world. Mechanically: Knowledge survives permadeath only
@@ -383,5 +400,6 @@ Client tab screenshot, because Andy cannot read logs another way.
   collection "ticks"); it predates the 2026-11-04 rounds. docs/TESTING.md is the full list.
 - `.claude/skills/fable-prompt` builds and audits Fable 5.2 prompts for this kind of project.
 - The playtest checklist is `docs/TESTING.md`: add a line for every feature that lands; the user ticks it.
-- Front: real 20-player frame-rate test; war world art; vehicles are intentionally absent.
+- Front: real 20-player frame-rate test (the open world adds ~1,600 props and terrain); vehicles are intentionally absent.
+- Front open world (2026-11-10) awaits Andy's walk-through: docs/TESTING.md "Front open world".
 - Experience internal name is still "Conduit" (cosmetic; rename in Configurations → Basic Settings).

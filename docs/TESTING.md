@@ -369,7 +369,7 @@ move; the city and the scarp overlook stay put. The server's seed is printed in 
       "Open from Roblox", not Studio Play).
 
 ## Front
-- [ ] Deploy from the locker with a kit; spawn on solid ground, at your faction's base: a hollow concrete bunker
+- [ ] Deploy from the locker with a kit; spawn on solid ground. Your faction's base (in the rear): a hollow concrete bunker
       with its door toward the front line, a flag in your faction's colour, and a locker terminal (X opens the app).
 - [ ] Your rifle or pistol shows in your right hand (AKM, M16A1, SKS, M14, Mosin, Makarov, M1911); switching (1/2)
       swaps the model; other soldiers' guns are visible too. Note if the barrel points the wrong way or the gun floats.
@@ -386,6 +386,31 @@ move; the city and the scarp overlook stay put. The server's seed is printed in 
 - [ ] Hill moves, tickets tip the scales HUD, income only while deployed.
 - [ ] Kills show in a feed at the top right (last five, fading after 7 s); your own death still banners.
 - [ ] Recruit death drops damaged gear that anyone can loot; conscript bodies give nothing.
+
+### Front open world (2026-11-10; map of one roll: docs/maps/front_world_map.png)
+- [ ] The Front is a big terrain world now (about 2,000 x 1,200 studs inside the walls): 7 x 5 sectors of 200 studs
+      between two rears, rolled fresh each server (F9 Server log: "[Front] world seed ...").
+- [ ] Every sector has a crest: a pale mound of calcified clone bodies (helmets, reaching arms, rifles sticking out).
+      The hill's yellow light column stands on the crest of the hot sector.
+- [ ] The Spine: a long pale ridge of the dead runs north-south down the middle column, with low saddles to cross at.
+      Shorter broken ridges stand between the other columns.
+- [ ] Both outer columns are each faction's line: one long zigzag trench down the whole map, wire in front of it, a
+      field gun behind it. Trench sectors in the middle have two trench lines either side of their crest.
+- [ ] A sunken canal with brown standing water crosses west-east; three fords let you wade across.
+- [ ] The old highway (dark asphalt) runs from base to base. Village sectors have 5-7 buildings, Works sectors have
+      halls, ruined brick chimneys and a leaning pylon, Deadwood is a forest of dead trees and stumps, Craters is
+      churned mud with flooded shell holes.
+- [ ] Somewhere in the middle columns one sector is still green: grass and a living tree on its crest.
+- [ ] The map ends in tall pale cliffs (the outer barrows); you cannot walk past them. Far beyond them, giant
+      smokestacks smoke on the skyline.
+- [ ] You deploy from a sandbagged dugout one sector behind the hill on your side (Union west, Pact east), facing the
+      fight; when the hill is on your own line you deploy at the base.
+- [ ] A recruit's body turns into a pale calcified figure where it fell about 45 s after death. Every 4 deaths in a
+      sector the crest grows: dust breathes off it and the ground groans.
+- [ ] Ash falls around you; guns flash on the horizon now and then, sometimes with a far boom. The light is a brown,
+      drained overcast.
+- [ ] Foxholes (F) dig into the terrain wherever you stand; sandbags (V) sit on the ground on slopes too.
+- [ ] Frame rate with many players stays playable (report your FPS with Shift+F5 if it drops).
 
 ## Known / expected
 - Weapon grip angles and sound levels are first guesses: say what feels off.
