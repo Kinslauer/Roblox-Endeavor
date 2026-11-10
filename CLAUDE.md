@@ -36,8 +36,8 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (215 checks), `war` = Front (69), `warclient` = the Front client plays the first link's stages (11), `stress` = budgets under load (5), `client` = the
-  Endeavor client boots + movement, dodge, animation and guard checks (28). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
+  `scenario` = Endeavor end to end (261 checks), `war` = Front (69), `warclient` = the Front client plays the first link's stages (11), `stress` = budgets under load (5), `client` = the
+  Endeavor client boots + movement, dodge, animation, guard and air checks (32). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
   `python3 tools/realserver/run_luau.py <placeId> script.lua` (POST `.../luau-execution-session-tasks`, poll, print
@@ -105,7 +105,7 @@ Client tab screenshot, because Andy cannot read logs another way.
   recruit permadeath drops everything damaged; conscript bodies are not loot; income only while deployed.
 - Entrenching: foxholes and low sandbags only, on open ground.
 - Controls are the Cursed Gear layout: E flicker, F block/parry, Q dodge, X interact, M devour/app, R/Y/V skills,
-  Z feint, G grab/throw, H drop, Shift sprint, Tab inventory, L loadout, J attributes, O hideout, N recruit app,
+  Z feint, G grab/throw, H drop, Shift sprint, C crouch, B whistle, Tab inventory, L loadout, J attributes, O hideout, N recruit app,
   P helmetcam. Front: LMB fire, RMB aim, R reload, T rack/unjam, B selector, 1/2 switch, G frag, H dressing, Q/E lean,
   K artillery, F dig, V sandbags, M app.
 
@@ -247,6 +247,33 @@ Client tab screenshot, because Andy cannot read logs another way.
   per stage, shards, machine lines). "Crackdown style" read as free movement in a fully breakable city, kept grounded
   (Config.WarMovement: Shift sprint, Space mantle up to 6.6 studs, in Main.client) so the Front's realistic handling
   holds. Sounds: tools/sounds/synth_intro.py. Real-server check: tools/realserver/frontcheck.py (startup + Intro.Probe).
+- The arrival (owner, 2026-11-10: "UI and Intro sequence overhauled ... riding a train ... revealing the weapons under
+  a cloak ... racking the slide ... pans behind ... zooms into the fpv ... a tutorial stealth level ... subway ...
+  based off splinter cell chaos theory and batman arkham involving environmental takedowns and light level hiding";
+  ideas only, everything in it is original). Per player, independent of the server phase: `profile.Intro = { Done,
+  Kit, Intel }` (kept through wipe) decides it; `src/server/Tutorial.lua` (`Active`, `SpawnCFrame`, `Start`, `Finish`,
+  `Replay`, `Release`, event `Finished`) builds one `Subway.Build(origin)` level per player at Config.Tutorial.Origin
+  + slot * Spacing, seats the character (attr `Cutscene`, anchored), fires Remotes.Intro "Play"(car, seat, carCF) and
+  waits for "Done" (or IntroTimeout); Lifecycle spawns into it first, deaths there are free and return to the last
+  of 5 checkpoints; `WorldPhase.Busy = Tutorial.Active` keeps station players out of the prologue count and Emerge.
+  `src/client/Intro.lua` is the cutscene (timeline `Intro.Timeline`, local props from ReplicatedStorage.IntroKit
+  built by `src/server/IntroKit.lua`, anims Intro_*, hold Space to skip, ends in helmetcam). No tutorial text exists
+  any more (the old step panel, Skip button and dummy drill are gone); only signs, the car display and the fragment.
+- Stealth (same directive): `src/shared/Stealth.lua` (`TakedownKind`, `LightAt`, `SightRange`), `src/server/Stealth.lua`
+  (levels = a Model with "StealthLight"-tagged lamps on circuits; `ExposureAt`, `Noise`, `SpawnGuard` = NPCs type
+  Sentry with an Idle hook and states Patrol/Suspicious/Search/Alert/Down in attr StealthState, `Takedown`, `Breaker`,
+  `SetCrouch`, `Whistle`, `Reset`; player attrs `Stealth`, char attrs `Exposure`, `Crouched`, `Takedown`; Remotes
+  Takedown/Crouch/Whistle/Stealth; `Combat.Shot` breaks lamps and makes noise by weapon `Noise`), `src/client/
+  Stealth.lua` (light meter, awareness diamonds and wedges, the X prompt, takedown camera and anims). Takedown spots
+  are parts tagged `TakedownSpot` with attr Takedown = Panel/Rail/Ledge. Tuning: Config.Stealth. The Whisper
+  (Weapons, Ammo Subsonic, Noise 7) is the starting kit; Attack/Heavy remotes carry the camera direction for shots.
+  Any place can use the system: tag lamps, call Stealth.Enter(player, levelModel), spawn guards with opts.Level.
+- UI kit (same directive, replaces the 2026-11-04 theme block): `src/client/UI.lua` (`Kit.Theme`, `plate` = flat dark
+  plate with a hairline edge and cyan corner ticks, `ticks`, `gauge`, `tween`, `spaced`, `keyHint`, `label`, `make`).
+  Main: `bar()` (flat fill, bright edge, pale trail on loss), `panel(size, position, title, plain)` = a ScrollingFrame
+  whose "Chrome" plate with a title strip follows it (AbsolutePosition/Size/Visible signals) and dims + blurs the world
+  unless `plain`; hotbar slots are plates with key caps; banner fades over a rule; death screen FLATLINE; controls
+  card is a plate. Main is near Luau's 200-local limit at top level: put new UI in `do` blocks or tables.
 - Lore (owner, 2026-10-31; docs/DESIGN.md "The stack"): conduits upload their consciousness stack through the hideout
   computer (first log-in = initialization, `Knowledge.Uploaded`); every death is a reboot of the stack; on the Front the
   stack links to the recruit's; the rich uploaded and escaped the world. Mechanically: Knowledge survives permadeath only
@@ -254,6 +281,9 @@ Client tab screenshot, because Andy cannot read logs another way.
   "Upload stack / log in".
 
 ## State (2026-11-10)
+- Endeavor vNEXT (2026-11-10, the arrival): train intro, stealth station, takedowns, UI kit. New assets: Whisper,
+  IntroCloak, SubwayCar, Rig Sentry (`tools/models/station.py`), 14 animations (Crouch_*, Takedown_*, Downed, Intro_*),
+  7 sounds (`tools/sounds/station.py`). Unseen in-game: awaiting Andy's look at the ride and the station.
 - Front v22 published (2026-11-10, the open world) and starting cleanly on a real server: startup 1.8s (models
   loaded in parallel 1.0s, terrain 0.7s), 0 warnings, ~3,850 parts (3,780 MeshParts), ~1,650 props.
 - Endeavor v78 published (2026-11-10, the megacity) and starting cleanly on a real server: startup 4.4s (was 52.6s
@@ -427,6 +457,8 @@ Client tab screenshot, because Andy cannot read logs another way.
   ("The Crossroads", Medium: `City.Crossroads`, `City.DistrictAt` returns it within 110 studs; Population adds a pack).
 
 ## Open items
+- The arrival (2026-11-10) awaits Andy's in-game look: cutscene timing and poses, cloak fit, seat height on the
+  bench, guard sight and hearing balance (Config.Stealth), takedown alignment, the look of the new UI.
 - Megacity (v78) awaits Andy's walk-through: look, frame rate across the ring, sludge damage and pocket healing.
   Ideas not built yet: a respirator item or Nose cybernetic that cuts sludge damage; an elevated rail line; station
   entrances to the train intro's subway; StreamingEnabled (still off; the map is ~3400 x 4000 studs now).

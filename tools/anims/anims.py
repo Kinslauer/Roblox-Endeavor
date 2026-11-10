@@ -302,6 +302,183 @@ STEP_BACK = step({"LowerTorso": (8, -4, 0, 0, -0.45, 0.2), "UpperTorso": (-16, 4
                   "RightUpperLeg": (-26, 4, 6), "RightLowerLeg": (-50, 0, 0), "RightFoot": (34, 0, 0),
                   "LeftUpperArm": (60, 0, -18), "LeftLowerArm": (70, 0, 0), "RightUpperArm": (35, 0, 15), "RightLowerArm": (45, 0, 0)})
 
+# ---------- stealth (2026-11-10): crouch, takedowns, a body on the floor ----------
+# Crouch: the hips drop about a stud with the feet still on the floor (thigh 60 forward, knee 120 back).
+CROUCH = {"LowerTorso": (0, -6, 0, 0, -1.0, 0), "UpperTorso": (-26, 4, 0), "Head": (20, 2, 0),
+          "LeftUpperLeg": (70, 6, -4), "LeftLowerLeg": (-115, 0, 0), "LeftFoot": (10, 0, 0),
+          "RightUpperLeg": (35, 6, 6), "RightLowerLeg": (-115, 0, 0), "RightFoot": (42, 0, 0),
+          "LeftUpperArm": (42, 0, -12), "LeftLowerArm": (60, 0, 0), "RightUpperArm": (30, 0, 10), "RightLowerArm": (45, 0, 0)}
+CROUCH_IDLE = dict(length=2.8, loop=True, priority="Idle", keys=[
+    (0.0, CROUCH, "CubicV2", "InOut"),
+    (1.4, merge(CROUCH, {"LowerTorso": (0, -4, 0, 0, -1.04, 0), "UpperTorso": (-24, 2, 0), "Head": (20, 8, 0)}), "CubicV2", "InOut"),
+    (2.8, CROUCH, "Linear", "InOut"),
+])
+def crouch_cycle(length):
+    low = {"UpperTorso": (-30, 0, 0), "Head": (24, 0, 0)}
+    contact = merge(low, {"LowerTorso": (0, 5, 0, 0, -1.0, 0), "UpperTorso": (-30, -8, 0),
+                          "LeftUpperLeg": (85, 0, 0), "LeftLowerLeg": (-110, 0, 0), "LeftFoot": (16, 0, 0),
+                          "RightUpperLeg": (25, 0, 0), "RightLowerLeg": (-110, 0, 0), "RightFoot": (50, 0, 0),
+                          "RightUpperArm": (40, 0, 8), "RightLowerArm": (60, 0, 0), "LeftUpperArm": (10, 0, -10), "LeftLowerArm": (50, 0, 0)})
+    passing = merge(low, {"LowerTorso": (0, 0, 0, 0, -0.94, 0),
+                          "LeftUpperLeg": (60, 0, 0), "LeftLowerLeg": (-118, 0, 0), "LeftFoot": (30, 0, 0),
+                          "RightUpperLeg": (78, 0, 0), "RightLowerLeg": (-140, 0, 0), "RightFoot": (20, 0, 0),
+                          "RightUpperArm": (26, 0, 8), "RightLowerArm": (55, 0, 0), "LeftUpperArm": (26, 0, -8), "LeftLowerArm": (55, 0, 0)})
+    return dict(length=length, loop=True, priority="Movement", keys=[
+        (0.0, contact, "CubicV2", "InOut"), (length * 0.25, passing, "CubicV2", "InOut"),
+        (length * 0.5, mirror(contact), "CubicV2", "InOut"), (length * 0.75, mirror(passing), "CubicV2", "InOut"),
+        (length, contact, "Linear", "InOut"),
+    ])
+CROUCH_WALK = crouch_cycle(1.0)
+
+# Takedowns: 1.6 s of action (the client plays them at 1.6 / the server's seconds), then the end pose is held
+# until the server lays the body down. The attacker starts where server/Stealth.lua puts it: 1.7 studs behind
+# (Rear), on top (Drop), or facing the guard's back with the fuse box / rail / drop beyond it (Slam).
+def held(keys, hold=0.9):
+    t, pose = keys[-1][0], keys[-1][1]
+    return dict(length=t + hold, loop=False, priority="Action", keys=keys + [(t + hold, pose, "Linear", "InOut")])
+TAKEDOWN_REAR = dict(length=1.6, loop=False, priority="Action", keys=[
+    (0.0, STANCE, "Cubic", "Out"),
+    (0.22, {"LowerTorso": (0, 0, 0, 0, -0.2, -0.95), "UpperTorso": (-10, 0, 0), "Head": (4, 0, 0),
+            "LeftUpperArm": (96, 0, 28), "LeftLowerArm": (105, 0, 0), "RightUpperArm": (84, 0, -8), "RightLowerArm": (75, 0, 0),
+            "LeftUpperLeg": (30, 0, -4), "LeftLowerLeg": (-28, 0, 0), "RightUpperLeg": (-22, 0, 4), "RightLowerLeg": (-18, 0, 0), "RightFoot": (18, 0, 0)}, "CubicV2", "InOut"),
+    (0.7, {"LowerTorso": (8, 0, 0, 0, -0.3, -0.75), "UpperTorso": (10, 6, 0), "Head": (-6, -6, 0),
+           "LeftUpperArm": (88, 0, 34), "LeftLowerArm": (125, 0, 0), "RightUpperArm": (95, 0, -14), "RightLowerArm": (95, 0, 0),
+           "LeftUpperLeg": (24, 0, -6), "LeftLowerLeg": (-36, 0, 0), "RightUpperLeg": (-12, 0, 6), "RightLowerLeg": (-30, 0, 0), "RightFoot": (16, 0, 0)}, "CubicV2", "InOut"),
+    (1.25, {"LowerTorso": (0, 0, 0, 0, -0.95, -0.7), "UpperTorso": (-28, 4, 0), "Head": (16, 0, 0),
+            "LeftUpperArm": (60, 0, 16), "LeftLowerArm": (70, 0, 0), "RightUpperArm": (64, 0, -6), "RightLowerArm": (50, 0, 0),
+            "LeftUpperLeg": (72, 0, -4), "LeftLowerLeg": (-115, 0, 0), "RightUpperLeg": (34, 0, 4), "RightLowerLeg": (-115, 0, 0), "RightFoot": (40, 0, 0)}, "CubicV2", "InOut"),
+    (1.6, CROUCH, "Linear", "InOut"),
+])
+TAKEDOWN_REAR_VICTIM = held([
+    (0.0, {}, "Cubic", "Out"),
+    (0.24, {"LowerTorso": (6, 0, 0, 0, -0.1, 0.25), "UpperTorso": (14, 0, 0), "Head": (26, 0, 0),
+            "LeftUpperArm": (95, 0, 20), "LeftLowerArm": (125, 0, 0), "RightUpperArm": (95, 0, -20), "RightLowerArm": (125, 0, 0)}, "CubicV2", "InOut"),
+    (0.5, {"LowerTorso": (10, 6, 0, 0.1, -0.25, 0.4), "UpperTorso": (16, -8, 0), "Head": (20, 12, 0),
+           "LeftUpperArm": (100, 0, 26), "LeftLowerArm": (130, 0, 0), "RightUpperArm": (88, 0, -14), "RightLowerArm": (120, 0, 0),
+           "LeftUpperLeg": (40, 0, -8), "LeftLowerLeg": (-50, 0, 0), "RightUpperLeg": (-10, 0, 8), "RightLowerLeg": (-20, 0, 0)}, "CubicV2", "InOut"),
+    (0.8, {"LowerTorso": (10, -6, 0, -0.1, -0.35, 0.4), "UpperTorso": (14, 8, 0), "Head": (10, -10, 0),
+           "LeftUpperArm": (70, 0, 10), "LeftLowerArm": (110, 0, 0), "RightUpperArm": (50, 0, -8), "RightLowerArm": (80, 0, 0),
+           "LeftUpperLeg": (0, 0, -8), "LeftLowerLeg": (-30, 0, 0), "RightUpperLeg": (36, 0, 8), "RightLowerLeg": (-60, 0, 0)}, "CubicV2", "InOut"),
+    (1.25, {"LowerTorso": (-6, 0, 0, 0, -1.3, 0.2), "UpperTorso": (-14, 0, 6), "Head": (-34, 0, 10),
+            "LeftUpperArm": (12, 0, -10), "LeftLowerArm": (20, 0, 0), "RightUpperArm": (12, 0, 10), "RightLowerArm": (20, 0, 0),
+            "LeftUpperLeg": (60, 0, -10), "LeftLowerLeg": (-135, 0, 0), "RightUpperLeg": (60, 0, 10), "RightLowerLeg": (-135, 0, 0), "LeftFoot": (40, 0, 0), "RightFoot": (40, 0, 0)}, "Cubic", "In"),
+    (1.6, {"LowerTorso": (-62, 0, 0, 0, -1.9, -0.5), "UpperTorso": (-18, 0, 8), "Head": (-10, 30, 0),
+           "LeftUpperArm": (100, 0, -30), "LeftLowerArm": (40, 0, 0), "RightUpperArm": (30, 0, 30), "RightLowerArm": (30, 0, 0),
+           "LeftUpperLeg": (50, 0, -10), "LeftLowerLeg": (-100, 0, 0), "RightUpperLeg": (30, 0, 10), "RightLowerLeg": (-70, 0, 0)}, "Linear", "InOut"),
+])
+TAKEDOWN_DROP = dict(length=1.6, loop=False, priority="Action", keys=[
+    (0.0, {"LowerTorso": (0, 0, 0, 0, 0.4, 0.9), "UpperTorso": (-20, 0, 0), "Head": (26, 0, 0),
+           "LeftUpperLeg": (60, 0, -10), "LeftLowerLeg": (-80, 0, 0), "RightUpperLeg": (20, 0, 10), "RightLowerLeg": (-70, 0, 0),
+           "LeftUpperArm": (40, 0, -60), "LeftLowerArm": (30, 0, 0), "RightUpperArm": (150, 0, 20), "RightLowerArm": (80, 0, 0)}, "Cubic", "In"),
+    (0.16, {"LowerTorso": (0, 0, 0, 0, -1.25, 0.9), "UpperTorso": (-38, -10, 0), "Head": (30, 0, 0),
+            "LeftUpperLeg": (95, 0, -14), "LeftLowerLeg": (-125, 0, 0), "RightUpperLeg": (30, 0, 12), "RightLowerLeg": (-125, 0, 0), "RightFoot": (40, 0, 0),
+            "LeftUpperArm": (50, 0, -30), "LeftLowerArm": (40, 0, 0), "RightUpperArm": (40, 0, -6), "RightLowerArm": (14, 0, 0)}, "CubicV2", "InOut"),
+    (0.9, {"LowerTorso": (0, 0, 0, 0, -1.15, 0.9), "UpperTorso": (-30, -4, 0), "Head": (26, 0, 0),
+           "LeftUpperLeg": (90, 0, -14), "LeftLowerLeg": (-122, 0, 0), "RightUpperLeg": (30, 0, 12), "RightLowerLeg": (-122, 0, 0), "RightFoot": (40, 0, 0),
+           "LeftUpperArm": (44, 0, -20), "LeftLowerArm": (50, 0, 0), "RightUpperArm": (36, 0, 0), "RightLowerArm": (30, 0, 0)}, "CubicV2", "InOut"),
+    (1.6, CROUCH, "Linear", "InOut"),
+])
+TAKEDOWN_DROP_VICTIM = held([
+    (0.0, {"Head": (20, 0, 0)}, "Cubic", "In"),
+    (0.16, {"LowerTorso": (-70, 0, 0, 0, -1.9, -0.7), "UpperTorso": (-12, 0, 0), "Head": (28, 0, 0),
+            "LeftUpperArm": (150, 0, -30), "LeftLowerArm": (30, 0, 0), "RightUpperArm": (150, 0, 30), "RightLowerArm": (30, 0, 0),
+            "LeftUpperLeg": (40, 0, -12), "LeftLowerLeg": (-60, 0, 0), "RightUpperLeg": (20, 0, 12), "RightLowerLeg": (-40, 0, 0)}, "CubicV2", "InOut"),
+    (0.5, {"LowerTorso": (-84, 0, 0, 0, -2.25, -0.8), "UpperTorso": (-4, 0, 0), "Head": (0, 40, 0),
+           "LeftUpperArm": (130, 0, -50), "LeftLowerArm": (60, 0, 0), "RightUpperArm": (60, 0, 50), "RightLowerArm": (40, 0, 0),
+           "LeftUpperLeg": (10, 0, -14), "LeftLowerLeg": (-20, 0, 0), "RightUpperLeg": (0, 0, 14), "RightLowerLeg": (-30, 0, 0)}, "Linear", "InOut"),
+    (1.6, {"LowerTorso": (-84, 0, 0, 0, -2.25, -0.8), "UpperTorso": (-4, 0, 0), "Head": (0, 40, 0),
+           "LeftUpperArm": (130, 0, -50), "LeftLowerArm": (60, 0, 0), "RightUpperArm": (60, 0, 50), "RightLowerArm": (40, 0, 0),
+           "LeftUpperLeg": (10, 0, -14), "LeftLowerLeg": (-20, 0, 0), "RightUpperLeg": (0, 0, 14), "RightLowerLeg": (-30, 0, 0)}, "Linear", "InOut"),
+])
+TAKEDOWN_SLAM = dict(length=1.6, loop=False, priority="Action", keys=[
+    (0.0, STANCE, "Cubic", "Out"),
+    (0.28, {"LowerTorso": (0, 0, 0, 0, -0.25, -0.6), "UpperTorso": (-6, 0, 0),
+            "LeftUpperArm": (80, 0, 8), "LeftLowerArm": (60, 0, 0), "RightUpperArm": (80, 0, -8), "RightLowerArm": (60, 0, 0),
+            "LeftUpperLeg": (26, 0, -4), "LeftLowerLeg": (-26, 0, 0), "RightUpperLeg": (-16, 0, 4), "RightLowerLeg": (-16, 0, 0)}, "Cubic", "In"),
+    (0.5, {"LowerTorso": (0, 0, 0, 0, -0.4, -1.3), "UpperTorso": (-30, 0, 0), "Head": (22, 0, 0),
+           "LeftUpperArm": (112, 0, 4), "LeftLowerArm": (8, 0, 0), "RightUpperArm": (112, 0, -4), "RightLowerArm": (8, 0, 0),
+           "LeftUpperLeg": (48, 0, -4), "LeftLowerLeg": (-40, 0, 0), "RightUpperLeg": (-34, 0, 4), "RightLowerLeg": (-10, 0, 0), "RightFoot": (30, 0, 0)}, "CubicV2", "InOut"),
+    (0.95, {"LowerTorso": (0, 0, 0, 0, -0.35, -1.1), "UpperTorso": (-18, 0, 0), "Head": (14, 0, 0),
+            "LeftUpperArm": (70, 0, -6), "LeftLowerArm": (30, 0, 0), "RightUpperArm": (70, 0, 6), "RightLowerArm": (30, 0, 0),
+            "LeftUpperLeg": (40, 0, -4), "LeftLowerLeg": (-36, 0, 0), "RightUpperLeg": (-26, 0, 4), "RightLowerLeg": (-14, 0, 0), "RightFoot": (24, 0, 0)}, "CubicV2", "InOut"),
+    (1.6, STANCE, "Linear", "InOut"),
+])
+_JOLT = {"LowerTorso": (-8, 0, 0, 0, -0.3, -1.7), "UpperTorso": (24, 0, 0), "Head": (30, 0, 0),
+         "LeftUpperArm": (40, 0, -70), "LeftLowerArm": (70, 0, 0), "RightUpperArm": (40, 0, 70), "RightLowerArm": (70, 0, 0),
+         "LeftUpperLeg": (20, 0, -10), "LeftLowerLeg": (-30, 0, 0), "RightUpperLeg": (-10, 0, 10), "RightLowerLeg": (-40, 0, 0)}
+TAKEDOWN_SLAM_VICTIM = held([
+    (0.0, {}, "Cubic", "Out"),
+    (0.28, {"LowerTorso": (4, 0, 0, 0, 0, 0.1), "UpperTorso": (12, 0, 0), "Head": (16, 20, 0),
+            "LeftUpperArm": (30, 0, -40), "LeftLowerArm": (60, 0, 0), "RightUpperArm": (30, 0, 40), "RightLowerArm": (60, 0, 0)}, "Cubic", "In"),
+    (0.5, {"LowerTorso": (-28, 0, 0, 0, -0.3, -1.6), "UpperTorso": (-30, 0, 0), "Head": (10, 0, 0),
+           "LeftUpperArm": (110, 0, -10), "LeftLowerArm": (30, 0, 0), "RightUpperArm": (110, 0, 10), "RightLowerArm": (30, 0, 0),
+           "LeftUpperLeg": (40, 0, -6), "LeftLowerLeg": (-30, 0, 0), "RightUpperLeg": (-20, 0, 6), "RightLowerLeg": (-30, 0, 0)}, "Linear", "InOut"),
+    (0.58, _JOLT, "Linear", "InOut"),
+    (0.7, merge(_JOLT, {"UpperTorso": (10, 10, 0), "Head": (10, -16, 0), "LeftUpperArm": (60, 0, -50), "RightUpperArm": (20, 0, 80)}), "Linear", "InOut"),
+    (0.82, merge(_JOLT, {"UpperTorso": (26, -10, 0), "Head": (34, 14, 0), "LeftUpperArm": (20, 0, -84), "RightUpperArm": (60, 0, 50)}), "Linear", "InOut"),
+    (0.95, merge(_JOLT, {"UpperTorso": (8, 0, 0), "Head": (4, 0, 0)}), "CubicV2", "InOut"),
+    (1.6, {"LowerTorso": (-58, 0, 0, 0, -1.8, -2.0), "UpperTorso": (-20, 0, 6), "Head": (-10, 34, 0),
+           "LeftUpperArm": (110, 0, -30), "LeftLowerArm": (50, 0, 0), "RightUpperArm": (24, 0, 26), "RightLowerArm": (30, 0, 0),
+           "LeftUpperLeg": (56, 0, -10), "LeftLowerLeg": (-100, 0, 0), "RightUpperLeg": (30, 0, 10), "RightLowerLeg": (-60, 0, 0)}, "Linear", "InOut"),
+])
+# a body on the floor (the server turns the whole rig face down; this only lets the limbs lie where they fell)
+_DOWN = {"UpperTorso": (4, 0, 6), "Head": (6, 52, 0),
+         "LeftUpperArm": (150, 0, -34), "LeftLowerArm": (62, 0, 0), "RightUpperArm": (-8, 0, 24), "RightLowerArm": (24, 0, 0),
+         "LeftUpperLeg": (-4, 0, -14), "LeftLowerLeg": (-10, 0, 0), "RightUpperLeg": (24, 0, 22), "RightLowerLeg": (-58, 0, 0), "RightFoot": (30, 0, 0), "LeftFoot": (40, 0, 0)}
+DOWNED = dict(length=2.0, loop=True, priority="Action", keys=[(0.0, _DOWN, "Linear", "InOut"), (2.0, _DOWN, "Linear", "InOut")])
+
+# ---------- the train (client/Intro.lua): seated on the bench under a cloak, up, cloak off, pistol out, slide racked ----------
+# The root stands 1.5 studs in front of the bench, so sitting is the hips back and down from it.
+_SEAT = {"LowerTorso": (0, 0, 0, 0, -0.82, 1.4), "UpperTorso": (-14, 0, 0), "Head": (-24, 0, 0),
+         "LeftUpperLeg": (86, 0, -8), "LeftLowerLeg": (-84, 0, 0), "RightUpperLeg": (86, 0, 8), "RightLowerLeg": (-84, 0, 0),
+         "LeftUpperArm": (36, 0, 8), "LeftLowerArm": (52, 0, 0), "RightUpperArm": (36, 0, -8), "RightLowerArm": (52, 0, 0)}
+INTRO_SEATED = dict(length=3.2, loop=True, priority="Action", keys=[  # the car rocks him a little
+    (0.0, _SEAT, "CubicV2", "InOut"),
+    (0.8, merge(_SEAT, {"UpperTorso": (-14, 0, 2.5), "Head": (-24, 0, -2)}), "CubicV2", "InOut"),
+    (1.6, merge(_SEAT, {"UpperTorso": (-15, 0, 0), "Head": (-23, 0, 0)}), "CubicV2", "InOut"),
+    (2.4, merge(_SEAT, {"UpperTorso": (-14, 0, -2.5), "Head": (-24, 0, 2)}), "CubicV2", "InOut"),
+    (3.2, _SEAT, "Linear", "InOut"),
+])
+_UP = {"LowerTorso": (0, 0, 0), "UpperTorso": (-2, 0, 0), "Head": (-10, 0, 0),
+       "LeftUpperLeg": (4, 0, -5), "LeftLowerLeg": (-6, 0, 0), "RightUpperLeg": (-2, 0, 5), "RightLowerLeg": (-4, 0, 0),
+       "LeftUpperArm": (4, 0, -6), "LeftLowerArm": (12, 0, 0), "LeftHand": (0, 0, 0), "RightUpperArm": (4, 0, 6), "RightLowerArm": (12, 0, 0), "RightHand": (0, 0, 0)}
+INTRO_STAND = dict(length=9.0, loop=False, priority="Action", keys=[
+    (0.0, _SEAT, "CubicV2", "InOut"),
+    (0.45, merge(_SEAT, {"LowerTorso": (0, 0, 0, 0, -0.78, 1.25), "UpperTorso": (-38, 0, 0), "Head": (-6, 0, 0),
+                         "LeftUpperArm": (20, 0, 6), "LeftLowerArm": (70, 0, 0), "RightUpperArm": (20, 0, -6), "RightLowerArm": (70, 0, 0)}), "CubicV2", "InOut"),
+    (1.0, merge(_UP, {"LowerTorso": (0, 0, 0, 0, -0.3, 0.45), "UpperTorso": (-22, 0, 0), "Head": (0, 0, 0),
+                      "LeftUpperLeg": (48, 0, -6), "LeftLowerLeg": (-56, 0, 0), "RightUpperLeg": (30, 0, 6), "RightLowerLeg": (-50, 0, 0)}), "CubicV2", "InOut"),
+    (1.5, _UP, "CubicV2", "InOut"),
+    (2.3, merge(_UP, {"Head": (6, 0, 0)}), "Linear", "InOut"),                      # the head comes up
+    (9.0, merge(_UP, {"Head": (6, 0, 0)}), "Linear", "InOut"),
+])
+INTRO_CLOAK = dict(length=1.9, loop=False, priority="Action2", keys=[
+    (0.0, {"UpperTorso": (-2, 0, 0), "RightUpperArm": (4, 0, 6), "RightLowerArm": (12, 0, 0)}, "CubicV2", "InOut"),
+    (0.4, {"UpperTorso": (-6, 14, 0), "Head": (4, 10, 0), "RightUpperArm": (72, 0, -62), "RightLowerArm": (118, 0, 0)}, "Cubic", "In"),  # hand to the clasp
+    (0.55, {"UpperTorso": (-4, 4, 0), "Head": (4, 0, 0), "RightUpperArm": (84, 0, -10), "RightLowerArm": (60, 0, 0)}, "Linear", "InOut"),
+    (0.75, {"UpperTorso": (4, -34, -4), "Head": (4, 26, 0), "LowerTorso": (0, -10, 0), "RightUpperArm": (62, 0, 96), "RightLowerArm": (10, 0, 0),
+            "LeftUpperArm": (-10, 0, -22), "LeftLowerArm": (20, 0, 0)}, "CubicV2", "InOut"),                                   # thrown wide
+    (1.15, {"UpperTorso": (2, -22, -2), "Head": (4, 18, 0), "LowerTorso": (0, -6, 0), "RightUpperArm": (10, 0, 70), "RightLowerArm": (16, 0, 0),
+            "LeftUpperArm": (-4, 0, -14), "LeftLowerArm": (16, 0, 0)}, "CubicV2", "InOut"),
+    (1.9, {"UpperTorso": (-2, 0, 0), "Head": (6, 0, 0), "RightUpperArm": (4, 0, 6), "RightLowerArm": (12, 0, 0), "LeftUpperArm": (4, 0, -6), "LeftLowerArm": (12, 0, 0)}, "Linear", "InOut"),
+])
+_READY = {"RightUpperArm": (52, 0, -14), "RightLowerArm": (78, 0, 0), "RightHand": (0, 0, 0), "UpperTorso": (-4, 8, 0), "Head": (2, -8, 0)}
+INTRO_DRAW = dict(length=6.0, loop=False, priority="Action2", keys=[
+    (0.0, {"RightUpperArm": (4, 0, 6), "RightLowerArm": (12, 0, 0)}, "CubicV2", "InOut"),
+    (0.36, {"RightUpperArm": (-24, 0, 12), "RightLowerArm": (38, 0, 0), "UpperTorso": (-4, -10, -3), "Head": (-10, -16, 0)}, "Cubic", "In"),  # to the holster
+    (0.5, {"RightUpperArm": (-30, 0, 14), "RightLowerArm": (80, 0, 0), "UpperTorso": (-2, -8, -2), "Head": (-6, -12, 0)}, "CubicV2", "InOut"),  # clears it
+    (0.85, _READY, "CubicV2", "InOut"),                                                                                                  # up in front of the chest
+    (6.0, _READY, "Linear", "InOut"),
+])
+_OVER = {"LeftUpperArm": (46, 0, 38), "LeftLowerArm": (84, 0, 0), "LeftHand": (0, 0, 0), "Head": (-10, -8, 0)}
+INTRO_RACK = dict(length=1.3, loop=False, priority="Action3", keys=[
+    (0.0, {"LeftUpperArm": (4, 0, -6), "LeftLowerArm": (12, 0, 0)}, "CubicV2", "InOut"),
+    (0.42, _OVER, "Cubic", "In"),                                                                         # the hand comes over the slide
+    (0.55, merge(_OVER, {"LeftUpperArm": (34, 0, 40), "LeftLowerArm": (100, 0, 0)}), "Cubic", "Out"),     # back
+    (0.66, merge(_OVER, {"LeftUpperArm": (36, 0, 14), "LeftLowerArm": (80, 0, 0)}), "CubicV2", "InOut"),   # let go: it runs home
+    (1.3, {"LeftUpperArm": (4, 0, -6), "LeftLowerArm": (12, 0, 0), "Head": (6, 0, 0)}, "Linear", "InOut"),
+])
+
 ANIMS = {
     "Swing_SlashR": SLASH_R, "Swing_SlashL": SLASH_L, "Swing_Overhead": OVERHEAD, "Swing_Diagonal": DIAGONAL,
     "Swing_Uppercut": UPPERCUT, "Swing_Thrust": THRUST, "Swing_Jab": JAB,
@@ -309,8 +486,12 @@ ANIMS = {
     "Stagger": STAGGER, "Recoil": RECOIL, "Block": BLOCK, "Parry": PARRY, "Hit_Heavy": HIT_HEAVY, "Block_Hit": BLOCK_HIT,
     "Idle": IDLE, "Walk": WALK, "Run": RUN,
     "Step_Left": STEP_LEFT, "Step_Right": STEP_RIGHT, "Step_Back": STEP_BACK,
+    "Crouch_Idle": CROUCH_IDLE, "Crouch_Walk": CROUCH_WALK, "Downed": DOWNED,
+    "Takedown_Rear": TAKEDOWN_REAR, "Takedown_RearVictim": TAKEDOWN_REAR_VICTIM, "Takedown_Drop": TAKEDOWN_DROP,
+    "Takedown_DropVictim": TAKEDOWN_DROP_VICTIM, "Takedown_Slam": TAKEDOWN_SLAM, "Takedown_SlamVictim": TAKEDOWN_SLAM_VICTIM,
+    "Intro_Seated": INTRO_SEATED, "Intro_Stand": INTRO_STAND, "Intro_CloakToss": INTRO_CLOAK, "Intro_Draw": INTRO_DRAW, "Intro_Rack": INTRO_RACK,
 }
-PRIORITY = {"Core": 1000, "Idle": 0, "Movement": 1, "Action": 2}
+PRIORITY = {"Core": 1000, "Idle": 0, "Movement": 1, "Action": 2, "Action2": 3, "Action3": 4}
 
 # ---------- maths ----------
 def rot(rx, ry, rz):

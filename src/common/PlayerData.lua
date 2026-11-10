@@ -38,6 +38,8 @@ local TEMPLATE = {
 	-- stack is uploaded through the computer (Uploaded), permadeath is a reboot: this survives. Before that it
 	-- dies with the body.
 	Knowledge = { Uploaded = false, Contacts = {}, Contracts = {}, Completed = 0, Fragments = {} },
+	-- The arrival (server/Tutorial.lua): the train is ridden once per account, not once per life.
+	Intro = { Done = false, Kit = false, Intel = false },
 	-- The war world (a separate place, same universe) reads and writes this part of the profile.
 	-- A conduit is not reset by the recruit dying; the recruit's gear is.
 	War = {
@@ -80,7 +82,7 @@ end
 -- Permadeath wipes the conduit; the war-world account (faction, credits, locker) survives it,
 -- because a recruit is a thing the conduit owns, not the conduit itself.
 local function wipe(data)
-	local war, hideout, frontier, knowledge = data.War, data.Hideout, data.Frontier, data.Knowledge
+	local war, hideout, frontier, knowledge, intro = data.War, data.Hideout, data.Frontier, data.Knowledge, data.Intro
 	for key in data do
 		data[key] = nil
 	end
@@ -90,6 +92,7 @@ local function wipe(data)
 	data.War = war or deepCopy(TEMPLATE.War)
 	data.Hideout = hideout or deepCopy(TEMPLATE.Hideout)
 	data.Frontier = frontier or deepCopy(TEMPLATE.Frontier)
+	data.Intro = intro or deepCopy(TEMPLATE.Intro)
 	-- the stack: what was uploaded survives the reboot; a conduit who never uploaded starts from nothing
 	data.Knowledge = if knowledge and knowledge.Uploaded then knowledge else deepCopy(TEMPLATE.Knowledge)
 	newCharacter(data)

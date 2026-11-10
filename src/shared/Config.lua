@@ -21,10 +21,57 @@ Config.PrologueMinSeconds = 30 -- earliest the world opens once every player fin
 -- everyone has finished (or skipped) it, instead of on Dev.PrologueSeconds.
 Config.Tutorial = {
 	Enabled = true,
-	DummyInterval = 2.8, -- seconds between training-dummy strikes
-	DummyTelegraph = 0.8, -- red flash before a strike lands (the dodge/parry cue)
-	DummyDamage = 6,
-	DummyPosture = 12,
+	-- the arrival (server/Tutorial.lua, server/Subway.lua): each new conduit's own station, off the map
+	Origin = Vector3.new(0, 2600, 6000),
+	Spacing = 1200,
+	IntroTimeout = 75, -- the server ends the train ride itself if the client never reports it done
+	CheckpointRadius = 12,
+	CleanupSeconds = 12,
+	KitWeapon = "Whisper",
+	Kit = { Whisper = 1, Subsonic = 9 },
+	Locker = { RebarBlade = 1, ScrapVest = 1, Medkit = 2, Subsonic = 12, Scrap = 4 },
+	Manifest = { Name = "LINE 9 MANIFEST", Text = "INBOUND: 1 . OUTBOUND: 0\nCARGO: STACK HARDWARE, 40 CRATES\nCONSIGNEE: [WITHHELD]\nNOTE: NOTHING ON THIS LINE COMES BACK DOWN." },
+}
+-- Stealth (server/Stealth.lua, shared/Stealth.lua): light-level hiding, noise, guard awareness, takedowns.
+-- Exposure 0..1 = the level's ambient plus every lit StealthLight that can see you (falloff by distance, blocked by
+-- walls). A guard's sight range shrinks in the dark; crouching hides you more and silences your steps.
+Config.Stealth = {
+	Tick = 0.1, -- guard brains and noise
+	ExposureTick = 0.2,
+	Ambient = 0.06, -- a stealth level's floor light (the level folder's "Ambient" attribute wins)
+	FlashlightExposure = 0.95, -- caught in a guard's torch beam
+	CrouchVisibility = 0.72, -- crouched, a guard's sight range is multiplied by this
+	CrouchSpeedMult = 0.5,
+	SightRange = 62, -- studs at full light
+	DarkSight = 0.1, -- share of SightRange left in total darkness
+	SightFOV = 105, -- degrees, whole cone; Alert/Search widen it
+	SearchFOV = 150,
+	Bump = 2.8, -- studs: walking into a guard is noticed whatever the light
+	FillRate = 1.5, -- awareness per second at point blank in full view
+	SearchFill = 1.6, -- multiplier while the guard is searching (it is looking for you)
+	Decay = 0.22, -- awareness lost per second out of sight
+	SuspectAt = 0.3, -- awareness where the guard stops and turns to look
+	SuspectWalk = 0.6, -- ...and starts walking over
+	AlertLose = 6, -- seconds out of sight before an alerted guard falls back to searching
+	SearchSeconds = 14,
+	CallRadius = 48, -- an alerted guard calls the others within this
+	PatrolSpeed = 6, SearchSpeed = 9, SuspectSpeed = 4,
+	PostTurn = 0.08, -- how fast a standing guard turns back to its post (alpha per tick)
+	Noise = { Sprint = 24, Walk = 9, Crouch = 0, Whistle = 22, Glass = 18, Melee = 20, Breaker = 10 },
+	StepNoiseAwareness = 0.9, -- awareness per second from hearing your steps (no sight needed)
+	WhistleCooldown = 3,
+	BodyAlarm = true, -- a guard that sees a downed one goes searching and calls the rest
+	FixDelay = 4, -- seconds a guard spends at a cut breaker before the lights come back
+	Takedown = {
+		Reach = 5.5, -- studs from the guard
+		BehindDot = -0.2, -- guard facing . (guard -> you) below this = behind it
+		DropMin = 4.5, DropMax = 22, DropReach = 9, -- from above: height window and how far off to the side
+		EnvReach = 7.5, -- a TakedownSpot this close to the guard turns the takedown into it
+		Seconds = { Rear = 1.7, Drop = 1.1, Panel = 1.9, Rail = 1.7, Ledge = 1.5 },
+		Noise = { Rear = 0, Drop = 7, Panel = 14, Rail = 12, Ledge = 8 },
+		IFrames = 2,
+	},
+	DownSeconds = 0, -- 0 = a downed guard stays down (the subway); the open world sets its own
 }
 Config.EmergenceCinematic = 6 -- seconds between the announcement and the teleport
 Config.PlotOrigin = Vector3.new(0, 2000, 0)

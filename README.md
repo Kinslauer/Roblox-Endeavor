@@ -33,6 +33,7 @@ The dodge keeps its stamina cost and i-frames on the server.
 ## Controls (Cursed Gear layout)
 `LMB` attack (your weapon's combo) · `RMB` heavy/critical · `F` block (tap just before a hit to parry) · `Q` dodge ·
 **`E` flicker** · `Z` feint (cancel a swing's windup) · `R` / `Y` / `V` skill slots 1-3 · `X` interact (loot, armory) ·
+`C` crouch · `B` whistle (stealth) · `X` behind an unaware guard: takedown ·
 `Tab` inventory/crafting/equip · `L` loadout · `J` attributes · `M` devour remains · `P` helmetcam (first person, body visible) · `G` grab debris / hold to charge a throw · `H` drop.
 
 ## Flickering cursed energy (Black Flash)
@@ -42,12 +43,20 @@ stun, charge refund, and you enter **the Zone** for 8s (wider window, Flash need
 Charge (built by landing hits). Mis-timed flicks just waste charge; taking a hit, being dodged or parried breaks the chain.
 Blocking is not enough against a Flash - parry or dodge it. Everything is tunable in `Config.Flicker`.
 
-## Tutorial
-The prologue room is now a guided tutorial (`src/server/Tutorial.lua`, skippable with the Skip button): move, spend
-attributes, loot a locker (hold `X`), craft a Medkit, wear armor, attack, heavy, **flick into a Black Flash**, then dodge,
-parry and block a training dummy that telegraphs its strikes, feint, and use a skill. Each step has a live counter. Once
-every player has finished or skipped (and 30s have passed) the world opens early; otherwise it opens at the 10-minute cap.
-`Config.Tutorial.Enabled = false` restores the short timed prologue.
+## The arrival (train intro and the stealth station)
+A new conduit rides a train into a dead station (`src/client/Intro.lua`: title, the cloaked rider, cloak thrown off,
+pistol drawn and racked, the camera round to the shoulder and into first person). From there it is a stealth level
+(`src/server/Subway.lua` builds it per player, off the map; `src/server/Stealth.lua` runs the rules): get down through
+the ticket hall, the service tunnel and the lower hall to the control room without the seven guards noticing, take the
+locker's gear, copy the manifest from the console, leave by the lift. Nothing is explained on screen.
+- **Light**: your exposure (0..1) comes from the lamps that reach you; a guard's sight range scales with it. Lamps can be
+  shot out with the Whisper (suppressed pistol) and the ticket hall's fuse box cuts its circuit.
+- **Noise**: sprinting, walking, shots, breaking glass and `B` (whistle) are heard within a radius; `C` crouch is silent.
+- **Guards**: Patrol → Suspicious → Search → Alert, shown by a diamond over each guard and wedges at the screen centre.
+- **Takedowns** (`X`): from behind (Rear), from above (Drop), and with the room: a fuse box (Panel), the live rail
+  (Rail), a drop (Ledge). `src/shared/Stealth.lua` decides which one is on offer for both sides.
+`profile.Intro` remembers the ride for the account, so it plays once (F2 → Train intro → Replay plays it again).
+Everything is tunable in `Config.Stealth` and `Config.Tutorial`.
 
 ## The city, raids and devouring
 - **City** (`src/server/City.lua`, map: `docs/maps/conduit_map.png`): four generated districts around the Crossroads (the

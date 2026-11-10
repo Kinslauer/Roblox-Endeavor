@@ -95,6 +95,21 @@ Assets.Anims = {
 	Step_Left = 135515038003880,
 	Step_Right = 116259253404942,
 	Step_Back = 105953688996479,
+	-- stealth and the train (2026-11-10)
+	Crouch_Idle = 112950960956405,
+	Crouch_Walk = 91586344441197,
+	Downed = 111743961368604,
+	Takedown_Rear = 103963765486078,
+	Takedown_RearVictim = 114865073421639,
+	Takedown_Drop = 101715306821033,
+	Takedown_DropVictim = 75777790608165,
+	Takedown_Slam = 82457300416009,
+	Takedown_SlamVictim = 80699782540927,
+	Intro_Seated = 79942424160039,
+	Intro_Stand = 76424797029336,
+	Intro_CloakToss = 130150410671633,
+	Intro_Draw = 125541503895515,
+	Intro_Rack = 77242835230836,
 }
 
 -- Character rigs (R15 limb meshes, see server/Rigs.lua): [npcType] = assetId
@@ -105,7 +120,12 @@ Assets.Rigs = {
 	Brute = 89905917757019,
 	Shocker = 117184966040084,
 	Warden = 80181254073544,
+	Sentry = 96318406423907, -- transit security in the arrival station (tools/models/station.py)
 }
+
+-- The arrival (tools/models/station.py): the rider's cloak (origin = UpperTorso centre) and the train car shell.
+Assets.Intro = { Cloak = 109895496908016 }
+Assets.Subway = { Car = 75078768721035 }
 
 -- Weapons held in the right hand (see server/HeldWeapons.lua): [weaponId] = { Id, Grip }
 -- Grip "Melee" (default): business end along Roblox +Z from the grip; "Pistol": grip along -Z, barrel along +Y.
@@ -116,6 +136,7 @@ Assets.Weapons = {
 	ScrapSpear = { Id = 103214457247078 },
 	Sledge = { Id = 140412858794705 },
 	ArcPistol = { Id = 137041276570028, Grip = "Pistol" },
+	Whisper = { Id = 91277929123948, Grip = "Pistol" }, -- suppressed; the part named Slide moves when it is racked
 	-- the Front's firearms (tools/models/firearms.py): grip at the origin, barrel along Roblox +Z
 	AKM = { Id = 92592283500275, Grip = "Rifle" },
 	M16A1 = { Id = 75033829373197, Grip = "Rifle" },

@@ -1,332 +1,232 @@
--- The prologue tutorial. Runs in each player's private room (see WorldPhase) while the game
--- still feels single-player. A scripted sequence teaches the real systems by making the
--- player use them against a training dummy that fights back, then marks the player "ready";
--- once everyone is ready the world opens (WorldPhase.CheckReady).
+-- The arrival: every new conduit rides a train into a dead station and has to get to the control room at the
+-- bottom of it without the people stationed there noticing (server/Subway.lua is the place, server/Stealth.lua the
+-- rules). It is each player's own level, off the map, whatever the rest of the server is doing; nothing in it is
+-- explained. The ride itself is a cutscene the client plays (client/Intro.lua): the server seats the character,
+-- waits for Remotes.Intro "Done", opens the doors and lets the guards notice.
 --
--- Steps are data: Setup() runs when the step starts, Done() is polled, Text can be a function
--- of the context so progress counters stay live. Combat/inventory events bump ctx.counts.
+-- profile.Intro = { Done, Kit, Intel } outlives permadeath: the train is ridden once (Dev "Intro" rides it again).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
-local Skills = require(Shared.Skills)
-local Combat = require(script.Parent.Combat)
+local Gear = require(script.Parent.Gear)
 local Inventory = require(script.Parent.Inventory)
 local Loot = require(script.Parent.Loot)
 local Net = require(script.Parent.Common.Net)
-local NPCs = require(script.Parent.NPCs)
 local PlayerData = require(script.Parent.Common.PlayerData)
+local Stats = require(script.Parent.Stats)
+local Stealth = require(script.Parent.Stealth)
+local Subway = require(script.Parent.Subway)
 local WorldPhase = require(script.Parent.WorldPhase)
-local Assets = require(Shared.Assets)
-local ModelAssets = require(script.Parent.Common.ModelAssets)
 
 local T = Config.Tutorial
-local POLL = 0.25
 
 local Tutorial = {}
+Tutorial.Finished = Instance.new("BindableEvent") -- (player): out of the station, ready for the city
+Tutorial.Spawn = nil -- set by Lifecycle: respawns a player (Dev "Intro")
+
 local contexts = {}
 
-local function rootOf(player)
-	return player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+local function introOf(data)
+	data.Intro = data.Intro or { Done = false, Kit = false, Intel = false }
+	return data.Intro
 end
 
-local function count(ctx, key)
-	return ctx.counts[key] or 0
+local function needed(player)
+	local data = PlayerData.Get(player)
+	return T.Enabled and data ~= nil and not introOf(data).Done
 end
 
-local function bump(ctx, key)
-	ctx.counts[key] = count(ctx, key) + 1
-end
-
-local function highlight(ctx, target)
-	if ctx.highlight then
-		ctx.highlight:Destroy()
-		ctx.highlight = nil
+-- True while the player is (or is about to be) in the station.
+function Tutorial.Active(player)
+	local ctx = contexts[player]
+	if ctx then
+		return not ctx.finished
 	end
-	if target then
-		local h = Instance.new("Highlight")
-		h.FillColor, h.FillTransparency = Color3.fromRGB(0, 220, 255), 0.55
-		h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-		h.Parent = target
-		ctx.highlight = h
-	end
+	return needed(player)
 end
 
-local function restore(player)
-	local char = player.Character
-	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if hum and hum.Health > 0 then
-		hum.Health = hum.MaxHealth
-		char:SetAttribute("Stamina", char:GetAttribute("MaxStamina"))
-		char:SetAttribute("Posture", 0)
-	end
+function Tutorial.Level(player)
+	local ctx = contexts[player]
+	return ctx and ctx.level
 end
 
-local function topUpCharge(player, minimum)
-	local char = player.Character
-	if char and (char:GetAttribute("Charge") or 0) < minimum then
-		char:SetAttribute("Charge", minimum + 20) -- the tutorial pays for your flicks
+local function build(player)
+	local used = {}
+	for _, c in contexts do
+		used[c.slot] = true
 	end
-end
-
--- ===== Room props =====
-local function prop(parent, props)
-	local p = Instance.new("Part")
-	p.Anchored = true
-	for k, v in props do
-		p[k] = v
+	local slot = 1
+	while used[slot] do
+		slot += 1
 	end
-	p.Parent = parent
-	return p
-end
+	local level = Subway.Build(T.Origin + Vector3.new(slot * T.Spacing, 0, 0))
+	level.Model.Name = "Subway_" .. slot
+	level.Model.Parent = workspace
+	local ctx = { player = player, slot = slot, level = level, checkpoint = 1, alive = true }
+	contexts[player] = ctx
 
-local function buildProps(ctx)
-	local plot, origin = WorldPhase.GetPlot(ctx.player), WorldPhase.GetOrigin(ctx.player)
-	ctx.plot = plot
-
-	ctx.console = prop(plot, {
-		Name = "Console", Size = Vector3.new(4, 5, 2), Position = origin + Vector3.new(20, 3.5, -20),
-		Material = Enum.Material.Neon, Color = Color3.fromRGB(0, 220, 255),
+	for _, spec in level.Guards do
+		local model = Stealth.SpawnGuard(spec.At, { Level = level.Model, Patrol = spec.Patrol, Post = spec.Post, Wait = spec.Wait, Torch = spec.Torch })
+		model:SetAttribute("NoRespawn", true)
+	end
+	local locker = Loot.Spawn(level.LockerCFrame, T.Locker, {
+		Label = "Supply Locker", Action = "Open", Hold = 1, Lifetime = 7200, Size = Vector3.new(4, 5, 3), Color = Color3.fromRGB(230, 170, 40),
 	})
-	if ModelAssets.Spawn(Assets.Loot.Terminal, ctx.console.CFrame * CFrame.new(0, -2.5, 0), "Shell", plot) then
-		ctx.console.Transparency = 0.6 -- the neon core still glows through the cabinet's screen gap
+	if locker then
+		locker.Anchored = true
+		locker.Parent = level.Model
+		ctx.locker = locker
 	end
-
-	ctx.locker = Loot.Spawn(CFrame.new(origin + Vector3.new(-20, 3.5, 12)), { Cloth = 2, Scrap = 1, ScrapVest = 1 }, {
-		Label = "Supply Locker", Action = "Open", Hold = 1, Lifetime = 7200,
-		Size = Vector3.new(4, 5, 3), Color = Color3.fromRGB(230, 170, 40),
-	})
-	ctx.locker.Anchored = true
-	ctx.locker.Parent = plot
-
-	local model, hum, root = NPCs.BuildRig("Training Dummy", { Health = 1000, Speed = 0 })
-	root.Anchored = true
-	local pos = origin + Vector3.new(0, 3.5, -14)
-	model:PivotTo(CFrame.lookAt(pos, pos + Vector3.new(0, 0, 10))) -- faces the player's spawn
-	model.Parent = plot
-	ctx.dummy, ctx.dummyHum = model, hum
-end
-
--- The dummy regenerates and, in defence steps, strikes with a red telegraph.
-local function runDummy(ctx)
-	task.spawn(function()
-		while ctx.alive and ctx.dummy.Parent do
-			task.wait(T.DummyInterval)
-			if ctx.dummyHum.Health < ctx.dummyHum.MaxHealth * 0.5 then
-				ctx.dummyHum.Health = ctx.dummyHum.MaxHealth
-			end
-			local hum = ctx.player.Character and ctx.player.Character:FindFirstChildOfClass("Humanoid")
-			if ctx.strike and hum and hum.Health > 0 then
-				if hum.Health < hum.MaxHealth * 0.4 then
-					hum.Health = hum.MaxHealth * 0.7 -- never let the tutorial kill anyone
-				end
-				local warn = Instance.new("Highlight")
-				warn.FillColor, warn.OutlineColor = Color3.fromRGB(255, 40, 40), Color3.fromRGB(255, 40, 40)
-				warn.FillTransparency = 0.3
-				warn.Parent = ctx.dummy
-				task.wait(T.DummyTelegraph)
-				warn:Destroy()
-				local char = ctx.player.Character
-				if ctx.strike and ctx.alive and char then
-					Combat.Damage(ctx.dummy, char, T.DummyDamage, { Posture = T.DummyPosture })
-				end
-			end
+	level.Breaker:FindFirstChildOfClass("ProximityPrompt").Triggered:Connect(function(who)
+		if who == player then
+			Stealth.Breaker(player, level.Breaker)
 		end
 	end)
+	level.ConsolePrompt.Triggered:Connect(function(who)
+		if who ~= player or ctx.intel then
+			return
+		end
+		ctx.intel = true
+		local data = PlayerData.Get(player)
+		if data then
+			introOf(data).Intel = true
+		end
+		level.ConsolePrompt.Enabled = false
+		level.ConsoleText.Text = "> MANIFEST . . . COPIED"
+		level.LiftGlow.Color = Color3.fromRGB(80, 230, 140)
+		level.LiftPrompt.Enabled = true
+		Remotes.World:FireClient(player, "Fragment", "Manifest", T.Manifest.Name, T.Manifest.Text)
+	end)
+	level.LiftPrompt.Triggered:Connect(function(who)
+		if who == player and ctx.intel then
+			Tutorial.Finish(player)
+		end
+	end)
+	return ctx
 end
 
--- ===== Steps =====
-local function dataOf(ctx)
-	return PlayerData.Get(ctx.player)
-end
-
-local function pointsSpent(ctx)
-	local data = dataOf(ctx)
-	return data and math.clamp(Config.Stats.StartingPoints - data.FreePoints, 0, 99) or 0
-end
-
-local function finish(ctx)
-	local data = dataOf(ctx)
-	if data then
-		data.TutorialDone = true
+-- Where this player spawns while the station has them (nil once it does not).
+function Tutorial.SpawnCFrame(player)
+	if not Tutorial.Active(player) then
+		return nil
 	end
-	WorldPhase.MarkReady(ctx.player)
-end
-
-local STEPS = {
-	{
-		Title = "Wake up",
-		Text = "Use WASD to walk to the glowing console.",
-		Setup = function(ctx) highlight(ctx, ctx.console) end,
-		Done = function(ctx)
-			local root = rootOf(ctx.player)
-			return root ~= nil and (root.Position - ctx.console.Position).Magnitude < 8
-		end,
-	},
-	{
-		Title = "Attributes",
-		Text = function(ctx)
-			return ("Press J and spend at least 5 attribute points with the + buttons (%d/5). Stats and gear decide your skills."):format(math.min(5, pointsSpent(ctx)))
-		end,
-		Done = function(ctx) return pointsSpent(ctx) >= 5 end,
-	},
-	{
-		Title = "Loot",
-		Text = "Hold X on the supply locker to open it, then drag everything into your pack (or Take all). Interact is X because E is for flicking.",
-		Setup = function(ctx) highlight(ctx, ctx.locker) end,
-		Done = function(ctx) return ctx.locker.Parent == nil end,
-	},
-	{
-		Title = "Crafting",
-		Text = "Press Tab and Craft a Medkit (2 Torn Cloth + 1 Scrap).",
-		Done = function(ctx) return count(ctx, "craft_Medkit") >= 1 end,
-	},
-	{
-		Title = "Armor",
-		Text = "In the Tab menu, Wear the Scrap Vest. Armor sets resistances and its tags unlock skills (L shows your loadout).",
-		Done = function(ctx)
-			local data = dataOf(ctx)
-			return data ~= nil and next(data.Armor) ~= nil
-		end,
-	},
-	{
-		Title = "Attack",
-		Text = function(ctx) return ("Left-click to strike the dummy: chain 4 hits (%d/4). Your weapon decides the combo."):format(math.min(4, count(ctx, "dummyHit"))) end,
-		Setup = function(ctx) highlight(ctx, ctx.dummy) end,
-		Done = function(ctx) return count(ctx, "dummyHit") >= 4 end,
-	},
-	{
-		Title = "Heavy",
-		Text = "Right-click for a heavy attack. Heavies are criticals: they crush blocks.",
-		Setup = function(ctx) highlight(ctx, ctx.dummy) end,
-		Done = function(ctx) return count(ctx, "heavyHit") >= 1 end,
-	},
-	{
-		Title = "Flicker",
-		Text = function(ctx)
-			local level = ctx.player.Character and ctx.player.Character:GetAttribute("Flicker") or 0
-			return ("Tap E just as you swing so the flick lands WITH the hit. Three flicked hits in a row = BLACK FLASH. Chain: %d/3"):format(level)
-		end,
-		Setup = function(ctx)
-			highlight(ctx, ctx.dummy)
-			topUpCharge(ctx.player, 40)
-		end,
-		Tick = function(ctx) topUpCharge(ctx.player, 20) end,
-		Done = function(ctx) return count(ctx, "BlackFlash") >= 1 end,
-	},
-	{
-		Title = "Dodge",
-		Text = function(ctx) return ("The dummy strikes after a red flash. Press Q as it flashes to dodge (%d/2)."):format(math.min(2, count(ctx, "dodged"))) end,
-		Strike = true,
-		Done = function(ctx) return count(ctx, "dodged") >= 2 end,
-	},
-	{
-		Title = "Parry",
-		Text = function(ctx) return ("Face the dummy and tap F right before the red flash ends to PARRY (%d/2). Parries stagger it - and beat a Black Flash."):format(math.min(2, count(ctx, "parried"))) end,
-		Strike = true,
-		Done = function(ctx) return count(ctx, "parried") >= 2 end,
-	},
-	{
-		Title = "Block",
-		Text = function(ctx) return ("Face the dummy and HOLD F to block its strikes (%d/2). Blocking fills your posture bar - when it fills, your guard breaks."):format(math.min(2, count(ctx, "blocked"))) end,
-		Strike = true,
-		Done = function(ctx) return count(ctx, "blocked") >= 2 end,
-	},
-	{
-		Title = "Feint",
-		Text = function(ctx) return ("Start a swing, then press Z during the windup to cancel it and refund stamina (%d/2). Make them flinch."):format(math.min(2, count(ctx, "Feint"))) end,
-		Setup = function(ctx) highlight(ctx, ctx.dummy) end,
-		Done = function(ctx) return count(ctx, "Feint") >= 2 end,
-	},
-	{
-		Title = "Skills",
-		Text = "Use your skill: press R. Skills unlock from your stats and armor tags and scale with both.",
-		Skip = function(ctx)
-			local data = dataOf(ctx)
-			return data == nil or next(data.SkillSlots) == nil -- nothing unlocked yet
-		end,
-		Setup = function(ctx)
-			highlight(ctx, ctx.dummy)
-			topUpCharge(ctx.player, 60)
-		end,
-		Done = function(ctx) return count(ctx, "skill") >= 1 end,
-	},
-	{
-		Title = "Ready",
-		Text = "That's everything. Something is stirring beyond these walls...",
-		Setup = finish,
-		Done = function() return false end,
-	},
-}
-
--- ===== Runner =====
-local function send(ctx, step, text)
-	Remotes.Tutorial:FireClient(ctx.player, ctx.index, #STEPS, step.Title, text)
-	ctx.lastSent = text
-end
-
-local function run(ctx)
-	while ctx.alive and ctx.player.Parent and ctx.plot.Parent and not WorldPhase.IsOpen() do
-		local step = STEPS[ctx.index]
-		if step.Skip and step.Skip(ctx) then
-			ctx.index += 1
-			continue
-		end
-		if ctx.begun ~= ctx.index then
-			ctx.begun = ctx.index
-			ctx.counts = {}
-			ctx.strike = step.Strike == true
-			highlight(ctx, nil)
-			if ctx.strike then
-				restore(ctx.player)
-			end
-			if step.Setup then
-				step.Setup(ctx)
-			end
-			ctx.lastSent = nil
-		end
-		if step.Tick then
-			step.Tick(ctx)
-		end
-		local text = if type(step.Text) == "function" then step.Text(ctx) else step.Text
-		if text ~= ctx.lastSent then
-			send(ctx, step, text)
-		end
-		if step.Done(ctx) then
-			ctx.index += 1
-		end
-		task.wait(POLL)
+	local ctx = contexts[player] or build(player)
+	if not ctx.introDone then
+		return ctx.level.Seat
 	end
-	-- phase opened, player left, or the plot is gone
-	ctx.alive = false
-	highlight(ctx, nil)
-	if ctx.player.Parent then
-		Remotes.Tutorial:FireClient(ctx.player, nil)
-	end
+	return ctx.level.Checkpoints[ctx.checkpoint]
 end
 
--- Called after every (re)spawn in the prologue. Safe to call repeatedly.
-function Tutorial.Start(player)
-	local existing = contexts[player]
-	if existing then
-		existing.lastSent = nil -- resend the current step to the fresh character
+local function endIntro(ctx)
+	if ctx.introDone or not ctx.alive then
 		return
 	end
+	ctx.introDone = true
+	local char = ctx.player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if char then
+		char:SetAttribute("Cutscene", nil)
+	end
+	if root then
+		char:PivotTo(ctx.level.Stand)
+		root.Anchored = false
+	end
+	Subway.SetDoors(ctx.level, true)
+	ctx.level.CarSign.Text = "> TERMINUS"
+	Stealth.Enter(ctx.player, ctx.level.Model)
+end
+
+local function watch(ctx)
+	while ctx.alive and ctx.player.Parent and not ctx.finished do
+		local root = ctx.player.Character and ctx.player.Character:FindFirstChild("HumanoidRootPart")
+		if root and ctx.introDone then
+			for i = ctx.checkpoint + 1, #ctx.level.Checkpoints do
+				if (ctx.level.Checkpoints[i].Position - root.Position).Magnitude < T.CheckpointRadius then
+					ctx.checkpoint = i
+				end
+			end
+		end
+		task.wait(0.5)
+	end
+end
+
+-- Called after every (re)spawn while the station has the player.
+function Tutorial.Start(player)
+	local ctx = contexts[player]
+	local data = PlayerData.Get(player)
+	if not (ctx and data) or ctx.finished then
+		return
+	end
+	local intro = introOf(data)
+	if not intro.Kit then
+		intro.Kit = true
+		Inventory.AddAll(player, T.Kit, true)
+		Gear.EquipWeapon(player, T.KitWeapon)
+		Stats.Apply(player)
+		Inventory.Push(player)
+	end
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not ctx.watching then
+		ctx.watching = true
+		task.spawn(watch, ctx)
+	end
+	if not ctx.introDone then
+		if char and root then
+			char:SetAttribute("Cutscene", true)
+			root.Anchored = true
+			char:PivotTo(ctx.level.Seat)
+		end
+		Subway.SetDoors(ctx.level, false)
+		Remotes.Intro:FireClient(player, "Play", ctx.level.Car, ctx.level.Seat, ctx.level.CarCFrame)
+		task.delay(T.IntroTimeout, endIntro, ctx)
+	else
+		-- back at the last checkpoint: whoever is still standing has gone back to their round
+		Stealth.Reset(ctx.level.Model)
+		Stealth.Enter(player, ctx.level.Model)
+		Remotes.Intro:FireClient(player, "Resume")
+	end
+end
+
+-- Out through the lift: the station is done, the city is next.
+function Tutorial.Finish(player)
+	local ctx = contexts[player]
+	if not ctx or ctx.finished then
+		return
+	end
+	ctx.finished = true
+	local data = PlayerData.Get(player)
+	if data then
+		introOf(data).Done = true
+		data.TutorialDone = true
+	end
+	Stealth.Leave(player)
+	Remotes.Intro:FireClient(player, "End")
+	local level = ctx.level
+	task.delay(T.CleanupSeconds, function()
+		level.Model:Destroy()
+		if contexts[player] == ctx then
+			contexts[player] = nil
+		end
+	end)
+	WorldPhase.MarkReady(player)
+	Tutorial.Finished:Fire(player)
+end
+
+-- Rides the train again (Dev panel).
+function Tutorial.Replay(player)
 	local data = PlayerData.Get(player)
 	if not data then
 		return
 	end
-	if data.TutorialDone then
-		Remotes.Announce:FireClient(player, "Welcome back, conduit. Tapping into the city...", "Info")
-		WorldPhase.MarkReady(player, "returning") -- nothing to teach; the city opens as soon as everyone here is ready
-		return
+	Tutorial.Release(player)
+	local intro = introOf(data)
+	intro.Done, intro.Intel = false, false
+	if Tutorial.Spawn then
+		Tutorial.Spawn(player)
 	end
-	local ctx = { player = player, alive = true, index = 1, counts = {}, heavyUntil = 0 }
-	contexts[player] = ctx
-	buildProps(ctx)
-	runDummy(ctx)
-	task.spawn(run, ctx)
 end
 
 function Tutorial.Release(player)
@@ -334,51 +234,25 @@ function Tutorial.Release(player)
 	if ctx then
 		ctx.alive = false
 		contexts[player] = nil
+		Stealth.Leave(player)
+		ctx.level.Model:Destroy()
 	end
 end
 
 function Tutorial.Init()
+	Net.On("Intro", { rate = 2, burst = 4, args = { "string" } }, function(player, what)
+		local ctx = contexts[player]
+		if ctx and what == "Done" then
+			endIntro(ctx)
+		end
+	end)
+	-- the old skip button: straight to the lift
 	Net.On("TutorialSkip", { rate = 1, burst = 2 }, function(player)
 		local ctx = contexts[player]
-		if ctx then
-			ctx.index = #STEPS
-		end
-	end)
-
-	Combat.Resolved.Event:Connect(function(attacker, victim, result)
-		for player, ctx in contexts do
-			local char = player.Character
-			if char and ctx.alive then
-				if victim == char and attacker == ctx.dummy then
-					bump(ctx, result) -- dodged / parried / blocked / guardbreak / hit
-				elseif attacker == char and victim == ctx.dummy and (result == "hit" or result == "guardbreak") then
-					bump(ctx, "dummyHit")
-					if os.clock() < ctx.heavyUntil then
-						bump(ctx, "heavyHit")
-					end
-				end
-			end
-		end
-	end)
-
-	Combat.Used.Event:Connect(function(name, player)
-		local ctx = contexts[player]
-		if not ctx then
-			return
-		end
-		if name == "Heavy" then
-			ctx.heavyUntil = os.clock() + 1.5
-		elseif name == "Feint" or name == "BlackFlash" then
-			bump(ctx, name)
-		elseif Skills.Defs[name] then
-			bump(ctx, "skill")
-		end
-	end)
-
-	Inventory.Crafted.Event:Connect(function(player, itemId)
-		local ctx = contexts[player]
-		if ctx then
-			bump(ctx, "craft_" .. itemId)
+		if ctx and Config.Dev.Enabled then
+			endIntro(ctx)
+			ctx.intel = true
+			Tutorial.Finish(player)
 		end
 	end)
 end

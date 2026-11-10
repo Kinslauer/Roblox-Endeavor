@@ -23,6 +23,7 @@ local C, F = Config.Combat, Config.Flicker
 local BUFFER = 0.08 -- input buffer: an attack may start this early before the last one ends
 
 local Combat = {}
+Combat.Shot = Instance.new("BindableEvent") -- (char, instanceHit?, position, weaponDef): every ranged shot (server/Stealth listens)
 Combat.World = nil -- set by Destruction: { Swing, Bolt, ImprovisedHit, Hit }
 Combat.Clashed = Instance.new("BindableEvent") -- (charA, charB, point): two blades met
 Combat.Resolved = Instance.new("BindableEvent") -- (attackerChar, victimChar, result)
@@ -717,8 +718,14 @@ local function pulse(char, spec, mods, seen, tracer)
 		local ray = RaycastParams.new()
 		ray.FilterType = Enum.RaycastFilterType.Exclude
 		ray.FilterDescendantsInstances = { char }
+		-- the shot goes where the shooter looks (the Attack remote's aim, kept near the facing), from the shoulder
+		if s.aim and os.clock() - s.aimAt < 1.5 then
+			look = s.aim
+			origin += Vector3.new(0, 1.2, 0)
+		end
 		local result = workspace:Raycast(origin, look * spec.Range, ray)
-		fx("Bolt", char, if result then result.Position else origin + look * spec.Range)
+		fx("Bolt", char, if result then result.Position else origin + look * spec.Range, mods.weapon and mods.weapon.Noise)
+		Combat.Shot:Fire(char, result and result.Instance, if result then result.Position else origin + look * spec.Range, mods.weapon)
 		local model = result and result.Instance:FindFirstAncestorOfClass("Model")
 		if model and getHum(model) then
 			strike(model)
@@ -1134,7 +1141,7 @@ local function spendAmmo(player, weapon)
 	end
 	local Inventory = require(script.Parent.Inventory)
 	if Inventory.Count(player, weapon.Ammo) <= 0 then
-		Remotes.Announce:FireClient(player, "Out of " .. weapon.Ammo .. "s. Craft more from Batteries and Wire.", "Info")
+		Remotes.Announce:FireClient(player, "> " .. string.upper(weapon.Name) .. " . . . EMPTY", "Info")
 		return false
 	end
 	return Inventory.Remove(player, weapon.Ammo, 1)
@@ -1166,8 +1173,27 @@ local function enqueue(player, char, action)
 	end)
 end
 
-function Combat.Attack(player)
+-- Where a shot may go: the client's camera direction, accepted only within a cone of the body's facing.
+local function setAim(char, aim)
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local s = char and st(char)
+	if not (root and s) then
+		return
+	end
+	if typeof(aim) == "Vector3" and aim.Magnitude > 0.5 then
+		aim = aim.Unit
+		local flat = Vector3.new(aim.X, 0, aim.Z)
+		if math.abs(aim.Y) < 0.94 and flat.Magnitude > 0.05 and root.CFrame.LookVector:Dot(flat.Unit) > 0.5 then
+			s.aim, s.aimAt = aim, os.clock()
+			return
+		end
+		s.aim = nil
+	end
+end
+
+function Combat.Attack(player, aim)
 	local char = player.Character
+	setAim(char, aim)
 	local weapon, improvised = weaponOf(player)
 	if not (char and weapon) or handsFull(char) then
 		return
@@ -1201,8 +1227,9 @@ function Combat.Attack(player)
 	s.comboExpires = s.busyUntil + weapon.ComboReset
 end
 
-function Combat.Heavy(player)
+function Combat.Heavy(player, aim)
 	local char, weapon = player.Character, weaponOf(player)
+	setAim(char, aim)
 	if not (char and weapon) or handsFull(char) then
 		return
 	end
@@ -1340,8 +1367,8 @@ function Combat.Dodge(player, direction)
 end
 
 function Combat.Init()
-	Net.On("Attack", { rate = 8, burst = 12 }, Combat.Attack)
-	Net.On("Heavy", { rate = 4, burst = 6 }, Combat.Heavy)
+	Net.On("Attack", { rate = 8, burst = 12, args = { "vector?" } }, Combat.Attack)
+	Net.On("Heavy", { rate = 4, burst = 6, args = { "vector?" } }, Combat.Heavy)
 	Net.On("Feint", { rate = 6, burst = 8 }, Combat.Feint)
 	Net.On("Flicker", { rate = 8, burst = 12 }, Combat.Flicker)
 	Net.On("Block", { rate = 4, burst = 8, args = { "boolean" } }, Combat.SetBlock)

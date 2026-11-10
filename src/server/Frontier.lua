@@ -1002,7 +1002,7 @@ local function bundleFor(site)
 end
 
 local function placeContainer(entry)
-	entry.part = Loot.Spawn(CFrame.new(entry.position + Vector3.new(0, 1.5, 0)), bundleFor(entry.site), { Label = entry.label, Mesh = entry.mesh, Size = Vector3.new(4, 1.6, 4) })
+	entry.part = Loot.Spawn(CFrame.new(entry.position + Vector3.new(0, 1.5, 0)), bundleFor(entry.site), { Label = entry.label, Mesh = entry.mesh, Size = Vector3.new(4, 1.6, 4), Lifetime = 86400 })
 	entry.emptiedAt = nil
 	if entry.part then
 		entry.part:SetAttribute("Site", entry.site.Key)

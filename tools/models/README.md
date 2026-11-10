@@ -18,6 +18,7 @@ The game loads them by asset ID (`src/shared/Assets.lua`) and falls back to gene
     $BLENDER -b --python tools/models/loot.py             # loot crates A/B, stash bag, Neural Net terminal shell
     $BLENDER -b --python tools/models/frontier.py         # the frontier kit: pines A/B, broadleaf A/B, dead tree, rocks A/B/C, tent, greenhouse dome, solar tower
     $BLENDER -b --python tools/models/icons.py            # inventory icons for materials/consumables/ammo/packs (centre origin)
+    $BLENDER -b --python tools/models/station.py          # the arrival: Whisper pistol (separate slide), the cloak, the train car shell, the Sentry rig
     $BLENDER -b --python tools/models/industry.py         # the megacity kit: smokestack, tank, cooling tower, pylon, blast furnace, junk pile, giant tree
     python3 tools/models/preview.py out/X_preview.obj out/X.png   # software preview (Pillow), no OpenGL needed
     ROBLOX_API_KEY=... python3 tools/models/upload.py Name out/Name.fbx [...]   # prints "Name assetId"; key needs Assets: Write

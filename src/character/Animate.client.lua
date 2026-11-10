@@ -26,7 +26,13 @@ for _, name in { "Idle", "Walk", "Run" } do
 		IDS[name] = "rbxassetid://" .. tostring(OWN[name])
 	end
 end
-local PRIORITY = { Idle = Enum.AnimationPriority.Idle }
+-- crouched (the Crouched attribute, C): a low stance and a low walk
+for name, own in { CrouchIdle = "Crouch_Idle", CrouchWalk = "Crouch_Walk" } do
+	if OWN[own] and OWN[own] ~= 0 then
+		IDS[name] = "rbxassetid://" .. tostring(OWN[own])
+	end
+end
+local PRIORITY = { Idle = Enum.AnimationPriority.Idle, CrouchIdle = Enum.AnimationPriority.Idle }
 
 local tracks = {}
 for name, id in IDS do
@@ -60,17 +66,29 @@ end
 
 local RUN_FROM = 18 -- studs/s: above this the run plays instead of the walk
 local state = "Idle"
-hum.Running:Connect(function(speed)
+local lastSpeed = 0
+local function ground(speed)
+	lastSpeed = speed
 	if state ~= "Running" then
 		return
 	end
-	if speed < 0.5 then
+	if char:GetAttribute("Crouched") and tracks.CrouchIdle then
+		if speed < 0.5 then
+			play("CrouchIdle", 0.2)
+		else
+			play("CrouchWalk", 0.15, math.clamp(speed / 6, 0.5, 2))
+		end
+	elseif speed < 0.5 then
 		play("Idle", 0.2)
 	elseif speed < RUN_FROM then
 		play("Walk", 0.15, math.clamp(speed / 7, 0.5, 2.2)) -- the cycle covers ~4.5 studs/s at speed 1
 	else
 		play("Run", 0.15, math.clamp(speed / 11.5, 0.8, 2.2)) -- ~11.5 studs/s at speed 1
 	end
+end
+hum.Running:Connect(ground)
+char:GetAttributeChangedSignal("Crouched"):Connect(function()
+	ground(lastSpeed)
 end)
 hum.Climbing:Connect(function(speed)
 	play("Climb", 0.1, math.clamp(speed / 5, 0.2, 2))

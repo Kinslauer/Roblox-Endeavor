@@ -13,6 +13,7 @@ local ModelAssets = require(script.Parent.Common.ModelAssets)
 
 local WorldPhase = {}
 WorldPhase.Changed = Instance.new("BindableEvent")
+WorldPhase.Busy = nil -- set by Lifecycle: player -> true while the arrival station has them (they neither hold the world closed nor get moved by it)
 
 local phase = Config.Phases.Prologue
 local slots, plots = {}, {}
@@ -95,16 +96,24 @@ function WorldPhase.CheckReady()
 		return
 	end
 	local anyoneLearning = false
+	local anyoneReady = false
 	for _, player in Players:GetPlayers() do
+		if WorldPhase.Busy and WorldPhase.Busy(player) then
+			continue -- still in the station: the city does not wait for them
+		end
 		if not ready[player] then
 			return
 		end
+		anyoneReady = true
 		if ready[player] ~= "returning" then
 			anyoneLearning = true
 		end
 	end
 	-- the minimum prologue only matters when someone actually went through the tutorial;
 	-- a server of returning conduits opens at once
+	if not anyoneReady then
+		return
+	end
 	local remaining = if anyoneLearning then startedAt + Config.PrologueMinSeconds - os.clock() else 0
 	if remaining > 0 then
 		task.delay(remaining, WorldPhase.CheckReady)
@@ -148,6 +157,9 @@ function WorldPhase.Emerge()
 	phase = Config.Phases.Open
 	workspace:SetAttribute("Phase", phase)
 	for _, player in Players:GetPlayers() do
+		if WorldPhase.Busy and WorldPhase.Busy(player) then
+			continue -- they come up through the lift when they are done
+		end
 		local profile, char = PlayerData.Get(player), player.Character
 		if profile then
 			profile.Awakened = true

@@ -99,6 +99,15 @@ Weapons.Defs = {
 		},
 		Heavy = frames(22, 10, 30, 3, 39, 110, { Type = "Arc", Ranged = true, Stamina = 22, Knockback = 20 }),
 	},
+	-- a suppressed slug pistol: weak, but a guard two rooms off does not hear it (Noise = the radius it carries,
+	-- server/Stealth; anything without one is loud). Made for putting lights out.
+	Whisper = {
+		Name = "Whisper", Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.25, ChargeBonus = 1, Ammo = "Subsonic", Noise = 7,
+		Attacks = {
+			frames(12, 4, 6, 3, 19, 120, { Ranged = true, Stamina = 4 }),
+		},
+		Heavy = frames(12, 4, 6, 3, 19, 120, { Ranged = true, Stamina = 4 }),
+	},
 }
 
 return Weapons

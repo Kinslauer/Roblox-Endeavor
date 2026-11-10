@@ -1,20 +1,56 @@
 # Playtest checklist
 
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
-report). Versions: Endeavor v69, Front v19.
+report).
+
+## Endeavor: the arrival (train, station, stealth) (2026-11-10)
+A new character starts on a train, alone, whatever the rest of the server is doing. To see it again on an existing
+character: F2 → "Train intro" → Replay. Hold Space during the ride to skip it.
+- [ ] The ride: black screen, the title, then the inside of a train car in a tunnel with lights going by. A hooded
+      figure in a cloak sits on the bench. The train brakes (squeal, the car lights stutter) into a dead station.
+- [ ] The figure stands, throws the cloak off (a pistol on the thigh and a pipe across the back show), draws the
+      pistol and racks the slide (the slide moves, you hear it), steps into the aisle.
+- [ ] The camera comes round behind the shoulder, then pushes into first person. The doors open and you can move.
+      The whole ride is about 28 seconds.
+- [ ] You hold the Whisper, a suppressed pistol with 9 rounds. LMB fires where you look: a quiet cough, a faint
+      streak. Shooting a ceiling lamp puts it out (glass breaks) and that part of the room goes dark.
+- [ ] Bottom left: the light meter, ten segments. It fills under a lamp and empties in the dark. The thin line under
+      it grows with the noise you make (sprinting is loud, walking is quieter, crouch-walking is silent).
+- [ ] C crouches: lower stance, slower, lower camera, harder to see. C again stands.
+- [ ] Guards walk rounds. A diamond over a guard fills as it notices you (white: unsure, amber: coming to look, red:
+      it has you) and a wedge at the screen centre points at whoever is noticing. In the dark they must be very close
+      to see you; in the light they see you across the room.
+- [ ] B whistles: a guard that hears it walks over to look.
+- [ ] Behind a guard that has not seen you, a prompt shows: X TAKEDOWN. X chokes it out quietly. From a ledge above a
+      guard the prompt is X DROP.
+- [ ] The room helps: a guard standing by the fuse box gives X FUSE BOX, one beside the live rail in the service
+      tunnel gives X LIVE RAIL (sparks), one at the edge of the pit in the lower hall gives X LEDGE.
+- [ ] The yellow fuse box in the ticket hall (hold X) cuts that hall's lights; a guard walks over to turn them back
+      on, which is a good moment to take it at the box.
+- [ ] A guard that finds a body starts searching; a guard that sees you clearly shouts and the others nearby come.
+      Fighting them with the pistol or fists works but is hard. Dying in the station costs nothing: you restart at
+      the last part of the station you reached and the guards go back to their rounds.
+- [ ] The way down: platform → corridor → ticket hall → stairs → service tunnel → lower hall → control room. Seven
+      guards in all.
+- [ ] Control room: the supply locker (hold X) has a blade, a vest, medkits, rounds and scrap. The console (hold X,
+      "Copy") gives a fragment card, LINE 9 MANIFEST. Then the lift light goes green: hold X on the lift to leave.
+- [ ] After the lift you are in the city (or the starting room if the world has not opened yet). The train does not
+      play again for that character, also not after death.
+- [ ] Guards wear dark fatigues, grey armour and a helmet with one amber visor strip that glows in the dark.
 
 ## Endeavor: first minutes
-- [ ] The starting room is a pod: dark panelled walls with cyan seams, diamond-plate floor, the console in a terminal
-      cabinet, the supply locker a crate.
-- [ ] Spawn in the starting room on solid floor (no falling through, no black room). Returning players see
-      "Welcome back, conduit" and the world opens at once.
-- [ ] Tutorial steps advance as you do them (move, sprint with Shift, swing, block, dodge, flicker). The locker step
-      completes once the locker's grid is emptied.
+- [ ] Returning players do not ride the train: a short title, "> STACK RESIDENT . . . LINKING", and the world.
 - [ ] F2 opens the dev panel (test build only): Heal, Mats, Die, Open world, Go to armory/gate/districts/terminals/
       hideout sites, Spawn each hostile, fire each event. Use it to reach anything on this list quickly.
-- [ ] HUD v2: one composite at the bottom centre - a thin charge strip, HEALTH | STAMINA with numbers, a thin posture
-      strip, the R/Y/V skill slots under it; level and FLICKER text above it. The Roblox health bar and player list
-      are gone. Anything you miss from the old top-left stack?
+- [ ] The HUD (2026-11-10 look): bottom centre, flat dark bars with a thin edge: a cyan charge line, red HEALTH and
+      pale STAMINA with numbers in a mono face, an amber posture line. When a bar drops, a pale trail stays for a
+      moment and then follows. Under them three skill slots, each with its key in a small cap (R, Y, V), the skill's
+      name and the seconds left.
+- [ ] Every panel (Tab, L, J, O, N, the computer, the market) sits in a dark plate with cyan corner ticks and a title
+      strip, and the world behind it dims and blurs while it is open.
+- [ ] Entering a place: its name fades in over a thin line that opens from the middle, then fades out.
+- [ ] Dying: the screen darkens, FLATLINE in red, your time alive / level / kills in mono, then the stack line.
+- [ ] F1: the controls card is a plate with two columns of keys (it now lists C crouch, X use / takedown, B whistle).
 - [ ] A small reticle sits at the screen centre while the stance is on; it flares orange when your hit lands.
 - [ ] Taking damage: a red "-N" floats off you and the screen edges flash red (stronger for bigger hits). Over
       whoever is hit the words BLOCKED / PARRIED / GUARD BREAK / DODGED float up.

@@ -57,6 +57,14 @@ Sounds.Ids = {
 	SimBreak = 106391119448085,
 	SimBreakSoft = 138898839681875,
 	Mantle = 119697430319826,
+	-- the arrival and stealth (tools/sounds/station.py)
+	TrainLoop = 96784170333785,
+	TrainBrake = 135660155432337,
+	CloakWhoosh = 115565519675894,
+	Takedown = 106720746823569,
+	Sparks = 128265196389380,
+	Whistle = 105846441055127,
+	ShotQuiet = 70881608271855,
 }
 
 -- Per-sound defaults: Volume, Range (RollOffMaxDistance), Pitch jitter
@@ -89,6 +97,10 @@ Sounds.Defaults = {
 	SimBreak = { Volume = 0.8, Range = 120, Jitter = 0.15 },
 	SimBreakSoft = { Volume = 0.4, Range = 80, Jitter = 0.2 },
 	Mantle = { Volume = 0.5, Range = 20, Jitter = 0.1 },
+	Takedown = { Volume = 0.7, Range = 30, Jitter = 0.1 },
+	Sparks = { Volume = 0.9, Range = 70, Jitter = 0.08 },
+	Whistle = { Volume = 0.7, Range = 60, Jitter = 0.04 },
+	ShotQuiet = { Volume = 0.55, Range = 28, Jitter = 0.06 },
 	BarkBruteAlert = { Volume = 0.9, Range = 90, Jitter = 0.08 },
 	BarkBruteAttack = { Volume = 0.9, Range = 90, Jitter = 0.08 },
 	BarkBruteDeath = { Volume = 0.9, Range = 90, Jitter = 0.08 },

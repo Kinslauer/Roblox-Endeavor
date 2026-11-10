@@ -98,7 +98,9 @@ function CF.fromAxisAngle(axis, angle)
 end
 function CF.ToWorldSpace(a, b) return a * b end
 
-local Color3 = { new = function(r, g, b) return {R = r, G = g, B = b} end, fromRGB = function(r, g, b) return {R = r/255, G = g/255, B = b/255} end }
+local Color3
+local Color3MT = { __index = { Lerp = function(a, b, t) return Color3.new(a.R + (b.R - a.R) * t, a.G + (b.G - a.G) * t, a.B + (b.B - a.B) * t) end } }
+Color3 = { new = function(r, g, b) return setmetatable({R = r or 0, G = g or 0, B = b or 0}, Color3MT) end, fromRGB = function(r, g, b) return setmetatable({R = r/255, G = g/255, B = b/255}, Color3MT) end }
 local UDim = { new = function(s, o) return {Scale = s, Offset = o} end }
 local UDim2 = {
 	new = function(a, b, c, d) return {X = UDim.new(a, b), Y = UDim.new(c, d)} end,
@@ -147,7 +149,7 @@ local function descendants(self, out)
 end
 local PARTS = { Part = 1, MeshPart = 1, WedgePart = 1, SpawnLocation = 1 }
 function methods.IsA(self, cls)
-	return self.ClassName == cls or cls == "Instance" or (cls == "BasePart" and PARTS[self.ClassName] ~= nil) or (cls == "PVInstance" and (PARTS[self.ClassName] or self.ClassName == "Model"))
+	return self.ClassName == cls or cls == "Instance" or (cls == "Light" and (self.ClassName == "PointLight" or self.ClassName == "SpotLight" or self.ClassName == "SurfaceLight")) or (cls == "BasePart" and PARTS[self.ClassName] ~= nil) or (cls == "PVInstance" and (PARTS[self.ClassName] or self.ClassName == "Model"))
 end
 function methods.GetChildren(self) return table.clone(self._children) end
 function methods.GetDescendants(self) return descendants(self, {}) end
@@ -374,6 +376,8 @@ function methods.GetService(self, name)
 		s._init = true; local tags = {}
 		function s.AddTag(_, inst, tag) tags[tag] = tags[tag] or {}; table.insert(tags[tag], inst) end
 		function s.GetTagged(_, tag) return tags[tag] or {} end
+		function s.HasTag(_, inst, tag) return tags[tag] ~= nil and table.find(tags[tag], inst) ~= nil end
+		function s.RemoveTag(_, inst, tag) local i = tags[tag] and table.find(tags[tag], inst); if i then table.remove(tags[tag], i) end end
 		function s.GetInstanceAddedSignal(_, tag) local k = "_added_" .. tag; return sig(s, k) end
 		function s.GetInstanceRemovedSignal(_, tag) local k = "_removed_" .. tag; return sig(s, k) end
 	elseif name == "Debris" and not s._init then

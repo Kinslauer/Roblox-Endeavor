@@ -47,6 +47,9 @@ NPCs.Types = {
 	-- rival conduits: a crew working the frontier's contracts; faster and meaner than raiders, and worth it
 	Rival = { Health = 170, Speed = 15, Damage = 15, Posture = 22, Range = 6.5, Cooldown = 1.25, Telegraph = 0.4, Active = 10, Recovery = 14, Aggro = 100, Xp = 140, Loot = "Rival",
 		Color = Color3.fromRGB(70, 60, 90), Size = Vector3.new(2, 5, 1), Weapon = "RebarBlade" },
+	-- station security (server/Stealth.SpawnGuard): it only fights once it has made you
+	Sentry = { Health = 85, Speed = 14, Damage = 11, Posture = 10, Range = 6.5, Cooldown = 1.4, Telegraph = 0.45, Active = 12, Recovery = 18, Aggro = 120, Xp = 45, Loot = "Raider",
+		Color = Color3.fromRGB(52, 60, 74), Size = Vector3.new(2, 5, 1), Type = "Arc", Stun = 0.4, Weapon = "ShockBaton" },
 	Warden = { Health = 900, Speed = 11, Damage = 26, Posture = 35, Range = 8, Cooldown = 2.0, Telegraph = 0.7, Active = 14, Recovery = 26, Aggro = 140, Xp = 600, Loot = "Supply",
 		Color = Color3.fromRGB(150, 30, 60), Size = Vector3.new(3.5, 8, 2), Knockback = 45, Hyperarmor = true, Boss = true, Weapon = "RebarBlade",
 		Moves = {
@@ -472,7 +475,7 @@ function NPCs.Spawn(typeName, position, opts)
 		while alive and model.Parent and hum.Health > 0 do
 			local now = os.clock()
 			local target, dist = nearestTarget(root, def.Aggro, opts.Filter)
-			if target and (root.Position - home).Magnitude > AI.Leash then
+			if target and not opts.NoLeash and (root.Position - home).Magnitude > AI.Leash then
 				target = nil -- leashed: give up and walk back
 			end
 			if target and not hadTarget then
@@ -534,7 +537,9 @@ function NPCs.Spawn(typeName, position, opts)
 			else
 				faceWhileSpacing(false)
 				local spot = model:GetAttribute("Investigate")
-				if spot and os.clock() < (model:GetAttribute("InvestigateUntil") or 0) and (spot - root.Position).Magnitude > 6 then
+				if opts.Idle and opts.Idle() then
+					-- someone else walks this body while it has nobody to fight (server/Stealth)
+				elseif spot and os.clock() < (model:GetAttribute("InvestigateUntil") or 0) and (spot - root.Position).Magnitude > 6 then
 					nav.moveTo(spot)
 				elseif spot then
 					model:SetAttribute("Investigate", nil)

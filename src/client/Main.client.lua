@@ -46,48 +46,12 @@ gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
 
 -- ===== Theme =====
--- One look for every screen: glass-dark panels with a thin neon edge, a wide sci-fi face for titles, a
--- readable tech face for text, a mono face for numbers and machine text. Colours encode meaning only where
--- callers say so (green buy, red close); everything else comes from here.
-local UI = {
-	Panel = Color3.fromRGB(12, 15, 21), PanelAlt = Color3.fromRGB(20, 25, 34), Line = Color3.fromRGB(46, 58, 74),
-	Text = Color3.fromRGB(226, 232, 240), Dim = Color3.fromRGB(140, 150, 166), Accent = Color3.fromRGB(0, 214, 255),
-	Button = Color3.fromRGB(34, 44, 60),
-	Title = Enum.Font.Michroma, Body = Enum.Font.TitilliumWeb, Mono = Enum.Font.RobotoMono, Bold = Enum.Font.GothamBold,
-	PanelAlpha = 0.08, Radius = 8,
-}
-local function corner(inst, r)
-	if not inst:FindFirstChildOfClass("UICorner") then
-		local c = Instance.new("UICorner")
-		c.CornerRadius = UDim.new(0, r or UI.Radius)
-		c.Parent = inst
-	end
-end
-local function stroke(inst, color, transparency, thickness)
-	if not inst:FindFirstChildOfClass("UIStroke") then
-		local st = Instance.new("UIStroke")
-		st.Color, st.Transparency, st.Thickness = color or UI.Line, transparency or 0, thickness or 1
-		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-		st.Parent = inst
-	end
-end
-
-local function make(class, props, parent)
-	local inst = Instance.new(class)
-	for k, v in props do
-		inst[k] = v
-	end
-	inst.Parent = parent or gui
-	return inst
-end
-
-local function label(props)
-	props.BackgroundTransparency = props.BackgroundTransparency or 1
-	props.TextColor3 = props.TextColor3 or UI.Text
-	props.Font = props.Font or UI.Body
-	props.TextSize = props.TextSize or 16
-	return make("TextLabel", props, props.Parent)
-end
+-- The look lives in client/UI.lua (the kit every client module draws with).
+local Kit = require(script.Parent:WaitForChild("UI"))
+Kit.Init(gui)
+local UI, corner, stroke, make, label = Kit.Theme, Kit.corner, Kit.stroke, Kit.make, Kit.label
+local Stealth = require(script.Parent:WaitForChild("Stealth")) -- light meter, guard marks, takedowns, crouch (client/Stealth.lua)
+local Intro = require(script.Parent:WaitForChild("Intro")) -- the train ride (client/Intro.lua)
 
 -- A safety net for everything built outside panel/addRow: buttons get the theme's shape, font and a hover;
 -- opaque boxes get rounded corners. Callers' colours are kept.
@@ -98,7 +62,7 @@ gui.DescendantAdded:Connect(function(d)
 		if OLD_FONTS[d.Font] then
 			d.Font = UI.Bold
 		end
-		corner(d, 5)
+		corner(d, UI.Radius)
 		local base
 		d.MouseEnter:Connect(function()
 			base = d.BackgroundColor3
@@ -114,7 +78,7 @@ gui.DescendantAdded:Connect(function(d)
 			d.Font = UI.Body
 		end
 	elseif (d:IsA("Frame") or d:IsA("ScrollingFrame")) and d.BackgroundTransparency < 0.6 and (d.Size.X.Offset >= 60 or d.Size.X.Scale >= 0.1) and d.Size.Y.Offset ~= 1 then
-		corner(d, 6)
+		corner(d, UI.Radius)
 	end
 end)
 
@@ -134,47 +98,117 @@ local HUD = Config.Hud
 local BAR_W = HUD.BarWidth
 local barValue = {}
 local function bar(pos, size, color, name)
-	local back = make("Frame", { Size = size, Position = pos, BackgroundColor3 = UI.Panel, BackgroundTransparency = 0.2, BorderSizePixel = 0, ClipsDescendants = true })
-	corner(back, math.min(4, math.floor(size.Y.Offset / 2)))
-	stroke(back, Color3.new(0, 0, 0), 0.5)
+	-- flat track with a hairline edge; the fill has a bright leading edge and leaves a pale trail when it drops
+	local back = make("Frame", { Size = size, Position = pos, BackgroundColor3 = UI.Panel, BackgroundTransparency = 0.25, BorderSizePixel = 0, ClipsDescendants = true })
+	corner(back, 1)
+	stroke(back, UI.Line, 0.4)
+	local trail = make("Frame", { Name = "Trail", Size = UDim2.fromScale(1, 1), BackgroundColor3 = UI.Text, BackgroundTransparency = 0.45, BorderSizePixel = 0 }, back)
 	local fill = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = color, BorderSizePixel = 0 }, back)
-	corner(fill, math.min(4, math.floor(size.Y.Offset / 2)))
-	make("UIGradient", { Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(190, 190, 190)), Rotation = 90 }, fill)
+	corner(fill, 1)
+	make("Frame", { Name = "Edge", Size = UDim2.new(0, 2, 1, 0), AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), BackgroundColor3 = color:Lerp(Color3.new(1, 1, 1), 0.55), BorderSizePixel = 0 }, fill)
+	local shown, token = 1, 0
+	fill:GetPropertyChangedSignal("Size"):Connect(function()
+		local now = fill.Size.X.Scale
+		token += 1
+		local mine = token
+		if now >= shown then
+			trail.Size = UDim2.fromScale(now, 1)
+		else
+			task.delay(0.3, function()
+				if mine == token then
+					Kit.tween(trail, 0.35, { Size = UDim2.fromScale(now, 1) })
+				end
+			end)
+		end
+		shown = now
+	end)
 	if name then
-		label({ Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.fromOffset(4, 0), Text = name, TextSize = 11, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(235, 235, 240), ZIndex = 2, Parent = back })
-		barValue[fill] = label({ Size = UDim2.new(0.5, -4, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), Text = "", TextSize = 11, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(235, 235, 240), ZIndex = 2, Parent = back })
+		for q = 1, 3 do -- quarter notches
+			make("Frame", { Size = UDim2.new(0, 1, 0, 4), Position = UDim2.new(q / 4, 0, 1, -4), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.3, BorderSizePixel = 0, ZIndex = 3 }, back)
+		end
+		label({ Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.fromOffset(6, 0), Text = name, TextSize = 8, Font = UI.Title, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.new(0, 0, 0), TextTransparency = 0.25, ZIndex = 2, Parent = back })
+		barValue[fill] = label({ Size = UDim2.new(0.5, -6, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), Text = "", TextSize = 11, Font = UI.Mono, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = UI.Text, ZIndex = 2, Parent = back })
+		make("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.5, Thickness = 1 }, barValue[fill])
 	end
 	return fill
 end
 local half = BAR_W / 2 - 2
-local chargeFill = bar(UDim2.new(0.5, -BAR_W / 2, 1, -126), UDim2.fromOffset(BAR_W, 4), Color3.fromRGB(80, 170, 255))
-local healthFill = bar(UDim2.new(0.5, -BAR_W / 2, 1, -120), UDim2.fromOffset(half, 14), Color3.fromRGB(220, 70, 70), "HEALTH")
-local staminaFill = bar(UDim2.new(0.5, 2, 1, -120), UDim2.fromOffset(half, 14), Color3.fromRGB(90, 200, 120), "STAMINA")
-local postureFill = bar(UDim2.new(0.5, -BAR_W / 2, 1, -104), UDim2.fromOffset(BAR_W, 5), Color3.fromRGB(240, 150, 60))
-local levelLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0.5, -BAR_W / 2, 1, -146), TextXAlignment = Enum.TextXAlignment.Left, TextSize = 13, Text = "" })
-local flickerLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0.5, 0, 1, -146), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 13, Text = "", TextColor3 = Color3.fromRGB(255, 80, 80) })
+local chargeFill = bar(UDim2.new(0.5, -BAR_W / 2, 1, -126), UDim2.fromOffset(BAR_W, 3), UI.Accent)
+local healthFill = bar(UDim2.new(0.5, -BAR_W / 2, 1, -120), UDim2.fromOffset(half, 14), UI.Harm, "HEALTH")
+local staminaFill = bar(UDim2.new(0.5, 2, 1, -120), UDim2.fromOffset(half, 14), Color3.fromRGB(206, 212, 222), "STAMINA")
+local postureFill = bar(UDim2.new(0.5, -BAR_W / 2, 1, -104), UDim2.fromOffset(BAR_W, 4), UI.Warn)
+local levelLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0.5, -BAR_W / 2, 1, -146), TextXAlignment = Enum.TextXAlignment.Left, TextSize = 11, Font = UI.Mono, TextColor3 = UI.Dim, Text = "" })
+local flickerLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0.5, 0, 1, -146), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 11, Font = UI.Title, Text = "", TextColor3 = UI.Harm })
 pcall(function() -- our own health bar replaces Roblox's; no player list (Tab is the inventory)
 	local StarterGui = game:GetService("StarterGui")
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
 end)
-local banner = label({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 60), TextSize = 22, Font = UI.Title, Text = "", TextTransparency = 1 })
-make("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.35, Thickness = 1.5 }, banner)
-local questLabel = label({ Size = UDim2.fromOffset(360, 24), Position = UDim2.new(1, -380, 0, 20), TextXAlignment = Enum.TextXAlignment.Right, Text = "", TextSize = 15 })
-make("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.5, Thickness = 1 }, questLabel)
+local banner = label({ Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 62), TextSize = 17, Font = UI.Title, Text = "", TextTransparency = 1 })
+local bannerFx = {}
+bannerFx.stroke = make("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 1, Thickness = 1.5 }, banner)
+bannerFx.rule = make("Frame", { Size = UDim2.fromOffset(0, 1), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 98), BackgroundColor3 = UI.Accent, BackgroundTransparency = 1, BorderSizePixel = 0 })
+local questLabel = label({ Size = UDim2.fromOffset(360, 22), Position = UDim2.new(1, -380, 0, 20), TextXAlignment = Enum.TextXAlignment.Right, Text = "", TextSize = 13, Font = UI.Mono, TextColor3 = UI.Text })
+make("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.45, Thickness = 1 }, questLabel)
 
 -- ===== Panels =====
-local function panel(size, position)
+-- A panel is a scrolling list inside a plate: the plate (hairline edge, corner ticks, a title strip) follows the
+-- list wherever its owner puts it. While a panel is up the world behind it dims and softens.
+local panel
+do
+local HEADER = 28
+local dimmed = {}
+local backdrop = make("Frame", { Name = "Backdrop", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Active = false })
+local blur = make("BlurEffect", { Name = "MenuBlur", Size = 0 }, game:GetService("Lighting"))
+local function refreshBackdrop()
+	local on = false
+	for frame in dimmed do
+		if frame.Visible then
+			on = true
+		end
+	end
+	Kit.tween(backdrop, 0.18, { BackgroundTransparency = if on then 0.5 else 1 })
+	Kit.tween(blur, 0.18, { Size = if on then 10 else 0 })
+end
+panel = function(size, position, title, plain)
+	local chrome = Kit.plate({ Name = "Chrome", Visible = false })
+	local head = label({ Size = UDim2.new(1, -24, 0, HEADER), Position = UDim2.fromOffset(12, 0), Text = Kit.spaced(title or "", 1), Font = UI.Title, TextSize = 10,
+		TextColor3 = UI.Accent, TextXAlignment = Enum.TextXAlignment.Left, Parent = chrome })
+	head.Name = "Title"
+	make("Frame", { Size = UDim2.new(1, -2, 0, 1), Position = UDim2.fromOffset(1, HEADER - 1), BackgroundColor3 = UI.Line, BackgroundTransparency = 0.35, BorderSizePixel = 0 }, chrome)
+	make("Frame", { Size = UDim2.fromOffset(3, 10), Position = UDim2.fromOffset(4, (HEADER - 10) / 2), BackgroundColor3 = UI.Accent, BorderSizePixel = 0 }, chrome)
 	local frame = make("ScrollingFrame", {
-		Size = size, Position = position, BackgroundColor3 = UI.Panel, BackgroundTransparency = UI.PanelAlpha, BorderSizePixel = 0, Visible = false,
-		CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 3, ScrollBarImageColor3 = UI.Accent,
+		Size = size, Position = position, BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false,
+		CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 2, ScrollBarImageColor3 = UI.Accent,
 		ScrollingDirection = Enum.ScrollingDirection.Y,
 	})
-	corner(frame, UI.Radius)
-	stroke(frame, UI.Accent, 0.7)
-	make("UIPadding", { PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) }, frame)
-	make("UIListLayout", { Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder }, frame)
-	return frame
+	make("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) }, frame)
+	make("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, frame)
+	local function follow()
+		local at, extent, origin = frame.AbsolutePosition, frame.AbsoluteSize, gui.AbsolutePosition
+		if typeof(at) == "Vector2" and typeof(extent) == "Vector2" and typeof(origin) == "Vector2" then
+			chrome.Position = UDim2.fromOffset(at.X - origin.X, at.Y - origin.Y - HEADER)
+			chrome.Size = UDim2.fromOffset(extent.X, extent.Y + HEADER)
+		else
+			chrome.Position = UDim2.new(position.X.Scale, position.X.Offset, position.Y.Scale, position.Y.Offset - HEADER)
+			chrome.Size = UDim2.new(size.X.Scale, size.X.Offset, size.Y.Scale, size.Y.Offset + HEADER)
+		end
+	end
+	frame:GetPropertyChangedSignal("AbsolutePosition"):Connect(follow)
+	frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(follow)
+	if not plain then
+		dimmed[frame] = true
+	end
+	frame:GetPropertyChangedSignal("Visible"):Connect(function()
+		chrome.Visible = frame.Visible
+		follow()
+		if not plain then
+			refreshBackdrop()
+		end
+	end)
+	follow()
+	return frame, head
+end
 end
 
 local function clear(frame)
@@ -199,9 +233,10 @@ local function addRow(frame, text, buttons, textColor)
 	local width = #buttons * (BW + GAP)
 	if header then
 		local title = text:gsub("^%-%-%s*", ""):gsub("%s*%-%-$", "")
-		label({ Size = UDim2.new(1, 0, 0, 20), Text = title, Font = UI.Title, TextSize = 12, TextColor3 = textColor or UI.Accent,
+		label({ Size = UDim2.new(1, 0, 0, 20), Text = string.upper(title), Font = UI.Title, TextSize = 10, TextColor3 = textColor or UI.Dim,
 			TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, Parent = row })
-		make("Frame", { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, 2), BackgroundColor3 = UI.Line, BorderSizePixel = 0 }, row)
+		make("Frame", { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, 2), BackgroundColor3 = UI.Line, BackgroundTransparency = 0.4, BorderSizePixel = 0 }, row)
+		make("Frame", { Size = UDim2.fromOffset(18, 1), Position = UDim2.new(0, 0, 1, 2), BackgroundColor3 = UI.Accent, BorderSizePixel = 0 }, row)
 		return
 	end
 	label({ Size = UDim2.new(1, -width - 4, 0, 28), Text = text, TextColor3 = textColor or UI.Text, TextXAlignment = Enum.TextXAlignment.Left,
@@ -209,21 +244,21 @@ local function addRow(frame, text, buttons, textColor)
 	for i, b in buttons do
 		local btn = make("TextButton", {
 			Size = UDim2.fromOffset(BW, 24), Position = UDim2.new(1, -(BW + GAP) * (#buttons - i + 1) + GAP, 0, 2), Text = string.upper(b.text),
-			BackgroundColor3 = b.color or UI.Button, TextColor3 = UI.Text, TextSize = 11, Font = UI.Bold,
+			BackgroundColor3 = b.color or UI.Button, TextColor3 = UI.Text, TextSize = 10, Font = UI.Bold,
 		}, row)
-		stroke(btn, Color3.new(1, 1, 1), 0.88)
+		stroke(btn, if b.color then Color3.new(1, 1, 1) else UI.Accent, if b.color then 0.8 else 0.55)
 		btn.Activated:Connect(b.fn)
 	end
 end
 
-local statsPanel = panel(UDim2.fromOffset(280, 240), UDim2.fromOffset(20, 120))
-local invPanel = panel(UDim2.fromOffset(380, 400), UDim2.new(0.5, -190, 0.5, -200))
-local loadoutPanel = panel(UDim2.fromOffset(420, 400), UDim2.new(1, -440, 0.5, -200))
+local statsPanel = panel(UDim2.fromOffset(280, 240), UDim2.fromOffset(20, 148), "Attributes")
+local invPanel = panel(UDim2.fromOffset(380, 400), UDim2.new(0.5, -190, 0.5, -186), "Pack")
+local loadoutPanel = panel(UDim2.fromOffset(420, 400), UDim2.new(1, -440, 0.5, -186), "Loadout")
 
 -- ===== Announcements =====
 local KIND_COLORS = {
-	Emergence = Color3.fromRGB(255, 90, 90), Event = Color3.fromRGB(255, 200, 60),
-	Kill = Color3.fromRGB(230, 230, 230), Info = Color3.fromRGB(120, 220, 255), District = Color3.fromRGB(200, 200, 255),
+	Emergence = UI.Harm, Event = UI.Warn,
+	Kill = UI.Text, Info = UI.Accent, District = UI.Text,
 }
 local bannerToken = 0
 local announce
@@ -241,10 +276,18 @@ announce = function(text, kind)
 	end
 	bannerToken += 1
 	local token = bannerToken
-	banner.Text, banner.TextColor3, banner.TextTransparency = text, KIND_COLORS[kind] or Color3.new(1, 1, 1), 0
+	-- the name comes up out of nothing over a rule that opens from the middle, and goes the same way
+	local color = KIND_COLORS[kind] or UI.Text
+	banner.Text, banner.TextColor3 = string.upper(tostring(text)), color
+	bannerFx.rule.BackgroundColor3, bannerFx.rule.Size = color, UDim2.fromOffset(0, 1)
+	Kit.tween(banner, 0.35, { TextTransparency = 0 })
+	Kit.tween(bannerFx.stroke, 0.35, { Transparency = 0.35 })
+	Kit.tween(bannerFx.rule, 0.5, { Size = UDim2.fromOffset(260, 1), BackgroundTransparency = 0.25 })
 	task.delay(Config.Places.BannerSeconds, function()
 		if token == bannerToken then
-			banner.TextTransparency = 1
+			Kit.tween(banner, 0.7, { TextTransparency = 1 })
+			Kit.tween(bannerFx.stroke, 0.7, { Transparency = 1 })
+			Kit.tween(bannerFx.rule, 0.7, { Size = UDim2.fromOffset(0, 1), BackgroundTransparency = 1 })
 		end
 	end)
 end
@@ -268,7 +311,7 @@ Remotes.StatsChanged.OnClientEvent:Connect(function(data)
 	for name, lbl in statLabels do
 		lbl.Text = ("%s: %d"):format(name, data.Stats[name])
 	end
-	levelLabel.Text = ("Lv %d  (%d/%d xp)"):format(data.Level, data.Xp, data.XpNeeded)
+	levelLabel.Text = ("LV %02d   %d / %d XP"):format(data.Level, data.Xp, data.XpNeeded)
 end)
 end
 
@@ -279,11 +322,11 @@ local lastCondition, lastUpgrades = {}, {}
 local lastGrid = { W = 5, H = 3, Items = {}, Pack = "", Weight = 0, Carry = 15 }
 local CELL = 34
 local TYPE_COLORS = {
-	Material = Color3.fromRGB(90, 96, 110), Consumable = Color3.fromRGB(70, 130, 90), Ammo = Color3.fromRGB(60, 120, 150),
-	Weapon = Color3.fromRGB(150, 90, 60), Armor = Color3.fromRGB(80, 90, 150), Cybernetic = Color3.fromRGB(130, 70, 160), Pack = Color3.fromRGB(120, 100, 60),
+	Material = Color3.fromRGB(46, 52, 62), Consumable = Color3.fromRGB(36, 74, 58), Ammo = Color3.fromRGB(30, 66, 86),
+	Weapon = Color3.fromRGB(92, 58, 40), Armor = Color3.fromRGB(46, 54, 96), Cybernetic = Color3.fromRGB(80, 44, 100), Pack = Color3.fromRGB(78, 66, 40),
 }
 local gridHolder = make("Frame", { Size = UDim2.new(1, -8, 0, 10), BackgroundTransparency = 1, LayoutOrder = 1 }, invPanel)
-local gridFrame = make("Frame", { Position = UDim2.fromOffset(4, 0), BackgroundColor3 = Color3.fromRGB(24, 24, 32), BorderSizePixel = 0 }, gridHolder)
+local gridFrame = make("Frame", { Position = UDim2.fromOffset(4, 0), BackgroundColor3 = Color3.fromRGB(38, 44, 54), BorderSizePixel = 0 }, gridHolder)
 local selected -- index of the stack whose actions are shown
 local drag -- { index, rot, ghost, startPos, moved }
 local iconFolder = ReplicatedStorage:FindFirstChild("Icons")
@@ -348,8 +391,9 @@ local marketPanel, renderMarket -- defined with the market panel below
 local terminalPanel, renderTerminal -- the hideout computer
 local hideout -- the last hideout snapshot (set by Remotes.Hideout)
 -- Tooltip that follows the mouse over a block
-local tooltip = make("TextLabel", { Size = UDim2.fromOffset(220, 44), BackgroundColor3 = Color3.fromRGB(10, 10, 14), BackgroundTransparency = 0.15, TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.Gotham, TextSize = 13, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Visible = false, ZIndex = 60, BorderSizePixel = 0 }, gui)
+local tooltip = make("TextLabel", { Size = UDim2.fromOffset(220, 44), BackgroundColor3 = UI.Panel, BackgroundTransparency = 0.06, TextColor3 = UI.Text, Font = UI.Body, TextSize = 14, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Visible = false, ZIndex = 60, BorderSizePixel = 0 }, gui)
 make("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6) }, tooltip)
+stroke(tooltip, UI.Accent, 0.55)
 local function describe(item)
 	local def = Items.Defs[item.Id]
 	if not def then
@@ -432,7 +476,7 @@ local function drawGridInto(gridF, grid, source, holder)
 	for y = 0, H - 1 do
 		reg.cells[y + 1] = {}
 		for x = 0, W - 1 do
-			reg.cells[y + 1][x + 1] = make("Frame", { Size = UDim2.fromOffset(CELL - 2, CELL - 2), Position = UDim2.fromOffset(x * CELL + 1, y * CELL + 1), BackgroundColor3 = if source == "vault" then Color3.fromRGB(40, 34, 48) else Color3.fromRGB(36, 36, 48), BorderSizePixel = 0 }, gridF)
+			reg.cells[y + 1][x + 1] = make("Frame", { Size = UDim2.fromOffset(CELL - 2, CELL - 2), Position = UDim2.fromOffset(x * CELL + 1, y * CELL + 1), BackgroundColor3 = if source == "vault" then Color3.fromRGB(20, 18, 26) else Color3.fromRGB(13, 16, 21), BorderSizePixel = 0 }, gridF)
 		end
 	end
 	for index, item in grid.Items do
@@ -447,7 +491,7 @@ local function drawGridInto(gridF, grid, source, holder)
 		local cond = lastCondition[item.Id]
 		local frame = make("TextButton", {
 			Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4), Position = UDim2.fromOffset((item.X - 1) * CELL + 2, (item.Y - 1) * CELL + 2),
-			BackgroundColor3 = TYPE_COLORS[def and def.Type] or Color3.fromRGB(90, 90, 90), BorderSizePixel = (source == "pack" and selected == index) and 2 or 0, BorderColor3 = Color3.fromRGB(255, 230, 120),
+			BackgroundColor3 = TYPE_COLORS[def and def.Type] or Color3.fromRGB(90, 90, 90), BorderSizePixel = (source == "pack" and selected == index) and 2 or 0, BorderColor3 = UI.Accent,
 			Text = "", AutoButtonColor = false,
 		}, gridF)
 		if not itemIcon(frame, item.Id, item.Count) then
@@ -686,21 +730,33 @@ local cooldowns = {} -- skillId -> os.clock() when ready
 local hotbar = {}
 local SLOT_KEYS = { "R", "Y", "V" }
 for i = 1, Skills.SlotCount do
-	local box = make("Frame", { Size = UDim2.fromOffset(110, 44), Position = UDim2.new(0.5, -170 + (i - 1) * 116, 1, -94), BackgroundColor3 = Color3.fromRGB(15, 15, 20), BackgroundTransparency = 0.25, BorderSizePixel = 0 })
-	hotbar[i] = label({ Size = UDim2.fromScale(1, 1), TextSize = 13, TextWrapped = true, Text = SLOT_KEYS[i], Parent = box })
+	-- a slot: the key in a cap, the skill's name, seconds left in mono; dim when it cannot be used
+	local box = Kit.plate({ Size = UDim2.fromOffset(110, 34), Position = UDim2.new(0.5, -170 + (i - 1) * 116, 1, -90), BackgroundTransparency = 0.3 })
+	local cap = make("TextLabel", { Size = UDim2.fromOffset(20, 20), Position = UDim2.fromOffset(7, 7), BackgroundColor3 = UI.PanelAlt, BorderSizePixel = 0, Text = SLOT_KEYS[i], Font = UI.Bold, TextSize = 12, TextColor3 = UI.Text }, box)
+	corner(cap, 2)
+	local capStroke = make("UIStroke", { Color = UI.Accent, Transparency = 0.3, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, cap)
+	local name = label({ Size = UDim2.new(1, -62, 1, 0), Position = UDim2.fromOffset(34, 0), TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Text = "", Parent = box })
+	local time = label({ Size = UDim2.fromOffset(26, 34), Position = UDim2.new(1, -30, 0, 0), TextSize = 11, Font = UI.Mono, TextColor3 = UI.Warn, TextXAlignment = Enum.TextXAlignment.Right, Text = "", Parent = box })
+	hotbar[i] = { name = name, time = time, cap = cap, stroke = capStroke }
 end
 
 local function renderHotbar()
 	for i = 1, Skills.SlotCount do
+		local slot = hotbar[i]
 		local id = loadout and loadout.Slots[tostring(i)]
 		local def = id and Skills.Defs[id]
 		if not def then
-			hotbar[i].Text = ("[%s] -"):format(SLOT_KEYS[i])
+			slot.name.Text, slot.time.Text = "", ""
+			slot.cap.TextColor3, slot.stroke.Color = UI.Faint, UI.Line
 		else
 			local ok = Skills.Unlocked(def, loadout.Stats, loadout.Tags)
 			local remaining = (cooldowns[id] or 0) - os.clock()
-			hotbar[i].Text = ("[%s] %s%s"):format(SLOT_KEYS[i], def.Name, if not ok then "\n(locked)" elseif remaining > 0 then ("\n%.0fs"):format(remaining) else "")
-			hotbar[i].TextColor3 = if ok and remaining <= 0 then Color3.new(1, 1, 1) else Color3.fromRGB(130, 130, 130)
+			local ready = ok and remaining <= 0
+			slot.name.Text = string.upper(def.Name)
+			slot.time.Text = if not ok then "--" elseif remaining > 0 then ("%.0f"):format(remaining) else ""
+			slot.name.TextColor3 = if ready then UI.Text else UI.Faint
+			slot.cap.TextColor3 = if ready then UI.Text else UI.Dim
+			slot.stroke.Color = if ready then UI.Accent else UI.Line
 		end
 	end
 end
@@ -760,25 +816,40 @@ Remotes.LoadoutChanged.OnClientEvent:Connect(function(data)
 end)
 
 Remotes.QuestChanged.OnClientEvent:Connect(function(title, progress, count)
-	questLabel.Text = if title then ("%s  [%d/%d]"):format(title, progress, count) else ""
+	questLabel.Text = if title then ("> %s   %d/%d"):format(string.upper(title), progress, count) else ""
 end)
 
 -- ===== Death screen =====
-local deathScreen = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.2, Visible = false, ZIndex = 10 })
-local deathText = label({ Size = UDim2.fromScale(1, 1), TextSize = 28, Text = "", ZIndex = 11, Parent = deathScreen })
+local deathScreen = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Visible = false, ZIndex = 10 })
+do
+local deathTitle = label({ Size = UDim2.new(1, 0, 0, 50), Position = UDim2.new(0, 0, 0.5, -90), Text = Kit.spaced("Flatline", 2), Font = UI.Title, TextSize = 34, TextColor3 = UI.Harm, ZIndex = 11, Parent = deathScreen })
+local deathRule = make("Frame", { Size = UDim2.fromOffset(0, 1), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.5, -30), BackgroundColor3 = UI.Harm, BorderSizePixel = 0, ZIndex = 11 }, deathScreen)
+local deathText = label({ Size = UDim2.new(1, 0, 0, 60), Position = UDim2.new(0, 0, 0.5, -16), TextSize = 14, Font = UI.Mono, TextColor3 = UI.Dim, Text = "", ZIndex = 11, Parent = deathScreen })
+local deathLine = label({ Size = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0, 0, 0.5, 62), TextSize = 15, Font = UI.Mono, TextColor3 = UI.Accent, Text = "", ZIndex = 11, Parent = deathScreen })
 Remotes.Died.OnClientEvent:Connect(function(summary)
 	local m, s = math.floor(summary.Survived / 60), summary.Survived % 60
-	deathText.Text = ("YOU DIED\n\nSurvived %dm %ds  |  Level %d  |  %d kills\n%s\n\n%s"):format(
-		m, s, summary.Level, summary.Kills, if summary.Killer then "Killed by " .. summary.Killer else "",
-		if summary.Uploaded then "> STACK RESIDENT . . . REBOOTING" else "> NO STACK . . . NO RECOVERY")
+	deathText.Text = ("%02d:%02d ALIVE     LV %d     %d KILLS%s"):format(m, s, summary.Level, summary.Kills, if summary.Killer then "\n\n" .. string.upper(tostring(summary.Killer)) else "")
+	deathLine.Text = if summary.Uploaded then "> STACK RESIDENT . . . REBOOTING" else "> NO STACK . . . NO RECOVERY"
+	deathScreen.BackgroundTransparency, deathRule.Size = 1, UDim2.fromOffset(0, 1)
+	deathTitle.TextTransparency, deathText.TextTransparency, deathLine.TextTransparency = 1, 1, 1
 	deathScreen.Visible = true
+	Kit.tween(deathScreen, 0.6, { BackgroundTransparency = 0.12 })
+	Kit.tween(deathTitle, 0.5, { TextTransparency = 0 })
+	Kit.tween(deathRule, 0.8, { Size = UDim2.fromOffset(420, 1) })
+	task.delay(0.5, function()
+		Kit.tween(deathText, 0.5, { TextTransparency = 0 })
+	end)
+	task.delay(1.2, function()
+		Kit.tween(deathLine, 0.5, { TextTransparency = 0 })
+	end)
 	task.delay(Config.RespawnDelay, function()
 		deathScreen.Visible = false
 	end)
 end)
+end
 
 -- ===== Raid HUD =====
-local raidLabel = label({ Size = UDim2.fromOffset(360, 44), Position = UDim2.new(1, -380, 0, 50), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(255, 80, 80), Font = Enum.Font.GothamBold, TextSize = 18, Text = "" })
+local raidLabel = label({ Size = UDim2.fromOffset(360, 44), Position = UDim2.new(1, -380, 0, 50), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = UI.Harm, Font = UI.Title, TextSize = 13, Text = "" })
 Remotes.Raid.OnClientEvent:Connect(function(info)
 	if not info then
 		raidLabel.Text = ""
@@ -792,7 +863,7 @@ Remotes.Raid.OnClientEvent:Connect(function(info)
 end)
 
 -- ===== Grab / throw (G hold-to-charge, H drop) and world effects =====
-local holdLabel = label({ Size = UDim2.fromOffset(360, 40), Position = UDim2.new(0.5, -180, 1, -120), TextSize = 14, TextColor3 = Color3.fromRGB(255, 220, 120), Text = "" })
+local holdLabel = label({ Size = UDim2.fromOffset(360, 40), Position = UDim2.new(0.5, -180, 1, -120), TextSize = 12, Font = UI.Mono, TextColor3 = UI.Warn, Text = "" })
 local chargeStart = nil
 local function nearestGrabbable()
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -1204,6 +1275,9 @@ task.spawn(function()
 end)
 
 Remotes.World.OnClientEvent:Connect(function(kind, a, b, c, d, e)
+	if Stealth.World(kind, a, b, c, d, e) then
+		return
+	end
 	if kind == "Blood" then
 		bloodSpray(a, b, c)
 		if c then
@@ -1258,7 +1332,8 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b, c, d, e)
 	elseif kind == "MarkerClear" and typeof(a) == "string" then
 		setMarker(a, nil)
 	elseif kind == "Bark" and typeof(a) == "Instance" then
-		Sounds.Play("Bark" .. tostring(b) .. tostring(c), a)
+		local name = "Bark" .. tostring(b) .. tostring(c)
+		Sounds.Play(if Sounds.Ids[name] then name else "BarkRaider" .. tostring(c), a) -- anyone without a voice of their own borrows the raider's
 	elseif kind == "Blackout" then
 		-- the grid is down: the sky goes near-black, neon is all that's left; restored after `a` seconds
 		local seconds = tonumber(a) or 60
@@ -1336,6 +1411,9 @@ end)
 local helmetcam = false
 local savedZoom = { min = 0.5, max = 128 }
 local function setHelmetcam(on)
+	if helmetcam == on then
+		return
+	end
 	helmetcam = on
 	task.defer(function()
 		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
@@ -1379,6 +1457,9 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
+Stealth.Init(gui)
+Intro.Init({ Hud = gui, SetFirstPerson = setHelmetcam })
+
 -- ===== Neural Net uplink (tapping into the Front) =====
 local uplinkFrame = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Visible = false, ZIndex = 20 })
 local uplinkText = label({ Size = UDim2.fromScale(1, 1), Text = "", TextSize = 30, Font = Enum.Font.Code, TextColor3 = Color3.fromRGB(170, 90, 255), ZIndex = 21, Parent = uplinkFrame })
@@ -1411,7 +1492,7 @@ Remotes.Uplink.OnClientEvent:Connect(function(phase, seconds, faction)
 end)
 
 -- ===== Recruit app (M at a Neural Net terminal): order a loadout, buy, repair =====
-local app = panel(UDim2.fromOffset(520, 440), UDim2.new(0.5, -260, 0.5, -220))
+local app = panel(UDim2.fromOffset(520, 440), UDim2.new(0.5, -260, 0.5, -206), "Neural Net")
 local snapshot
 local function renderApp()
 	clear(app)
@@ -1468,13 +1549,13 @@ Remotes.RecruitApp.OnClientEvent:Connect(function(snap, open)
 end)
 
 -- ===== Hideout panel (X at your workbench, or O) =====
-local hidePanel = panel(UDim2.fromOffset(560, 460), UDim2.new(0.5, -280, 0.5, -230))
+local hidePanel = panel(UDim2.fromOffset(560, 460), UDim2.new(0.5, -280, 0.5, -216), "Hideout")
 
 -- Loot containers: searching a crate, stash or corpse opens its grid here; drag out or Take all.
-local containerPanel = panel(UDim2.fromOffset(280, 300), UDim2.new(0.5, -480, 0.5, -150))
+local containerPanel = panel(UDim2.fromOffset(280, 300), UDim2.new(0.5, -480, 0.5, -136), "Container")
 
 -- ===== Verdant Market (the Reach's trader; World "Market" / "MarketClose", Remotes.Buy) =====
-marketPanel = panel(UDim2.fromOffset(340, 360), UDim2.new(1, -360, 0.5, -180))
+marketPanel = panel(UDim2.fromOffset(340, 360), UDim2.new(1, -360, 0.5, -166), "Market")
 renderMarket = function(m)
 	clear(marketPanel)
 	addRow(marketPanel, ("VERDANT MARKET  -  %d credits"):format(m.Credits or 0), {}, Color3.fromRGB(170, 255, 170))
@@ -1487,7 +1568,7 @@ renderMarket = function(m)
 end
 
 -- ===== the hideout computer (World "Terminal" / "TerminalClose", Remotes.Terminal) =====
-terminalPanel = panel(UDim2.fromOffset(560, 470), UDim2.new(0.5, -280, 0.5, -235))
+terminalPanel = panel(UDim2.fromOffset(560, 470), UDim2.new(0.5, -280, 0.5, -221), "Terminal")
 local GREEN = Color3.fromRGB(80, 230, 140)
 local DIM = Color3.fromRGB(150, 150, 160)
 renderTerminal = function(t)
@@ -1556,7 +1637,7 @@ renderContainer = function()
 end
 
 -- F2: dev tools (only when Config.Dev.Enabled; the server refuses everything otherwise)
-local devPanel = panel(UDim2.fromOffset(420, 520), UDim2.new(1, -440, 0, 120))
+local devPanel = panel(UDim2.fromOffset(420, 520), UDim2.new(1, -440, 0, 148), "Dev", true)
 local function buildDevPanel()
 	clear(devPanel)
 	local function dev(action, arg)
@@ -1567,6 +1648,7 @@ local function buildDevPanel()
 	addRow(devPanel, "DEV TOOLS (F2)", {}, Color3.fromRGB(255, 80, 220))
 	addRow(devPanel, "Me", { { text = "Heal", fn = dev("Heal") }, { text = "Mats", fn = dev("Materials") }, { text = "Die", fn = dev("Kill"), color = Color3.fromRGB(140, 40, 40) } })
 	addRow(devPanel, "World", { { text = "Open", fn = dev("Open") } })
+	addRow(devPanel, "Train intro", { { text = "Replay", fn = dev("Intro") }, { text = "Leave", fn = dev("Intro", "Skip") } })
 	addRow(devPanel, "Go to", { { text = "Armory", fn = dev("Teleport", "Armory") }, { text = "Gate", fn = dev("Teleport", "RaidGate") } })
 	for _, d in { "Transit Hub", "Corp Plaza", "The Sprawl", "Blackout Zone" } do
 		addRow(devPanel, d, { { text = "Go", fn = dev("Teleport", "District_" .. d) }, { text = "Net", fn = dev("Teleport", "Terminal_" .. d) } })
@@ -1682,42 +1764,31 @@ Remotes.Hideout.OnClientEvent:Connect(function(state, open)
 	renderHideout()
 end)
 
--- ===== Controls card (F1 toggles; shown for the first minute) =====
-local controls = label({ Size = UDim2.fromOffset(330, 230), Position = UDim2.new(1, -350, 1, -260), BackgroundTransparency = 0.35, BackgroundColor3 = Color3.new(0, 0, 0),
-	TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextSize = 14, Font = Enum.Font.Code,
-	Text = table.concat({ "CONTROLS  (F1 hides)", "LMB attack   RMB heavy   F block/parry", "Q dodge   Shift sprint   E flicker   Z feint",
-		"R / Y / V skills   G grab, hold to throw   H drop", "X interact / loot   M devour remains", "Tab inventory   L loadout   J attributes",
-		"O hideout   N recruit app   P helmetcam" }, "\n") })
-task.delay(60, function()
+-- ===== Controls card (F1 toggles; shown for the first two minutes) =====
+local controls = Kit.plate({ Name = "Controls", Size = UDim2.fromOffset(336, 214), Position = UDim2.new(1, -356, 1, -244), BackgroundTransparency = 0.2 })
+do
+	label({ Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(12, 2), Text = Kit.spaced("Controls", 1), Font = UI.Title, TextSize = 10, TextColor3 = UI.Accent, TextXAlignment = Enum.TextXAlignment.Left, Parent = controls })
+	label({ Size = UDim2.fromOffset(60, 24), Position = UDim2.new(1, -70, 0, 2), Text = "F1", Font = UI.Mono, TextSize = 11, TextColor3 = UI.Faint, TextXAlignment = Enum.TextXAlignment.Right, Parent = controls })
+	make("Frame", { Size = UDim2.new(1, -2, 0, 1), Position = UDim2.fromOffset(1, 26), BackgroundColor3 = UI.Line, BackgroundTransparency = 0.35, BorderSizePixel = 0 }, controls)
+	local KEYS = {
+		{ "LMB", "attack" }, { "RMB", "heavy" }, { "F", "guard" }, { "E", "flicker" }, { "Q", "dodge" }, { "Z", "feint" },
+		{ "SHIFT", "sprint" }, { "C", "crouch" }, { "X", "use / takedown" }, { "B", "whistle" }, { "R Y V", "skills" }, { "G", "grab, throw" },
+		{ "H", "drop" }, { "M", "devour" }, { "TAB", "pack" }, { "L", "loadout" }, { "J", "attributes" }, { "O", "hideout" },
+		{ "N", "net" }, { "P", "helmetcam" },
+	}
+	for i, pair in KEYS do
+		local col, row = (i - 1) % 2, math.floor((i - 1) / 2)
+		local x, y = 12 + col * 162, 32 + row * 18
+		label({ Size = UDim2.fromOffset(48, 18), Position = UDim2.fromOffset(x, y), Text = pair[1], Font = UI.Mono, TextSize = 11, TextColor3 = UI.Text, TextXAlignment = Enum.TextXAlignment.Left, Parent = controls })
+		label({ Size = UDim2.fromOffset(108, 18), Position = UDim2.fromOffset(x + 50, y), Text = pair[2], TextSize = 13, TextColor3 = UI.Dim, TextXAlignment = Enum.TextXAlignment.Left, Parent = controls })
+	end
+end
+task.delay(120, function()
 	controls.Visible = false
 end)
 
--- ===== Tutorial panel =====
-local tutorialPanel = make("Frame", { Size = UDim2.fromOffset(560, 112), Position = UDim2.new(0.5, -280, 0, 110), BackgroundColor3 = Color3.fromRGB(10, 14, 20), BackgroundTransparency = 0.15, Visible = false })
-make("UIStroke", { Color = Color3.fromRGB(0, 220, 255), Thickness = 1.5 }, tutorialPanel)
-do
-local tutorialTitle = label({ Size = UDim2.new(1, -110, 0, 26), Position = UDim2.fromOffset(12, 6), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(0, 220, 255), Font = Enum.Font.GothamBold, TextSize = 18, Text = "", Parent = tutorialPanel })
-local tutorialText = label({ Size = UDim2.new(1, -24, 1, -40), Position = UDim2.fromOffset(12, 32), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextSize = 16, Text = "", Parent = tutorialPanel })
-local tutorialStep = label({ Size = UDim2.fromOffset(60, 26), Position = UDim2.new(1, -140, 0, 6), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(150, 150, 160), TextSize = 14, Text = "", Parent = tutorialPanel })
-make("TextButton", { Size = UDim2.fromOffset(60, 22), Position = UDim2.new(1, -72, 0, 8), Text = "Skip", BackgroundColor3 = Color3.fromRGB(70, 70, 85), TextColor3 = Color3.new(1, 1, 1), TextSize = 13 }, tutorialPanel).Activated:Connect(function()
-	Remotes.TutorialSkip:FireServer()
-end)
-Remotes.Tutorial.OnClientEvent:Connect(function(index, total, title, text)
-	if not index then
-		tutorialPanel.Visible = false
-		return
-	end
-	tutorialPanel.Visible = true
-	tutorialStep.Text = ("%d/%d"):format(index, total)
-	tutorialTitle.Text, tutorialText.Text = title, text
-end)
-end
-
 -- ===== Phase =====
 Remotes.PhaseChanged.OnClientEvent:Connect(function(phase)
-	if phase == "Open" then
-		tutorialPanel.Visible = false
-	end
 	if phase == "Emerging" then
 		local cc = make("ColorCorrectionEffect", {}, game:GetService("Lighting"))
 		game:GetService("TweenService"):Create(cc, TweenInfo.new(Config.EmergenceCinematic), { Brightness = -0.4, Saturation = -1 }):Play()
@@ -2250,12 +2321,19 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 	elseif kind == "Bolt" then
 		local from = typeof(a) == "Instance" and a:FindFirstChild("HumanoidRootPart")
 		if from then
-			local length = (b - from.Position).Magnitude
+			-- c = the weapon's Noise when it fires a round and not an arc: a faint streak and a cough, no beam
+			local quiet = type(c) == "number"
+			local muzzle = from.Position + Vector3.new(0, if quiet then 1.2 else 0, 0)
+			local length = (b - muzzle).Magnitude
 			local beam = make("Part", {
-				Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon, Color = Color3.fromRGB(120, 200, 255),
-				Size = Vector3.new(0.2, 0.2, length), CFrame = CFrame.lookAt(from.Position, b) * CFrame.new(0, 0, -length / 2),
+				Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon,
+				Color = if quiet then Color3.fromRGB(255, 236, 200) else Color3.fromRGB(120, 200, 255), Transparency = if quiet then 0.6 else 0,
+				Size = Vector3.new(if quiet then 0.05 else 0.2, if quiet then 0.05 else 0.2, length), CFrame = CFrame.lookAt(muzzle, b) * CFrame.new(0, 0, -length / 2),
 			}, workspace)
-			Debris:AddItem(beam, 0.1)
+			Debris:AddItem(beam, if quiet then 0.05 else 0.1)
+			if quiet then
+				Sounds.Play("ShotQuiet", from)
+			end
 		end
 	elseif kind == "Damage" and typeof(a) == "Instance" and type(b) == "table" then
 		-- our hit landed: float the number off the victim and nudge the camera
@@ -2450,7 +2528,7 @@ menuOpen = function()
 	return false
 end
 aimActive = function()
-	return aimOn and not helmetcam and not menuOpen() and not UserInputService:IsKeyDown(AIM.FreeCursorKey)
+	return aimOn and not helmetcam and not Intro.Active() and not menuOpen() and not UserInputService:IsKeyDown(AIM.FreeCursorKey)
 end
 local function aimPreset()
 	local char = player.Character
@@ -2461,7 +2539,8 @@ applyAim = function()
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if hum then
-		hum.CameraOffset = if aimOn and not helmetcam then aimPreset().ShoulderOffset else Vector3.zero
+		local crouch = if Stealth.Crouched() then Vector3.new(0, -1.3, 0) else Vector3.zero
+		hum.CameraOffset = (if aimOn and not helmetcam then aimPreset().ShoulderOffset else Vector3.zero) + crouch
 		hum.AutoRotate = not aimOn
 	end
 	GameSettings.RotationType = if aimOn then Enum.RotationType.CameraRelative else Enum.RotationType.MovementRelative
@@ -2506,7 +2585,12 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 RunService:BindToRenderStep("EndeavorAim", 202, function() -- after the camera scripts, which reset MouseBehavior
-	if aimOn then
+	if Intro.Active() then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+	elseif helmetcam then
+		-- first person: the view is the mouse, unless a panel needs the cursor
+		UserInputService.MouseBehavior = if menuOpen() or UserInputService:IsKeyDown(AIM.FreeCursorKey) then Enum.MouseBehavior.Default else Enum.MouseBehavior.LockCenter
+	elseif aimOn then
 		UserInputService.MouseBehavior = if aimActive() then Enum.MouseBehavior.LockCenter else Enum.MouseBehavior.Default
 	end
 end)
@@ -2526,6 +2610,9 @@ local function bindAim(char)
 		end
 	end
 	char:GetAttributeChangedSignal("Weapon"):Connect(refresh)
+	char:GetAttributeChangedSignal("Crouched"):Connect(function()
+		task.defer(applyAim)
+	end)
 	task.delay(0.5, refresh, true)
 end
 player.CharacterAdded:Connect(bindAim)
@@ -3003,15 +3090,20 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		return
 	end
 	local key = input.KeyCode
+	if Intro.Active() then
+		return -- the ride is watched, not played
+	end
 	if drag and key == Enum.KeyCode.R then
 		drag.rot = 1 - drag.rot -- rotate the stack you are carrying
 		clearPreview()
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		Remotes.Attack:FireServer()
+		Remotes.Attack:FireServer(cameraDirection()) -- a shot goes where you look; a swing ignores it
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-		Remotes.Heavy:FireServer()
+		Remotes.Heavy:FireServer(cameraDirection())
+	elseif Stealth.Key(key) then
+		-- C crouch, B whistle, X a takedown on offer
 	elseif key == Enum.KeyCode.F then
 		Remotes.Block:FireServer(true)
 	elseif key == Enum.KeyCode.E then

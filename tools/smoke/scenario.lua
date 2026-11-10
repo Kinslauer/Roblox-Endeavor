@@ -45,118 +45,139 @@ local function root() return char().HumanoidRootPart end
 local function data() return nil end
 
 run(1)
-local plot = workspace_:FindFirstChild("Prologue_1")
-local origin = plot:FindFirstChild("Console").Position - M.V3.new(20, 3.5, -20)
-local function lastTutorial() local last for _, e in M.FireLog do if e[1] == "Tutorial" then last = e end end return last end
-local function step() local e = lastTutorial(); return e and e[3], e and e[5] end
 
-check("tutorial starts at step 1", step() == 1)
-
--- 1 move
-root().CFrame = M.CF.new(plot.Console.Position + M.V3.new(2, 0, 0)); run(1)
-check("step 2 after moving to console", step() == 2)
-
--- 2 attributes
-for _ = 1, 5 do Remotes.Allocate:FireServer("Intelligence") end
-run(1)
-check("step 3 after spending 5 points", step() == 3)
-
--- 3 loot
-local locker = plot:FindFirstChild("Lootable", true)
+-- ===== The arrival: the train, the station, stealth and takedowns =====
+local PlayerData_ = M.mockEnv.__require(SSS.Server.Common.PlayerData)
+local Stealth = M.mockEnv.__require(SSS.Server.Stealth)
+local Tutorial_ = M.mockEnv.__require(SSS.Server.Tutorial)
+local Rules = M.mockEnv.__require(RS.Shared.Stealth)
+local Combat = M.mockEnv.__require(SSS.Server.Combat)
+local Inventory0 = M.mockEnv.__require(SSS.Server.Inventory)
+local CS = game_:GetService("CollectionService")
+local station = workspace_:FindFirstChild("Subway_1")
+check("arrival: the station is built for a new conduit", station ~= nil)
+local lvl = Tutorial_.Level(player)
+local function sawIntro(what) for _, e in M.FireLog do if e[1] == "Intro" and e[3] == what then return true end end return false end
+check("arrival: the ride plays (seated, held, doors shut)", sawIntro("Play") and char():GetAttribute("Cutscene") == true and root().Anchored == true and lvl.Doors[1].CanCollide == true)
+check("arrival: the kit is the silenced pistol", PlayerData_.Get(player).Equipped == "Whisper" and Inventory0.Count(player, "Subsonic") == 9)
+check("arrival: nobody notices a rider", player:GetAttribute("Stealth") == nil)
+Remotes.Intro:FireServer("Done"); run(0.5)
+check("arrival: the ride ends: free, doors open, the station is live", char():GetAttribute("Cutscene") == nil and root().Anchored == false and lvl.Doors[1].CanCollide == false and player:GetAttribute("Stealth") == true)
+local guardsHere = Stealth.Guards(station)
+check("stealth: seven guards are stationed", #guardsHere == 7)
+local function guardNear(pos) local best, bd for _, g in Stealth.Guards(station) do local d = (g.HumanoidRootPart.Position - pos).Magnitude if not bd or d < bd then best, bd = g, d end end return best end
+local O = lvl.Origin
+local g1 = guardNear(O + M.V3.new(13, 3, 19))
+-- light: under a lamp you are lit; in the corridor you are not
+root().CFrame = M.CF.new(O + M.V3.new(12, 3, -30)); run(0.6)
+local lit = char():GetAttribute("Exposure")
+root().CFrame = M.CF.new(O + M.V3.new(-2, 3, -2)); run(0.6)
+local dark = char():GetAttribute("Exposure")
+print("   exposure lit/dark", lit, dark)
+check("stealth: a lamp lights you, the dark hides you", lit ~= nil and dark ~= nil and lit > 0.5 and dark < 0.2)
+check("stealth: the dark shortens a guard's sight", Rules.SightRange(dark, false, false) < 15 and Rules.SightRange(1, false, false) > 55 and Rules.SightRange(1, true, false) < Rules.SightRange(1, false, false))
+-- a shot puts a lamp out
+local lampA
+for _, l in lvl.Lamps do if (l.Position - (O + M.V3.new(12, 13.5, -30))).Magnitude < 1 then lampA = l end end
+Combat.Shot:Fire(char(), lampA, lampA.Position, { Noise = 7 }); run(0.3)
+root().CFrame = M.CF.new(O + M.V3.new(12, 3, -30)); run(0.6)
+check("stealth: a shot puts a lamp out and the dark comes back", lampA:GetAttribute("Broken") == true and lampA:FindFirstChildOfClass("PointLight").Enabled == false and char():GetAttribute("Exposure") < 0.2)
+-- crouch
+local walk0 = char().Humanoid.WalkSpeed
+Remotes.Crouch:FireServer(true); run(0.2)
+check("stealth: C crouches (slower, flagged)", char():GetAttribute("Crouched") == true and char().Humanoid.WalkSpeed < walk0 * 0.7)
+Remotes.Crouch:FireServer(false); run(0.2)
+-- behind a guard, standing still: unseen; the takedown is on offer; in front it is not
+local g1root = g1.HumanoidRootPart
+local behind = g1root.Position - g1root.CFrame.LookVector * 4
+root().CFrame = M.CF.lookAt(behind, g1root.Position); run(2)
+check("stealth: behind his back he does not make you", Stealth.StateOf(g1) == "Patrol")
+check("takedown: from behind it is on offer, from the front it is not", Rules.TakedownKind(root().CFrame, g1root.CFrame, "Patrol", {}) == "Rear"
+	and Rules.TakedownKind(M.CF.new(g1root.Position + g1root.CFrame.LookVector * 4), g1root.CFrame, "Patrol", {}) == nil
+	and Rules.TakedownKind(root().CFrame, g1root.CFrame, "Alert", {}) == nil)
+Remotes.Takedown:FireServer(g1); run(0.2)
+check("takedown: you are held in it", char():GetAttribute("Takedown") == "Rear" and root().Anchored == true)
+run(2.2)
+check("takedown: he is down and stays down, you are free", Stealth.StateOf(g1) == "Down" and g1:GetAttribute("Downed") == true and char():GetAttribute("Takedown") == nil and root().Anchored == false)
+-- in the light, in front of one: he makes you by degrees, then it is a fight
+local g2 = guardNear(O + M.V3.new(84, 3, 30))
+root().CFrame = M.CF.new(O + M.V3.new(66, 3, 30)); run(0.4)
+local st1 = Stealth.StateOf(g2)
+local alerted = run(6, function() return Stealth.StateOf(g2) == "Alert" end)
+check("stealth: lit and in front of him, he makes you (by degrees)", st1 ~= "Alert" and alerted)
+check("takedown: not on an alerted guard", (function() Remotes.Takedown:FireServer(g2); run(0.2); return char():GetAttribute("Takedown") == nil end)())
+-- caught: back to the last checkpoint, he goes back to his post, the downed one stays down
+root().CFrame = M.CF.new(O + M.V3.new(40, 3, 30)); run(1)
+char().Humanoid.Health = 0; run(5)
+check("arrival: caught, you restart at the checkpoint with nothing lost", (root().Position - (O + M.V3.new(40, 3, 30))).Magnitude < 6 and PlayerData_.Get(player).Equipped == "Whisper" and not sawIntro("End"))
+check("stealth: the guards go back to their rounds", Stealth.StateOf(g2) == "Patrol" and Stealth.StateOf(g1) == "Down")
+-- the fuse box: the hall goes dark, he walks over to fix it, and his face is in it
+local hallLamp
+for _, l in lvl.Lamps do if l:GetAttribute("Circuit") == "Hall" then hallLamp = l end end
+root().CFrame = M.CF.new(O + M.V3.new(49, 3, 24)); run(0.3)
+lvl.Breaker:FindFirstChildOfClass("ProximityPrompt").Triggered:Fire(player); run(0.3)
+check("stealth: the fuse box cuts the hall", hallLamp:GetAttribute("Lit") == false and hallLamp:FindFirstChildOfClass("PointLight").Enabled == false)
+check("stealth: a guard comes to fix it", Stealth.StateOf(g2) == "Search")
+root().CFrame = M.CF.new(O + M.V3.new(52, 3, 12)); run(0.2)
+g2.HumanoidRootPart.CFrame = M.CF.lookAt(O + M.V3.new(49.6, 3, 20), O + M.V3.new(46, 3, 20)); run(0.3)
+root().CFrame = M.CF.new(O + M.V3.new(52, 3, 21))
+check("takedown: beside the fuse box it is the fuse box", Rules.TakedownKind(root().CFrame, g2.HumanoidRootPart.CFrame, "Search") == "Panel")
+Remotes.Takedown:FireServer(g2); run(2.4)
+local sawPanel = false
+for _, e in M.FireLog do if e[1] == "World" and e[3] == "Takedown" and e[4] == "Panel" then sawPanel = true end end
+check("takedown: the environmental one puts him down", sawPanel and Stealth.StateOf(g2) == "Down")
+-- a whistle pulls the patroller; a body found raises him
+local g3 = guardNear(O + M.V3.new(99, 3, 30))
+g3.HumanoidRootPart.CFrame = M.CF.lookAt(O + M.V3.new(99, 3, 50), O + M.V3.new(99, 3, 60)); run(0.2)
+root().CFrame = M.CF.new(O + M.V3.new(88, 3, 44)); run(0.2)
+Remotes.Whistle:FireServer(); run(0.3)
+check("stealth: a whistle brings him over to look", Stealth.StateOf(g3) == "Search")
+Stealth.Reset(station); run(0.2)
+g3.HumanoidRootPart.CFrame = M.CF.lookAt(O + M.V3.new(60, 3, 20), g2.HumanoidRootPart.Position); run(0.2)
+Stealth.SetCircuit(station, "Hall", true); run(0.5)
+char():PivotTo(M.CF.new(O + M.V3.new(100, 3, 2))); run(1)
+check("stealth: a guard who finds a body goes looking", Stealth.StateOf(g3) == "Search" or Stealth.StateOf(g3) == "Alert")
+-- from above
+local g5 = guardNear(O + M.V3.new(130, -5, -71))
+root().CFrame = M.CF.new(O + M.V3.new(130, 2, -64)); run(0.3)
+check("takedown: from the walkway above it is a drop", Rules.TakedownKind(root().CFrame, g5.HumanoidRootPart.CFrame, Stealth.StateOf(g5)) == "Drop")
+Remotes.Takedown:FireServer(g5); run(1.6)
+check("takedown: the drop puts him down", Stealth.StateOf(g5) == "Down")
+-- the control room: the locker, the manifest, the lift
+local locker = station:FindFirstChild("Lootable", true)
 check("locker exists", locker ~= nil)
 locker:FindFirstChildOfClass("ProximityPrompt").Triggered:Fire(player); run(0.1)
 check("the locker opens as a container with its items", (function()
 	local Loot_ = M.mockEnv.__require(SSS.Server.Loot)
 	local c = Loot_.Contents(locker)
-	return (c.ScrapVest or 0) == 1 and (c.Cloth or 0) == 2
+	return (c.ScrapVest or 0) == 1 and (c.RebarBlade or 0) == 1
 end)())
 root().CFrame = M.CF.new(locker.Position + M.V3.new(3, 0, 0)); run(0.1) -- taking needs you within reach
 Remotes.ContainerTake:FireServer(locker:GetAttribute("ContainerKey"), 0); run(0.1)
-local prof0 = M.mockEnv.__require(SSS.Server.Common.PlayerData).Get(player)
+local prof0 = PlayerData_.Get(player)
 check("nothing can be taken before it is revealed", prof0.Inventory.ScrapVest == nil and locker.Parent ~= nil)
 locker:FindFirstChildOfClass("ProximityPrompt").Triggered:Fire(player) -- (re)start the search while standing here
 run(1.2)
 check("the search reveals items over time", (function()
 	local Loot_ = M.mockEnv.__require(SSS.Server.Loot)
-	-- after ~1.2s at least one small item should be revealed: take all moves only revealed ones
 	Remotes.ContainerTake:FireServer(locker:GetAttribute("ContainerKey"), 0); run(0.1)
 	local c = Loot_.Contents(locker)
 	local left = 0
 	for _, n in c do left += n end
-	return left < 4 -- 4 items were inside (1 vest, 2 cloth, 1 scrap): something came out
+	return left < 20 -- 20 things were inside: something came out
 end)())
-M.mockEnv.__require(SSS.Server.Loot).RevealAll(locker, player) -- the rest, without waiting (the dummy timing below is tight)
-Remotes.ContainerTake:FireServer(locker:GetAttribute("ContainerKey"), 0); run(0.2)
-run(1)
-check("step 4 after looting", step() == 4)
-
--- 4 craft
-Remotes.Craft:FireServer("Medkit"); run(1)
-check("step 5 after crafting medkit", step() == 5)
-
--- 5 armor
-Remotes.EquipItem:FireServer("ScrapVest"); run(1)
-check("step 6 after wearing armor", step() == 6)
-
--- 6 attack x4 (face the dummy)
-local dummy = plot:FindFirstChild("Training Dummy")
-local function face() local dp = dummy.HumanoidRootPart.Position; root().CFrame = M.CF.lookAt(dummy.HumanoidRootPart.Position + M.V3.new(0, 0, 5), dp) end
-face()
-local dummyHealth0 = dummy.Humanoid.Health
-for _ = 1, 10 do if step() ~= 6 + 1 or true then Remotes.Attack:FireServer(); run(0.75) end if step() == 7 then break end end
-check("dummy took damage", dummy.Humanoid.Health < dummyHealth0)
-check("step 7 after 4 hits", step() == 7)
-
--- 7 heavy
-run(1.5); Remotes.Heavy:FireServer(); run(1.5)
-check("step 8 after heavy", step() == 8)
-
--- 8 flicker -> black flash: flick just before each swing (needs >=3 chained flicked hits)
-local flashSeen = false
-for _ = 1, 8 do
-	run(0.5)
-	Remotes.Flicker:FireServer(); Remotes.Attack:FireServer(); run(0.4)
-	for _, e in M.FireLog do if e[3] == "BlackFlash" then flashSeen = true end end
-	if step() == 9 then break end
-end
-check("black flash landed (step 9)", flashSeen and step() == 9)
-
-local Combat = M.mockEnv.__require(SSS.Server.Combat)
--- 9 dodge: dummy telegraphs with a Highlight; dodge in the middle of the telegraph
-local function telegraphStart() return dummy:FindFirstChildOfClass("Highlight") ~= nil end
-local function waitTelegraph() return run(8, telegraphStart) end
-local dodged = 0
-for _ = 1, 4 do
-	if step() ~= 9 then break end
-	waitTelegraph(); run(0.55); face(); Remotes.Dodge:FireServer(M.V3.new(1, 0, 0))
-	run(1.2)
-end
-check("step 10 after dodges", step() == 10)
-
--- 10 parry: press block just before the strike lands (telegraph 0.8s)
-for _ = 1, 5 do
-	if step() ~= 10 then break end
-	waitTelegraph(); face(); run(0.62); Remotes.Block:FireServer(true); run(0.45); Remotes.Block:FireServer(false); run(0.5)
-end
-check("step 11 after parries", step() == 11)
-
--- 11 block: hold block through the strike
-for _ = 1, 5 do
-	if step() ~= 11 then break end
-	waitTelegraph(); face(); Remotes.Block:FireServer(true); run(1.5); Remotes.Block:FireServer(false); run(0.5)
-end
-check("step 12 after blocks", step() == 12)
-
--- 12 feint: start a swing then cancel in the windup
-for _ = 1, 4 do
-	if step() ~= 12 then break end
-	run(1); Remotes.Attack:FireServer(); run(0.05); Remotes.Feint:FireServer(); run(0.5)
-end
-check("step 13 (skill) after feints", step() == 13)
-
--- 13 skill (slot 1 auto-filled: Intelligence 5 unlocks Surge)
-run(1); Remotes.UseSkill:FireServer(1); run(1)
-check("step 14 after skill", step() == 14)
+M.mockEnv.__require(SSS.Server.Loot).RevealAll(locker, player)
+Remotes.ContainerTake:FireServer(locker:GetAttribute("ContainerKey"), 0); run(0.3)
+check("the locker empties into the pack", prof0.Inventory.ScrapVest == 1 and prof0.Inventory.RebarBlade == 1)
+check("arrival: the lift is dead before the manifest", lvl.LiftPrompt.Enabled == false)
+lvl.LiftPrompt.Triggered:Fire(player); run(0.2)
+check("arrival: and stays shut", not sawIntro("End"))
+lvl.ConsolePrompt.Triggered:Fire(player); run(0.2)
+local sawManifest = false
+for _, e in M.FireLog do if e[1] == "World" and e[3] == "Fragment" and e[4] == "Manifest" then sawManifest = true end end
+check("arrival: the manifest is copied and the lift wakes", sawManifest and lvl.LiftPrompt.Enabled == true and prof0.Intro.Intel == true)
+lvl.LiftPrompt.Triggered:Fire(player); run(0.3)
+check("arrival: the lift ends it", sawIntro("End") and prof0.Intro.Done == true and player:GetAttribute("Stealth") == nil)
 
 -- finale: world should open after min prologue time since all players ready
 local openedAt = nil
@@ -168,11 +189,95 @@ run(8)
 local pos = root().CFrame.Position
 check("player teleported into the arena", math.abs(pos.Y - 6.9) < 3 or pos.Y < 100)
 print("   player position after emergence:", pos.X, pos.Y, pos.Z)
-check("plot removed", workspace_:FindFirstChild("Prologue_1") == nil)
-local last = lastTutorial()
-check("tutorial panel cleared", last and last[3] == nil)
+run(8)
+check("arrival: the station is cleared away", workspace_:FindFirstChild("Subway_1") == nil)
+
+-- ===== The drill: the melee basics against a dummy that hits back =====
+Remotes.EquipItem:FireServer("PipeClub"); run(0.3)
+Inventory0.Add(player, "Cloth", 2)
+for _ = 1, 5 do Remotes.Allocate:FireServer("Intelligence") end
+run(0.5)
+Remotes.Craft:FireServer("Medkit"); run(0.5)
+check("crafting a medkit", Inventory0.Count(player, "Medkit") >= 3)
+Remotes.EquipItem:FireServer("ScrapVest"); run(0.5)
+check("wearing armor", next(prof0.Armor) ~= nil)
+local NPCs_ = M.mockEnv.__require(SSS.Server.NPCs)
+local dummy, dummyHum, dummyRoot = NPCs_.BuildRig("Training Dummy", { Health = 1000, Speed = 0 })
+dummyRoot.Anchored = true
+dummy:PivotTo(M.CF.new(root().Position + M.V3.new(0, 0, -14)))
+dummy.Parent = workspace_
+local counts, strikeOn, heavyUntil = {}, false, 0
+local function bump(k) counts[k] = (counts[k] or 0) + 1 end
+Combat.Resolved.Event:Connect(function(attacker, victim, result)
+	if victim == char() and attacker == dummy then bump(result)
+	elseif attacker == char() and victim == dummy and (result == "hit" or result == "guardbreak") then
+		bump("dummyHit"); if M.setNow() < heavyUntil then bump("heavyHit") end
+	end
+end)
+Combat.Used.Event:Connect(function(name, who) if who == player then if name == "Heavy" then heavyUntil = M.setNow() + 1.5 else bump(name) end end end)
+M.task.spawn(function()
+	while dummy.Parent do
+		M.task.wait(2.8)
+		if dummyHum.Health < 500 then dummyHum.Health = 1000 end
+		if strikeOn and char() and char().Humanoid.Health > 0 then
+			if char().Humanoid.Health < 40 then char().Humanoid.Health = 80 end
+			local warn = M.newInstance("Highlight"); warn.Parent = dummy
+			M.task.wait(0.8)
+			warn:Destroy()
+			if strikeOn then Combat.Damage(dummy, char(), 6, { Posture = 12 }) end
+		end
+	end
+end)
+local function face() local dp = dummy.HumanoidRootPart.Position; root().CFrame = M.CF.lookAt(dummy.HumanoidRootPart.Position + M.V3.new(0, 0, 5), dp) end
+face()
+local dummyHealth0 = dummy.Humanoid.Health
+for _ = 1, 10 do Remotes.Attack:FireServer(); run(0.75); if (counts.dummyHit or 0) >= 4 then break end end
+check("dummy took damage", dummy.Humanoid.Health < dummyHealth0)
+check("four light hits land", (counts.dummyHit or 0) >= 4)
+run(1.5); Remotes.Heavy:FireServer(); run(1.5)
+check("a heavy lands", (counts.heavyHit or 0) >= 1)
+char():SetAttribute("Charge", 60)
+local flashSeen = false
+for _ = 1, 8 do
+	run(0.5)
+	char():SetAttribute("Charge", 60)
+	Remotes.Flicker:FireServer(); Remotes.Attack:FireServer(); run(0.4)
+	for _, e in M.FireLog do if e[3] == "BlackFlash" then flashSeen = true end end
+	if flashSeen then break end
+end
+check("black flash landed", flashSeen and (counts.BlackFlash or 0) >= 1)
+strikeOn = true
+local function telegraphStart() return dummy:FindFirstChildOfClass("Highlight") ~= nil end
+local function waitTelegraph() return run(8, telegraphStart) end
+for _ = 1, 4 do
+	if (counts.dodged or 0) >= 2 then break end
+	waitTelegraph(); run(0.55); face(); Remotes.Dodge:FireServer(M.V3.new(1, 0, 0))
+	run(1.2)
+end
+check("dodging the dummy's strikes", (counts.dodged or 0) >= 2)
+for _ = 1, 5 do
+	if (counts.parried or 0) >= 2 then break end
+	waitTelegraph(); face(); run(0.7); Remotes.Block:FireServer(true); run(0.4); Remotes.Block:FireServer(false); run(0.5)
+end
+check("parrying them", (counts.parried or 0) >= 2)
+for _ = 1, 5 do
+	if (counts.blocked or 0) >= 2 then break end
+	waitTelegraph(); face(); Remotes.Block:FireServer(true); run(1.5); Remotes.Block:FireServer(false); run(0.5)
+end
+check("blocking them", (counts.blocked or 0) >= 2)
+strikeOn = false
+for _ = 1, 4 do
+	if (counts.Feint or 0) >= 2 then break end
+	run(1); Remotes.Attack:FireServer(); run(0.05); Remotes.Feint:FireServer(); run(0.5)
+end
+check("feinting out of a windup", (counts.Feint or 0) >= 2)
+run(1); char():SetAttribute("Charge", 80); Remotes.UseSkill:FireServer(1); run(1)
+check("a skill fires", (function() for k in counts do if k ~= "dummyHit" and k ~= "heavyHit" and k ~= "Feint" and k ~= "BlackFlash" and k ~= "dodged" and k ~= "parried" and k ~= "blocked" and k ~= "hit" and k ~= "guardbreak" then return true end end return false end)())
+dummy:Destroy()
+
 
 -- open world: second player, PvP, permadeath
+M.mockEnv.__require(RS.Shared.Config).Tutorial.Enabled = false -- everyone after this joins as a conduit who has already ridden the train
 local p2 = makePlayer("Rival", 456)
 Players.PlayerAdded:Fire(p2); as(p2); run(2)
 check("second player spawned in open world", p2.Character ~= nil and p2.Character.HumanoidRootPart.CFrame.Position.Y < 100)

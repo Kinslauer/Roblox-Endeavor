@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local City = require(script.Parent.City)
 local Combat = require(script.Parent.Combat)
 local Gear = require(script.Parent.Gear)
@@ -19,7 +20,9 @@ local WorldPhase = require(script.Parent.WorldPhase)
 local Lifecycle = {}
 
 local function onDied(player)
-	if WorldPhase.IsOpen() then
+	if Tutorial.Active(player) then
+		task.wait(2) -- caught in the station: back to the last checkpoint, nothing lost
+	elseif WorldPhase.IsOpen() then
 		Permadeath.Handle(player, player.Character)
 		task.wait(Config.RespawnDelay)
 	else
@@ -28,12 +31,24 @@ local function onDied(player)
 	Lifecycle.Spawn(player)
 end
 
+-- A character's first moments in the open city.
+local function arrive(player, char)
+	local profile = PlayerData.Get(player)
+	if profile then
+		profile.Awakened = true
+	end
+	Combat.GrantIFrames(char, Config.SpawnProtection) -- fresh characters are not free kills
+	City.ResetVisits(player)
+	Quests.Assign(player)
+end
+
 function Lifecycle.Spawn(player)
 	if not player.Parent then
 		return
 	end
 	-- Decide where first, so the ground exists (and has replicated) before the character does.
-	local spawnAt = Hideouts.SpawnCFrame(player) or WorldPhase.GetSpawnCFrame(player)
+	local arriving = Tutorial.Active(player)
+	local spawnAt = Tutorial.SpawnCFrame(player) or Hideouts.SpawnCFrame(player) or WorldPhase.GetSpawnCFrame(player)
 	player:LoadCharacter()
 	local char = player.Character
 	if char then
@@ -49,7 +64,7 @@ function Lifecycle.Spawn(player)
 	-- on the server for a moment so it cannot fall through ground it hasn't received.
 	root.Anchored = true
 	task.delay(Config.SpawnSettle, function()
-		if root.Parent then
+		if root.Parent and not char:GetAttribute("Cutscene") then
 			char:PivotTo(spawnAt)
 			root.Anchored = false
 		end
@@ -58,16 +73,13 @@ function Lifecycle.Spawn(player)
 	Stats.Apply(player, true)
 	Stats.Push(player)
 	Inventory.Push(player)
-	if WorldPhase.IsOpen() then
-		local profile = PlayerData.Get(player)
-		if profile then
-			profile.Awakened = true
-		end
-		Combat.GrantIFrames(char, Config.SpawnProtection) -- fresh characters are not free kills
-		City.ResetVisits(player)
-		Quests.Assign(player)
-	elseif Config.Tutorial.Enabled then
+	if arriving then
 		Tutorial.Start(player)
+	elseif WorldPhase.IsOpen() then
+		arrive(player, char)
+	else
+		Remotes.Announce:FireClient(player, "> STACK RESIDENT . . . LINKING", "Info")
+		WorldPhase.MarkReady(player, "returning") -- nothing to learn; the city opens as soon as everyone here is ready
 	end
 	Quests.Push(player)
 	hum.Died:Once(function()
@@ -96,6 +108,17 @@ end
 
 function Lifecycle.Init()
 	Players.CharacterAutoLoads = false
+	WorldPhase.Busy = Tutorial.Active
+	Tutorial.Spawn = Lifecycle.Spawn
+	-- up through the lift: into the city if it is open, else the world opens for them (WorldPhase.Emerge moves them)
+	Tutorial.Finished.Event:Connect(function(player)
+		local char = player.Character
+		if char and WorldPhase.IsOpen() then
+			char:PivotTo(Hideouts.SpawnCFrame(player) or WorldPhase.GetSpawnCFrame(player))
+			arrive(player, char)
+			Quests.Push(player)
+		end
+	end)
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)
 	for _, player in Players:GetPlayers() do

@@ -30,7 +30,8 @@ function Stats.Apply(player, fill)
 	local weightMult = if d.Overweight then Config.Inventory.OverweightSpeedMult else 1
 	char:SetAttribute("Overweight", d.Overweight == true)
 	char:SetAttribute("GearWeight", d.WeightScore or 0) -- armour weight 0..6: Q rolls freely only at 0 (client/Movement)
-	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult * sprintMult * weightMult
+	local crouchMult = if char:GetAttribute("Crouched") then Config.Stealth.CrouchSpeedMult else 1
+	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult * sprintMult * weightMult * crouchMult
 
 	char:SetAttribute("Weapon", PlayerData.Get(player).Equipped)
 	HeldWeapons.Attach(char, PlayerData.Get(player).Equipped)

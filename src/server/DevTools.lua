@@ -90,6 +90,16 @@ function actions.Cycle(player)
 	Remotes.Announce:FireClient(player, if result then ("Cycle %d ran."):format(result.Index) else "A cycle is already running.", "Info")
 end
 
+-- ride the train again / leave the station now
+function actions.Intro(player, arg)
+	local Tutorial = require(script.Parent.Tutorial)
+	if arg == "Skip" then
+		Tutorial.Finish(player)
+	else
+		task.spawn(Tutorial.Replay, player)
+	end
+end
+
 function actions.Event(player, arg)
 	local fire = Events.Fire[tostring(arg)]
 	if fire then

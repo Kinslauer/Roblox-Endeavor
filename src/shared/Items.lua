@@ -18,6 +18,7 @@ Items.Defs = {
 	Powder = { Name = "Powder", Type = "Material" },
 	SignPlating = { Name = "Sign Plating", Type = "Material" },
 	ArcCell = { Name = "Arc Cell", Type = "Ammo" },
+	Subsonic = { Name = "Subsonic Round", Type = "Ammo" },
 	PipeGrenade = { Name = "Pipe Grenade", Type = "Consumable", Throwable = "Grenade" },
 	BreachingCharge = { Name = "Breaching Charge", Type = "Consumable", Plantable = "Charge" },
 	-- packs: worn on the back, they set the size of your grid and how much you can carry at speed
@@ -39,6 +40,7 @@ local SHAPES = {
 	Powder = { Size = { 1, 1 }, Weight = 0.3, Stack = 20 },
 	SignPlating = { Size = { 2, 2 }, Weight = 2.0, Stack = 5 },
 	ArcCell = { Size = { 1, 1 }, Weight = 0.1, Stack = 30 },
+	Subsonic = { Size = { 1, 1 }, Weight = 0.1, Stack = 30 },
 	Medkit = { Size = { 1, 1 }, Weight = 0.6, Stack = 5 },
 	Ration = { Size = { 1, 1 }, Weight = 0.4, Stack = 5 },
 	PipeGrenade = { Size = { 1, 1 }, Weight = 0.8, Stack = 5 },
@@ -49,6 +51,7 @@ local SHAPES = {
 	ScrapSpear = { Size = { 1, 5 }, Weight = 3 },
 	Sledge = { Size = { 2, 4 }, Weight = 8 },
 	ArcPistol = { Size = { 2, 1 }, Weight = 1.5 },
+	Whisper = { Size = { 2, 1 }, Weight = 1.2 },
 	ScavHelm = { Size = { 2, 2 }, Weight = 1.5 },
 	PlatedHelm = { Size = { 2, 2 }, Weight = 4 },
 	ArcHood = { Size = { 2, 2 }, Weight = 1 },
@@ -126,6 +129,7 @@ Items.Recipes = {
 	RiotPlate = { Output = "RiotPlate", Count = 1, Inputs = { Scrap = 10, SignPlating = 2, Cloth = 4 } },
 	-- salvage recipes
 	ArcCell = { Output = "ArcCell", Count = 6, Inputs = { Battery = 1, Wire = 2 } },
+	Subsonic = { Output = "Subsonic", Count = 6, Inputs = { Powder = 1, Scrap = 1 } },
 	PipeGrenade = { Output = "PipeGrenade", Count = 1, Inputs = { Pipe = 1, Powder = 2, Wire = 1 } },
 	BreachingCharge = { Output = "BreachingCharge", Count = 1, Inputs = { SheetMetal = 1, Powder = 3, Wire = 2, Battery = 1 } },
 	SignPlating = { Output = "SignPlating", Count = 1, Inputs = { SheetMetal = 3, Cloth = 1 } },
