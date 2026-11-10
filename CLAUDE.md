@@ -30,8 +30,8 @@ store `ConduitCharacter_v2`) is shared by both places.
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (139 checks), `war` = Front (34), `stress` = budgets under load, `client` = the
-  Endeavor client boots. They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
+  `scenario` = Endeavor end to end (215 checks), `war` = Front (34), `stress` = budgets under load (5), `client` = the
+  Endeavor client boots + movement, dodge, animation and guard checks (28). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution (`ROBLOX_API_KEY` with Luau Execution Sessions: Write) runs a script
   on a real server of the published place: see the pattern in this session's scratch `run_luau.py` (POST
@@ -147,8 +147,10 @@ store `ConduitCharacter_v2`) is shared by both places.
   once Uploaded (PlayerData.wipe); the death screen says STACK REBOOT or that nothing survives; the computer prompt is
   "Upload stack / log in".
 
-## State (2026-10-31)
-- Both places published and starting cleanly (Endeavor v69, Front v19). Front v10 verified on a real server:
+## State (2026-11-10)
+- Endeavor v75 published and starting cleanly on a real server (Front v19, unchanged since). Latest rounds: traced
+  blades, keyframed animations, armoured dodge, frame data, group launches, guard (see Decisions above).
+- Earlier: both places published and starting cleanly (Endeavor v69, Front v19). Front v10 verified on a real server:
   Battlefield.Init builds 57 mesh structures, 621 sandbag nests, 14 wrecks, 36 hedgehogs, 27 crates in 3.9s, no warnings.
   Spawn fall-through fixed by anchoring the
   character for Config.SpawnSettle after placing it.
@@ -313,7 +315,15 @@ store `ConduitCharacter_v2`) is shared by both places.
   ("The Crossroads", Medium: `City.Crossroads`, `City.DistrictAt` returns it within 110 studs; Population adds a pack).
 
 ## Open items
-- Awaiting the user's in-game look at the rigs (animation playback can't be verified from the Luau execution API).
+- Awaiting the user's in-game look at v75: the Conduit body v2, the 24 keyframed animations, the guard, reactions,
+  launches (animation playback can't be verified from the Luau execution API: it does not run the simulation).
+- Offered, not started: make blocking geometric (the guard must actually be in the blade's path, Mordhau-style);
+  today the guard is visual and the server's block test is the old one.
+- Publishing returns 409 "server busy" while the owner has the place open in Studio: ask them to close it.
+- The Open Cloud key is kept only in the session scratchpad (never in the repo); a new session asks for it again.
+- The owner's interactive checklist artifact: https://claude.ai/artifact/XEZw7en3WtuKyYqoQryQvz (ticks in its db
+  collection "ticks"); it predates the 2026-11-04 rounds. docs/TESTING.md is the full list.
+- `.claude/skills/fable-prompt` builds and audits Fable 5.2 prompts for this kind of project.
 - The playtest checklist is `docs/TESTING.md`: add a line for every feature that lands; the user ticks it.
 - Front: real 20-player frame-rate test; war world art; vehicles are intentionally absent.
 - Experience internal name is still "Conduit" (cosmetic; rename in Configurations → Basic Settings).
