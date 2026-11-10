@@ -281,7 +281,10 @@ Client tab screenshot, because Andy cannot read logs another way.
   "Upload stack / log in".
 
 ## State (2026-11-10)
-- Endeavor vNEXT (2026-11-10, the arrival): train intro, stealth station, takedowns, UI kit. New assets: Whisper,
+- Endeavor v79 published (2026-11-10, the arrival) and starting cleanly on a real server (startup 5.8s, 0 warnings);
+  a real-server probe built the station (204 parts, 0.5s), loaded the car shell, the Sentry rig, the IntroKit props
+  and the new animations, and read exposure 1.0 under a hall lamp and 0.05 in the dark tunnel. Train intro, stealth
+  station, takedowns, UI kit. New assets: Whisper,
   IntroCloak, SubwayCar, Rig Sentry (`tools/models/station.py`), 14 animations (Crouch_*, Takedown_*, Downed, Intro_*),
   7 sounds (`tools/sounds/station.py`). Unseen in-game: awaiting Andy's look at the ride and the station.
 - Front v22 published (2026-11-10, the open world) and starting cleanly on a real server: startup 1.8s (models
