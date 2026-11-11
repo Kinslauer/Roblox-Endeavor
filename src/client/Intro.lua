@@ -158,7 +158,7 @@ local function buildTunnel(carCF)
 		local wall = Instance.new("Part")
 		wall.Anchored, wall.CanCollide, wall.CanQuery = true, false, false
 		wall.Size = Vector3.new(0.4, 16, 110)
-		wall.CFrame = carCF * CFrame.new(side * 6.3, 4, 0)
+		wall.CFrame = carCF * CFrame.new(side * 7.2, 4, 0) -- clear of the car's sides (12.6 wide)
 		wall.Color, wall.Material = Color3.fromRGB(8, 8, 10), Enum.Material.SmoothPlastic
 		wall.Parent = folder
 		table.insert(walls, wall)
@@ -332,7 +332,7 @@ local function play(car, seatCF, carCF)
 			if s.z < -70 then
 				s.z += 140
 			end
-			s.part.CFrame = carCF * CFrame.new(s.side * 5.7, 5.2, s.z)
+			s.part.CFrame = carCF * CFrame.new(s.side * 6.85, 5.6, s.z)
 			s.part.Transparency = brake
 			s.part:FindFirstChildOfClass("PointLight").Brightness = 2.2 * (1 - brake)
 		end
@@ -363,6 +363,19 @@ local function play(car, seatCF, carCF)
 		once("stand", T.Stand, function()
 			Anims.Stop(char, "Intro_Seated", 0.25)
 			Anims.Play(char, "Intro_Stand", { fade = 0.2 })
+			-- the cloak that was draped over a sitting body gives way to the one that hangs from a standing one
+			task.delay(0.75, function()
+				local standing = token == mine and cloakHold and kitPiece("CloakStand")
+				if standing and torso and torso.Parent then
+					local hold = weldTo(standing, torso, CFrame.new())
+					if hold then
+						cloak:Destroy()
+						cloak, cloakHold = standing, hold
+					else
+						standing:Destroy()
+					end
+				end
+			end)
 		end)
 		once("cloak", T.Cloak, function()
 			Anims.Play(char, "Intro_CloakToss", { fade = 0.12 })

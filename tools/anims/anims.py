@@ -428,8 +428,9 @@ _DOWN = {"UpperTorso": (4, 0, 6), "Head": (6, 52, 0),
 DOWNED = dict(length=2.0, loop=True, priority="Action", keys=[(0.0, _DOWN, "Linear", "InOut"), (2.0, _DOWN, "Linear", "InOut")])
 
 # ---------- the train (client/Intro.lua): seated on the bench under a cloak, up, cloak off, pistol out, slide racked ----------
-# The root stands 1.5 studs in front of the bench, so sitting is the hips back and down from it.
-_SEAT = {"LowerTorso": (0, 0, 0, 0, -0.82, 1.4), "UpperTorso": (-14, 0, 0), "Head": (-24, 0, 0),
+# The root stands in front of the seat at standing height (car-local (-3.75, 3, 12)); sitting is the hips 1.4 back
+# and 1.11 down from it, which puts the hip centre 0.39 over the cushion (top y 1.5).
+_SEAT = {"LowerTorso": (0, 0, 0, 0, -1.11, 1.4), "UpperTorso": (-14, 0, 0), "Head": (-24, 0, 0),
          "LeftUpperLeg": (86, 0, -8), "LeftLowerLeg": (-84, 0, 0), "RightUpperLeg": (86, 0, 8), "RightLowerLeg": (-84, 0, 0),
          "LeftUpperArm": (36, 0, 8), "LeftLowerArm": (52, 0, 0), "RightUpperArm": (36, 0, -8), "RightLowerArm": (52, 0, 0)}
 INTRO_SEATED = dict(length=3.2, loop=True, priority="Action", keys=[  # the car rocks him a little
@@ -444,7 +445,7 @@ _UP = {"LowerTorso": (0, 0, 0), "UpperTorso": (-2, 0, 0), "Head": (-10, 0, 0),
        "LeftUpperArm": (4, 0, -6), "LeftLowerArm": (12, 0, 0), "LeftHand": (0, 0, 0), "RightUpperArm": (4, 0, 6), "RightLowerArm": (12, 0, 0), "RightHand": (0, 0, 0)}
 INTRO_STAND = dict(length=9.0, loop=False, priority="Action", keys=[
     (0.0, _SEAT, "CubicV2", "InOut"),
-    (0.45, merge(_SEAT, {"LowerTorso": (0, 0, 0, 0, -0.78, 1.25), "UpperTorso": (-38, 0, 0), "Head": (-6, 0, 0),
+    (0.45, merge(_SEAT, {"LowerTorso": (0, 0, 0, 0, -1.05, 1.25), "UpperTorso": (-38, 0, 0), "Head": (-6, 0, 0),
                          "LeftUpperArm": (20, 0, 6), "LeftLowerArm": (70, 0, 0), "RightUpperArm": (20, 0, -6), "RightLowerArm": (70, 0, 0)}), "CubicV2", "InOut"),
     (1.0, merge(_UP, {"LowerTorso": (0, 0, 0, 0, -0.3, 0.45), "UpperTorso": (-22, 0, 0), "Head": (0, 0, 0),
                       "LeftUpperLeg": (48, 0, -6), "LeftLowerLeg": (-56, 0, 0), "RightUpperLeg": (30, 0, 6), "RightLowerLeg": (-50, 0, 0)}), "CubicV2", "InOut"),
