@@ -8,6 +8,7 @@ local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Firearms = require(Shared.Firearms)
 local Remotes = require(Shared.Remotes)
+local Joints = require(Shared.Joints)
 local Net = require(script.Parent.Common.Net)
 local HeldWeapons = require(script.Parent.Common.HeldWeapons)
 local WornGear = require(script.Parent.Common.WornGear)
@@ -166,6 +167,8 @@ function Soldiers.Place(player, opts)
 		end
 	end
 	s.Intro = false
+	s.Lean = 0
+	Soldiers.SetStance(player, "Stand", true)
 	s.Protected = os.clock() + Config.SpawnProtection
 	local spawnAt = Battlefield.BaseCFrame(s.Faction)
 	char:PivotTo(spawnAt)
@@ -680,6 +683,94 @@ local function active(player)
 	return nil
 end
 
+-- ===== stance and lean: the server owns the body's shape, so hits land on what everyone sees =====
+local MV = Config.WarMovement
+local RANK = { Prone = 1, Crouch = 2, Stand = 3 }
+local function deg(x, y, z)
+	return CFrame.Angles(math.rad(x or 0), math.rad(y or 0), math.rad(z or 0))
+end
+-- joint offsets per stance (hips forward = +X, knees fold = -X, the same convention as the rifle hold)
+local STANCE_POSE = {
+	Stand = {},
+	Crouch = { LeftHip = deg(64), RightHip = deg(78), LeftKnee = deg(-112), RightKnee = deg(-118), LeftAnkle = deg(44), RightAnkle = deg(38), Neck = deg(8) },
+	Prone = { Root = CFrame.new(0, 0.6, 0) * deg(-90), Neck = deg(62), LeftHip = deg(-4, 0, -9), RightHip = deg(-4, 0, 9), LeftAnkle = deg(-50), RightAnkle = deg(-50) },
+}
+local POSED = { "Root", "Neck", "LeftHip", "RightHip", "LeftKnee", "RightKnee", "LeftAnkle", "RightAnkle" }
+local STANCE_WAIST = { Stand = 0, Crouch = 16, Prone = 0 }
+local IDENTITY = CFrame.new()
+
+local function applyPose(char, s, seconds)
+	local stance = s.Stance or "Stand"
+	local pose = STANCE_POSE[stance]
+	for _, name in POSED do
+		Joints.Pose(char, name, pose[name] or IDENTITY, seconds)
+	end
+	Joints.Pose(char, "Waist", deg(STANCE_WAIST[stance], 0, -(s.Lean or 0) * MV.LeanRoll * 1.6), seconds)
+end
+
+-- Stand / Crouch / Prone. Rising needs headroom; `force` skips the checks (a fresh placement).
+function Soldiers.SetStance(player, stance, force)
+	local s = soldiers[player]
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local def = MV.Stance[stance]
+	if not (s and hum and root and def) or hum.Health <= 0 then
+		return false
+	end
+	local now = s.Stance or "Stand"
+	if stance == now then
+		return true
+	end
+	if not force then
+		if digging[player] then
+			return false
+		end
+		if RANK[stance] > RANK[now] then
+			local feet = root.Position.Y - hum.HipHeight - root.Size.Y / 2
+			local need = if stance == "Stand" then 4.8 else 3.4
+			local ray = RaycastParams.new()
+			ray.FilterType = Enum.RaycastFilterType.Exclude
+			ray.FilterDescendantsInstances = { char }
+			if workspace:Raycast(Vector3.new(root.Position.X, feet + 1, root.Position.Z), Vector3.new(0, need - 1, 0), ray) then
+				return false -- something overhead
+			end
+		end
+	end
+	s.BaseHip = s.BaseHip or hum.HipHeight
+	s.Stance = stance
+	if stance == "Prone" then
+		s.Lean = 0
+	end
+	char:SetAttribute("Stance", stance)
+	hum.HipHeight = if stance == "Prone" then 0 else s.BaseHip - (def.Drop or 0)
+	applyPose(char, s, if stance == "Prone" or now == "Prone" then MV.ProneSeconds else MV.StanceSeconds)
+	return true
+end
+
+-- Where the recruit's eye is: lower when prone, out to the side on a lean (further next to cover).
+function Soldiers.Eye(player, ray)
+	local s = soldiers[player]
+	local root = player.Character.HumanoidRootPart
+	local eye = root.Position + Vector3.new(0, 1.5, 0)
+	if s and s.Stance == "Prone" then
+		eye += root.CFrame:VectorToWorldSpace(MV.ProneCamera)
+	end
+	local lean = s and s.Lean or 0
+	if lean ~= 0 then
+		local look = root.CFrame.LookVector
+		local cover = workspace:Raycast(eye, Vector3.new(look.X, 0, look.Z) * MV.PeekReach, ray)
+		local reach = if cover then MV.Peek else MV.Lean
+		local side = root.CFrame.RightVector * lean
+		local wall = workspace:Raycast(eye, side * (reach + 0.4), ray)
+		if wall then
+			reach = math.max(0, (wall.Position - eye).Magnitude - 0.4)
+		end
+		eye += side * reach
+	end
+	return eye
+end
+
 local function onFire(player, dir)
 	local s, w = active(player)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -692,11 +783,13 @@ local function onFire(player, dir)
 	end
 	local result = Guns.Trigger(w)
 	if result == "fired" then
-		local eye = root.Position + Vector3.new(0, 1.5, 0)
-		local muzzle = eye + dir.Unit * 2
 		local ray = RaycastParams.new()
 		ray.FilterType = Enum.RaycastFilterType.Exclude
 		ray.FilterDescendantsInstances = { player.Character }
+		local eye = Soldiers.Eye(player, ray)
+		local muzzle = eye + dir.Unit * 2
+		local stance = MV.Stance[s.Stance or "Stand"]
+		w.Steady = stance.Spread
 		local wall = workspace:Raycast(eye, muzzle - eye, ray)
 		if wall then
 			muzzle = wall.Position - dir.Unit * 0.3 -- muzzle against a wall: the round starts on your side of it
@@ -705,7 +798,7 @@ local function onFire(player, dir)
 			local dealt = Soldiers.Damage(model, damage, player, zone, pen, "Bullet")
 			Remotes.Weapon:FireAllClients("Impact", at, Vector3.yAxis, dealt > 0)
 		end)
-		Remotes.Weapon:FireClient(player, "Recoil", w.Def.Recoil[1] * Firearms.RecoilMult(w.Parts) * (s.Weapons[s.Active] and 1), w.Def.Recoil[2])
+		Remotes.Weapon:FireClient(player, "Recoil", w.Def.Recoil[1] * Firearms.RecoilMult(w.Parts) * MV.Stance[s.Stance or "Stand"].Recoil, w.Def.Recoil[2] * MV.Stance[s.Stance or "Stand"].Recoil)
 	elseif result ~= "busy" then
 		Remotes.Weapon:FireClient(player, "Click", result)
 	end
@@ -754,14 +847,14 @@ function Soldiers.Init()
 	Players.CharacterAutoLoads = false
 	Factions.IsDeployed = Soldiers.IsDeployed
 	Net.On("Fire", { rate = 20, burst = 30, args = { "vector" } }, onFire)
-	Net.On("Reload", { rate = 2, burst = 3 }, function(player)
+	Net.On("Reload", { rate = 2, burst = 3, args = { "boolean?" } }, function(player, keep)
 		local s, w = active(player)
 		if w then
 			-- the simulation keeps the pouches full: magazines are only data there
 			if s.Intro and #w.Spare < W.Intro.Sim.ResupplyBelow then
 				Guns.AddMagazines(w, 4 - #w.Spare)
 			end
-			Guns.Reload(w)
+			Guns.Reload(w, keep == true, MV.QuickReload, MV.CarefulReload)
 			pushWeapon(player)
 			task.delay(0.5, function() pushWeapon(player) end)
 			task.delay(2.5, function() pushWeapon(player) end)
@@ -805,6 +898,56 @@ function Soldiers.Init()
 		local _, w = active(player)
 		if w then
 			w.Aiming = aiming
+		end
+	end)
+	Net.On("Stance", { rate = 6, burst = 10, args = { "string" } }, function(player, stance)
+		Soldiers.SetStance(player, stance)
+	end)
+	Net.On("Lean", { rate = 10, burst = 16, args = { "int" } }, function(player, side)
+		local s = active(player)
+		if s then
+			s.Lean = if s.Stance == "Prone" then 0 else math.clamp(side, -1, 1)
+			applyPose(player.Character, s, 0.15)
+		end
+	end)
+	-- binoculars: an enemy held in the glass is marked for the spotter's side for a few seconds
+	Net.On("Mark", { rate = 3, burst = 5, args = { "instance" } }, function(player, model)
+		local s = active(player)
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local B = MV.Binoculars
+		if not (s and root) or not model:IsA("Model") or model == player.Character then
+			return
+		end
+		local hum = model:FindFirstChildOfClass("Humanoid")
+		local target = model:FindFirstChild("HumanoidRootPart")
+		if not (hum and target) or hum.Health <= 0 then
+			return
+		end
+		local owner = Players:GetPlayerFromCharacter(model)
+		if owner and Factions.Of(owner) == s.Faction then
+			return
+		end
+		local to = target.Position - root.Position
+		if to.Magnitude > B.Range or to.Magnitude < 1 or root.CFrame.LookVector:Dot(to.Unit) < 0.2 then
+			return
+		end
+		local ray = RaycastParams.new()
+		ray.FilterType = Enum.RaycastFilterType.Exclude
+		ray.FilterDescendantsInstances = { player.Character }
+		local eye = Soldiers.Eye(player, ray)
+		local hit = workspace:Raycast(eye, target.Position - eye, ray)
+		if hit and not hit.Instance:IsDescendantOf(model) then
+			return -- not in sight
+		end
+		model:SetAttribute("MarkedBy" .. s.Faction, os.clock() + B.Seconds)
+		if s.Intro then
+			Remotes.Soldier:FireClient(player, "Marked", model, B.Seconds)
+		else
+			for other, os2 in soldiers do
+				if os2.Faction == s.Faction and not os2.Intro then
+					Remotes.Soldier:FireClient(other, "Marked", model, B.Seconds)
+				end
+			end
 		end
 	end)
 	Net.On("Grenade", { rate = 1, burst = 2, args = { "vector" } }, function(player, dir)

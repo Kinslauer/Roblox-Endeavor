@@ -23,6 +23,14 @@ local function pose(char, name, offset, seconds)
 	Joints.Pose(char, name, offset, seconds)
 end
 local function holdPose(char, seconds)
+	if char:GetAttribute("Stance") == "Prone" then
+		-- lying behind the rifle: both arms reach past the head, elbows on the ground
+		pose(char, "RightShoulder", CFrame.Angles(math.rad(158), 0, math.rad(-10)), seconds or 0.2)
+		pose(char, "RightElbow", CFrame.Angles(math.rad(28), 0, 0), seconds or 0.2)
+		pose(char, "LeftShoulder", CFrame.Angles(math.rad(150), 0, math.rad(30)), seconds or 0.2)
+		pose(char, "LeftElbow", CFrame.Angles(math.rad(40), 0, 0), seconds or 0.2)
+		return
+	end
 	pose(char, "RightShoulder", CFrame.Angles(math.rad(78), 0, math.rad(-12)), seconds or 0.2)
 	pose(char, "RightElbow", CFrame.Angles(math.rad(55), 0, 0), seconds or 0.2)
 	pose(char, "LeftShoulder", CFrame.Angles(math.rad(68), 0, math.rad(38)), seconds or 0.2)
@@ -45,6 +53,9 @@ local function bindSoldier(char)
 		char:WaitForChild("RightUpperArm", 10)
 		task.wait(0.2)
 		holdPose(char, 0.3)
+	end)
+	char:GetAttributeChangedSignal("Stance"):Connect(function()
+		holdPose(char, 0.3) -- the server folds the legs and lays the body down; the arms follow here
 	end)
 end
 for _, other in Players:GetPlayers() do
@@ -93,90 +104,34 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- ===== HUD =====
-local crosshair = label({ Size = UDim2.fromOffset(20, 20), Position = UDim2.new(0.5, -10, 0.5, -10), Text = "+", TextSize = 22, TextColor3 = Color3.fromRGB(230, 230, 230) })
-local weaponPanel = label({ Size = UDim2.fromOffset(300, 110), Position = UDim2.new(1, -320, 1, -130), TextXAlignment = Enum.TextXAlignment.Right, TextYAlignment = Enum.TextYAlignment.Bottom, Text = "" })
-local healthLabel = label({ Size = UDim2.fromOffset(240, 20), Position = UDim2.new(0, 20, 1, -40), TextXAlignment = Enum.TextXAlignment.Left, Text = "" })
-local kitLabel = label({ Size = UDim2.fromOffset(240, 20), Position = UDim2.new(0, 20, 1, -62), TextXAlignment = Enum.TextXAlignment.Left, Text = "" })
-local hillLabel = label({ Size = UDim2.fromOffset(520, 44), Position = UDim2.new(0.5, -260, 0, 16), TextSize = 16, Text = "" })
-local scaleBack = make("Frame", { Size = UDim2.fromOffset(400, 10), Position = UDim2.new(0.5, -200, 0, 64), BackgroundColor3 = Config.War.FactionColors.Pact })
-local scaleFill = make("Frame", { Size = UDim2.fromScale(0.5, 1), BackgroundColor3 = Config.War.FactionColors.Union }, scaleBack)
+-- ===== HUD (war/client/Hud.lua): rounds, mode, spares; health, stance, three items; one thin bar =====
+local Hud = require(script.Parent:WaitForChild("Hud"))
+Hud.Init(gui)
 local IntroFx = require(script.Parent:WaitForChild("IntroFx"))
 IntroFx.Init({ Hud = gui }) -- the first link: stasis tank, barracks, simulation (war/server/Intro.lua)
-local banner = label({ Size = UDim2.new(1, 0, 0, 36), Position = UDim2.fromOffset(0, 84), TextSize = 22, Text = "", TextTransparency = 1 })
-local hitMarker = label({ Size = UDim2.fromOffset(40, 40), Position = UDim2.new(0.5, -20, 0.5, -20), Text = "x", TextSize = 26, TextColor3 = Color3.fromRGB(255, 80, 80), TextTransparency = 1 })
-local hurtFrame = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(180, 0, 0), BackgroundTransparency = 1, ZIndex = 5 })
-
-local KIND_COLORS = { Event = Color3.fromRGB(255, 200, 60), Kill = Color3.fromRGB(230, 230, 230), Info = Color3.fromRGB(120, 220, 255), Emergence = Color3.fromRGB(255, 90, 90) }
-local bannerToken = 0
--- kill feed: the last few kills stack top-right and fade
-local feedLines = {}
-local function feed(text)
-	local line = make("TextLabel", { Size = UDim2.new(0, 420, 0, 22), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 0.5, BackgroundColor3 = Color3.new(0, 0, 0),
-		Text = text, TextColor3 = Color3.fromRGB(255, 120, 120), Font = Enum.Font.Gotham, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Right, BorderSizePixel = 0 }, gui)
-	table.insert(feedLines, 1, line)
-	while #feedLines > 5 do
-		local oldLine = table.remove(feedLines)
-		oldLine:Destroy()
-	end
-	for i, l in feedLines do
-		l.Position = UDim2.new(1, -12, 0, 12 + (i - 1) * 26)
-	end
-	task.delay(7, function()
-		local i = table.find(feedLines, line)
-		if i then
-			table.remove(feedLines, i)
-		end
-		TweenService:Create(line, TweenInfo.new(0.5), { TextTransparency = 1, BackgroundTransparency = 1 }):Play()
-		Debris:AddItem(line, 0.6)
-	end)
-end
 
 local linkLost = false -- true between a recruit's death and the next one: U unlinks from anywhere
 local function announce(text, kind, seconds)
 	if kind == "Kill" then
-		feed(text)
+		Hud.Feed(text)
 		if not seconds then
 			return
 		end
 	end
-	bannerToken += 1
-	local token = bannerToken
-	banner.Text, banner.TextColor3, banner.TextTransparency = text, KIND_COLORS[kind] or Color3.new(1, 1, 1), 0
-	task.delay(seconds or 5, function()
-		if token == bannerToken then
-			banner.TextTransparency = 1
-		end
-	end)
+	Hud.Banner(text, kind, seconds)
 end
 Remotes.Announce.OnClientEvent:Connect(announce)
 
-Remotes.Hill.OnClientEvent:Connect(function(h)
-	local lead = if h.Holder then ("%s holding %ds / %ds"):format(h.Holder, h.Held, h.Need) else "contested"
-	hillLabel.Text = ("HILL: sector %d   Union %d  -  Pact %d   (%s)   moves in %dm%02ds"):format(h.Sector, h.Counts.Union, h.Counts.Pact, lead, h.MovesIn // 60, h.MovesIn % 60)
-end)
-Remotes.Scales.OnClientEvent:Connect(function(s)
-	scaleFill.Size = UDim2.fromScale(math.clamp(s.UnionShare, 0.02, 0.98), 1)
-end)
+Remotes.Hill.OnClientEvent:Connect(Hud.Hill)
+Remotes.Scales.OnClientEvent:Connect(Hud.Scales)
 
 -- ===== weapon state =====
 local weapon, slotName, kit = nil, "Primary", {}
 local aiming = false
 local recoilPitch, recoilYaw = 0, 0
+local stance = "Stand"
 local function describe()
-	if not weapon then
-		weaponPanel.Text = "unarmed"
-		return
-	end
-	local parts = {}
-	for _, name in Firearms.Parts do
-		table.insert(parts, ("%s %d%%"):format(name:sub(1, 3), weapon.Parts[name] or 100))
-	end
-	local mag = if weapon.Mag == nil then "NO MAG" else ("mag %d/%d"):format(weapon.Mag, weapon.MagSize)
-	local status = if weapon.Jammed then "JAMMED (T to clear)" elseif weapon.BoltOpen then "BOLT OPEN (R)" elseif not weapon.Chamber then "EMPTY CHAMBER (T)" else "ready"
-	weaponPanel.Text = ("%s  [%s]\n%s   %s   spare %d\n%s\n%s"):format(weapon.Name, slotName, weapon.Mode:upper(), mag, weapon.Spare, status, table.concat(parts, "  "))
-	kitLabel.Text = ("grenades %d   dressings %d   sandbags %d   armor %s   helmet %s"):format(kit.Grenades or 0, kit.Medkits or 0, kit.Sandbags or 0,
-		if kit.Armor then ("%d%%"):format(kit.Armor.Condition) else "-", if kit.Helmet then ("%d%%"):format(kit.Helmet.Condition) else "-")
+	Hud.Weapon(weapon, slotName, kit)
 end
 Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c, d)
 	if kind == "State" then
@@ -195,8 +150,7 @@ Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c, d)
 		recoilYaw += (math.random() - 0.5) * 2 * b
 	elseif kind == "Click" then
 		Sounds.Play("DryClick")
-		crosshair.Text = if a == "dry" then "click" elseif a == "safe" then "SAFE" elseif a == "jam" then "JAM" else "+"
-		task.delay(0.4, function() crosshair.Text = "+" end)
+		Hud.Flash(if a == "safe" then "SAFE" elseif a == "jam" then "JAM" else "EMPTY")
 	elseif kind == "Shot" and typeof(a) == "Instance" then
 		kickPose(a)
 		-- near shots crack, far ones roll; loudness comes from the weapon's attachments (suppressors)
@@ -217,22 +171,23 @@ Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c, d)
 end)
 Remotes.Soldier.OnClientEvent:Connect(function(kind, a, b)
 	if kind == "HitMarker" then
-		hitMarker.TextColor3 = if b then Color3.fromRGB(255, 40, 40) else (if a == "Head" then Color3.fromRGB(255, 200, 80) else Color3.fromRGB(230, 230, 230))
-		hitMarker.TextTransparency = 0
-		task.delay(0.15, function() hitMarker.TextTransparency = 1 end)
+		Hud.HitMarker(a, b)
 	elseif kind == "Hurt" then
-		hurtFrame.BackgroundTransparency = 0.55
-		TweenService:Create(hurtFrame, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
+		Hud.Hurt()
+	elseif kind == "Marked" then
+		if typeof(a) == "Instance" then
+			Hud.Mark(a, tonumber(b) or 8)
+		end
 	elseif kind == "Entrenching" then
 		if a then
-			announce(if a == "Dig" then ("Digging in... %ds. Stay still."):format(b) else "Stacking sandbags...", "Info", b)
+			announce(if a == "Dig" then ("> DIGGING . . . %ds"):format(b) else "> STACKING . . .", "Info", b)
 		else
-			announce("Interrupted.", "Kill", 1)
+			announce("> BROKEN OFF", "Kill", 1)
 		end
 	elseif kind == "Deployed" then
-		announce(("Deployed with the %s%s."):format(a, if b then " as a conscript: order a loadout (M) before next time" else ""), "Info", 6)
+		announce(("> LINK . . . %s%s"):format(tostring(a):upper(), if b then " . CONSCRIPT KIT . [M]" else ""), "Info", 5)
 	elseif kind == "Died" then
-		announce(if a then ("Your recruit was killed by %s. Their gear is on the field."):format(a) else "Your recruit is dead. Their gear is on the field.", "Kill", Config.War.RespawnSeconds)
+		announce(if a then ("> LINK LOST . . . %s"):format(tostring(a):upper()) else "> LINK LOST", "Kill", Config.War.RespawnSeconds)
 		linkLost = true
 		task.delay(Config.War.RespawnSeconds, function()
 			linkLost = false
@@ -258,14 +213,109 @@ Remotes.Soldier.OnClientEvent:Connect(function(kind, a, b)
 	end
 end)
 
--- ===== aiming, lean, recoil =====
-local lean = 0
+-- ===== aiming, stance, lean, recoil =====
+local MV = Config.WarMovement
+local lean, leanNow, leanReach = 0, 0, MV.Lean
+local rollTilt = 0 -- view tilt during a prone roll
+local popUp = false -- stood up out of a crouch to aim over cover
+local binos = false
+local sprinting = false
+local mantling = false
+local shove -- { Velocity, Until, Seconds }: a dive or a prone roll carries the body for a moment
+
+local function myParts()
+	local char = player.Character
+	return char, char and char:FindFirstChild("HumanoidRootPart"), char and char:FindFirstChildOfClass("Humanoid")
+end
+local rayCache, rayChar
+local function rayParams()
+	if rayChar ~= player.Character or not rayCache then
+		rayChar = player.Character
+		rayCache = RaycastParams.new()
+		rayCache.FilterType = Enum.RaycastFilterType.Exclude
+		rayCache.FilterDescendantsInstances = { rayChar }
+	end
+	return rayCache
+end
+local function wantStance(name)
+	Remotes.Stance:FireServer(name)
+end
+local function setLean(side)
+	if lean ~= side then
+		lean = side
+		Remotes.Lean:FireServer(side)
+	end
+end
+-- low cover: something in front of the chest with clear air over it
+local function lowCoverAhead()
+	local _, root = myParts()
+	if not root then
+		return false
+	end
+	local look = root.CFrame.LookVector
+	local flat = Vector3.new(look.X, 0, look.Z)
+	local params = rayParams()
+	return workspace:Raycast(root.Position, flat * 3.2, params) ~= nil and workspace:Raycast(root.Position + Vector3.new(0, 2.6, 0), flat * 3.6, params) == nil
+end
 local function setAim(on)
+	if on and (binos or mantling) then
+		return
+	end
 	aiming = on
 	Remotes.Aim:FireServer(on)
+	Hud.Aim(on)
 	local zoom = (weapon and weapon.Zoom) or 1
-	TweenService:Create(camera, TweenInfo.new(0.18), { FieldOfView = if on then 70 / zoom else 70 }):Play()
+	local class = weapon and Firearms.Defs[weapon.Id] and Firearms.Defs[weapon.Id].Class
+	local seconds = MV.SightSeconds[class] or MV.SightSeconds.Default -- the snap to the sights
+	TweenService:Create(camera, TweenInfo.new(seconds, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { FieldOfView = if on then 62 / zoom else 70 }):Play()
+	-- crouched behind low cover: aiming rises over it, letting go drops back
+	if on and stance == "Crouch" and lowCoverAhead() then
+		popUp = true
+		wantStance("Stand")
+	elseif not on and popUp then
+		popUp = false
+		wantStance("Crouch")
+	end
 end
+local function setBinos(on)
+	if on == binos or (on and (mantling or IntroFx.Active and camera.CameraType == Enum.CameraType.Scriptable)) then
+		return
+	end
+	if on and aiming then
+		setAim(false)
+	end
+	binos = on
+	Hud.Binoculars(on)
+	UserInputService.MouseDeltaSensitivity = if on then 0.25 else 1
+	TweenService:Create(camera, TweenInfo.new(0.15), { FieldOfView = if on then MV.Binoculars.Fov else 70 }):Play()
+end
+
+local function onStance(char)
+	stance = char:GetAttribute("Stance") or "Stand"
+	Hud.Stance(stance)
+	if stance == "Prone" then
+		lean = 0
+	end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if hum then
+		pcall(function()
+			hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, stance == "Stand") -- no hopping from a crouch
+		end)
+	end
+end
+local function bindMine(char)
+	lean, popUp, shove = 0, false, nil
+	setBinos(false)
+	onStance(char)
+	char:GetAttributeChangedSignal("Stance"):Connect(function()
+		onStance(char)
+	end)
+end
+if player.Character then
+	bindMine(player.Character)
+end
+player.CharacterAdded:Connect(bindMine)
+
 RunService.RenderStepped:Connect(function(dt)
 	-- recoil kicks the camera, then settles
 	if recoilPitch ~= 0 or recoilYaw ~= 0 then
@@ -276,14 +326,60 @@ RunService.RenderStepped:Connect(function(dt)
 		if math.abs(recoilPitch) < 0.01 then recoilPitch = 0 end
 		if math.abs(recoilYaw) < 0.01 then recoilYaw = 0 end
 	end
-	local char = player.Character
-	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if hum then
-		healthLabel.Text = ("HP %d"):format(hum.Health)
-		-- lean: offset the camera sideways and roll it a little
-		local target = lean * 1.6
-		camera.CFrame = camera.CFrame * CFrame.new(target * dt * 10, 0, 0) * CFrame.Angles(0, 0, -math.rad(lean * 8) * dt * 10)
+	local _, root, hum = myParts()
+	if hum and root then
+		Hud.Health(hum.Health / math.max(1, hum.MaxHealth))
+		-- lean: the eye moves out to the side and the view tilts; next to cover it goes out past the corner
+		if lean ~= 0 then
+			local params = rayParams()
+			local look = root.CFrame.LookVector
+			local eye = root.Position + Vector3.new(0, 1.5, 0)
+			leanReach = if workspace:Raycast(eye, Vector3.new(look.X, 0, look.Z) * MV.PeekReach, params) then MV.Peek else MV.Lean
+			local wall = workspace:Raycast(eye, root.CFrame.RightVector * lean * (leanReach + 0.4), params)
+			if wall then
+				leanReach = math.max(0, (wall.Position - eye).Magnitude - 0.4)
+			end
+		end
+		leanNow += (lean - leanNow) * math.min(1, dt * 14)
+		local offset = Vector3.new(leanNow * leanReach, 0, 0)
+		if stance == "Prone" then
+			offset += MV.ProneCamera
+		end
+		hum.CameraOffset = hum.CameraOffset:Lerp(offset, math.min(1, dt * 12))
+		local tilt = leanNow * MV.LeanRoll + rollTilt
+		if math.abs(tilt) > 0.05 then
+			camera.CFrame = camera.CFrame * CFrame.Angles(0, 0, -math.rad(tilt))
+		end
 	end
+end)
+
+-- binoculars: a figure held in the glass for a moment is marked
+local dwellOn, dwell, markedAt = nil, 0, {}
+RunService.Heartbeat:Connect(function(dt)
+	if not binos then
+		return
+	end
+	local B = MV.Binoculars
+	local hit = workspace:Raycast(camera.CFrame.Position, camera.CFrame.LookVector * B.Range, rayParams())
+	local model = hit and hit.Instance:FindFirstAncestorOfClass("Model")
+	if model and not model:FindFirstChildOfClass("Humanoid") then
+		model = nil
+	end
+	if model ~= dwellOn then
+		dwellOn, dwell = model, 0
+	end
+	if model and os.clock() - (markedAt[model] or 0) > 2 then
+		dwell += dt
+		if dwell >= B.Dwell then
+			markedAt[model] = os.clock()
+			dwell = 0
+			Remotes.Mark:FireServer(model)
+			Sounds.Play("DryClick", nil, { Volume = 0.35 })
+		end
+	else
+		dwell = 0
+	end
+	Hud.Dwell(dwell / B.Dwell)
 end)
 
 -- ===== recruit app (M) =====
@@ -388,30 +484,70 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b)
 		task.delay(math.max(0, (tonumber(b) or 0) - 2), function()
 			Sounds.Play("ArtilleryWhistle", a)
 		end)
-		announce(("Incoming! Shells land in %ds."):format(b), "Emergence", b)
+		announce(("> INCOMING . . . %ds"):format(b), "Emergence", b)
 	end
 end)
 
--- ===== movement: sprint (Shift) and pulling up over a ledge (Space at a wall) =====
-local MV = Config.WarMovement
-local sprinting = false
-local mantling = false
+-- ===== movement: stance speeds, sprint (Shift), dives and rolls, pulling up over a ledge (Space at a wall) =====
 RunService.Heartbeat:Connect(function()
-	local char = player.Character
-	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if not hum or mantling then
+	local _, root, hum = myParts()
+	if not (hum and root) or mantling then
 		return
 	end
 	-- the server freezes a recruit (WalkSpeed 0: digging, the tank); anything else is ours to pace
-	if hum.WalkSpeed >= MV.WalkSpeed - 0.5 then
-		local running = sprinting and not aiming and hum.MoveDirection.Magnitude > 0.1
-		hum.WalkSpeed = if running then MV.SprintSpeed else MV.WalkSpeed
-		local fov = if running then 78 elseif aiming then nil else 70
+	if hum.WalkSpeed > 0.5 then
+		local running = sprinting and stance == "Stand" and not aiming and not binos and hum.MoveDirection.Magnitude > 0.1
+		local speed = if running then MV.SprintSpeed else MV.Stance[stance].Speed
+		if aiming or binos then
+			speed = math.min(speed, MV.Stance.Crouch.Speed) -- sights up: a slow, level walk
+		end
+		hum.WalkSpeed = speed
+		local fov = if running then 78 elseif aiming or binos then nil else 70
 		if fov and not IntroFx.Active and math.abs(camera.FieldOfView - fov) > 0.5 then
 			camera.FieldOfView += (fov - camera.FieldOfView) * 0.15
 		end
 	end
+	-- a dive or a roll carries the body; it fades out over its time
+	if shove then
+		local left = shove.Until - os.clock()
+		if left <= 0 or root.Anchored then
+			shove, rollTilt = nil, 0
+		else
+			local u = left / shove.Seconds
+			local v = shove.Velocity * (0.35 + 0.65 * u)
+			root.AssemblyLinearVelocity = Vector3.new(v.X, root.AssemblyLinearVelocity.Y, v.Z)
+			rollTilt = (shove.Tilt or 0) * math.sin((1 - u) * math.pi)
+		end
+	end
 end)
+
+-- sprint + C: throw yourself flat
+local function dive()
+	local _, root, hum = myParts()
+	if not (root and hum) or hum.Health <= 0 or root.Anchored then
+		return
+	end
+	local look = root.CFrame.LookVector
+	local flat = Vector3.new(look.X, 0, look.Z)
+	if flat.Magnitude < 0.1 then
+		return
+	end
+	sprinting = false
+	wantStance("Prone")
+	root.AssemblyLinearVelocity = flat.Unit * MV.DiveSpeed + Vector3.new(0, MV.DiveLift, 0)
+	shove = { Velocity = flat.Unit * MV.DiveSpeed, Seconds = 0.45, Until = os.clock() + 0.45 }
+	recoilPitch -= 2.5 -- the view dips with the body
+end
+-- Q / E while prone: roll to the side
+local rollReady = 0
+local function proneRoll(side)
+	local _, root, hum = myParts()
+	if not (root and hum) or os.clock() < rollReady or root.Anchored or hum.WalkSpeed < 0.5 then
+		return
+	end
+	rollReady = os.clock() + MV.RollCooldown
+	shove = { Velocity = root.CFrame.RightVector * side * MV.RollSpeed, Seconds = MV.RollSeconds, Until = os.clock() + MV.RollSeconds, Tilt = side * 16 }
+end
 
 local function tryMantle()
 	local char = player.Character
@@ -420,9 +556,7 @@ local function tryMantle()
 	if mantling or not (root and hum) or hum.Health <= 0 or root.Anchored or hum.WalkSpeed < 1 then
 		return
 	end
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = { char }
+	local params = rayParams()
 	local flat = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
 	if flat.Magnitude < 0.1 then
 		return
@@ -474,8 +608,23 @@ local function tryMantle()
 	end)
 end
 
--- ===== input (TTK/Tarkov layout) =====
+-- ===== input: Metal Gear handling in first person =====
+-- LMB fire, RMB sights, R reload (hold: keep the magazine), T rack/unjam, B selector, 1/2 switch, G frag,
+-- H dressing, C crouch (hold: prone; at a sprint: dive), Space up a stance / over a ledge, Q/E lean
+-- (prone: roll), Z binoculars, Y check weapon, K artillery, F dig, V sandbags, M app, U unlink.
 local firing = false
+local held = {} -- [KeyCode] = token while a hold-or-tap key is down
+
+local function holdKey(key, seconds, onHold)
+	local token = {}
+	held[key] = token
+	task.delay(seconds, function()
+		if held[key] == token then
+			held[key] = true -- the hold fired: the release does nothing
+			onHold()
+		end
+	end)
+end
 
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then
@@ -483,6 +632,9 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 	local key = input.KeyCode
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if binos then
+			return
+		end
 		firing = true
 		sprinting = false -- the rifle comes up: no shooting at a run
 		Remotes.Fire:FireServer(camera.CFrame.LookVector)
@@ -490,7 +642,9 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		sprinting = false
 		setAim(true)
 	elseif key == Enum.KeyCode.R then
-		Remotes.Reload:FireServer()
+		holdKey(key, MV.CarefulReloadHold, function()
+			Remotes.Reload:FireServer(true) -- careful: the magazine goes back in the pouch
+		end)
 	elseif key == Enum.KeyCode.T then
 		Sounds.Play("Rack")
 		if weapon and weapon.Jammed then Remotes.Unjam:FireServer() else Remotes.Rack:FireServer() end
@@ -502,10 +656,26 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		Remotes.Grenade:FireServer(camera.CFrame.LookVector)
 	elseif key == Enum.KeyCode.H then
 		Remotes.Heal:FireServer()
-	elseif key == Enum.KeyCode.Q then
-		lean = -1
-	elseif key == Enum.KeyCode.E then
-		lean = 1
+	elseif key == Enum.KeyCode.Q or key == Enum.KeyCode.E then
+		local side = if key == Enum.KeyCode.Q then -1 else 1
+		if stance == "Prone" then
+			proneRoll(side)
+		else
+			setLean(side)
+		end
+	elseif key == Enum.KeyCode.C then
+		local _, _, hum = myParts()
+		if sprinting and stance == "Stand" and hum and hum.MoveDirection.Magnitude > 0.1 then
+			dive()
+		else
+			holdKey(key, MV.ProneHoldSeconds, function()
+				wantStance("Prone")
+			end)
+		end
+	elseif key == Enum.KeyCode.Z then
+		setBinos(true)
+	elseif key == Enum.KeyCode.Y then
+		Hud.Check(true)
 	elseif key == Enum.KeyCode.K then
 		-- artillery: on the point you are looking at
 		local ray = workspace:Raycast(camera.CFrame.Position, camera.CFrame.LookVector * 600)
@@ -522,26 +692,47 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		Remotes.Unlink:FireServer()
 	elseif key == Enum.KeyCode.LeftShift or key == Enum.KeyCode.RightShift then
 		sprinting = true
+		popUp = false
+		if stance ~= "Stand" then
+			wantStance("Stand") -- running starts on your feet
+		end
 		if aiming then
 			setAim(false)
 		end
 	elseif key == Enum.KeyCode.Space then
-		tryMantle()
+		if stance ~= "Stand" then
+			popUp = false
+			wantStance(if stance == "Prone" then "Crouch" else "Stand")
+		else
+			tryMantle()
+		end
 	elseif key == Enum.KeyCode.F2 and Config.Dev.Enabled then
 		Remotes.TutorialSkip:FireServer() -- testing: skip the current stage of the first link
 	end
 end)
 UserInputService.InputEnded:Connect(function(input)
+	local key = input.KeyCode
+	local tapped = held[key] ~= nil and held[key] ~= true
+	held[key] = nil
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		firing = false
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 		setAim(false)
-	elseif input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
+	elseif key == Enum.KeyCode.LeftShift or key == Enum.KeyCode.RightShift then
 		sprinting = false
-	elseif input.KeyCode == Enum.KeyCode.Q and lean == -1 then
-		lean = 0
-	elseif input.KeyCode == Enum.KeyCode.E and lean == 1 then
-		lean = 0
+	elseif key == Enum.KeyCode.Q and lean == -1 then
+		setLean(0)
+	elseif key == Enum.KeyCode.E and lean == 1 then
+		setLean(0)
+	elseif key == Enum.KeyCode.R and tapped then
+		Remotes.Reload:FireServer(false) -- quick: a half-used magazine is left where it falls
+	elseif key == Enum.KeyCode.C and tapped then
+		popUp = false
+		wantStance(if stance == "Stand" then "Crouch" elseif stance == "Crouch" then "Stand" else "Crouch")
+	elseif key == Enum.KeyCode.Z then
+		setBinos(false)
+	elseif key == Enum.KeyCode.Y then
+		Hud.Check(false)
 	end
 end)
 -- full auto: keep sending trigger pulls while held; the server's RPM gate decides what fires

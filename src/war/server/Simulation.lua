@@ -220,10 +220,10 @@ end
 
 -- ===== the city =====
 local DRILLS = {
-	{ Name = "RANGE", Keys = "LMB . RMB . R . B" },
+	{ Name = "RANGE", Keys = "LMB . RMB . R . B . C" },
 	{ Name = "BREACH", Keys = "G" },
 	{ Name = "ASCENT", Keys = "SHIFT . SPACE" },
-	{ Name = "CONTACT", Keys = "H . Q / E" },
+	{ Name = "CONTACT", Keys = "C . Q / E . Z . H" },
 	{ Name = "FIRE MISSION", Keys = "K" },
 }
 Simulation.Drills = DRILLS
@@ -404,7 +404,7 @@ local function hostileThink(sim, h)
 	if now >= h.NextFire and dist < 160 then
 		h.NextFire = now + S.HostileFireSeconds * rng:NextNumber(0.8, 1.3)
 		local eye = here + Vector3.new(0, 1.6, 0)
-		local aim = proot.Position + Vector3.new(0, 1.2, 0)
+		local aim = proot.Position + Vector3.new(0, if char:GetAttribute("Stance") == "Prone" then -0.2 else 1.2, 0)
 		local ignore = {}
 		for _, other in sim.Hostiles do
 			table.insert(ignore, other.Model)
@@ -418,6 +418,8 @@ local function hostileThink(sim, h)
 		if Vector3.new(v.X, 0, v.Z).Magnitude > Config.WarMovement.WalkSpeed + 2 then
 			chance *= 0.6 -- a sprinting recruit is harder to hit
 		end
+		local stance = Config.WarMovement.Stance[char:GetAttribute("Stance") or "Stand"]
+		chance *= stance and stance.Hit or 1 -- low is harder to hit
 		local dir = (aim - eye).Unit
 		Remotes.Weapon:FireClient(sim.Player, "Shot", h.Model, eye, dir, 0.7)
 		if rng:NextNumber() < chance then

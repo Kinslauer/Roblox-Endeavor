@@ -370,6 +370,71 @@ do
 	-- the teleport fails here: the failure path puts a fresh recruit on the field with the same locker
 	check("unlink: a failed teleport hands the conduit a new recruit", fired("UnlinkFailed") and Soldiers.IsDeployed(g))
 end
+-- stances, lean, reloads and marking (2026-11-11)
+do
+	as(g)
+	local MV = Config.WarMovement
+	local gc = g.Character
+	local hum, groot = gc.Humanoid, gc.HumanoidRootPart
+	local s = Soldiers.State(g)
+	hum.HipHeight = 2
+	run(Config.SpawnSettle + 0.5)
+	groot.CFrame = M.CF.new(-3000, 4, 3000) -- open ground, nobody near
+	local mine = { FilterDescendantsInstances = { gc } }
+	Remotes.Stance:FireServer("Crouch"); run(0.1)
+	check("stance: C crouches (hips down, the body says so)", gc:GetAttribute("Stance") == "Crouch" and math.abs(hum.HipHeight - (2 - MV.Stance.Crouch.Drop)) < 0.01)
+	Remotes.Stance:FireServer("Prone"); run(0.1)
+	check("stance: prone lies on the ground", gc:GetAttribute("Stance") == "Prone" and hum.HipHeight == 0)
+	Remotes.Stance:FireServer("Flying"); run(0.1)
+	check("stance: an unknown stance is refused", gc:GetAttribute("Stance") == "Prone")
+	local w = s.Weapons[s.Active]
+	w.Mode, w.Chamber, w.Jammed, w.Busy = "Semi", true, false, 0
+	local malf = Firearms.MalfunctionChance
+	Firearms.MalfunctionChance = function() return 0 end
+	Remotes.Fire:FireServer(groot.CFrame.LookVector); run(0.1)
+	local kick for _, e in M.FireLog do if e[1] == "Weapon" and e.player == g and e[3] == "Recoil" then kick = e[4] end end
+	check("stance: prone steadies the gun (spread and recoil)", w.Steady == MV.Stance.Prone.Spread and kick ~= nil and math.abs(kick - w.Def.Recoil[1] * Firearms.RecoilMult(w.Parts) * MV.Stance.Prone.Recoil) < 1e-4)
+	Firearms.MalfunctionChance = malf
+	local low = Soldiers.Eye(g, mine)
+	check("stance: the prone eye is near the ground", low.Y < groot.Position.Y + 0.5)
+	Remotes.Lean:FireServer(1); run(0.1)
+	check("lean: no leaning while prone", (s.Lean or 0) == 0)
+	Remotes.Stance:FireServer("Stand"); run(0.1)
+	check("stance: standing restores the hips", gc:GetAttribute("Stance") == "Stand" and hum.HipHeight == 2)
+	local mid = Soldiers.Eye(g, mine)
+	Remotes.Lean:FireServer(1); run(0.1)
+	local out = Soldiers.Eye(g, mine)
+	check("lean: the eye and muzzle move out to the side", s.Lean == 1 and math.abs((out - mid).Magnitude - MV.Lean) < 0.05 and (out - mid).Unit:Dot(groot.CFrame.RightVector) > 0.99)
+	Remotes.Lean:FireServer(0); run(0.1)
+	-- reloads
+	run(2)
+	w.Busy, w.Reloading, w.Mag, w.Spare = 0, false, 5, { w.Def.MagSize, w.Def.MagSize }
+	Remotes.Reload:FireServer(false); run(6)
+	check("reload: the quick one drops the half-used magazine", w.Mag ~= nil and w.Mag >= w.Def.MagSize - 1 and #w.Spare == 1 and w.Dropped == 5)
+	w.Busy, w.Reloading, w.Mag = 0, false, 7
+	Remotes.Reload:FireServer(true); run(8)
+	check("reload: the careful one keeps it", #w.Spare == 1 and w.Spare[1] == 7 and w.Dropped == nil)
+	-- marking
+	local function figure(name, at)
+		local m = M.newInstance("Model"); m.Name = name
+		local r = M.newInstance("Part"); r.Name = "HumanoidRootPart"; r.CFrame = M.CF.new(at); r.Parent = m
+		local h = M.newInstance("Humanoid"); h.Name = "Humanoid"; h.Parent = m
+		h.Health, h.MaxHealth = 100, 100
+		m.Parent = workspace_
+		return m
+	end
+	local function marks() local n = 0 for _, e in M.FireLog do if e[1] == "Soldier" and e.player == g and e[3] == "Marked" then n += 1 end end return n end
+	local ahead = figure("Stranger", groot.Position + groot.CFrame.LookVector * 60)
+	local behind = figure("Behind", groot.Position - groot.CFrame.LookVector * 60)
+	local before = marks()
+	Remotes.Mark:FireServer(behind); run(0.1)
+	check("mark: nothing behind the spotter is marked", marks() == before)
+	Remotes.Mark:FireServer(gc); run(0.1)
+	check("mark: not yourself", marks() == before)
+	Remotes.Mark:FireServer(ahead); run(0.1)
+	check("mark: a figure in the glass is marked for the spotter's side", marks() == before + 1)
+	ahead:Destroy(); behind:Destroy()
+end
 local probe = Intro.Probe(M.V3.new(0, 1500, 5000))
 check("intro: the probe builds and clears a cell and a simulation", type(probe) == "string" and probe:find("benches 5") ~= nil and workspace_:FindFirstChild("IntroCell_0") == nil)
 

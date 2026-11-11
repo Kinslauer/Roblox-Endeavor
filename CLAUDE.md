@@ -36,7 +36,7 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (273 checks), `war` = Front (75), `warclient` = the Front client plays the first link's stages (11), `stress` = budgets under load (5), `client` = the
+  `scenario` = Endeavor end to end (273 checks), `war` = Front (88), `warclient` = the Front client plays the first link's stages, the screen and the controls (25), `stress` = budgets under load (5), `client` = the
   Endeavor client boots + movement, dodge, animation, guard and air checks (32). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
@@ -106,8 +106,9 @@ Client tab screenshot, because Andy cannot read logs another way.
 - Entrenching: foxholes and low sandbags only, on open ground.
 - Controls are the Cursed Gear layout: E flicker, F block/parry, Q dodge, X interact, M devour/app, R/Y/V skills,
   Z feint, G grab/throw, H drop, Shift sprint, C crouch, B whistle, Tab inventory, L loadout, J attributes, O hideout, N recruit app,
-  P helmetcam. Front: LMB fire, RMB aim, R reload, T rack/unjam, B selector, 1/2 switch, G frag, H dressing, Q/E lean,
-  K artillery, F dig, V sandbags, M app.
+  P helmetcam. Front: LMB fire, RMB aim, R reload (hold: keep the magazine), T rack/unjam, B selector, 1/2 switch,
+  G frag, H dressing, Q/E lean (prone: roll), C crouch (hold: prone; sprinting: dive), Space up a stance / mantle,
+  Z binoculars, Y check weapon, K artillery, F dig, V sandbags, M app, U unlink.
 
 - Movement (owner, 2026-11-03: "the platformer template has the movement i'd like"): `src/client/Movement.lua` is a
   port of Roblox's Platformer template (the user uploaded Platform.rbxl; read with the scratch `tools/rbxl.py` binary
@@ -247,6 +248,21 @@ Client tab screenshot, because Andy cannot read logs another way.
   per stage, shards, machine lines). "Crackdown style" read as free movement in a fully breakable city, kept grounded
   (Config.WarMovement: Shift sprint, Space mantle up to 6.6 studs, in Main.client) so the Front's realistic handling
   holds. Sounds: tools/sounds/synth_intro.py. Real-server check: tools/realserver/frontcheck.py (startup + Intro.Probe).
+- Front handling (owner, 2026-11-11: "the UI and FPV are very cluttered ... you should be able to crouch and go
+  prone. the game should control like Metal gear 4 ... and incorporate the modern gunplay and mechanics of MGSV";
+  "metal gear also has first person controls", so the Front stays first person). Tuning: Config.WarMovement (Stance
+  {Stand, Crouch, Prone}, dive, roll, Lean/Peek, SightSeconds, reload multipliers, Binoculars). Server
+  (`Soldiers.SetStance(player, stance, force)`, remotes Stance/Lean/Mark): s.Stance + char attribute `Stance`,
+  HipHeight (Prone 0), leg/root/neck/waist joints posed with Joints.Pose so hitboxes match (STANCE_POSE),
+  `Soldiers.Eye(player, ray)` = the firing eye (prone offset, lean or peek with a side wall clamp), spread via
+  `w.Steady`, recoil scaled, rising needs headroom; `Guns.Reload(w, keep, quick, careful)` (quick drops a partial
+  magazine, w.Dropped); Mark checks facing, range, sight and faction, then Soldier "Marked"(model, seconds) to the
+  side. Client: `src/war/client/Hud.lua` is the whole screen (Weapon/Check/Health/Stance/Aim/Flash/Hill/Scales/
+  Banner/Feed/Binoculars/Dwell/Mark; `Hud.Elements` for tests); Main reads the Stance attribute (never predicts),
+  paces WalkSpeed per stance, CameraOffset for prone and lean, `shove` for the dive and the prone roll, pop-up aim
+  from a crouch behind low cover (`lowCoverAhead`), `holdKey` for tap-or-hold keys (C, R), binocular dwell -> Mark.
+  Arms are posed per client (prone reach); legs and body by the server. Unseen live: the prone and crouch poses, the
+  prone body against rough ground, the dive.
 - The arrival (owner, 2026-11-10: "UI and Intro sequence overhauled ... riding a train ... revealing the weapons under
   a cloak ... racking the slide ... pans behind ... zooms into the fpv ... a tutorial stealth level ... subway ...
   based off splinter cell chaos theory and batman arkham involving environmental takedowns and light level hiding";
@@ -294,7 +310,9 @@ Client tab screenshot, because Andy cannot read logs another way.
   once Uploaded (PlayerData.wipe); the death screen says STACK REBOOT or that nothing survives; the computer prompt is
   "Upload stack / log in".
 
-## State (2026-11-10)
+## State (2026-11-11)
+- Front v26 (2026-11-11): clean screen, crouch/prone/dive/roll, lean and peek, quick and careful reload, binoculars
+  with marking. Awaits Andy's play-through: docs/TESTING.md "Front: clean screen, stances, Metal Gear handling".
 - Endeavor v80 + Front v25 published (2026-11-10, the story joined up) and starting cleanly on real servers
   (Endeavor 5.8-9.6s, Front 2.4s, 0 warnings; intro probe ok); a real-server probe found 12 freight lifts, 12
   consignments and no city geometry inside any cab or shaft. The unlink teleport itself is only testable in the live

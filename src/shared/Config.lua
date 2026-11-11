@@ -453,6 +453,32 @@ Config.WarMovement = {
 	MantleHeight = 6.6, -- highest ledge (above the feet) a recruit can pull up onto
 	MantleReach = 3, -- studs ahead of the chest the ledge must be
 	MantleSeconds = 0.38,
+	-- Stances (owner, 2026-11-11: crouch and prone, Metal Gear handling in first person). Speed is the walk
+	-- speed, Drop lowers the hips (studs; Prone lies on the ground), Spread/Recoil scale the gun, Hit scales
+	-- how often the simulation's hostiles connect.
+	Stance = {
+		Stand = { Speed = 14, Spread = 1, Recoil = 1, Hit = 1 },
+		Crouch = { Speed = 8, Drop = 1.1, Spread = 0.72, Recoil = 0.8, Hit = 0.75 },
+		Prone = { Speed = 3.6, Spread = 0.45, Recoil = 0.55, Hit = 0.5 },
+	},
+	StanceSeconds = 0.22, -- stand <-> crouch; prone takes ProneSeconds
+	ProneSeconds = 0.4,
+	ProneHoldSeconds = 0.3, -- hold C this long to go prone; a tap crouches
+	ProneCamera = Vector3.new(0, -1.7, -1.2), -- eye near the ground, ahead of the hips
+	DiveSpeed = 34, -- sprint + C: a dive to prone
+	DiveLift = 9,
+	RollSpeed = 17, -- Q / E while prone: a roll to the side
+	RollSeconds = 0.45,
+	RollCooldown = 0.9,
+	Lean = 1.3, -- Q / E: studs the eye and muzzle move sideways
+	Peek = 2.6, -- the same next to cover (a wall within PeekReach ahead): out past the corner
+	PeekReach = 3.5,
+	LeanRoll = 9, -- degrees the view tilts
+	SightSeconds = { Pistol = 0.08, Default = 0.12 }, -- the snap to the sights
+	CarefulReloadHold = 0.32, -- hold R this long: the half-used magazine goes back in the pouch
+	QuickReload = 0.8, -- time multipliers on the magazine change
+	CarefulReload = 1.35,
+	Binoculars = { Fov = 16, Dwell = 0.35, Range = 700, Seconds = 9, ThroughWalls = true },
 }
 
 Config.Hideouts = {

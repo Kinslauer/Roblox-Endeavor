@@ -193,11 +193,13 @@ profile (same ProfileService store, same universe). Code lives in `src/war/` and
   majority for 60s captures it (+50) and moves it. It moves anyway after 7 minutes. Sectors it leaves rebuild.
 - **Weapons** (`src/shared/Firearms.lua`, `src/war/server/Guns.lua`): AKM, SKS, Mosin, Makarov (Pact); M16A1, M14,
   M1911 (Union). Each is a mechanism: chamber, magazine, bolt, safety, selector, and five wearing parts (receiver,
-  barrel, bolt, magazine, stock). Worn parts jam, spread and kick more. Reloads are staged (eject, insert, rack) and
-  partial mags go back in the pouch. Bullets are simulated with velocity, drop, falloff and hit zones (head x2.5,
+  barrel, bolt, magazine, stock). Worn parts jam, spread and kick more. Reloads are staged (eject, insert, rack); a quick
+  reload drops a partial mag, a careful one (hold `R`) puts it back in the pouch. Bullets are simulated with velocity, drop, falloff and hit zones (head x2.5,
   limbs x0.6); armor plates absorb damage by condition and penetration.
-- **Controls** (TTK/Tarkov): `LMB` fire · `RMB` aim · `R` reload · `T` rack / clear jam · `B` selector · `1`/`2` weapon ·
-  `G` frag · `H` field dressing · `Q`/`E` lean · `K` call artillery on your aim point (inside the hill, 2 min cooldown) ·
+- **Controls** (Metal Gear handling, first person): `LMB` fire · `RMB` sights · `R` quick reload (hold: keep the
+  magazine) · `T` rack / clear jam · `B` selector · `1`/`2` weapon · `C` crouch (hold: prone; at a sprint: dive) ·
+  `Space` up a stance / over a ledge · `Z` binoculars (mark) · `Y` check weapon ·
+  `G` frag · `H` field dressing · `Q`/`E` lean, peek past cover (prone: roll) · `K` call artillery on your aim point (inside the hill, 2 min cooldown) ·
   `M` recruit app · `F` dig a foxhole (4s, stay still; a hit stops you) · `V` stack a low sandbag section (3 per
   deployment from the shop). Entrenching only works on open ground, away from buildings and other works; digging
   through fallen recruits buries them. Always first person.

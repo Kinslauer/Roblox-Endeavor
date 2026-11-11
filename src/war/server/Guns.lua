@@ -105,21 +105,27 @@ function Guns.Rack(w)
 	rack(w)
 end
 
--- Reload in stages: drop the magazine (keeping it as a spare if it has rounds), seat a fresh
--- one, and if the chamber is empty, rack. A mint gun does this fast; a worn one is slower.
-function Guns.Reload(w)
+-- Reload in stages: drop the magazine, seat a fresh one, and if the chamber is empty, rack. A mint
+-- gun does this fast; a worn one is slower. `keep` is the careful reload: the half-used magazine
+-- goes back in the pouch, which takes longer. The quick one lets it fall, rounds and all.
+function Guns.Reload(w, keep, quickMult, carefulMult)
 	if isBusy(w) or w.Reloading or #w.Spare == 0 then
 		return false
 	end
 	w.Reloading = true
 	local r = w.Def.Reload
 	local wear = 1 + (1 - (w.Parts.Magazine or 100) / 100) * 0.5
+	local partial = w.Mag and w.Mag > 0
+	if partial then
+		wear *= if keep then carefulMult or 1.35 else quickMult or 0.8
+	end
 	-- pick the fullest spare
 	table.sort(w.Spare, function(a, b) return a > b end)
 	local fresh = table.remove(w.Spare, 1)
-	if w.Mag and w.Mag > 0 then
-		table.insert(w.Spare, w.Mag) -- partial mag goes back in the pouch
+	if partial and keep then
+		table.insert(w.Spare, w.Mag) -- back in the pouch
 	end
+	w.Dropped = if partial and not keep then w.Mag else nil -- rounds left on the ground (tests read it)
 	w.Mag = nil
 	busy(w, r.EjectMag * wear)
 	task.delay(r.EjectMag * wear, function()
@@ -200,7 +206,7 @@ end
 -- raycasting each segment, until it hits something or runs out of range.
 function Guns.Shoot(shooter, w, origin, dir, onHit)
 	local ammo = Firearms.Ammo[w.Def.Ammo]
-	local spreadDeg = (if w.Aiming then w.Def.AdsSpread else w.Def.Spread) * Firearms.SpreadMult(w.Parts)
+	local spreadDeg = (if w.Aiming then w.Def.AdsSpread else w.Def.Spread) * Firearms.SpreadMult(w.Parts) * (w.Steady or 1)
 	local spread = math.rad(spreadDeg)
 	local yaw, pitch = rng:NextNumber(-spread, spread), rng:NextNumber(-spread, spread)
 	dir = (CFrame.lookAt(Vector3.zero, dir) * CFrame.Angles(pitch, yaw, 0)).LookVector

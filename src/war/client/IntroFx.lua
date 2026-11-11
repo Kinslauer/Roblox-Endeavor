@@ -51,10 +51,10 @@ local function ensureGui()
 	end
 	gui = make("ScreenGui", { Name = "IntroFx", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 50 }, player:WaitForChild("PlayerGui"))
 	cover = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 1 }, gui)
-	line = make("TextLabel", { Size = UDim2.new(1, -40, 0, 26), Position = UDim2.new(0, 20, 1, -96), BackgroundTransparency = 1, Text = "", TextColor3 = Color3.fromRGB(150, 235, 225),
-		Font = Enum.Font.Code, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Left, TextTransparency = 1, ZIndex = 3 }, gui)
-	sub = make("TextLabel", { Size = UDim2.new(1, -40, 0, 20), Position = UDim2.new(0, 20, 1, -70), BackgroundTransparency = 1, Text = "", TextColor3 = Color3.fromRGB(110, 170, 165),
-		Font = Enum.Font.Code, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, TextTransparency = 1, ZIndex = 3 }, gui)
+	line = make("TextLabel", { Size = UDim2.new(1, -48, 0, 18), Position = UDim2.new(0, 24, 1, -112), BackgroundTransparency = 1, Text = "", TextColor3 = Color3.fromRGB(150, 235, 225),
+		Font = Enum.Font.RobotoMono, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, TextTransparency = 1, ZIndex = 3 }, gui)
+	sub = make("TextLabel", { Size = UDim2.new(1, -48, 0, 14), Position = UDim2.new(0, 24, 1, -92), BackgroundTransparency = 1, Text = "", TextColor3 = Color3.fromRGB(110, 170, 165),
+		Font = Enum.Font.RobotoMono, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTransparency = 1, ZIndex = 3 }, gui)
 end
 
 -- types a machine line, character by character

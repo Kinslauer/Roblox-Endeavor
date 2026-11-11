@@ -513,6 +513,35 @@ and F2 skips to the next stage).
 - [ ] On the Front: Shift sprints (no firing while sprinting), Space at a wall pulls you up onto ledges.
 - [ ] If you die later, the issued kit is not dropped as loot. Leaving during the intro gives ordered gear back to the locker.
 
+### Front: clean screen, stances, Metal Gear handling (2026-11-11, Front v26)
+The screen:
+- [ ] Bottom right shows only a big rounds number, the magazine size, the fire mode and one small pip per spare
+      magazine. The weapon's name shows for a moment when you switch (1 / 2), then fades.
+- [ ] No list of gun parts on screen. Hold Y: a small panel shows the five parts, vest and helmet as thin bars. A jam
+      shows the same panel for three seconds and a red "JAM [T]" above the rounds.
+- [ ] Bottom left: a thin health bar, a stance stroke (tall, short, flat) and three small icons with numbers
+      (grenades, dressings, sandbags).
+- [ ] Top: one thin two-colour bar for the scales, a hairline under it that fills while a side holds the hill, and one
+      small dim line (sector, head count, time). The old long HILL sentence is gone.
+- [ ] The centre is a small dot; on the sights (RMB) it shrinks to a fine dot. Machine lines are smaller.
+Stances:
+- [ ] Tap C: you crouch (the view drops, you walk slower). Tap C again or press Space: you stand.
+- [ ] Hold C: you go prone (the view is near the ground, you crawl). Space or a tap on C: up to a crouch.
+- [ ] Sprint (Shift) and tap C: you dive forward and land prone.
+- [ ] Prone, tap Q or E: you roll to that side.
+- [ ] Crouched and prone shots group tighter and kick less. Other players see your body crouch and lie down, and
+      shots at where you stood pass over you. In the simulation the hostiles hit you less when you are low.
+- [ ] Shift while low: you stand and run. You cannot jump while crouched or prone.
+Controls and gunplay:
+- [ ] RMB snaps to the sights fast (a pistol faster than a rifle); walking with the sights up is slow and level.
+- [ ] Q / E lean: the view moves to the side and tilts. Next to a wall or corner the lean goes further, past the
+      edge, and your shots start from there.
+- [ ] Crouched behind low cover (sandbags), hold RMB: you rise over it to aim; let go: you drop back.
+- [ ] Tap R with a half-used magazine: a fast reload, and the spare pips drop by one (the old magazine is lost).
+      Hold R: a slower reload that keeps it (the pip count stays the same).
+- [ ] Hold Z: binoculars. Hold an enemy (or a simulation hostile) in the centre for a moment: a red diamond marks it
+      for about nine seconds, for your whole side, also through walls. LMB does nothing while Z is held.
+
 ## The story joined up (2026-11-10, new this round: Endeavor v80, Front v25)
 Play these on the published places (Studio's Play button cannot teleport between places).
 - [ ] At the bottom of the station, copying the manifest at the console also puts a "Line 9 Manifest" in your pack (Tab).
