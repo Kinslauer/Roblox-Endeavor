@@ -138,6 +138,31 @@ local healthFill = bar(UDim2.new(0.5, -BAR_W / 2, 1, -120), UDim2.fromOffset(hal
 local staminaFill = bar(UDim2.new(0.5, 2, 1, -120), UDim2.fromOffset(half, 14), Color3.fromRGB(206, 212, 222), "STAMINA")
 local postureFill = bar(UDim2.new(0.5, -BAR_W / 2, 1, -104), UDim2.fromOffset(BAR_W, 4), UI.Warn)
 local levelLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0.5, -BAR_W / 2, 1, -146), TextXAlignment = Enum.TextXAlignment.Left, TextSize = 11, Font = UI.Mono, TextColor3 = UI.Dim, Text = "" })
+-- The vitals keep out of the way (owner, 2026-11-11: "the UI is very cluttered"): the whole block fades out
+-- unless a bar moved in the last Config.Hud.VitalsHold seconds or health is under Config.Hud.VitalsLow.
+local vitals = { changed = os.clock(), shown = true }
+do
+	local group = make("CanvasGroup", { Name = "Vitals", Size = UDim2.fromOffset(BAR_W + 8, 150), Position = UDim2.new(0.5, -BAR_W / 2 - 4, 1, -150), BackgroundTransparency = 1, BorderSizePixel = 0, GroupTransparency = 0 })
+	vitals.group = group
+	for _, fill in { chargeFill, healthFill, staminaFill, postureFill } do
+		fill.Parent.Parent = group
+		fill:GetPropertyChangedSignal("Size"):Connect(function()
+			vitals.changed = os.clock()
+		end)
+	end
+	levelLabel.Parent = group
+	task.spawn(function()
+		while true do
+			local low = healthFill.Size.X.Scale < (HUD.VitalsLow or 0.6)
+			local show = low or os.clock() - vitals.changed < (HUD.VitalsHold or 4)
+			if show ~= vitals.shown then
+				vitals.shown = show
+				Kit.tween(group, if show then 0.12 else 0.6, { GroupTransparency = if show then 0 else 1 })
+			end
+			task.wait(0.2)
+		end
+	end)
+end
 local flickerLabel = label({ Size = UDim2.fromOffset(240, 18), Position = UDim2.new(0.5, 0, 1, -146), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 11, Font = UI.Title, Text = "", TextColor3 = UI.Harm })
 pcall(function() -- our own health bar replaces Roblox's; no player list (Tab is the inventory)
 	local StarterGui = game:GetService("StarterGui")
@@ -724,6 +749,42 @@ Remotes.InventoryChanged.OnClientEvent:Connect(function(inv, equipped, armor, cy
 	renderInventory()
 end)
 
+-- ===== The gun's count (bottom right, only with a gun out): rounds in the magazine, large; spare rounds, small =====
+do
+	local rounds = label({ Name = "Rounds", Size = UDim2.fromOffset(90, 34), Position = UDim2.new(1, -196, 1, -78), Text = "", Font = UI.Mono, TextSize = 30, TextColor3 = UI.Text, TextXAlignment = Enum.TextXAlignment.Right })
+	local spare = label({ Name = "Spare", Size = UDim2.fromOffset(70, 18), Position = UDim2.new(1, -100, 1, -64), Text = "", Font = UI.Mono, TextSize = 13, TextColor3 = UI.Dim, TextXAlignment = Enum.TextXAlignment.Left })
+	make("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.5, Thickness = 1 }, rounds)
+	make("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.5, Thickness = 1 }, spare)
+	local function refresh()
+		local char = player.Character
+		local def = char and Weapons.Defs[char:GetAttribute("Weapon") or ""]
+		local ammo = def and def.Ammo
+		rounds.Visible, spare.Visible = ammo ~= nil, ammo ~= nil
+		if ammo then
+			local have = lastInventory and lastInventory[ammo] or 0
+			local mag = char:GetAttribute("Mag")
+			if type(mag) == "number" then
+				rounds.Text, spare.Text = tostring(mag), "/ " .. have
+			else
+				rounds.Text, spare.Text = tostring(have), ""
+			end
+			rounds.TextColor3 = if (if type(mag) == "number" then mag else have) <= 0 then UI.Harm else UI.Text
+		end
+	end
+	local function bind(char)
+		char:GetAttributeChangedSignal("Weapon"):Connect(refresh)
+		char:GetAttributeChangedSignal("Mag"):Connect(refresh)
+		refresh()
+	end
+	player.CharacterAdded:Connect(bind)
+	if player.Character then
+		bind(player.Character)
+	end
+	Remotes.InventoryChanged.OnClientEvent:Connect(function()
+		task.defer(refresh)
+	end)
+end
+
 -- ===== Loadout: derived stats, worn tags, skills (L) + hotbar =====
 local loadout
 local cooldowns = {} -- skillId -> os.clock() when ready
@@ -737,7 +798,7 @@ for i = 1, Skills.SlotCount do
 	local capStroke = make("UIStroke", { Color = UI.Accent, Transparency = 0.3, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, cap)
 	local name = label({ Size = UDim2.new(1, -62, 1, 0), Position = UDim2.fromOffset(34, 0), TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Text = "", Parent = box })
 	local time = label({ Size = UDim2.fromOffset(26, 34), Position = UDim2.new(1, -30, 0, 0), TextSize = 11, Font = UI.Mono, TextColor3 = UI.Warn, TextXAlignment = Enum.TextXAlignment.Right, Text = "", Parent = box })
-	hotbar[i] = { name = name, time = time, cap = cap, stroke = capStroke }
+	hotbar[i] = { name = name, time = time, cap = cap, stroke = capStroke, box = box }
 end
 
 local function renderHotbar()
@@ -745,6 +806,7 @@ local function renderHotbar()
 		local slot = hotbar[i]
 		local id = loadout and loadout.Slots[tostring(i)]
 		local def = id and Skills.Defs[id]
+		slot.box.Visible = def ~= nil -- an empty slot is not drawn
 		if not def then
 			slot.name.Text, slot.time.Text = "", ""
 			slot.cap.TextColor3, slot.stroke.Color = UI.Faint, UI.Line
@@ -1412,7 +1474,7 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 
--- ===== Helmetcam (P): first person with your body visible =====
+-- ===== Helmetcam (P): first person, forearms and weapon in view =====
 local helmetcam = false
 local savedZoom = { min = 0.5, max = 128 }
 local function setHelmetcam(on)
@@ -1441,7 +1503,8 @@ local function setHelmetcam(on)
 		end
 	end
 end
--- Roblox hides the whole body in first person; re-show everything except the head each frame.
+-- Roblox hides the whole body in first person; only the forearms, hands and what they hold come back, so the view
+-- stays clear (the full body used to fill it).
 RunService.RenderStepped:Connect(function()
 	if not helmetcam then
 		return
@@ -1451,8 +1514,8 @@ RunService.RenderStepped:Connect(function()
 		return
 	end
 	for _, p in char:GetChildren() do
-		if p:IsA("BasePart") and p.Name ~= "Head" and p.Name ~= "HumanoidRootPart" then
-			p.LocalTransparencyModifier = 0
+		if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" then
+			p.LocalTransparencyModifier = if p.Name:find("LowerArm") or p.Name:find("Hand") then 0 else 1
 		elseif p:IsA("Accessory") then
 			local handle = p:FindFirstChild("Handle")
 			if handle then
@@ -1792,8 +1855,29 @@ do
 		label({ Size = UDim2.fromOffset(108, 18), Position = UDim2.fromOffset(x + 50, y), Text = pair[2], TextSize = 13, TextColor3 = UI.Dim, TextXAlignment = Enum.TextXAlignment.Left, Parent = controls })
 	end
 end
-task.delay(120, function()
-	controls.Visible = false
+-- Not in the station (nothing is explained there), and the quest line waits with it.
+controls.Visible = false
+task.spawn(function()
+	local shownAt
+	while true do
+		local station = player:GetAttribute("Stealth") == true or Intro.Active()
+		questLabel.Visible = not station
+		if station then
+			if shownAt and os.clock() - shownAt < 60 then
+				controls.Visible = false
+			end
+		elseif not shownAt and player.Character then
+			task.wait(4) -- a spawn into the station sets the attribute a moment after the character appears
+			if player:GetAttribute("Stealth") ~= true and not Intro.Active() then
+				shownAt = os.clock()
+				controls.Visible = true
+				task.delay(60, function()
+					controls.Visible = false
+				end)
+			end
+		end
+		task.wait(1)
+	end
 end)
 
 -- ===== Phase =====
@@ -2537,7 +2621,13 @@ menuOpen = function()
 	return false
 end
 aimActive = function()
-	return aimOn and not helmetcam and not Intro.Active() and not menuOpen() and not UserInputService:IsKeyDown(AIM.FreeCursorKey)
+	if not aimOn or helmetcam or Intro.Active() or menuOpen() or UserInputService:IsKeyDown(AIM.FreeCursorKey) then
+		return false
+	end
+	-- A takedown or a cutscene places the body: turning it to the camera here is what put the attacker at the
+	-- guard's side instead of square behind it (owner, 2026-11-11).
+	local char = player.Character
+	return not (char and (char:GetAttribute("Takedown") or char:GetAttribute("Cutscene")))
 end
 local function aimPreset()
 	local char = player.Character

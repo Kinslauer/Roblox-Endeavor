@@ -177,9 +177,16 @@ function Tutorial.Start(player)
 		return
 	end
 	local intro = introOf(data)
-	if not intro.Kit then
+	-- The ride always ends with the Whisper in hand: the kit is topped up to T.Kit whenever the train is ridden
+	-- (first time, a replay, a new life in the station before the doors have opened), never beyond it.
+	if not intro.Kit or not ctx.introDone then
 		intro.Kit = true
-		Inventory.AddAll(player, T.Kit, true)
+		for id, count in pairs(T.Kit) do
+			local short = count - Inventory.Count(player, id)
+			if short > 0 then
+				Inventory.Add(player, id, short, true)
+			end
+		end
 		Gear.EquipWeapon(player, T.KitWeapon)
 		Stats.Apply(player)
 		Inventory.Push(player)

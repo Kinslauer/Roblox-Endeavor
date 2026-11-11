@@ -50,6 +50,7 @@ run(1)
 local PlayerData_ = M.mockEnv.__require(SSS.Server.Common.PlayerData)
 local Stealth = M.mockEnv.__require(SSS.Server.Stealth)
 local Tutorial_ = M.mockEnv.__require(SSS.Server.Tutorial)
+local StealthCfg = M.mockEnv.__require(RS.Shared.Config).Stealth
 local Rules = M.mockEnv.__require(RS.Shared.Stealth)
 local Combat = M.mockEnv.__require(SSS.Server.Combat)
 local Inventory0 = M.mockEnv.__require(SSS.Server.Inventory)
@@ -61,6 +62,13 @@ local function sawIntro(what) for _, e in M.FireLog do if e[1] == "Intro" and e[
 check("arrival: the ride plays (seated, held, doors shut)", sawIntro("Play") and char():GetAttribute("Cutscene") == true and root().Anchored == true and lvl.Doors[1].CanCollide == true)
 check("arrival: the kit is the silenced pistol", PlayerData_.Get(player).Equipped == "Whisper" and Inventory0.Count(player, "Subsonic") == 9)
 check("arrival: nobody notices a rider", player:GetAttribute("Stealth") == nil)
+-- a ride with the pistol gone and rounds spent (a replay): it is back in hand with a full nine, never more
+do
+	local prof = PlayerData_.Get(player)
+	Inventory0.Remove(player, "Subsonic", 6); Inventory0.Remove(player, "Whisper", 1); prof.Equipped = "Fists"
+	Tutorial_.Start(player); run(0.2)
+	check("arrival: every ride ends armed (pistol back, nine rounds, no more)", prof.Equipped == "Whisper" and Inventory0.Count(player, "Whisper") == 1 and Inventory0.Count(player, "Subsonic") == 9)
+end
 Remotes.Intro:FireServer("Done"); run(0.5)
 check("arrival: the ride ends: free, doors open, the station is live", char():GetAttribute("Cutscene") == nil and root().Anchored == false and lvl.Doors[1].CanCollide == false and player:GetAttribute("Stealth") == true)
 local guardsHere = Stealth.Guards(station)
@@ -95,9 +103,23 @@ check("stealth: behind his back he does not make you", Stealth.StateOf(g1) == "P
 check("takedown: from behind it is on offer, from the front it is not", Rules.TakedownKind(root().CFrame, g1root.CFrame, "Patrol", {}) == "Rear"
 	and Rules.TakedownKind(M.CF.new(g1root.Position + g1root.CFrame.LookVector * 4), g1root.CFrame, "Patrol", {}) == nil
 	and Rules.TakedownKind(root().CFrame, g1root.CFrame, "Alert", {}) == nil)
+local g1look, g1at = g1root.CFrame.LookVector, g1root.Position
 Remotes.Takedown:FireServer(g1); run(0.2)
 check("takedown: you are held in it", char():GetAttribute("Takedown") == "Rear" and root().Anchored == true)
+do
+	local off = root().Position - g1at
+	local back = -(off.X * g1look.X + off.Z * g1look.Z)
+	local side = math.abs(off.X * g1look.Z - off.Z * g1look.X)
+	print("   takedown stand: behind", back, "aside", side, "facing", root().CFrame.LookVector:Dot(g1look))
+	check("takedown: you stand square behind him, facing his back", math.abs(back - StealthCfg.Takedown.RearDistance) < 0.1 and side < 0.1 and root().CFrame.LookVector:Dot(g1look) > 0.99)
+end
 run(2.2)
+do
+	local off = g1root.Position - g1at
+	local ahead = off.X * g1look.X + off.Z * g1look.Z
+	print("   takedown body: ahead", ahead, "head toward", g1root.CFrame.UpVector:Dot(g1look))
+	check("takedown: he falls forward where he stood, head the way he faced", math.abs(ahead - StealthCfg.Takedown.Fall.Rear) < 0.2 and g1root.CFrame.UpVector:Dot(g1look) > 0.9)
+end
 check("takedown: he is down and stays down, you are free", Stealth.StateOf(g1) == "Down" and g1:GetAttribute("Downed") == true and char():GetAttribute("Takedown") == nil and root().Anchored == false)
 -- in the light, in front of one: he makes you by degrees, then it is a fight
 local g2 = guardNear(O + M.V3.new(84, 3, 30))

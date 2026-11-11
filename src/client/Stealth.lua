@@ -1,5 +1,5 @@
 -- Stealth on the client (rules: shared/Stealth, server: server/Stealth).
---   * the light meter: how lit you are (the Exposure attribute the server sets), bottom left, only in a place
+--   * the light gem: how lit you are (the Exposure attribute the server sets), bottom right, only in a place
 --     that is watched (the player's "Stealth" attribute);
 --   * guards: a mark over each one that is starting to make you, and a wedge round the screen centre pointing at it;
 --   * takedowns: when one is on offer the guard wears the key (X) and the word for it; X asks the server;
@@ -27,10 +27,9 @@ local player = Players.LocalPlayer
 local Stealth = {}
 
 local WORDS = { Rear = "TAKEDOWN", Drop = "DROP", Panel = "FUSE BOX", Rail = "LIVE RAIL", Ledge = "LEDGE" }
-local SEGMENTS = 10
 
 local gui
-local meter, segments, noiseFill
+local meter, noiseFill
 local awareness = {} -- guard model -> { a, state }
 local marks = {} -- guard model -> { gui, fill, frame }
 local wedges = {}
@@ -57,37 +56,28 @@ function Stealth.SetCrouch(on)
 	Remotes.Crouch:FireServer(on)
 end
 
--- ===== the light meter =====
+-- ===== the light gem =====
+-- One small diamond, bottom right above the gun's count: dark when you are hidden, bright when you are lit. The
+-- hairline under it is how far your steps carry. (It was a ten-segment bar on the left; owner, 2026-11-11: cluttered.)
 local function buildMeter()
-	meter = Kit.make("Frame", { Name = "LightMeter", Size = UDim2.fromOffset(150, 20), Position = UDim2.new(0, 28, 1, -150), BackgroundTransparency = 1, Visible = false }, gui)
-	-- a small sun-and-shade glyph: a ring that fills
-	local glyph = Kit.make("Frame", { Size = UDim2.fromOffset(12, 12), Position = UDim2.fromOffset(0, 4), BackgroundColor3 = UI.Text, BackgroundTransparency = 0.2, BorderSizePixel = 0 }, meter)
-	Kit.corner(glyph, 6)
-	segments = {}
-	for i = 1, SEGMENTS do
-		local seg = Kit.make("Frame", { Size = UDim2.fromOffset(9, 10), Position = UDim2.fromOffset(20 + (i - 1) * 12, 5), BackgroundColor3 = UI.Text, BackgroundTransparency = 0.85, BorderSizePixel = 0 }, meter)
-		segments[i] = seg
-	end
-	-- under it: how far your steps carry
+	meter = Kit.make("Frame", { Name = "LightMeter", Size = UDim2.fromOffset(28, 34), Position = UDim2.new(1, -62, 1, -118), BackgroundTransparency = 1, Visible = false }, gui)
+	local gem = Kit.make("Frame", { Name = "Gem", Size = UDim2.fromOffset(14, 14), Position = UDim2.fromOffset(7, 5), Rotation = 45, BackgroundColor3 = UI.Text, BackgroundTransparency = 0.9, BorderSizePixel = 0 }, meter)
+	Kit.make("UIStroke", { Name = "Edge", Color = UI.Text, Transparency = 0.45, Thickness = 1 }, gem)
 	local track
-	noiseFill, track = Kit.gauge(meter, UDim2.fromOffset(20, 18), UDim2.fromOffset(SEGMENTS * 12 - 3, 2), UI.Warn)
-	track.BackgroundTransparency = 0.7
+	noiseFill, track = Kit.gauge(meter, UDim2.fromOffset(2, 30), UDim2.fromOffset(24, 2), UI.Warn)
+	track.BackgroundTransparency = 0.8
 	noiseFill.Size = UDim2.fromScale(0, 1)
-	meter:SetAttribute("Glyph", true)
-	return glyph
+	return gem
 end
 
 local glyph
 local function drawMeter(exposure, noise)
-	local lit = math.clamp(exposure, 0, 1) * SEGMENTS
-	for i, seg in segments do
-		local on = math.clamp(lit - (i - 1), 0, 1)
-		seg.BackgroundTransparency = 0.85 - on * 0.8
-		seg.BackgroundColor3 = if i > SEGMENTS * 0.7 then UI.Warn:Lerp(UI.Text, 0.3) else UI.Text
-	end
+	local lit = math.clamp(exposure, 0, 1)
 	if glyph then
-		glyph.BackgroundTransparency = 0.75 - math.clamp(exposure, 0, 1) * 0.7
+		glyph.BackgroundTransparency = 0.92 - lit * 0.9
+		glyph.BackgroundColor3 = if lit > 0.7 then UI.Warn:Lerp(UI.Text, 0.3) else UI.Text
 	end
+	meter:SetAttribute("Lit", lit)
 	noiseFill.Size = UDim2.fromScale(math.clamp(noise / S.Noise.Sprint, 0, 1), 1)
 end
 
@@ -310,6 +300,12 @@ local function onTakedown(kind, char, guard, spot, seconds)
 	end
 	local groot = guard:FindFirstChild("HumanoidRootPart")
 	if char == player.Character then
+		-- the same place the server stands you (square behind it), set here too so the hold never starts off line
+		local root = char:FindFirstChild("HumanoidRootPart")
+		if kind == "Rear" and root and groot then
+			local behind = groot.CFrame * CFrame.new(0, 0, S.Takedown.RearDistance or 1.5)
+			root.CFrame = CFrame.new(behind.Position.X, root.Position.Y, behind.Position.Z) * groot.CFrame.Rotation
+		end
 		takedownCamera(char, guard, seconds)
 	end
 	if groot then
@@ -330,11 +326,12 @@ local function watchDowned(model)
 			local hum = model:FindFirstChildOfClass("Humanoid")
 			local animator = hum and hum:FindFirstChildOfClass("Animator")
 			if animator then
+				-- no fade: the takedown's last pose is this one, and the server turned the root in the same step
 				for _, tr in animator:GetPlayingAnimationTracks() do
-					tr:Stop(0.2)
+					tr:Stop(0)
 				end
 			end
-			Anims.Play(model, "Downed", { fade = 0.25 })
+			Anims.Play(model, "Downed", { fade = 0 })
 		end
 	end
 	model:GetAttributeChangedSignal("Downed"):Connect(apply)

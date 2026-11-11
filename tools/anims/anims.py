@@ -331,40 +331,50 @@ def crouch_cycle(length):
 CROUCH_WALK = crouch_cycle(1.0)
 
 # Takedowns: 1.6 s of action (the client plays them at 1.6 / the server's seconds), then the end pose is held
-# until the server lays the body down. The attacker starts where server/Stealth.lua puts it: 1.7 studs behind
+# until the server lays the body down. The attacker starts where server/Stealth.lua puts it: 1.5 studs behind
 # (Rear), on top (Drop), or facing the guard's back with the fuse box / rail / drop beyond it (Slam).
 def held(keys, hold=0.9):
     t, pose = keys[-1][0], keys[-1][1]
     return dict(length=t + hold, loop=False, priority="Action", keys=keys + [(t + hold, pose, "Linear", "InOut")])
+# Rear (reworked 2026-11-11 after "it looked like i grabbed the side of the enemy's body instead of their neck"):
+# the server stands the attacker 1.5 behind, square to the guard's back. The left upper arm comes up and forward
+# with a quarter roll (ry -85) so the elbow folds the forearm ACROSS the throat (toward +X), not upward; the right
+# hand comes in behind the head. Chest to back, about 0.9 apart, then the attacker kneels and lets him fall forward.
 TAKEDOWN_REAR = dict(length=1.6, loop=False, priority="Action", keys=[
     (0.0, STANCE, "Cubic", "Out"),
-    (0.22, {"LowerTorso": (0, 0, 0, 0, -0.2, -0.95), "UpperTorso": (-10, 0, 0), "Head": (4, 0, 0),
-            "LeftUpperArm": (96, 0, 28), "LeftLowerArm": (105, 0, 0), "RightUpperArm": (84, 0, -8), "RightLowerArm": (75, 0, 0),
-            "LeftUpperLeg": (30, 0, -4), "LeftLowerLeg": (-28, 0, 0), "RightUpperLeg": (-22, 0, 4), "RightLowerLeg": (-18, 0, 0), "RightFoot": (18, 0, 0)}, "CubicV2", "InOut"),
-    (0.7, {"LowerTorso": (8, 0, 0, 0, -0.3, -0.75), "UpperTorso": (10, 6, 0), "Head": (-6, -6, 0),
-           "LeftUpperArm": (88, 0, 34), "LeftLowerArm": (125, 0, 0), "RightUpperArm": (95, 0, -14), "RightLowerArm": (95, 0, 0),
-           "LeftUpperLeg": (24, 0, -6), "LeftLowerLeg": (-36, 0, 0), "RightUpperLeg": (-12, 0, 6), "RightLowerLeg": (-30, 0, 0), "RightFoot": (16, 0, 0)}, "CubicV2", "InOut"),
-    (1.25, {"LowerTorso": (0, 0, 0, 0, -0.95, -0.7), "UpperTorso": (-28, 4, 0), "Head": (16, 0, 0),
-            "LeftUpperArm": (60, 0, 16), "LeftLowerArm": (70, 0, 0), "RightUpperArm": (64, 0, -6), "RightLowerArm": (50, 0, 0),
+    (0.22, {"LowerTorso": (0, 0, 0, 0, -0.12, -0.6), "UpperTorso": (-8, 0, 0), "Head": (4, 0, 0),
+            "LeftUpperArm": (112, -85, 0), "LeftLowerArm": (95, 0, 0), "RightUpperArm": (120, 70, 0), "RightLowerArm": (100, 0, 0),
+            "LeftUpperLeg": (26, 0, -4), "LeftLowerLeg": (-24, 0, 0), "RightUpperLeg": (-18, 0, 4), "RightLowerLeg": (-16, 0, 0), "RightFoot": (16, 0, 0)}, "CubicV2", "InOut"),
+    (0.7, {"LowerTorso": (2, 0, 0, 0, -0.2, -0.62), "UpperTorso": (0, 5, 0), "Head": (-4, -6, 0),
+           "LeftUpperArm": (104, -92, 0), "LeftLowerArm": (100, 0, 0), "RightUpperArm": (118, 74, 0), "RightLowerArm": (104, 0, 0),
+           "LeftUpperLeg": (22, 0, -6), "LeftLowerLeg": (-32, 0, 0), "RightUpperLeg": (-10, 0, 6), "RightLowerLeg": (-28, 0, 0), "RightFoot": (14, 0, 0)}, "CubicV2", "InOut"),
+    (1.25, {"LowerTorso": (0, 0, 0, 0, -0.95, -0.35), "UpperTorso": (-26, 4, 0), "Head": (16, 0, 0),
+            "LeftUpperArm": (78, -60, 0), "LeftLowerArm": (80, 0, 0), "RightUpperArm": (70, 40, 0), "RightLowerArm": (60, 0, 0),
             "LeftUpperLeg": (72, 0, -4), "LeftLowerLeg": (-115, 0, 0), "RightUpperLeg": (34, 0, 4), "RightLowerLeg": (-115, 0, 0), "RightFoot": (40, 0, 0)}, "CubicV2", "InOut"),
     (1.6, CROUCH, "Linear", "InOut"),
 ])
+# How a body lies (limbs only). Every victim animation ends in it with the hips turned face down on the floor
+# (LowerTorso -90, 2.1 down, F forward); at that moment the server turns the root itself face down at the same
+# spot and the client swaps to "Downed" with no fade, so nothing snaps.
+_DOWN = {"UpperTorso": (4, 0, 6), "Head": (6, 52, 0),
+         "LeftUpperArm": (150, 0, -34), "LeftLowerArm": (62, 0, 0), "RightUpperArm": (-8, 0, 24), "RightLowerArm": (24, 0, 0),
+         "LeftUpperLeg": (-4, 0, -14), "LeftLowerLeg": (-10, 0, 0), "RightUpperLeg": (24, 0, 22), "RightLowerLeg": (-58, 0, 0), "RightFoot": (30, 0, 0), "LeftFoot": (40, 0, 0)}
+def fallen(forward):
+    return merge(_DOWN, {"LowerTorso": (-90, 0, 0, 0, -2.1, -forward)})
 TAKEDOWN_REAR_VICTIM = held([
     (0.0, {}, "Cubic", "Out"),
-    (0.24, {"LowerTorso": (6, 0, 0, 0, -0.1, 0.25), "UpperTorso": (14, 0, 0), "Head": (26, 0, 0),
+    (0.24, {"LowerTorso": (3, 0, 0, 0, -0.05, 0.1), "UpperTorso": (5, 0, 0), "Head": (14, 0, 0),
             "LeftUpperArm": (95, 0, 20), "LeftLowerArm": (125, 0, 0), "RightUpperArm": (95, 0, -20), "RightLowerArm": (125, 0, 0)}, "CubicV2", "InOut"),
-    (0.5, {"LowerTorso": (10, 6, 0, 0.1, -0.25, 0.4), "UpperTorso": (16, -8, 0), "Head": (20, 12, 0),
+    (0.5, {"LowerTorso": (5, 4, 0, 0.05, -0.15, 0.15), "UpperTorso": (7, -8, 0), "Head": (12, 12, 0),
            "LeftUpperArm": (100, 0, 26), "LeftLowerArm": (130, 0, 0), "RightUpperArm": (88, 0, -14), "RightLowerArm": (120, 0, 0),
-           "LeftUpperLeg": (40, 0, -8), "LeftLowerLeg": (-50, 0, 0), "RightUpperLeg": (-10, 0, 8), "RightLowerLeg": (-20, 0, 0)}, "CubicV2", "InOut"),
-    (0.8, {"LowerTorso": (10, -6, 0, -0.1, -0.35, 0.4), "UpperTorso": (14, 8, 0), "Head": (10, -10, 0),
+           "LeftUpperLeg": (36, 0, -8), "LeftLowerLeg": (-46, 0, 0), "RightUpperLeg": (-8, 0, 8), "RightLowerLeg": (-20, 0, 0)}, "CubicV2", "InOut"),
+    (0.8, {"LowerTorso": (5, -4, 0, -0.05, -0.25, 0.15), "UpperTorso": (6, 8, 0), "Head": (6, -10, 0),
            "LeftUpperArm": (70, 0, 10), "LeftLowerArm": (110, 0, 0), "RightUpperArm": (50, 0, -8), "RightLowerArm": (80, 0, 0),
-           "LeftUpperLeg": (0, 0, -8), "LeftLowerLeg": (-30, 0, 0), "RightUpperLeg": (36, 0, 8), "RightLowerLeg": (-60, 0, 0)}, "CubicV2", "InOut"),
-    (1.25, {"LowerTorso": (-6, 0, 0, 0, -1.3, 0.2), "UpperTorso": (-14, 0, 6), "Head": (-34, 0, 10),
+           "LeftUpperLeg": (0, 0, -8), "LeftLowerLeg": (-30, 0, 0), "RightUpperLeg": (32, 0, 8), "RightLowerLeg": (-56, 0, 0)}, "CubicV2", "InOut"),
+    (1.25, {"LowerTorso": (-8, 0, 0, 0, -1.3, 0.1), "UpperTorso": (-14, 0, 6), "Head": (-30, 0, 10),
             "LeftUpperArm": (12, 0, -10), "LeftLowerArm": (20, 0, 0), "RightUpperArm": (12, 0, 10), "RightLowerArm": (20, 0, 0),
             "LeftUpperLeg": (60, 0, -10), "LeftLowerLeg": (-135, 0, 0), "RightUpperLeg": (60, 0, 10), "RightLowerLeg": (-135, 0, 0), "LeftFoot": (40, 0, 0), "RightFoot": (40, 0, 0)}, "Cubic", "In"),
-    (1.6, {"LowerTorso": (-62, 0, 0, 0, -1.9, -0.5), "UpperTorso": (-18, 0, 8), "Head": (-10, 30, 0),
-           "LeftUpperArm": (100, 0, -30), "LeftLowerArm": (40, 0, 0), "RightUpperArm": (30, 0, 30), "RightLowerArm": (30, 0, 0),
-           "LeftUpperLeg": (50, 0, -10), "LeftLowerLeg": (-100, 0, 0), "RightUpperLeg": (30, 0, 10), "RightLowerLeg": (-70, 0, 0)}, "Linear", "InOut"),
+    (1.6, fallen(0.9), "Linear", "InOut"),
 ])
 TAKEDOWN_DROP = dict(length=1.6, loop=False, priority="Action", keys=[
     (0.0, {"LowerTorso": (0, 0, 0, 0, 0.4, 0.9), "UpperTorso": (-20, 0, 0), "Head": (26, 0, 0),
@@ -383,12 +393,8 @@ TAKEDOWN_DROP_VICTIM = held([
     (0.16, {"LowerTorso": (-70, 0, 0, 0, -1.9, -0.7), "UpperTorso": (-12, 0, 0), "Head": (28, 0, 0),
             "LeftUpperArm": (150, 0, -30), "LeftLowerArm": (30, 0, 0), "RightUpperArm": (150, 0, 30), "RightLowerArm": (30, 0, 0),
             "LeftUpperLeg": (40, 0, -12), "LeftLowerLeg": (-60, 0, 0), "RightUpperLeg": (20, 0, 12), "RightLowerLeg": (-40, 0, 0)}, "CubicV2", "InOut"),
-    (0.5, {"LowerTorso": (-84, 0, 0, 0, -2.25, -0.8), "UpperTorso": (-4, 0, 0), "Head": (0, 40, 0),
-           "LeftUpperArm": (130, 0, -50), "LeftLowerArm": (60, 0, 0), "RightUpperArm": (60, 0, 50), "RightLowerArm": (40, 0, 0),
-           "LeftUpperLeg": (10, 0, -14), "LeftLowerLeg": (-20, 0, 0), "RightUpperLeg": (0, 0, 14), "RightLowerLeg": (-30, 0, 0)}, "Linear", "InOut"),
-    (1.6, {"LowerTorso": (-84, 0, 0, 0, -2.25, -0.8), "UpperTorso": (-4, 0, 0), "Head": (0, 40, 0),
-           "LeftUpperArm": (130, 0, -50), "LeftLowerArm": (60, 0, 0), "RightUpperArm": (60, 0, 50), "RightLowerArm": (40, 0, 0),
-           "LeftUpperLeg": (10, 0, -14), "LeftLowerLeg": (-20, 0, 0), "RightUpperLeg": (0, 0, 14), "RightLowerLeg": (-30, 0, 0)}, "Linear", "InOut"),
+    (0.5, fallen(0.8), "Linear", "InOut"),
+    (1.6, fallen(0.8), "Linear", "InOut"),
 ])
 TAKEDOWN_SLAM = dict(length=1.6, loop=False, priority="Action", keys=[
     (0.0, STANCE, "Cubic", "Out"),
@@ -417,14 +423,9 @@ TAKEDOWN_SLAM_VICTIM = held([
     (0.7, merge(_JOLT, {"UpperTorso": (10, 10, 0), "Head": (10, -16, 0), "LeftUpperArm": (60, 0, -50), "RightUpperArm": (20, 0, 80)}), "Linear", "InOut"),
     (0.82, merge(_JOLT, {"UpperTorso": (26, -10, 0), "Head": (34, 14, 0), "LeftUpperArm": (20, 0, -84), "RightUpperArm": (60, 0, 50)}), "Linear", "InOut"),
     (0.95, merge(_JOLT, {"UpperTorso": (8, 0, 0), "Head": (4, 0, 0)}), "CubicV2", "InOut"),
-    (1.6, {"LowerTorso": (-58, 0, 0, 0, -1.8, -2.0), "UpperTorso": (-20, 0, 6), "Head": (-10, 34, 0),
-           "LeftUpperArm": (110, 0, -30), "LeftLowerArm": (50, 0, 0), "RightUpperArm": (24, 0, 26), "RightLowerArm": (30, 0, 0),
-           "LeftUpperLeg": (56, 0, -10), "LeftLowerLeg": (-100, 0, 0), "RightUpperLeg": (30, 0, 10), "RightLowerLeg": (-60, 0, 0)}, "Linear", "InOut"),
+    (1.6, fallen(0.6), "Linear", "InOut"),
 ])
-# a body on the floor (the server turns the whole rig face down; this only lets the limbs lie where they fell)
-_DOWN = {"UpperTorso": (4, 0, 6), "Head": (6, 52, 0),
-         "LeftUpperArm": (150, 0, -34), "LeftLowerArm": (62, 0, 0), "RightUpperArm": (-8, 0, 24), "RightLowerArm": (24, 0, 0),
-         "LeftUpperLeg": (-4, 0, -14), "LeftLowerLeg": (-10, 0, 0), "RightUpperLeg": (24, 0, 22), "RightLowerLeg": (-58, 0, 0), "RightFoot": (30, 0, 0), "LeftFoot": (40, 0, 0)}
+# a body on the floor (the server has turned the whole rig face down; the limbs lie where they fell)
 DOWNED = dict(length=2.0, loop=True, priority="Action", keys=[(0.0, _DOWN, "Linear", "InOut"), (2.0, _DOWN, "Linear", "InOut")])
 
 # ---------- the train (client/Intro.lua): seated on the bench under a cloak, up, cloak off, pistol out, slide racked ----------

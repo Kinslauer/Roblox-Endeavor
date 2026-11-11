@@ -588,8 +588,13 @@ function Stealth.Takedown(player, model)
 	local seconds = T.Seconds[kind] or 1.6
 	local groot = g.root
 	local gpos = groot.Position
-	local endAt = gpos -- where the body ends up
-	local yaw = 0
+	-- Where the body ends up, and which way its head points. The victim animations end face down with the hips
+	-- T.Fall studs ahead of where the guard stood (tools/anims `fallen`), so the root is laid flat exactly there
+	-- and nothing jumps when the animation hands over.
+	local glook = groot.CFrame.LookVector
+	local fall = (T.Fall and T.Fall[kind]) or 0
+	local endAt = gpos + Vector3.new(glook.X, 0, glook.Z) * fall
+	local yaw = math.atan2(-glook.X, -glook.Z)
 	Combat.GrantIFrames(char, seconds + T.IFrames)
 	Combat.SetBusy(char, seconds)
 	char:SetAttribute("Takedown", kind)
@@ -599,7 +604,7 @@ function Stealth.Takedown(player, model)
 	groot.Anchored = true
 	if kind == "Rear" then
 		-- step in behind it
-		local behind = groot.CFrame * CFrame.new(0, 0, 1.7)
+		local behind = groot.CFrame * CFrame.new(0, 0, T.RearDistance or 1.5)
 		root.Anchored = true
 		char:PivotTo(CFrame.new(behind.Position.X, root.Position.Y, behind.Position.Z) * groot.CFrame.Rotation)
 	elseif kind == "Drop" then
@@ -617,7 +622,7 @@ function Stealth.Takedown(player, model)
 		root.Anchored = true
 		char:PivotTo(CFrame.lookAt(Vector3.new(me.X, root.Position.Y, me.Z), Vector3.new(victimAt.X, root.Position.Y, victimAt.Z)))
 		local dropTo = spot:GetAttribute("DropTo")
-		endAt = if typeof(dropTo) == "Vector3" then dropTo else Vector3.new(victimAt.X, gpos.Y, victimAt.Z) + dir * 0.6
+		endAt = if typeof(dropTo) == "Vector3" then dropTo else Vector3.new(victimAt.X, gpos.Y, victimAt.Z) + dir * fall
 		yaw = math.atan2(-dir.X, -dir.Z)
 		if spot:GetAttribute("Once") then
 			spot:SetAttribute("Used", true)

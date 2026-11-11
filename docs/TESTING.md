@@ -19,19 +19,30 @@ character: F2 → "Train intro" → Replay. Hold Space during the ride to skip i
       figure in a cloak sits on the bench. The train brakes (squeal, the car lights stutter) into a dead station.
 - [ ] The figure stands, throws the cloak off (a pistol on the thigh and a pipe across the back show), draws the
       pistol and racks the slide (the slide moves, you hear it), steps into the aisle.
-- [ ] The camera comes round behind the shoulder, then pushes into first person. The doors open and you can move.
-      The whole ride is about 28 seconds.
+- [ ] The camera comes round behind the right shoulder and stays there (third person; P is first person, where you
+      see only your forearms and the pistol). The doors open and you can move. The whole ride is about 27 seconds.
+- [ ] Under the cloak nothing shows: the thigh holster and the pipe on the back appear only when the cloak leaves
+      the shoulders.
+- [ ] F2 → "Train intro" → Replay after using up rounds or losing the pistol: you still leave the train with the
+      pistol in hand and 9 rounds.
 - [ ] You hold the Whisper, a suppressed pistol with 9 rounds. LMB fires where you look: a quiet cough, a faint
       streak. Shooting a ceiling lamp puts it out (glass breaks) and that part of the room goes dark.
-- [ ] Bottom left: the light meter, ten segments. It fills under a lamp and empties in the dark. The thin line under
-      it grows with the noise you make (sprinting is loud, walking is quieter, crouch-walking is silent).
+- [ ] Bottom right: one small diamond (the light gem) over the round count. The gem is bright under a lamp and dark
+      in the dark. The thin line under it grows with the noise you make (sprinting is loud, walking is quieter,
+      crouch-walking is silent). The round count goes red at 0.
+- [ ] The screen is quiet: the health, stamina and posture bars fade out about 4 seconds after they last moved (they
+      stay while health is under 60%), empty skill slots are not drawn, and the station shows no quest line and no
+      controls card (F1 opens the card).
 - [ ] C crouches: lower stance, slower, lower camera, harder to see. C again stands.
 - [ ] Guards walk rounds. A diamond over a guard fills as it notices you (white: unsure, amber: coming to look, red:
       it has you) and a wedge at the screen centre points at whoever is noticing. In the dark they must be very close
       to see you; in the light they see you across the room.
 - [ ] B whistles: a guard that hears it walks over to look.
-- [ ] Behind a guard that has not seen you, a prompt shows: X TAKEDOWN. X chokes it out quietly. From a ledge above a
-      guard the prompt is X DROP.
+- [ ] Behind a guard that has not seen you, a prompt shows: X TAKEDOWN. X chokes it out quietly: you stand square
+      behind him, your left forearm across his throat, your right hand behind his head; you kneel and he falls
+      forward, face down, with no snap at the end. From a ledge above a guard the prompt is X DROP.
+- [ ] Jump while running or crouch-walking: on landing the run or the crouch walk carries on (no slide in the
+      standing pose).
 - [ ] The room helps: a guard standing by the fuse box gives X FUSE BOX, one beside the live rail in the service
       tunnel gives X LIVE RAIL (sparks), one at the edge of the pit in the lower hall gives X LEDGE.
 - [ ] The yellow fuse box in the ticket hall (hold X) cuts that hall's lights; a guard walks over to turn them back

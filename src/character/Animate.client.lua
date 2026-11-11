@@ -104,8 +104,11 @@ hum.StateChanged:Connect(function(_, new)
 		state = "Air"
 		play("Fall", 0.3)
 	elseif new == Enum.HumanoidStateType.Running or new == Enum.HumanoidStateType.Landed or new == Enum.HumanoidStateType.RunningNoPhysics then
+		-- Back on the ground: pick the track for how it is moving now. (This used to play the standing idle every
+		-- time, so landing mid-run slid along in the idle pose and a crouch popped upright until the speed changed.)
 		state = "Running"
-		play("Idle", 0.15)
+		local moving = hum.MoveDirection.Magnitude > 0.1
+		ground(if moving then math.max(hum.WalkSpeed, 1) else 0)
 	elseif new == Enum.HumanoidStateType.Climbing then
 		state = "Climbing"
 	elseif new == Enum.HumanoidStateType.Swimming then

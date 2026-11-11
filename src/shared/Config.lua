@@ -68,6 +68,8 @@ Config.Stealth = {
 		DropMin = 4.5, DropMax = 22, DropReach = 9, -- from above: height window and how far off to the side
 		EnvReach = 7.5, -- a TakedownSpot this close to the guard turns the takedown into it
 		Seconds = { Rear = 1.7, Drop = 1.1, Panel = 1.9, Rail = 1.7, Ledge = 1.5 },
+		RearDistance = 1.5, -- studs behind the guard the attacker is stood, square to its back (the animations are fitted to this)
+		Fall = { Rear = 0.9, Drop = 0.8, Panel = 0.6, Rail = 0.6, Ledge = 0.6 }, -- how far ahead the body lies (the animations' last key)
 		Noise = { Rear = 0, Drop = 7, Panel = 14, Rail = 12, Ledge = 8 },
 		IFrames = 2,
 	},
@@ -184,6 +186,8 @@ Config.Aim = {
 -- HUD v2 (client, ported from combat-feel): bottom-centre bars, floating words, reticle, damage vignette, nameplates.
 Config.Hud = {
 	BarWidth = 480,
+	VitalsHold = 4, -- seconds the health/stamina/posture block stays up after any bar moves
+	VitalsLow = 0.6, -- ...and it stays up while health is under this share
 	DamageNumbers = { Life = 0.9, Rise = 3.5, Spread = 1.2, TextSize = 26, HeavyTextSize = 34, HeavyAmount = 20, MaxLive = 24,
 		Colors = { Taken = Color3.fromRGB(255, 80, 80), Block = Color3.fromRGB(150, 170, 255), Parry = Color3.fromRGB(255, 255, 255),
 			GuardBreak = Color3.fromRGB(255, 160, 0), Dodged = Color3.fromRGB(80, 255, 230) } },

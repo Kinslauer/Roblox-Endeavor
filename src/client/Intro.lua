@@ -38,7 +38,7 @@ end
 local T = {
 	TitleIn = 0.6, TitleOut = 3.2, Open = 3.6,
 	Aisle = 3.6, Close = 9.0, Brake = 13.2, Stand = 15.6, Cloak = 17.4, CloakLet = 17.95, Draw = 19.3, Rack = 20.3, RackClick = 20.85,
-	Step = 22.2, Behind = 23.6, Push = 26.4, End = 27.6,
+	Step = 22.2, Behind = 23.6, Push = 26.4, End = 26.8,
 }
 Intro.Timeline = T
 
@@ -195,13 +195,16 @@ local function finish(char, standCF, fast)
 	end
 	if cam then
 		if root then
-			cam.CFrame = CFrame.lookAt(root.Position + Vector3.new(0, 1.5, 0), root.Position + Vector3.new(0, 1.5, 0) + root.CFrame.LookVector * 10)
+			-- handed to the player's own camera where the scene left it: behind the right shoulder, looking down the car
+			local aim = Config.Aim.Ranged
+			local shoulder = root.CFrame * CFrame.new(aim.ShoulderOffset + Vector3.new(0, 1.5, 0))
+			cam.CFrame = CFrame.lookAt((shoulder * CFrame.new(0, 0, aim.Distance)).Position, shoulder.Position + root.CFrame.LookVector * 30)
 		end
 		cam.CameraType = Enum.CameraType.Custom
 		cam.FieldOfView = 70
 	end
 	if setFirstPerson then
-		setFirstPerson(true)
+		setFirstPerson(false)
 	end
 	if hud then
 		hud.Enabled = true
@@ -251,13 +254,31 @@ local function play(car, seatCF, carCF)
 	if cloak and torso then
 		cloakHold = weldTo(cloak, torso, CFrame.new())
 	end
+	-- what the cloak covers stays unseen until it leaves the shoulders (local copies, so plain Transparency)
+	local hidden = {}
+	local function conceal(model)
+		for _, p in model:GetDescendants() do
+			if p:IsA("BasePart") then
+				hidden[p] = p.Transparency
+				p.Transparency = 1
+			end
+		end
+	end
+	local function reveal()
+		for p, was in hidden do
+			p.Transparency = was
+		end
+		table.clear(hidden)
+	end
 	local back = kitPiece("Back")
 	if back and torso then
+		conceal(back)
 		weldTo(back, torso, CFrame.new(0, 0.1, 0.62) * CFrame.Angles(0, 0, math.rad(-28)) * CFrame.Angles(math.rad(90), 0, 0))
 	end
 	local holster = kitPiece("Sidearm")
 	local thigh = char:FindFirstChild("RightUpperLeg")
 	if holster and thigh then
+		conceal(holster)
 		weldTo(holster, thigh, CFrame.new(0.55, 0.1, 0) * CFrame.Angles(math.rad(180), 0, 0))
 	end
 	setHeldVisible(char, false)
@@ -382,6 +403,7 @@ local function play(car, seatCF, carCF)
 		end)
 		once("let", T.CloakLet, function()
 			Sounds.Play("CloakWhoosh", nil, { Volume = 0.6 })
+			reveal()
 			if cloakHold and cloak then
 				-- it leaves the shoulders: up, back along the car, turning
 				local primary = cloakHold.Part1
@@ -461,7 +483,7 @@ local function play(car, seatCF, carCF)
 			at = Vector3.new(sx + 0.7, 3.9, sz - 0.2)
 			fov = 34
 		else
-			-- round behind to the shoulder the game is played over, then into the head
+			-- round behind to the shoulder the game is played over, and it stays there
 			local aim = Config.Aim.Ranged
 			local rootCF = root.CFrame
 			local shoulder = rootCF * CFrame.new(aim.ShoulderOffset + Vector3.new(0, 1.5, 0))
@@ -474,10 +496,7 @@ local function play(car, seatCF, carCF)
 			local b = mid:Lerp(behind, u)
 			local pos = a:Lerp(b, u)
 			local look = (rootCF.Position + Vector3.new(0, 1.6, 0)):Lerp(shoulder.Position + rootCF.LookVector * 30, u)
-			local push = ease(span(t, T.Push, T.End))
-			local head = rootCF.Position + Vector3.new(0, 1.5, 0)
-			pos = pos:Lerp(head, push)
-			cam.CFrame = CFrame.lookAt(pos, look:Lerp(head + rootCF.LookVector * 30, push))
+			cam.CFrame = CFrame.lookAt(pos, look)
 			cam.FieldOfView = 46 + 24 * u
 			from = nil
 		end
@@ -512,9 +531,6 @@ function Intro.Init(opts)
 			started = true
 			cover.BackgroundTransparency = 0
 			fade(1, 1.2)
-			if setFirstPerson then
-				setFirstPerson(true)
-			end
 		elseif what == "End" then
 			-- the lift: dark, then the city
 			fade(0, 0.5)
