@@ -42,6 +42,8 @@ character: F2 → "Train intro" → Replay. Hold Space during the ride to skip i
 - [ ] Returning players do not ride the train: a short title, "> STACK RESIDENT . . . LINKING", and the world.
 - [ ] F2 opens the dev panel (test build only): Heal, Mats, Die, Open world, Go to armory/gate/districts/terminals/
       hideout sites, Spawn each hostile, fire each event. Use it to reach anything on this list quickly.
+- [ ] The F2 dev panel fits the window: it ends just above the bottom edge, and the mouse wheel (or the cyan bar on its
+      right) scrolls down to the Spawn, Event and Cycle rows.
 - [ ] The HUD (2026-11-10 look): bottom centre, flat dark bars with a thin edge: a cyan charge line, red HEALTH and
       pale STAMINA with numbers in a mono face, an amber posture line. When a bar drops, a pale trail stays for a
       moment and then follows. Under them three skill slots, each with its key in a small cap (R, Y, V), the skill's

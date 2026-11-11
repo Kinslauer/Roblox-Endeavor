@@ -1642,7 +1642,11 @@ renderContainer = function()
 end
 
 -- F2: dev tools (only when Config.Dev.Enabled; the server refuses everything otherwise)
-local devPanel = panel(UDim2.fromOffset(420, 520), UDim2.new(1, -440, 0, 148), "Dev", true)
+-- It fills the screen height below its top (20 px margin, at most 560 tall) and scrolls, so the last rows stay reachable
+-- on a short window; the wider scroll bar shows there is more below.
+local devPanel = panel(UDim2.new(0, 420, 1, -168), UDim2.new(1, -440, 0, 148), "Dev", true)
+devPanel.ScrollBarThickness = 6
+make("UISizeConstraint", { MaxSize = Vector2.new(420, 560) }, devPanel)
 local function buildDevPanel()
 	clear(devPanel)
 	local function dev(action, arg)
