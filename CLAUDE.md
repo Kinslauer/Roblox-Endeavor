@@ -349,7 +349,18 @@ Client tab screenshot, because Andy cannot read logs another way.
   texture is the same size everywhere. New library names never reuse an old Assets.Materials name (old models have no
   UVs). `tools/models/train.py` builds the arrival on it (car 12.6 wide x 56 x 10.9 high inside after "train car is too
   small", moulded seats with cushion top 1.5, door leaf, Whisper, poncho draped by Blender cloth sim seated and
-  standing = IntroKit "Cloak"/"CloakStand"); `tools/models/render_intro.py` renders Cycles stills for Andy to judge.
+  standing); `tools/models/render_intro.py` renders Cycles stills for Andy to judge.
+  Round 2 (Andy: "strip the model into its components ... There should be a cloth physics simulation on the cloak"):
+  `tools/models/pistol_kit.py` = handgun components (FRAMES Service/Compact, SLIDES Long/Short, HAMMERS Spur/Bobbed,
+  barrel, trigger, can, light module), each its own MeshPart "<Slot>_<Material>", VARIANTS -> `Assets.PistolKit`
+  (Whisper = the arrival's pistol). The cloak is one skinned MeshPart (train.py build_cloak: the standing drape plus
+  the hood, bones "R<row>C<col>" on poncho rings ROWS, columns every COL_STEP segments, "Hood"; parentless bones,
+  bilinear weights). A skinned upload's pivot is turned by the FBX node, so IntroKit `piece(.., origin)` resets
+  PivotOffset/WorldPivot to the origin. `src/client/Cloth.lua` (`Cloth.Attach(model, char, {Extra, Manual})`): row 0
+  pinned to the mesh, verlet particles with column links, slack row/diagonal links, tethers, a weak pull back to the
+  drape, pushed out of the character's parts, opts.Extra models and nearby anchored plain block Parts (never meshes:
+  a car shell's bounds hold the rider); writes Bone.Transform; ~0.2 ms a frame (real-server test). Intro.lua attaches
+  it after the holster and back are welded; the CloakStand swap is gone.
   The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
 
 ## State (2026-11-11)

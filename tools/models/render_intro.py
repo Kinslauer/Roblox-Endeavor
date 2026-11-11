@@ -109,7 +109,7 @@ def darken_head(objs):
 
 def rider_at(seated=True):
     """The poncho, hood and proxy rider (in the upper torso's frame) placed on the west bench at y 12."""
-    objs = append(os.path.join(OUT, "Intro_Cloak_scene.blend" if seated else "Intro_CloakStand_scene.blend"))
+    objs = append(os.path.join(OUT, "Intro_Cloak_scene.blend"))   # the live cloak is drawn as it was draped, on a standing body
     lean = Matrix.Rotation(math.radians(-15 if seated else -2), 4, "X")
     up = lean.to_3x3() @ Vector((0, 0, 1))
     if seated:
@@ -220,6 +220,24 @@ if __name__ == "__main__":
         setup((1280, 720))
         studio(None, (3.2, -2.6, 1.5), (0, -0.9, 0.55), lens=45)
         render("pistol")
+    if "kit" in SHOTS:
+        # The four pistol variants, one above the other, seen from the right side.
+        reset()
+        for i, v in enumerate(["Whisper", "WhisperBare", "WhisperCompact", "WhisperLight"]):
+            for o in append(os.path.join(OUT, f"Wpn_{v}_scene.blend")):
+                o.matrix_world = Matrix.Translation((0, 0, -2.2 * i)) @ Matrix.Rotation(math.radians(90), 4, "X") @ o.matrix_world
+        pbr_swap([o for o in bpy.data.objects if o.type == "MESH"])
+        setup((1000, 1500))
+        studio(None, (13.5, -1.2, -3.3), (0, -1.2, -3.3), lens=50, energy=(2200, 700, 1400))
+        render("kit")
+    if "pistol_q" in SHOTS:
+        reset()
+        for o in append(os.path.join(OUT, "Wpn_Whisper_scene.blend")):
+            o.matrix_world = Matrix.Rotation(math.radians(90), 4, "X") @ o.matrix_world
+        pbr_swap([o for o in bpy.data.objects if o.type == "MESH"])
+        setup((1280, 720))
+        studio(None, (-2.9, 1.6, 1.3), (0, -0.9, 0.45), lens=38, energy=(700, 250, 500))
+        render("pistol_q")
     if "cloak" in SHOTS:
         reset()
         objs = rider_at(False)

@@ -3,14 +3,24 @@
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
 report).
 
+## Endeavor: the realistic pass, round 2 (pistol kit, live cloak) (2026-11-11)
+Replay the ride: F2 → "Train intro" → Replay.
+- [ ] The cloak moves like cloth: seated, it falls over the knees and onto the bench and floor; nothing of the body
+      or the pistol on the thigh pokes through, and the cloak shows the shape of the pistol under it.
+- [ ] Standing up, the cloak slides off the knees and hangs straight; when it is thrown, it trails and flaps in the
+      air instead of flying off as one stiff shape.
+- [ ] The pistol is the new one, built from parts like a 1990s .45 service pistol: a long flat-sided slide with rear
+      grooves and sights, a squared trigger guard with a hook at the front, a thick raked grip, an outside hammer,
+      a threaded barrel, a big suppressor and a boxy light module under the front. Racking it moves only the slide.
+
 ## Endeavor: the realistic pass, round 1 (train car, pistol, poncho) (2026-11-11)
 Replay the ride: F2 → "Train intro" → Replay.
 - [ ] The car is roomier (about a third wider and taller) and looks like a real metro car: rounded windows with black
       rubber seals, pale laminate walls, studded rubber floor, moulded seats with blue patterned cushions, steel poles,
       handrails and hanging grab loops. Surfaces show texture (scratches, grime, fabric weave) up close.
 - [ ] Seen from the platform: grey fluted sides with a red stripe, the doors with windows, wheels and bogies underneath.
-- [ ] The rider's poncho is a dark waxed cloth with a deep hood, no flat boxes; nothing pokes through it.
-- [ ] The pistol is the new one (black slide with grooves, suppressor) in the hand at the end of the ride.
+- [x] (replaced in round 2) The rider's poncho is a dark waxed cloth with a deep hood, no flat boxes; nothing pokes through it.
+- [x] (replaced in round 2) The pistol is the new one (black slide with grooves, suppressor) in the hand at the end of the ride.
 
 ## Endeavor: Metal Gear handling (stances, the gun, hands) (2026-11-11)
 Try it in the station (F2 → "Train intro" → Replay) with the Whisper out. Stances, aiming and reload work anywhere.

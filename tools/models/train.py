@@ -596,68 +596,126 @@ def drape(seated):
         objs.remove(o)
     return out, objs, ut
 
+def make_hood(seated):
+    """A deep cowl over the head, open at the face, the brow pulled forward and down (in the torso's frame)."""
+    hood = G()
+    hd = RX(-10 if seated else 0)
+    tmp = bmesh.new()
+    bmesh.ops.create_uvsphere(tmp, u_segments=28, v_segments=16, radius=1.0)
+    cut = []
+    for v in tmp.verts:
+        x, y, z = v.co
+        if y < -0.6 and z > -0.65 and z < 0.3 and abs(x) < 0.55:   # the face opening
+            cut.append(v)
+        elif z < -0.55 and y < 0.2:                          # under the chin
+            cut.append(v)
+    bmesh.ops.delete(tmp, geom=cut, context="VERTS")
+    for v in tmp.verts:
+        x, y, z = v.co
+        if y < 0 and z > 0.1:                                # the brow peak overhangs the face
+            v.co.y -= 0.45 * (z - 0.1) * (-y)
+            v.co.z -= 0.12 * (z - 0.1) * (-y)
+        if abs(x) > 0.5 and y < -0.3:                        # the sides close round the cheeks
+            v.co.y -= 0.12
+        if y > 0.3:                                          # the cowl falls back behind the head
+            v.co.z -= 0.25 * (y - 0.3) * (1 - z) * 0.5
+    bmesh.ops.transform(tmp, matrix=hd @ T(0, 0.08, 1.42) @ S(0.86, 1.02, 0.98), verts=tmp.verts)
+    hood._take(tmp)
+    ob = hood.make("Hood", "Waxcloth", smooth=True, uv=False)
+    uv_cyl(ob, TILE["Waxcloth"], 0.9)
+    return ob
+
+# The live cloak (2026-11-11, Andy: "There should be a cloth physics simulation on the cloak. that way it conforms
+# over the character and what he carries"). One skinned mesh: the poncho as it hangs from a standing body, plus the
+# hood, bound to a grid of bones that src/client/Cloth.lua moves as cloth particles every frame. Bones "R<row>C<col>":
+# row 0 is the neck ring (pinned to the torso), rows 1-4 lie on rings ROWS[1..4] of the poncho; columns every
+# COL_STEP segments round it. "Hood" carries the hood and stays with the torso. Bones have no parents, so the client
+# can move each one on its own.
+ROWS = (0, 6, 12, 19, 26)
+COL_STEP = 4
+
 def build_cloak():
-    results = {}
-    for seated, file in ((True, "Intro_Cloak"), (False, "Intro_CloakStand")):
-        cloth, body, ut = drape(seated)
-        inv = ut.inverted()
-        # into the torso's frame, thickened, bound at the neck and the hem
-        cloth.data.transform(inv @ cloth.matrix_world)
-        cloth.matrix_world = Matrix.Identity(4)
-        bm = bmesh.new()
-        bm.from_mesh(cloth.data)
-        sm = bmesh.ops.smooth_vert(bm, verts=bm.verts, factor=0.35, use_axis_x=True, use_axis_y=True, use_axis_z=True)
-        bm.to_mesh(cloth.data)
-        bm.free()
-        sol = cloth.modifiers.new("Solid", "SOLIDIFY")
-        sol.thickness, sol.offset = 0.05, 1.0
-        cloth.name = "Poncho_Waxcloth"
-        apply_mods(cloth)
-        for p in cloth.data.polygons:
-            p.use_smooth = True
-        uv_cyl(cloth, TILE["Waxcloth"], 1.6)
-        # the hood: a deep cowl over the head, open at the face, bound in leather
-        hood, bind = G(), G()
-        hd = RX(-10 if seated else 0)
-        # a deep cowl: a stretched dome over the head, cut open at the face, the brow pulled forward and down
-        tmp = bmesh.new()
-        bmesh.ops.create_uvsphere(tmp, u_segments=28, v_segments=16, radius=1.0)
-        cut = []
-        for v in tmp.verts:
-            x, y, z = v.co
-            if y < -0.6 and z > -0.65 and z < 0.3 and abs(x) < 0.55:   # the face opening
-                cut.append(v)
-            elif z < -0.55 and y < 0.2:                          # under the chin
-                cut.append(v)
-        bmesh.ops.delete(tmp, geom=cut, context="VERTS")
-        for v in tmp.verts:
-            x, y, z = v.co
-            if y < 0 and z > 0.1:                                # the brow peak overhangs the face
-                v.co.y -= 0.45 * (z - 0.1) * (-y)
-                v.co.z -= 0.12 * (z - 0.1) * (-y)
-            if abs(x) > 0.5 and y < -0.3:                        # the sides close round the cheeks
-                v.co.y -= 0.12
-            if y > 0.3:                                          # the cowl falls back behind the head
-                v.co.z -= 0.25 * (y - 0.3) * (1 - z) * 0.5
-        bmesh.ops.transform(tmp, matrix=hd @ T(0, 0.08, 1.42) @ S(0.86, 1.02, 0.98), verts=tmp.verts)
-        edge = [e for e in tmp.edges if e.is_boundary]
-        hood._take(tmp)
-        hd_obj = hood.make("Hood", "Waxcloth", smooth=True, uv=False)
-        uv_cyl(hd_obj, TILE["Waxcloth"], 0.9)
-        sol = hd_obj.modifiers.new("Solid", "SOLIDIFY")
-        sol.thickness = 0.04
-        apply_mods(hd_obj)
-        neckring = G()
-        neckring.torus(0.68, 0.07, T(0, 0, 0.82) @ S(1.0, 0.9, 1.0), seg=24, rseg=6)
-        parts = [cloth, hd_obj, neckring.make("Collar", "HideLeather", smooth=True)]
-        export(file, parts)
-        results[file] = parts
-        # keep the posed rider and the poncho for the render
-        for o in body:
-            o.data.transform(inv)
-        save = os.path.join(OUT, f"{file}_scene.blend")
-        bpy.ops.wm.save_as_mainfile(filepath=save)
-    return results
+    seg = 64
+    cols = seg // COL_STEP
+    cloth, body, ut = drape(False)
+    inv = ut.inverted()
+    cloth.data.transform(inv @ cloth.matrix_world)
+    cloth.matrix_world = Matrix.Identity(4)
+    bm = bmesh.new()
+    bm.from_mesh(cloth.data)
+    bmesh.ops.smooth_vert(bm, verts=bm.verts, factor=0.35, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    bm.to_mesh(cloth.data)
+    bm.free()
+    co = [v.co.copy() for v in cloth.data.vertices]          # vertex k*seg + i = ring k, segment i
+    cloth.name = "Cloak_Waxcloth"
+    # weights: bilinear between the two bone rows and the two bone columns around each vertex
+    groups = {}
+    def vg(name):
+        if name not in groups:
+            groups[name] = cloth.vertex_groups.new(name=name)
+        return groups[name]
+    for r in range(len(ROWS)):
+        for c in range(cols):
+            vg(f"R{r}C{c}")
+    for k in range(ROWS[-1] + 1):
+        a = max(j for j in range(len(ROWS)) if ROWS[j] <= k)
+        a = min(a, len(ROWS) - 2)
+        t = (k - ROWS[a]) / (ROWS[a + 1] - ROWS[a])
+        for i in range(seg):
+            c0 = i // COL_STEP
+            u = (i % COL_STEP) / COL_STEP
+            c1 = (c0 + 1) % cols
+            idx = k * seg + i
+            for (rr, cc, w) in ((a, c0, (1 - t) * (1 - u)), (a, c1, (1 - t) * u), (a + 1, c0, t * (1 - u)), (a + 1, c1, t * u)):
+                if w > 1e-4:
+                    vg(f"R{rr}C{cc}").add([idx], w, "ADD")
+    sol = cloth.modifiers.new("Solid", "SOLIDIFY")
+    sol.thickness, sol.offset = 0.05, 1.0
+    apply_mods(cloth)
+    for p in cloth.data.polygons:
+        p.use_smooth = True
+    uv_cyl(cloth, TILE["Waxcloth"], 1.6)
+    hood = make_hood(False)
+    sh = hood.modifiers.new("Solid", "SOLIDIFY")
+    sh.thickness = 0.04
+    apply_mods(hood)
+    hood.vertex_groups.new(name="Hood").add(list(range(len(hood.data.vertices))), 1.0, "REPLACE")
+    bpy.ops.object.select_all(action="DESELECT")
+    hood.select_set(True)
+    cloth.select_set(True)
+    bpy.context.view_layer.objects.active = cloth
+    bpy.ops.object.join()
+    cloth.name = "Cloak_Waxcloth"
+    # the bones: heads where their vertex sits on the draped poncho, tails a short way down
+    arm_data = bpy.data.armatures.new("CloakRig")
+    arm = bpy.data.objects.new("CloakRig", arm_data)
+    bpy.context.collection.objects.link(arm)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    for r, k in enumerate(ROWS):
+        for c in range(cols):
+            p = co[k * seg + c * COL_STEP]
+            b = arm_data.edit_bones.new(f"R{r}C{c}")
+            b.head, b.tail = p, p + Vector((0, 0, -0.25))
+    b = arm_data.edit_bones.new("Hood")
+    b.head, b.tail = Vector((0, 0.08, 1.42)), Vector((0, 0.08, 1.9))
+    bpy.ops.object.mode_set(mode="OBJECT")
+    cloth.parent = arm
+    mod = cloth.modifiers.new("Rig", "ARMATURE")
+    mod.object = arm
+    n = tris([cloth])
+    assert n < 20000, n
+    os.makedirs(OUT, exist_ok=True)
+    bpy.ops.object.select_all(action="DESELECT")
+    cloth.select_set(True)
+    arm.select_set(True)
+    bpy.ops.export_scene.fbx(filepath=os.path.join(OUT, "Intro_Cloak.fbx"), use_selection=True, apply_unit_scale=True,
+        global_scale=0.01, bake_space_transform=False, axis_forward="-Z", axis_up="Y", object_types={"MESH", "ARMATURE"},
+        add_leaf_bones=False, use_armature_deform_only=True, mesh_smooth_type="FACE")
+    print("BUILT Intro_Cloak", len(arm_data.bones), "bones", n, "tris")
+    for o in body:
+        o.data.transform(inv)
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, "Intro_Cloak_scene.blend"))
 
 if __name__ == "__main__":
     if "car" in WANT:

@@ -19,6 +19,7 @@ local Remotes = require(Shared:WaitForChild("Remotes"))
 local Sounds = require(Shared:WaitForChild("Sounds"))
 local Anims = require(Shared:WaitForChild("Anims"))
 local Kit = require(script.Parent:WaitForChild("UI"))
+local Cloth = require(script.Parent:WaitForChild("Cloth"))
 
 local UI = Kit.Theme
 local player = Players.LocalPlayer
@@ -281,6 +282,11 @@ local function play(car, seatCF, carCF)
 		conceal(holster)
 		weldTo(holster, thigh, CFrame.new(0.55, 0.1, 0) * CFrame.Angles(math.rad(180), 0, 0))
 	end
+	-- the cloak is live cloth: it lies over the body, the pistol on the thigh and the weapon on the back, and
+	-- trails when it is thrown (it stops when the cloak is destroyed)
+	if cloakHold then
+		Cloth.Attach(cloak, char, { Extra = { holster, back } })
+	end
 	setHeldVisible(char, false)
 	local tunnel, walls, streaks = buildTunnel(carCF)
 	local rumble = Sounds.Loop("TrainLoop", 0)
@@ -384,19 +390,6 @@ local function play(car, seatCF, carCF)
 		once("stand", T.Stand, function()
 			Anims.Stop(char, "Intro_Seated", 0.25)
 			Anims.Play(char, "Intro_Stand", { fade = 0.2 })
-			-- the cloak that was draped over a sitting body gives way to the one that hangs from a standing one
-			task.delay(0.75, function()
-				local standing = token == mine and cloakHold and kitPiece("CloakStand")
-				if standing and torso and torso.Parent then
-					local hold = weldTo(standing, torso, CFrame.new())
-					if hold then
-						cloak:Destroy()
-						cloak, cloakHold = standing, hold
-					else
-						standing:Destroy()
-					end
-				end
-			end)
 		end)
 		once("cloak", T.Cloak, function()
 			Anims.Play(char, "Intro_CloakToss", { fade = 0.12 })

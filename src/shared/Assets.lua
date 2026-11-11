@@ -141,7 +141,16 @@ Assets.Rigs = {
 }
 
 -- The arrival (tools/models/station.py): the rider's cloak (origin = UpperTorso centre) and the train car shell.
-Assets.Intro = { Cloak = 123115234676222, CloakStand = 87314331142393 } -- the poncho draped seated / standing (tools/models/train.py)
+-- the poncho as one skinned mesh with a grid of bones that client/Cloth.lua simulates (tools/models/train.py build_cloak)
+Assets.Intro = { Cloak = 131482831788974 }
+-- The handgun kit (tools/models/pistol_kit.py): every variant is the same components (Frame, Slide, Barrel, Hammer,
+-- Trigger, and a Suppressor and Light when fitted), each its own MeshPart, all on the Pistol grip.
+Assets.PistolKit = {
+	Whisper = 114567929391016, -- service frame, long slide, spur hammer, suppressor, light module
+	WhisperBare = 103449141962435, -- the same pistol stripped: threaded barrel, no can, no light
+	WhisperCompact = 89248380490888, -- compact frame, short slide, bobbed hammer, short suppressor
+	WhisperLight = 102428100011593, -- service frame, bobbed hammer, light module, no can
+}
 Assets.Subway = { Car = 111234592172091, Door = 71136245040287 } -- tools/models/train.py (2026-11-11, the realistic pass)
 
 -- Weapons held in the right hand (see server/HeldWeapons.lua): [weaponId] = { Id, Grip }
@@ -153,7 +162,7 @@ Assets.Weapons = {
 	ScrapSpear = { Id = 103214457247078 },
 	Sledge = { Id = 140412858794705 },
 	ArcPistol = { Id = 137041276570028, Grip = "Pistol" },
-	Whisper = { Id = 119706399622183, Grip = "Pistol" }, -- suppressed; the part named Slide moves when it is racked
+	Whisper = { Id = 114567929391016, Grip = "Pistol" }, -- suppressed, light module; built from the pistol kit (below); the part named Slide moves when it is racked
 	-- the Front's firearms (tools/models/firearms.py): grip at the origin, barrel along Roblox +Z
 	AKM = { Id = 92592283500275, Grip = "Rifle" },
 	M16A1 = { Id = 75033829373197, Grip = "Rifle" },

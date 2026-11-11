@@ -155,7 +155,7 @@ def pbr_swap(objs):
     """For renders: give every object whose name ends in a library material that material's textures."""
     cache = {}
     for ob in objs:
-        name = ob.name.rsplit("_", 1)[-1]
+        name = ob.name.split(".")[0].rsplit("_", 1)[-1]
         if not os.path.exists(os.path.join(TEX, f"{name}_col.png")):
             continue
         if name not in cache:
