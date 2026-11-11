@@ -7,3 +7,4 @@ Packages/
 tools/models/out/
 tools/anims/out/
 tools/textures/out/
+__pycache__/
