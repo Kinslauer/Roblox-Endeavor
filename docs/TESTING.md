@@ -12,6 +12,38 @@ Replay the ride: F2 → "Train intro" → Replay.
 - [ ] The rider's poncho is a dark waxed cloth with a deep hood, no flat boxes; nothing pokes through it.
 - [ ] The pistol is the new one (black slide with grooves, suppressor) in the hand at the end of the ride.
 
+## Endeavor: Metal Gear handling (stances, the gun, hands) (2026-11-11)
+Try it in the station (F2 → "Train intro" → Replay) with the Whisper out. Stances, aiming and reload work anywhere.
+- [ ] Tap C: crouch. Tap C again: stand. Hold C for a third of a second: you lie prone and crawl slowly; the
+      camera is at floor height. Space comes up one stance (prone → crouch → stand) and does not jump while you
+      are low. Shift from low stands you up and runs.
+- [ ] Sprint and press C: you dive forward onto your front. Prone, Q rolls you sideways (to the right while you hold D).
+- [ ] Prone in a dark part of the station, a guard walks past within a few steps and does not see you. Prone
+      under a lamp he still does.
+- [ ] Hold the right mouse button with the pistol out: the camera comes in over the right shoulder and narrows,
+      the reticle tightens, both hands bring the pistol up, you walk slower. Let go: the pistol comes back to the
+      chest. Left mouse fires either way.
+- [ ] While holding right mouse, V looks down the sights (first person, forearms and pistol only). V again, or
+      letting go of right mouse, comes back out.
+- [ ] Bottom right the count reads rounds in the magazine (large, of 7) and spare rounds (small). R changes the
+      magazine (about a second and a half, a click and a rack). An empty magazine changes itself when you pull
+      the trigger; with no rounds left the gun only clicks.
+- [ ] With a blade or fists out nothing changed: right mouse is the heavy attack, R Y V are skills, Q dodges.
+- [ ] Hold right mouse on a guard who has not made you, from within about 13 studs: he stops and puts his hands
+      up. He stays so while the gun is on him and for 5 seconds after; then he goes looking for you.
+- [ ] X in front of or beside a guard (prompt: X THROW): you throw him down. He is out for about 25 seconds, then
+      gets up and searches. It makes some noise.
+- [ ] Behind a guard the prompt reads X TAKEDOWN . HOLD: GRAB. A tap is the quiet takedown as before. Holding X
+      puts your arm round his neck: he walks where you walk, slowly, for up to 12 seconds. Then X chokes him out
+      (he stays down) or G shoves him down (he gets up later). If the time runs out he breaks free and attacks.
+- [ ] Hold X over a body (prompt: HOLD: CARRY): it goes over your right shoulder; you walk slower and cannot
+      jump. X or G puts it down in front of you. A body left in the light is found; one left in the dark is not.
+- [ ] Q with the pistol out next to a wall: your back goes to the wall, pistol up by the shoulder. A and D slide
+      along it and you stop at its end. Hold right mouse near the end: you step out past the corner and aim; let
+      go and you step back. Q again, Shift, or pushing away from the wall leaves it.
+- [ ] Known rough edges to look at: the prone and wall poses and the reload are new and unseen in the game; prone
+      does not let you crawl under things yet (only the picture of the body is low).
+
 ## Endeavor: the arrival (train, station, stealth) (2026-11-10)
 A new character starts on a train, alone, whatever the rest of the server is doing. To see it again on an existing
 character: F2 → "Train intro" → Replay. Hold Space during the ride to skip it.

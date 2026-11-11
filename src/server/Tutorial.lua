@@ -188,6 +188,7 @@ function Tutorial.Start(player)
 			end
 		end
 		Gear.EquipWeapon(player, T.KitWeapon)
+		require(script.Parent.Combat).ResetMags(player) -- a full magazine in it
 		Stats.Apply(player)
 		Inventory.Push(player)
 	end

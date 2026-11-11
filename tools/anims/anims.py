@@ -359,8 +359,8 @@ TAKEDOWN_REAR = dict(length=1.6, loop=False, priority="Action", keys=[
 _DOWN = {"UpperTorso": (4, 0, 6), "Head": (6, 52, 0),
          "LeftUpperArm": (150, 0, -34), "LeftLowerArm": (62, 0, 0), "RightUpperArm": (-8, 0, 24), "RightLowerArm": (24, 0, 0),
          "LeftUpperLeg": (-4, 0, -14), "LeftLowerLeg": (-10, 0, 0), "RightUpperLeg": (24, 0, 22), "RightLowerLeg": (-58, 0, 0), "RightFoot": (30, 0, 0), "LeftFoot": (40, 0, 0)}
-def fallen(forward):
-    return merge(_DOWN, {"LowerTorso": (-90, 0, 0, 0, -2.1, -forward)})
+def fallen(forward, side=0):
+    return merge(_DOWN, {"LowerTorso": (-90, 0, 0, side, -2.1, -forward)})
 TAKEDOWN_REAR_VICTIM = held([
     (0.0, {}, "Cubic", "Out"),
     (0.24, {"LowerTorso": (3, 0, 0, 0, -0.05, 0.1), "UpperTorso": (5, 0, 0), "Head": (14, 0, 0),
@@ -481,7 +481,131 @@ INTRO_RACK = dict(length=1.3, loop=False, priority="Action3", keys=[
     (1.3, {"LeftUpperArm": (4, 0, -6), "LeftLowerArm": (12, 0, 0), "Head": (6, 0, 0)}, "Linear", "InOut"),
 ])
 
+# ---------- Metal Gear handling (2026-11-11): prone, the pistol, hands up, CQC, the wall ----------
+# Prone: the root stays at standing height (the humanoid is not resized); the hips drop 2.25 and the body turns
+# face down, shifted back 0.8 so the body's middle is over the root. Elbows under the shoulders, head up.
+PRONE = {"LowerTorso": (-84, 0, 0, 0, -2.25, 0.8), "UpperTorso": (14, 0, 0), "Head": (58, 0, 0),
+         "LeftUpperArm": (75, 0, -10), "LeftLowerArm": (85, 0, 0), "RightUpperArm": (75, 0, 10), "RightLowerArm": (85, 0, 0),
+         "LeftUpperLeg": (-4, 0, -9), "LeftLowerLeg": (-4, 0, 0), "LeftFoot": (48, 0, 0),
+         "RightUpperLeg": (-4, 0, 9), "RightLowerLeg": (-4, 0, 0), "RightFoot": (48, 0, 0)}
+PRONE_IDLE = dict(length=3.0, loop=True, priority="Idle", keys=[
+    (0.0, PRONE, "CubicV2", "InOut"),
+    (1.5, merge(PRONE, {"UpperTorso": (16, 0, 0), "Head": (56, 6, 0)}), "CubicV2", "InOut"),
+    (3.0, PRONE, "Linear", "InOut"),
+])
+_CRAWL = merge(PRONE, {"LowerTorso": (-84, 0, 5, 0, -2.25, 0.8), "UpperTorso": (12, -6, 0), "Head": (58, 4, 0),
+                       "LeftUpperArm": (112, 0, -14), "LeftLowerArm": (48, 0, 0), "RightUpperArm": (58, 0, 12), "RightLowerArm": (100, 0, 0),
+                       "RightUpperLeg": (46, 0, 34), "RightLowerLeg": (-78, 0, 0), "LeftUpperLeg": (-6, 0, -6), "LeftLowerLeg": (-2, 0, 0)})
+PRONE_CRAWL = dict(length=1.2, loop=True, priority="Movement", keys=[
+    (0.0, _CRAWL, "CubicV2", "InOut"), (0.3, PRONE, "CubicV2", "InOut"),
+    (0.6, mirror(_CRAWL), "CubicV2", "InOut"), (0.9, PRONE, "CubicV2", "InOut"), (1.2, _CRAWL, "Linear", "InOut"),
+])
+def prone_roll(sign):
+    tuck = {"UpperTorso": (4, 0, 0), "Head": (30, 0, 0), "LeftUpperArm": (165, 0, -6), "LeftLowerArm": (20, 0, 0),
+            "RightUpperArm": (165, 0, 6), "RightLowerArm": (20, 0, 0), "LeftUpperLeg": (0, 0, -3), "RightUpperLeg": (0, 0, 3)}
+    keys = []
+    for i in range(5):
+        keys.append((0.1 * i, merge(tuck, {"LowerTorso": (-84, sign * 90 * i, 0, 0, -2.25, 0.8)}), "Linear", "InOut"))
+    return dict(length=0.4, loop=False, priority="Action", keys=keys)
+PRONE_ROLL_L, PRONE_ROLL_R = prone_roll(-1), prone_roll(1)
+
+# The pistol, arms only (the legs and body are whatever the stance is doing).
+PISTOL_READY = dict(length=2.4, loop=True, priority="Action", keys=[   # low ready, two hands, at the chest
+    (0.0, {"RightUpperArm": (28, 0, -50), "RightLowerArm": (72, 0, 0), "RightHand": (0, 0, 0), "LeftUpperArm": (34, 0, 55), "LeftLowerArm": (80, 0, 0)}, "CubicV2", "InOut"),
+    (1.2, {"RightUpperArm": (30, 0, -50), "RightLowerArm": (70, 0, 0), "RightHand": (0, 0, 0), "LeftUpperArm": (36, 0, 55), "LeftLowerArm": (78, 0, 0)}, "CubicV2", "InOut"),
+    (2.4, {"RightUpperArm": (28, 0, -50), "RightLowerArm": (72, 0, 0), "RightHand": (0, 0, 0), "LeftUpperArm": (34, 0, 55), "LeftLowerArm": (80, 0, 0)}, "Linear", "InOut"),
+])
+_AIM = {"UpperTorso": (-2, -8, 0), "Head": (0, 8, 0), "RightUpperArm": (88, 0, -28), "RightLowerArm": (6, 0, 0), "RightHand": (0, 0, 0),
+        "LeftUpperArm": (84, 0, 44), "LeftLowerArm": (8, 0, 0)}
+AIM_PISTOL = dict(length=2.0, loop=True, priority="Action2", keys=[
+    (0.0, _AIM, "CubicV2", "InOut"), (1.0, merge(_AIM, {"RightUpperArm": (89, 0, -28), "LeftUpperArm": (85, 0, 44)}), "CubicV2", "InOut"), (2.0, _AIM, "Linear", "InOut"),
+])
+RELOAD_PISTOL = dict(length=1.5, loop=False, priority="Action3", keys=[
+    (0.0, {"RightUpperArm": (28, 0, -50), "RightLowerArm": (72, 0, 0), "LeftUpperArm": (34, 0, 55), "LeftLowerArm": (80, 0, 0)}, "CubicV2", "InOut"),
+    (0.25, {"RightUpperArm": (46, 0, -6), "RightLowerArm": (104, 0, 0), "RightHand": (0, 0, -30), "LeftUpperArm": (-8, 0, -8), "LeftLowerArm": (46, 0, 0), "Head": (10, -10, 0)}, "CubicV2", "InOut"),  # gun up and canted, hand to the belt
+    (0.6, {"RightUpperArm": (46, 0, -6), "RightLowerArm": (104, 0, 0), "RightHand": (0, 0, -30), "LeftUpperArm": (-12, 0, -10), "LeftLowerArm": (30, 0, 0), "Head": (10, -10, 0)}, "CubicV2", "InOut"),
+    (0.9, {"RightUpperArm": (46, 0, -6), "RightLowerArm": (104, 0, 0), "RightHand": (0, 0, -30), "LeftUpperArm": (40, 0, 34), "LeftLowerArm": (108, 0, 0), "Head": (10, -10, 0)}, "Cubic", "In"),  # the magazine goes in
+    (1.05, {"RightUpperArm": (48, 0, -6), "RightLowerArm": (108, 0, 0), "RightHand": (0, 0, -20), "LeftUpperArm": (46, 0, 34), "LeftLowerArm": (112, 0, 0), "Head": (8, -8, 0)}, "CubicV2", "InOut"),
+    (1.5, {"RightUpperArm": (28, 0, -50), "RightLowerArm": (72, 0, 0), "LeftUpperArm": (34, 0, 55), "LeftLowerArm": (80, 0, 0)}, "Linear", "InOut"),
+])
+# Hands up (a guard with a gun on him): upper arms straight out, forearms straight up. (90, 0, -90) is the left
+# arm out to the side rolled so the elbow folds upward.
+_UP_HANDS = {"UpperTorso": (4, 0, 0), "Head": (-6, 0, 0), "LeftUpperArm": (90, 0, -90), "LeftLowerArm": (88, 0, 0),
+             "RightUpperArm": (90, 0, 90), "RightLowerArm": (88, 0, 0), "LeftUpperLeg": (4, 0, -6), "RightUpperLeg": (4, 0, 6)}
+HANDS_UP = dict(length=1.6, loop=True, priority="Action", keys=[
+    (0.0, _UP_HANDS, "CubicV2", "InOut"),
+    (0.8, merge(_UP_HANDS, {"LeftLowerArm": (84, 0, 0), "RightLowerArm": (92, 0, 0), "Head": (-6, 5, 0)}), "CubicV2", "InOut"),
+    (1.6, _UP_HANDS, "Linear", "InOut"),
+])
+# The throw, face to face 1.5 apart: catch him, turn left, and he goes down past your left side (his right):
+# the server lays him 1.4 ahead and 1.3 to his right of where he stood.
+TAKEDOWN_THROW = dict(length=1.6, loop=False, priority="Action", keys=[
+    (0.0, STANCE, "Cubic", "Out"),
+    (0.25, {"LowerTorso": (0, 0, 0, 0, -0.15, -0.45), "UpperTorso": (-10, 0, 0), "LeftUpperArm": (82, 0, 12), "LeftLowerArm": (40, 0, 0), "RightUpperArm": (76, 0, -12), "RightLowerArm": (46, 0, 0),
+            "LeftUpperLeg": (28, 0, -4), "LeftLowerLeg": (-26, 0, 0), "RightUpperLeg": (-18, 0, 4), "RightLowerLeg": (-16, 0, 0)}, "CubicV2", "InOut"),
+    (0.6, {"LowerTorso": (0, 22, 0, 0, -0.25, -0.25), "UpperTorso": (-12, 48, 0), "Head": (4, -20, 0), "LeftUpperArm": (60, 0, -20), "LeftLowerArm": (60, 0, 0), "RightUpperArm": (84, 0, -30), "RightLowerArm": (30, 0, 0),
+           "LeftUpperLeg": (20, 10, -8), "LeftLowerLeg": (-30, 0, 0), "RightUpperLeg": (-10, 0, 6), "RightLowerLeg": (-28, 0, 0)}, "Cubic", "In"),
+    (1.0, {"LowerTorso": (0, 26, 0, 0, -0.55, -0.15), "UpperTorso": (-38, 62, 0), "Head": (14, -24, 0), "LeftUpperArm": (30, 0, -10), "LeftLowerArm": (20, 0, 0), "RightUpperArm": (52, 0, -24), "RightLowerArm": (12, 0, 0),
+           "LeftUpperLeg": (48, 10, -8), "LeftLowerLeg": (-70, 0, 0), "RightUpperLeg": (4, 0, 6), "RightLowerLeg": (-50, 0, 0)}, "CubicV2", "InOut"),
+    (1.6, STANCE, "Linear", "InOut"),
+])
+TAKEDOWN_THROW_VICTIM = held([
+    (0.0, {}, "Cubic", "Out"),
+    (0.25, {"LowerTorso": (-8, 0, 0, 0, -0.05, -0.25), "UpperTorso": (-10, 0, 0), "Head": (14, 0, 0), "LeftUpperArm": (50, 0, -30), "LeftLowerArm": (50, 0, 0), "RightUpperArm": (70, 0, 10), "RightLowerArm": (30, 0, 0)}, "Cubic", "In"),
+    (0.6, {"LowerTorso": (-48, -30, 0, 0.7, -0.7, -0.9), "UpperTorso": (-16, -10, 0), "Head": (10, 20, 0), "LeftUpperArm": (120, 0, -50), "LeftLowerArm": (30, 0, 0), "RightUpperArm": (100, 0, 20), "RightLowerArm": (20, 0, 0),
+           "LeftUpperLeg": (-30, 0, -10), "LeftLowerLeg": (-40, 0, 0), "RightUpperLeg": (20, 0, 10), "RightLowerLeg": (-60, 0, 0)}, "Linear", "InOut"),
+    (1.0, fallen(1.4, 1.3), "Linear", "InOut"),
+    (1.6, fallen(1.4, 1.3), "Linear", "InOut"),
+])
+# Out of the neck hold: a shove in the back and he goes down on his face 1.4 ahead.
+_HOLD_ARMS = {"UpperTorso": (0, 5, 0), "LeftUpperArm": (104, -92, 0), "LeftLowerArm": (100, 0, 0), "RightUpperArm": (118, 74, 0), "RightLowerArm": (104, 0, 0)}
+TAKEDOWN_SHOVE = dict(length=1.6, loop=False, priority="Action", keys=[
+    (0.0, _HOLD_ARMS, "Cubic", "In"),
+    (0.3, {"LowerTorso": (0, 0, 0, 0, -0.1, -0.3), "UpperTorso": (-16, 0, 0), "LeftUpperArm": (92, 0, 8), "LeftLowerArm": (6, 0, 0), "RightUpperArm": (92, 0, -8), "RightLowerArm": (6, 0, 0),
+           "LeftUpperLeg": (30, 0, -4), "LeftLowerLeg": (-24, 0, 0), "RightUpperLeg": (-20, 0, 4), "RightLowerLeg": (-10, 0, 0)}, "CubicV2", "InOut"),
+    (0.9, {"LowerTorso": (0, 0, 0, 0, -0.05, -0.1), "UpperTorso": (-6, 0, 0), "LeftUpperArm": (40, 0, -8), "LeftLowerArm": (40, 0, 0), "RightUpperArm": (40, 0, 8), "RightLowerArm": (40, 0, 0)}, "CubicV2", "InOut"),
+    (1.6, STANCE, "Linear", "InOut"),
+])
+TAKEDOWN_SHOVE_VICTIM = held([
+    (0.0, {"LowerTorso": (5, 0, 0, 0, -0.15, 0.1), "UpperTorso": (7, 0, 0), "Head": (12, 0, 0)}, "Cubic", "In"),
+    (0.3, {"LowerTorso": (-22, 0, 0, 0, -0.15, -0.5), "UpperTorso": (-10, 0, 0), "Head": (20, 0, 0), "LeftUpperArm": (60, 0, -50), "LeftLowerArm": (30, 0, 0), "RightUpperArm": (80, 0, 40), "RightLowerArm": (20, 0, 0),
+           "LeftUpperLeg": (50, 0, -6), "LeftLowerLeg": (-40, 0, 0), "RightUpperLeg": (-20, 0, 6), "RightLowerLeg": (-30, 0, 0)}, "Linear", "InOut"),
+    (0.65, {"LowerTorso": (-62, 0, 0, 0, -1.2, -1.1), "UpperTorso": (-10, 0, 0), "Head": (24, 0, 0), "LeftUpperArm": (130, 0, -30), "LeftLowerArm": (40, 0, 0), "RightUpperArm": (130, 0, 30), "RightLowerArm": (40, 0, 0),
+            "LeftUpperLeg": (20, 0, -8), "LeftLowerLeg": (-70, 0, 0), "RightUpperLeg": (-10, 0, 8), "RightLowerLeg": (-40, 0, 0)}, "Cubic", "In"),
+    (1.0, fallen(1.4), "Linear", "InOut"),
+    (1.6, fallen(1.4), "Linear", "InOut"),
+])
+# The neck hold while you walk him (arms and chest only: your legs walk). He is 0.95 in front of you.
+HOLD = dict(length=2.0, loop=True, priority="Action", keys=[
+    (0.0, _HOLD_ARMS, "CubicV2", "InOut"), (1.0, merge(_HOLD_ARMS, {"UpperTorso": (2, 3, 0), "LeftLowerArm": (104, 0, 0)}), "CubicV2", "InOut"), (2.0, _HOLD_ARMS, "Linear", "InOut"),
+])
+_HELD = {"LowerTorso": (5, 0, 0, 0, -0.15, 0.1), "UpperTorso": (7, 0, 0), "Head": (12, 0, 0),
+         "LeftUpperArm": (100, 0, 24), "LeftLowerArm": (128, 0, 0), "RightUpperArm": (96, 0, -22), "RightLowerArm": (124, 0, 0),
+         "LeftUpperLeg": (22, 0, -6), "LeftLowerLeg": (-34, 0, 0), "RightUpperLeg": (-8, 0, 6), "RightLowerLeg": (-22, 0, 0)}
+HELD = dict(length=1.0, loop=True, priority="Action", keys=[   # dragged backwards on his heels, pulling at the arm
+    (0.0, _HELD, "CubicV2", "InOut"),
+    (0.5, merge(_HELD, {"LowerTorso": (5, 4, 0, 0.04, -0.2, 0.1), "UpperTorso": (8, -6, 0), "Head": (10, 8, 0),
+                        "LeftUpperLeg": (-8, 0, -6), "LeftLowerLeg": (-22, 0, 0), "RightUpperLeg": (22, 0, 6), "RightLowerLeg": (-34, 0, 0)}), "CubicV2", "InOut"),
+    (1.0, _HELD, "Linear", "InOut"),
+])
+# A body over the right shoulder (arms and chest only).
+_CARRY = {"UpperTorso": (-8, 0, -4), "Head": (4, 8, 0), "RightUpperArm": (150, 0, 12), "RightLowerArm": (64, 0, 0), "LeftUpperArm": (24, 0, -10), "LeftLowerArm": (34, 0, 0)}
+CARRY = dict(length=2.0, loop=True, priority="Action", keys=[
+    (0.0, _CARRY, "CubicV2", "InOut"), (1.0, merge(_CARRY, {"UpperTorso": (-9, 0, -3)}), "CubicV2", "InOut"), (2.0, _CARRY, "Linear", "InOut"),
+])
+# Back to a wall, the pistol up by the right shoulder.
+_COVER = {"LowerTorso": (0, 0, 0, 0, -0.12, 0.2), "UpperTorso": (5, 0, 0), "Head": (-4, 0, 0),
+          "RightUpperArm": (18, 0, -4), "RightLowerArm": (132, 0, 0), "RightHand": (0, 0, 0), "LeftUpperArm": (6, 0, -10), "LeftLowerArm": (24, 0, 0),
+          "LeftUpperLeg": (14, 0, -6), "LeftLowerLeg": (-22, 0, 0), "RightUpperLeg": (10, 0, 6), "RightLowerLeg": (-18, 0, 0)}
+COVER_IDLE = dict(length=2.6, loop=True, priority="Action", keys=[
+    (0.0, _COVER, "CubicV2", "InOut"), (1.3, merge(_COVER, {"UpperTorso": (6, 0, 0), "Head": (-4, 6, 0)}), "CubicV2", "InOut"), (2.6, _COVER, "Linear", "InOut"),
+])
+
 ANIMS = {
+    "Prone_Idle": PRONE_IDLE, "Prone_Crawl": PRONE_CRAWL, "Prone_RollL": PRONE_ROLL_L, "Prone_RollR": PRONE_ROLL_R,
+    "Pistol_Ready": PISTOL_READY, "Aim_Pistol": AIM_PISTOL, "Reload_Pistol": RELOAD_PISTOL, "HandsUp": HANDS_UP,
+    "Takedown_Throw": TAKEDOWN_THROW, "Takedown_ThrowVictim": TAKEDOWN_THROW_VICTIM, "Takedown_Shove": TAKEDOWN_SHOVE,
+    "Takedown_ShoveVictim": TAKEDOWN_SHOVE_VICTIM, "Hold": HOLD, "Held": HELD, "Carry": CARRY, "Cover_Idle": COVER_IDLE,
     "Swing_SlashR": SLASH_R, "Swing_SlashL": SLASH_L, "Swing_Overhead": OVERHEAD, "Swing_Diagonal": DIAGONAL,
     "Swing_Uppercut": UPPERCUT, "Swing_Thrust": THRUST, "Swing_Jab": JAB,
     "Hit_Front": HIT_FRONT, "Hit_Left": HIT_LEFT, "Hit_Right": HIT_RIGHT, "Hit_High": HIT_HIGH,

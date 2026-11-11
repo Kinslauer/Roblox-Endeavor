@@ -52,6 +52,7 @@ Kit.Init(gui)
 local UI, corner, stroke, make, label = Kit.Theme, Kit.corner, Kit.stroke, Kit.make, Kit.label
 local Stealth = require(script.Parent:WaitForChild("Stealth")) -- light meter, guard marks, takedowns, crouch (client/Stealth.lua)
 local Intro = require(script.Parent:WaitForChild("Intro")) -- the train ride (client/Intro.lua)
+local Handling = require(script.Parent:WaitForChild("Handling")) -- stances, aiming, reload, the wall (client/Handling.lua)
 
 -- A safety net for everything built outside panel/addRow: buttons get the theme's shape, font and a hover;
 -- opaque boxes get rounded corners. Callers' colours are kept.
@@ -764,7 +765,7 @@ do
 			local have = lastInventory and lastInventory[ammo] or 0
 			local mag = char:GetAttribute("Mag")
 			if type(mag) == "number" then
-				rounds.Text, spare.Text = tostring(mag), "/ " .. have
+				rounds.Text, spare.Text = tostring(mag), "/ " .. math.max(have - mag, 0)
 			else
 				rounds.Text, spare.Text = tostring(have), ""
 			end
@@ -1038,7 +1039,7 @@ RunService.Heartbeat:Connect(function()
 		local t = left / R.HitSeconds
 		scale, color = 1 + (R.HitScale - 1) * t, R.HitColor:Lerp(R.Color, 1 - t)
 	end
-	local gap = (R.Gap + R.Size / 2) * scale
+	local gap = ((if Handling.Aiming() then 1.5 else R.Gap) + R.Size / 2) * scale -- aiming draws it in tight
 	for _, part in reticleParts do
 		part.frame.BackgroundColor3 = color
 		if part.dir then
@@ -1527,6 +1528,7 @@ end)
 
 Stealth.Init(gui)
 Intro.Init({ Hud = gui, SetFirstPerson = setHelmetcam })
+Handling.Init({ SetFirstPerson = setHelmetcam, FirstPerson = function() return helmetcam end })
 
 -- ===== Neural Net uplink (tapping into the Front) =====
 local uplinkFrame = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Visible = false, ZIndex = 20 })
@@ -1837,22 +1839,23 @@ Remotes.Hideout.OnClientEvent:Connect(function(state, open)
 end)
 
 -- ===== Controls card (F1 toggles; shown for the first two minutes) =====
-local controls = Kit.plate({ Name = "Controls", Size = UDim2.fromOffset(336, 214), Position = UDim2.new(1, -356, 1, -244), BackgroundTransparency = 0.2 })
+local controls = Kit.plate({ Name = "Controls", Size = UDim2.fromOffset(336, 252), Position = UDim2.new(1, -356, 1, -282), BackgroundTransparency = 0.2 })
 do
 	label({ Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(12, 2), Text = Kit.spaced("Controls", 1), Font = UI.Title, TextSize = 10, TextColor3 = UI.Accent, TextXAlignment = Enum.TextXAlignment.Left, Parent = controls })
 	label({ Size = UDim2.fromOffset(60, 24), Position = UDim2.new(1, -70, 0, 2), Text = "F1", Font = UI.Mono, TextSize = 11, TextColor3 = UI.Faint, TextXAlignment = Enum.TextXAlignment.Right, Parent = controls })
 	make("Frame", { Size = UDim2.new(1, -2, 0, 1), Position = UDim2.fromOffset(1, 26), BackgroundColor3 = UI.Line, BackgroundTransparency = 0.35, BorderSizePixel = 0 }, controls)
 	local KEYS = {
 		{ "LMB", "attack" }, { "RMB", "heavy" }, { "F", "guard" }, { "E", "flicker" }, { "Q", "dodge" }, { "Z", "feint" },
-		{ "SHIFT", "sprint" }, { "C", "crouch" }, { "X", "use / takedown" }, { "B", "whistle" }, { "R Y V", "skills" }, { "G", "grab, throw" },
+		{ "SHIFT", "sprint" }, { "C", "crouch / prone" }, { "X", "use / hands" }, { "B", "whistle" }, { "R Y V", "skills" }, { "G", "grab, throw" },
 		{ "H", "drop" }, { "M", "devour" }, { "TAB", "pack" }, { "L", "loadout" }, { "J", "attributes" }, { "O", "hideout" },
 		{ "N", "net" }, { "P", "helmetcam" },
+		{ "GUN RMB", "aim" }, { "GUN V", "sights" }, { "GUN R", "reload" }, { "GUN Q", "wall" },
 	}
 	for i, pair in KEYS do
 		local col, row = (i - 1) % 2, math.floor((i - 1) / 2)
 		local x, y = 12 + col * 162, 32 + row * 18
-		label({ Size = UDim2.fromOffset(48, 18), Position = UDim2.fromOffset(x, y), Text = pair[1], Font = UI.Mono, TextSize = 11, TextColor3 = UI.Text, TextXAlignment = Enum.TextXAlignment.Left, Parent = controls })
-		label({ Size = UDim2.fromOffset(108, 18), Position = UDim2.fromOffset(x + 50, y), Text = pair[2], TextSize = 13, TextColor3 = UI.Dim, TextXAlignment = Enum.TextXAlignment.Left, Parent = controls })
+		label({ Size = UDim2.fromOffset(66, 18), Position = UDim2.fromOffset(x, y), Text = pair[1], Font = UI.Mono, TextSize = 11, TextColor3 = UI.Text, TextXAlignment = Enum.TextXAlignment.Left, Parent = controls })
+		label({ Size = UDim2.fromOffset(94, 18), Position = UDim2.fromOffset(x + 66, y), Text = pair[2], TextSize = 13, TextColor3 = UI.Dim, TextXAlignment = Enum.TextXAlignment.Left, Parent = controls })
 	end
 end
 -- Not in the station (nothing is explained there), and the quest line waits with it.
@@ -2621,8 +2624,13 @@ menuOpen = function()
 	return false
 end
 aimActive = function()
-	if not aimOn or helmetcam or Intro.Active() or menuOpen() or UserInputService:IsKeyDown(AIM.FreeCursorKey) then
+	-- (First person counts: the body has to face where you look there too, or shots leave along the old facing.
+	-- Leaving it out is what made the pistol miss after the ride ended in first person in v79.)
+	if not aimOn or Intro.Active() or menuOpen() or UserInputService:IsKeyDown(AIM.FreeCursorKey) then
 		return false
+	end
+	if Handling.HoldsFacing() then
+		return false -- back to a wall: the wall places the body
 	end
 	-- A takedown or a cutscene places the body: turning it to the camera here is what put the attacker at the
 	-- guard's side instead of square behind it (owner, 2026-11-11).
@@ -2638,9 +2646,10 @@ applyAim = function()
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if hum then
-		local crouch = if Stealth.Crouched() then Vector3.new(0, -1.3, 0) else Vector3.zero
-		hum.CameraOffset = (if aimOn and not helmetcam then aimPreset().ShoulderOffset else Vector3.zero) + crouch
-		hum.AutoRotate = not aimOn
+		local drop = Handling.Drop() -- crouched and prone the camera comes down
+		local shoulder = (Handling.AimPreset() or aimPreset()).ShoulderOffset
+		hum.CameraOffset = (if aimOn and not helmetcam then shoulder else Vector3.zero) + drop
+		hum.AutoRotate = not aimOn and not Handling.InCover()
 	end
 	GameSettings.RotationType = if aimOn then Enum.RotationType.CameraRelative else Enum.RotationType.MovementRelative
 	if not aimOn then
@@ -2697,6 +2706,22 @@ toggleAim = function()
 	aimOn = not aimOn
 	applyAim()
 end
+-- stance, aim and the wall move the camera: lower, or in over the shoulder and narrower while RMB is held
+local baseFov
+Handling.Changed = function(what)
+	applyAim()
+	if what == "Aim" then
+		local cam = workspace.CurrentCamera
+		local on = Handling.Aiming()
+		if cam then
+			baseFov = baseFov or cam.FieldOfView
+			Kit.tween(cam, 0.14, { FieldOfView = if not on then baseFov elseif Handling.Sights() then Config.Stealth.Aim.SightFov else Config.Stealth.Aim.Fov })
+		end
+		if not Handling.Sights() then
+			setDistance(if on then Config.Stealth.Aim.Distance else aimPreset().Distance)
+		end
+	end
+end
 local function bindAim(char)
 	task.defer(applyAim)
 	local lastKind
@@ -2709,7 +2734,7 @@ local function bindAim(char)
 		end
 	end
 	char:GetAttributeChangedSignal("Weapon"):Connect(refresh)
-	char:GetAttributeChangedSignal("Crouched"):Connect(function()
+	char:GetAttributeChangedSignal("Stance"):Connect(function()
 		task.defer(applyAim)
 	end)
 	task.delay(0.5, refresh, true)
@@ -3197,12 +3222,15 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		clearPreview()
 		return
 	end
+	if Handling.Began(input, key) then
+		return -- stances (C, Space, Shift), and with a gun out: RMB aim, V sights, R reload, Q the wall or the prone roll
+	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		Remotes.Attack:FireServer(cameraDirection()) -- a shot goes where you look; a swing ignores it
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 		Remotes.Heavy:FireServer(cameraDirection())
 	elseif Stealth.Key(key) then
-		-- C crouch, B whistle, X a takedown on offer
+		-- B whistle, X close quarters (tap or hold), G with a guard in your arms or a body on your shoulder
 	elseif key == Enum.KeyCode.F then
 		Remotes.Block:FireServer(true)
 	elseif key == Enum.KeyCode.E then
@@ -3301,6 +3329,9 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 end)
 UserInputService.InputEnded:Connect(function(input)
+	if Handling.Ended(input, input.KeyCode) or Stealth.KeyUp(input.KeyCode) then
+		return
+	end
 	if input.KeyCode == Enum.KeyCode.F then
 		Remotes.Block:FireServer(false)
 	elseif input.KeyCode == Enum.KeyCode.LeftShift then

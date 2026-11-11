@@ -48,6 +48,33 @@ function Stealth.TakedownKind(playerCF, guardCF, state, spots)
 	return nil
 end
 
+-- Behind the guard (the neck hold needs it whatever the room offers).
+function Stealth.Behind(playerCF, guardCF)
+	local offset = playerCF.Position - guardCF.Position
+	local flat = Vector3.new(offset.X, 0, offset.Z)
+	return math.abs(offset.Y) <= 4 and flat.Magnitude <= T.Reach and flat.Magnitude > 0.05 and guardCF.LookVector:Dot(flat.Unit) < T.BehindDot
+end
+
+-- CQC on a guard: what a tap of X and what holding X would do from here. Returns tap, hold (each a word or nil):
+--   tap  "Rear" | "Drop" | "Panel" | "Rail" | "Ledge" (the takedowns) | "Throw" (in front of or beside it)
+--   hold "Grab" (behind it: the neck hold)
+function Stealth.Cqc(playerCF, guardCF, state, spots)
+	if state == "Down" or state == "Held" then
+		return nil, nil
+	end
+	local kind = Stealth.TakedownKind(playerCF, guardCF, state, spots)
+	local hold = if state ~= "Alert" and Stealth.Behind(playerCF, guardCF) then "Grab" else nil
+	if kind then
+		return kind, hold
+	end
+	local offset = playerCF.Position - guardCF.Position
+	local flat = Vector3.new(offset.X, 0, offset.Z)
+	if math.abs(offset.Y) <= 4 and flat.Magnitude <= S.Cqc.Throw.Reach then
+		return "Throw", hold
+	end
+	return nil, hold
+end
+
 -- How much one light adds at `point` (0..1), before walls. `light` is a PointLight / SpotLight / SurfaceLight
 -- under a part or attachment.
 function Stealth.LightAt(light, origin, look, point)
@@ -70,9 +97,12 @@ function Stealth.LightAt(light, origin, look, point)
 end
 
 -- A guard's sight range for a body lit `exposure` (0..1).
-function Stealth.SightRange(exposure, crouched, searching)
+function Stealth.SightRange(exposure, crouched, searching, prone)
 	local r = S.SightRange * (S.DarkSight + (1 - S.DarkSight) * math.clamp(exposure, 0, 1))
-	if crouched then
+	if prone then
+		-- flat on the floor: a small shape, and in the dark close to nothing
+		r *= S.Stance.ProneVisibility * (if exposure < S.Stance.ProneDark then S.Stance.ProneDarkVisibility else 1)
+	elseif crouched then
 		r *= S.CrouchVisibility
 	end
 	if searching then

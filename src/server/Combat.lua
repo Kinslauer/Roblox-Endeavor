@@ -1131,15 +1131,106 @@ end
 -- Two-handed loads (Medium/Heavy chunks) stop you swinging and blocking.
 function handsFull(char)
 	local class = char:GetAttribute("HoldClass")
-	return class == "Medium" or class == "Heavy"
+	-- ...and so do a guard held by the neck and a body on the shoulder (server/Stealth)
+	return class == "Medium" or class == "Heavy" or char:GetAttribute("NeckHold") == true or char:GetAttribute("Carrying") == true
 end
 
 -- Cell-fed weapons spend ammo per shot; returns false (and tells the player) when dry.
+-- Magazines (owner, 2026-11-11: "the modern gunplay of MGSV"): a weapon with MagSize fires from its magazine and
+-- R changes it (Combat.Reload). The rounds in the magazine are still the pack's rounds (the count is the truth:
+-- a shot takes one from both), so nothing about the inventory changes; the character's `Mag` attribute is what
+-- the screen shows, and spare = pack count - Mag.
+local mags = setmetatable({}, { __mode = "k" }) -- player -> { [weapon name] = rounds in the magazine }
+local function magOf(player, weapon)
+	local Inventory = require(script.Parent.Inventory)
+	local have = Inventory.Count(player, weapon.Ammo)
+	local mine = mags[player]
+	if not mine then
+		mine = {}
+		mags[player] = mine
+	end
+	local m = mine[weapon.Name]
+	m = math.min(if m == nil then weapon.MagSize else m, have, weapon.MagSize)
+	mine[weapon.Name] = m
+	return m, have
+end
+function Combat.SyncMag(player)
+	local char, weapon = player.Character, weaponOf(player)
+	if not char then
+		return
+	end
+	if weapon and weapon.MagSize and weapon.Ammo then
+		local m = magOf(player, weapon)
+		char:SetAttribute("Mag", m)
+		char:SetAttribute("MagSize", weapon.MagSize)
+		return m
+	end
+	char:SetAttribute("Mag", nil)
+	char:SetAttribute("MagSize", nil)
+	return nil
+end
+-- Every magazine full again (a fresh kit).
+function Combat.ResetMags(player)
+	mags[player] = nil
+	Combat.SyncMag(player)
+end
+function Combat.Reload(player)
+	local char, weapon = player.Character, weaponOf(player)
+	if not (char and weapon and weapon.MagSize and weapon.Ammo) or handsFull(char) then
+		return false
+	end
+	local s = st(char)
+	local m, have = magOf(player, weapon)
+	if s.reloading or m >= math.min(weapon.MagSize, have) or not Combat.CanAct(char) then
+		return false
+	end
+	local seconds = weapon.ReloadSeconds or 1.5
+	s.reloading = true
+	s.queued = nil
+	char:SetAttribute("Reloading", true)
+	Combat.SetBusy(char, seconds)
+	fx("Reload", char, seconds)
+	task.delay(seconds, function()
+		s.reloading = nil
+		if not char.Parent then
+			return
+		end
+		char:SetAttribute("Reloading", nil)
+		if isAlive(char) and weaponOf(player) == weapon then
+			local Inventory = require(script.Parent.Inventory)
+			mags[player][weapon.Name] = math.min(weapon.MagSize, Inventory.Count(player, weapon.Ammo))
+		end
+		Combat.SyncMag(player)
+	end)
+	return true
+end
+
 local function spendAmmo(player, weapon)
 	if not weapon.Ammo then
 		return true
 	end
 	local Inventory = require(script.Parent.Inventory)
+	if weapon.MagSize then
+		local m, have = magOf(player, weapon)
+		if m <= 0 then
+			-- an empty magazine changes itself when there is another; with none the gun only clicks
+			if have > 0 then
+				Combat.Reload(player)
+			else
+				Remotes.Announce:FireClient(player, "> " .. string.upper(weapon.Name) .. " . . . EMPTY", "Info")
+			end
+			if player.Character then
+				fx("DryFire", player.Character)
+			end
+			return false
+		end
+		if not Inventory.Remove(player, weapon.Ammo, 1) then
+			return false
+		end
+		mags[player][weapon.Name] = m - 1
+		Combat.SyncMag(player)
+		return true
+	end
 	if Inventory.Count(player, weapon.Ammo) <= 0 then
 		Remotes.Announce:FireClient(player, "> " .. string.upper(weapon.Name) .. " . . . EMPTY", "Info")
 		return false
@@ -1369,6 +1460,7 @@ end
 function Combat.Init()
 	Net.On("Attack", { rate = 8, burst = 12, args = { "vector?" } }, Combat.Attack)
 	Net.On("Heavy", { rate = 4, burst = 6, args = { "vector?" } }, Combat.Heavy)
+	Net.On("Reload", { rate = 2, burst = 3 }, Combat.Reload)
 	Net.On("Feint", { rate = 6, burst = 8 }, Combat.Feint)
 	Net.On("Flicker", { rate = 8, burst = 12 }, Combat.Flicker)
 	Net.On("Block", { rate = 4, burst = 8, args = { "boolean" } }, Combat.SetBlock)

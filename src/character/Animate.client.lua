@@ -27,12 +27,13 @@ for _, name in { "Idle", "Walk", "Run" } do
 	end
 end
 -- crouched (the Crouched attribute, C): a low stance and a low walk
-for name, own in { CrouchIdle = "Crouch_Idle", CrouchWalk = "Crouch_Walk" } do
+-- prone (the Stance attribute; hold C): flat on the floor and a crawl
+for name, own in { CrouchIdle = "Crouch_Idle", CrouchWalk = "Crouch_Walk", ProneIdle = "Prone_Idle", ProneCrawl = "Prone_Crawl" } do
 	if OWN[own] and OWN[own] ~= 0 then
 		IDS[name] = "rbxassetid://" .. tostring(OWN[own])
 	end
 end
-local PRIORITY = { Idle = Enum.AnimationPriority.Idle, CrouchIdle = Enum.AnimationPriority.Idle }
+local PRIORITY = { Idle = Enum.AnimationPriority.Idle, CrouchIdle = Enum.AnimationPriority.Idle, ProneIdle = Enum.AnimationPriority.Idle }
 
 local tracks = {}
 for name, id in IDS do
@@ -72,7 +73,13 @@ local function ground(speed)
 	if state ~= "Running" then
 		return
 	end
-	if char:GetAttribute("Crouched") and tracks.CrouchIdle then
+	if char:GetAttribute("Stance") == "Prone" and tracks.ProneIdle then
+		if speed < 0.3 then
+			play("ProneIdle", 0.25)
+		else
+			play("ProneCrawl", 0.2, math.clamp(speed / 3, 0.5, 2))
+		end
+	elseif char:GetAttribute("Crouched") and tracks.CrouchIdle then
 		if speed < 0.5 then
 			play("CrouchIdle", 0.2)
 		else
@@ -88,6 +95,9 @@ local function ground(speed)
 end
 hum.Running:Connect(ground)
 char:GetAttributeChangedSignal("Crouched"):Connect(function()
+	ground(lastSpeed)
+end)
+char:GetAttributeChangedSignal("Stance"):Connect(function()
 	ground(lastSpeed)
 end)
 hum.Climbing:Connect(function(speed)

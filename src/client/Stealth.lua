@@ -26,7 +26,8 @@ local player = Players.LocalPlayer
 
 local Stealth = {}
 
-local WORDS = { Rear = "TAKEDOWN", Drop = "DROP", Panel = "FUSE BOX", Rail = "LIVE RAIL", Ledge = "LEDGE" }
+local WORDS = { Rear = "TAKEDOWN", Drop = "DROP", Panel = "FUSE BOX", Rail = "LIVE RAIL", Ledge = "LEDGE", Throw = "THROW" }
+local Q = S.Cqc
 
 local gui
 local meter, noiseFill
@@ -45,15 +46,6 @@ end
 
 function Stealth.Crouched()
 	return crouched
-end
-
-function Stealth.SetCrouch(on)
-	local _, char = myRoot()
-	if not char or crouched == on then
-		return
-	end
-	crouched = on
-	Remotes.Crouch:FireServer(on)
 end
 
 -- ===== the light gem =====
@@ -174,45 +166,69 @@ end
 
 -- ===== the takedown on offer =====
 local function buildPrompt()
-	prompt = Kit.make("BillboardGui", { Name = "TakedownPrompt", Size = UDim2.fromOffset(170, 28), StudsOffset = Vector3.new(0, 0.6, 0), AlwaysOnTop = true, MaxDistance = 40, Enabled = false }, gui)
+	prompt = Kit.make("BillboardGui", { Name = "TakedownPrompt", Size = UDim2.fromOffset(250, 28), StudsOffset = Vector3.new(0, 0.6, 0), AlwaysOnTop = true, MaxDistance = 40, Enabled = false }, gui)
 	local _, _, word = Kit.keyHint(prompt, "X", "TAKEDOWN", UDim2.fromOffset(0, 1))
 	promptWord = word
 end
 
+-- What X would do now: { guard, tap, hold } (words from Rules.Cqc; a body offers only hold = "Carry"),
+-- or { mode = "Hold" | "Carry" } while your hands are already full.
 local function findOffer()
 	local root, char = myRoot()
-	if not root or not player:GetAttribute("Stealth") or char:GetAttribute("Takedown") or char:GetAttribute("Cutscene") then
+	if not root or char:GetAttribute("Takedown") or char:GetAttribute("Cutscene") then
 		return nil
 	end
-	local best, bestKind, bestD
+	if char:GetAttribute("NeckHold") then
+		return { mode = "Hold" }
+	elseif char:GetAttribute("Carrying") then
+		return { mode = "Carry" }
+	end
+	if not player:GetAttribute("Stealth") then
+		return nil
+	end
+	local best, bestD
 	for _, model in CollectionService:GetTagged("Guard") do
 		local groot = model:FindFirstChild("HumanoidRootPart")
-		local info = awareness[model]
-		if groot and model.Parent and not model:GetAttribute("Downed") and (not info or info.a < 1) then
+		if groot and model.Parent then
 			local d = (groot.Position - root.Position).Magnitude
-			if d < 26 then
-				local kind = Rules.TakedownKind(root.CFrame, groot.CFrame, model:GetAttribute("StealthState") or "Patrol")
-				if kind and (not bestD or d < bestD) then
-					best, bestKind, bestD = model, kind, d
+			if d < 26 and (not bestD or d < bestD) then
+				if model:GetAttribute("Downed") then
+					if d <= Q.Carry.Reach then
+						best, bestD = { guard = model, hold = "Carry" }, d + 3 -- a standing guard in reach comes first
+					end
+				else
+					local info = awareness[model]
+					local tap, hold = Rules.Cqc(root.CFrame, groot.CFrame, model:GetAttribute("StealthState") or "Patrol")
+					if info and info.a >= 1 and tap ~= "Throw" then
+						tap, hold = nil, nil -- he has made you: only the throw is left
+					end
+					if tap or hold then
+						best, bestD = { guard = model, tap = tap, hold = hold }, d
+					end
 				end
 			end
 		end
 	end
-	if best then
-		return { guard = best, kind = bestKind }
-	end
-	return nil
+	return best
 end
 
 local function drawOffer()
 	offer = findOffer()
-	if offer then
-		prompt.Adornee = offer.guard:FindFirstChild("UpperTorso") or offer.guard:FindFirstChild("HumanoidRootPart")
-		promptWord.Text = WORDS[offer.kind] or "TAKEDOWN"
-		prompt.Enabled = true
-	else
+	if not offer then
 		prompt.Enabled = false
+		return
 	end
+	local _, char = myRoot()
+	if offer.mode then
+		prompt.Adornee = char and (char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart"))
+		promptWord.Text = if offer.mode == "Hold" then "CHOKE  .  G THROW" else "PUT DOWN"
+	else
+		prompt.Adornee = offer.guard:FindFirstChild("UpperTorso") or offer.guard:FindFirstChild("HumanoidRootPart")
+		local tap = offer.tap and (WORDS[offer.tap] or "TAKEDOWN")
+		local hold = offer.hold and (if offer.hold == "Carry" then "CARRY" else "GRAB")
+		promptWord.Text = if tap and hold then tap .. "  .  HOLD: " .. hold elseif tap then tap else "HOLD: " .. hold
+	end
+	prompt.Enabled = true
 end
 
 -- ===== effects =====
@@ -282,14 +298,17 @@ local function takedownCamera(char, guard, seconds)
 	end)
 end
 
-local ATTACK_ANIM = { Rear = "Takedown_Rear", Drop = "Takedown_Drop", Panel = "Takedown_Slam", Rail = "Takedown_Slam", Ledge = "Takedown_Slam" }
-local VICTIM_ANIM = { Rear = "Takedown_RearVictim", Drop = "Takedown_DropVictim", Panel = "Takedown_SlamVictim", Rail = "Takedown_SlamVictim", Ledge = "Takedown_SlamVictim" }
+local ATTACK_ANIM = { Rear = "Takedown_Rear", Drop = "Takedown_Drop", Panel = "Takedown_Slam", Rail = "Takedown_Slam", Ledge = "Takedown_Slam", Throw = "Takedown_Throw", Shove = "Takedown_Shove" }
+local VICTIM_ANIM = { Rear = "Takedown_RearVictim", Drop = "Takedown_DropVictim", Panel = "Takedown_SlamVictim", Rail = "Takedown_SlamVictim", Ledge = "Takedown_SlamVictim",
+	Throw = "Takedown_ThrowVictim", Shove = "Takedown_ShoveVictim" }
 
 local function onTakedown(kind, char, guard, spot, seconds)
 	if typeof(char) ~= "Instance" or typeof(guard) ~= "Instance" then
 		return
 	end
 	seconds = seconds or 1.6
+	Anims.Stop(guard, "Held", 0.1)
+	Anims.Stop(guard, "HandsUp", 0.1)
 	local a = Anims.Play(char, ATTACK_ANIM[kind] or "Takedown_Rear", { fade = 0.1 })
 	if a then
 		a:AdjustSpeed(1.6 / seconds) -- authored as 1.6 s of action (tools/anims)
@@ -305,6 +324,12 @@ local function onTakedown(kind, char, guard, spot, seconds)
 		if kind == "Rear" and root and groot then
 			local behind = groot.CFrame * CFrame.new(0, 0, S.Takedown.RearDistance or 1.5)
 			root.CFrame = CFrame.new(behind.Position.X, root.Position.Y, behind.Position.Z) * groot.CFrame.Rotation
+		elseif kind == "Throw" and root and groot then
+			local to = (root.Position - groot.Position) * Vector3.new(1, 0, 1)
+			if to.Magnitude > 0.1 then
+				local me = groot.Position + to.Unit * Q.Throw.Stand
+				root.CFrame = CFrame.lookAt(Vector3.new(me.X, root.Position.Y, me.Z), Vector3.new(groot.Position.X, root.Position.Y, groot.Position.Z))
+			end
 		end
 		takedownCamera(char, guard, seconds)
 	end
@@ -332,16 +357,50 @@ local function watchDowned(model)
 				end
 			end
 			Anims.Play(model, "Downed", { fade = 0 })
+		else
+			Anims.Stop(model, "Downed", 0.3) -- thrown, not choked: he gets up
 		end
 	end
 	model:GetAttributeChangedSignal("Downed"):Connect(apply)
 	apply()
+	-- a gun on him: hands up for as long as the server holds him there
+	local function hands()
+		if model:GetAttribute("StealthState") == "HeldUp" then
+			Anims.Play(model, "HandsUp", { fade = 0.2 })
+		else
+			Anims.Stop(model, "HandsUp", 0.25)
+		end
+	end
+	model:GetAttributeChangedSignal("StealthState"):Connect(hands)
+	hands()
 end
 
 -- World events the main script forwards here. Returns true when it was one of ours.
 function Stealth.World(kind, a, b, c, d, e)
 	if kind == "Takedown" then
 		onTakedown(a, b, c, d, e)
+	elseif kind == "Hold" then
+		-- (char, guard, on): he is in someone's arms; the holder's own arms are client/Handling's
+		if typeof(b) == "Instance" then
+			local groot = b:FindFirstChild("HumanoidRootPart")
+			local root, mine = myRoot()
+			if c and a == mine and root and groot then
+				-- square behind him as the hold starts (the server stands you there too)
+				local behind = groot.CFrame * CFrame.new(0, 0, Q.Hold.Gap)
+				root.CFrame = CFrame.new(behind.Position.X, root.Position.Y, behind.Position.Z) * groot.CFrame.Rotation
+			end
+			if c then
+				Anims.Stop(b, "HandsUp", 0.1)
+				Anims.Play(b, "Held", { fade = 0.15 })
+				Sounds.Play("Takedown", b:FindFirstChild("HumanoidRootPart"), { Volume = 0.25 })
+			else
+				Anims.Stop(b, "Held", 0.15)
+			end
+		end
+	elseif kind == "Carry" then
+		if typeof(b) == "Instance" then
+			Sounds.Play("ImpactFlesh", b:FindFirstChild("HumanoidRootPart"), { Volume = 0.25 })
+		end
 	elseif kind == "LightBreak" then
 		Sounds.Play("BreakGlass", a, { Volume = 0.5, Pitch = 1.3 })
 		burst(a, Color3.fromRGB(255, 240, 200), 24, 18)
@@ -357,17 +416,57 @@ function Stealth.World(kind, a, b, c, d, e)
 end
 
 -- Keys the main script forwards (returns true when used).
+--   X: a tap does the offer's tap (a takedown, or a throw); held for Cqc.Hold.Press it does the offer's hold (the
+--      neck grab, or a body onto the shoulder). With a guard in your arms X chokes him out; with a body up, X puts it down.
+--   G: with a guard in your arms, throws him down; with a body up, puts it down.
+local xDown -- { offer, at, used }
+local function tapX(o)
+	if o.tap == "Throw" then
+		Remotes.Cqc:FireServer("Throw", o.guard)
+	elseif o.tap then
+		Remotes.Takedown:FireServer(o.guard)
+	end
+end
+
 function Stealth.Key(key)
-	if key == Enum.KeyCode.C then
-		Stealth.SetCrouch(not crouched)
-		return true
-	elseif key == Enum.KeyCode.B then
+	if key == Enum.KeyCode.B then
 		if player:GetAttribute("Stealth") then
 			Remotes.Whistle:FireServer()
 		end
 		return true
 	elseif key == Enum.KeyCode.X and offer then
-		Remotes.Takedown:FireServer(offer.guard)
+		if offer.mode == "Hold" then
+			Remotes.Cqc:FireServer("Choke")
+		elseif offer.mode == "Carry" then
+			Remotes.Cqc:FireServer("Drop")
+		elseif not offer.hold then
+			tapX(offer) -- nothing to hold for: act on the press
+		else
+			local mine = { offer = offer, at = os.clock() }
+			xDown = mine
+			task.delay(Q.Hold.Press, function()
+				if xDown == mine and not mine.used then
+					mine.used = true
+					Remotes.Cqc:FireServer(if mine.offer.hold == "Carry" then "Carry" else "Grab", mine.offer.guard)
+				end
+			end)
+		end
+		return true
+	elseif key == Enum.KeyCode.G and offer and offer.mode then
+		Remotes.Cqc:FireServer(if offer.mode == "Hold" then "Throw" else "Drop")
+		return true
+	end
+	return false
+end
+
+function Stealth.KeyUp(key)
+	if key == Enum.KeyCode.X and xDown then
+		local mine = xDown
+		xDown = nil
+		if not mine.used then
+			mine.used = true
+			tapX(mine.offer)
+		end
 		return true
 	end
 	return false
@@ -414,6 +513,11 @@ function Stealth.Init(screenGui)
 	RunService.RenderStepped:Connect(function(dt)
 		local watched = player:GetAttribute("Stealth") == true
 		meter.Visible = watched
+		local _, mine = myRoot()
+		if not watched and mine and (mine:GetAttribute("NeckHold") or mine:GetAttribute("Carrying")) then
+			drawOffer() -- hands still full on the way out of a watched place
+			return
+		end
 		if not watched then
 			if next(marks) then
 				for model in marks do

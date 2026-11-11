@@ -19,6 +19,7 @@ local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local Rules = require(Shared.Stealth)
+local Weapons = require(Shared.Weapons)
 local Combat = require(script.Parent.Combat)
 local NPCs = require(script.Parent.NPCs)
 local Net = require(script.Parent.Common.Net)
@@ -35,6 +36,9 @@ local guards = {} -- model -> guard
 local levels = {} -- player -> level folder
 local lastWhistle = {}
 local noiseNow = {} -- player -> radius of the noise they are making this tick
+local holds = {} -- player -> the guard held by the neck
+local carries = {} -- player -> the downed guard on the shoulder
+local Q = S.Cqc
 
 -- ===== lights =====
 local FACES = {
@@ -141,6 +145,12 @@ function Stealth.Leave(player)
 	levels[player] = nil
 	noiseNow[player] = nil
 	player:SetAttribute("Stealth", nil)
+	if holds[player] then
+		Stealth.Release(player, "Break")
+	end
+	if carries[player] then
+		Stealth.DropBody(player)
+	end
 	local char = player.Character
 	if char then
 		char:SetAttribute("Exposure", nil)
@@ -253,14 +263,16 @@ function Stealth.Noise(position, radius, kind, player)
 	end
 end
 
-local function sees(g, char, exposure, crouched)
+local function sees(g, char, exposure, crouched, prone)
 	local root = char:FindFirstChild("HumanoidRootPart")
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if not root or not hum or hum.Health <= 0 then
 		return false, 0
 	end
 	local eyes = g.root.Position + Vector3.new(0, 2, 0)
-	local to = root.Position + Vector3.new(0, 0.8, 0)
+	-- what he would see of you: the chest standing, lower crouched, a shape on the floor prone (the root itself
+	-- stays at standing height), so low cover really hides a low body
+	local to = root.Position + Vector3.new(0, if prone then -1.9 elseif crouched then -0.4 else 0.8, 0)
 	local offset = to - eyes
 	local d = offset.Magnitude
 	if d < S.Bump then
@@ -278,7 +290,7 @@ local function sees(g, char, exposure, crouched)
 			exposure = math.max(exposure, S.FlashlightExposure)
 		end
 	end
-	local range = Rules.SightRange(exposure, crouched, searching)
+	local range = Rules.SightRange(exposure, crouched, searching, prone)
 	if d > range then
 		return false, 0
 	end
@@ -302,6 +314,24 @@ local function seesBody(g)
 		end
 	end
 	return nil
+end
+
+-- Is `char` pointing a gun at this guard from close by? (The aim stance turns the body to the camera, so the
+-- body's facing is the gun's.)
+local function gunOn(g, char)
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return false
+	end
+	local to = (g.root.Position - root.Position) * Vector3.new(1, 0, 1)
+	local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+	if to.Magnitude > S.HoldUp.Range or to.Magnitude < 0.1 or look.Magnitude < 0.1 or math.abs(g.root.Position.Y - root.Position.Y) > 6 then
+		return false
+	end
+	if look.Unit:Dot(to.Unit) < math.cos(math.rad(S.HoldUp.Cone)) then
+		return false
+	end
+	return clearLine(root.Position + Vector3.new(0, 1.5, 0), g.root.Position + Vector3.new(0, 1.5, 0), { char, g.model })
 end
 
 local function patrol(g, now)
@@ -346,7 +376,7 @@ local function think(g, now, dt)
 	for player, level in levels do
 		local char = player.Character
 		if level == g.level and char then
-			local visible, clarity = sees(g, char, char:GetAttribute("Exposure") or 1, char:GetAttribute("Crouched") == true)
+			local visible, clarity = sees(g, char, char:GetAttribute("Exposure") or 1, char:GetAttribute("Crouched") == true, char:GetAttribute("Stance") == "Prone")
 			local a = g.aware[player] or 0
 			if visible then
 				local rate = S.FillRate * clarity * (if g.state == "Search" or g.wary then S.SearchFill else 1)
@@ -362,6 +392,44 @@ local function think(g, now, dt)
 			if a > bestA then
 				best, bestA = player, a
 			end
+		end
+	end
+
+	-- Held up: a gun on him, up close, before he has made anyone. He stops with his hands up and stays so for
+	-- HoldUp.Keep seconds after the gun leaves him; then he goes looking for whoever it was.
+	if g.state ~= "Alert" then
+		local holder
+		for player, level in levels do
+			local char = player.Character
+			if level == g.level and char and char:GetAttribute("Aiming") and (g.aware[player] or 0) < 1 and gunOn(g, char) then
+				holder = player
+				break
+			end
+		end
+		if holder then
+			g.gunOn = (g.gunOn or 0) + dt
+			if g.state == "HeldUp" or g.gunOn >= S.HoldUp.Grace then
+				g.heldUpBy, g.heldUntil = holder, now + S.HoldUp.Keep
+				if g.state ~= "HeldUp" then
+					halt(g)
+					setState(g, "HeldUp")
+				end
+			end
+		else
+			g.gunOn = 0
+		end
+		if g.state == "HeldUp" then
+			for player, a in g.aware do
+				g.aware[player] = math.min(a, 0.9) -- frozen: he does not finish making you while the gun is on him
+			end
+			halt(g)
+			if now > g.heldUntil then
+				local by = g.heldUpBy
+				local broot = by and by.Character and by.Character:FindFirstChild("HumanoidRootPart")
+				g.heldUpBy, g.wary = nil, true
+				investigate(g, if broot then broot.Position else g.root.Position)
+			end
+			return
 		end
 	end
 
@@ -530,17 +598,33 @@ local function layDown(g, at, yaw)
 	g.hum.AutoRotate = false
 	g.hum.PlatformStand = true
 	local ground = at
-	rayParams.FilterDescendantsInstances = { model }
+	local skip = { model }
+	for _, other in guards do
+		table.insert(skip, other.model) -- a body is laid on the floor, not on another body
+	end
+	for player in levels do
+		if player.Character then
+			table.insert(skip, player.Character)
+		end
+	end
+	rayParams.FilterDescendantsInstances = skip
 	local hit = workspace:Raycast(at + Vector3.new(0, 2, 0), Vector3.new(0, -30, 0), rayParams)
 	if hit then
 		ground = hit.Position
 	end
+	if not root.Anchored or not g.standHeight then
+		g.standHeight = g.standHeight or math.clamp(root.Position.Y - ground.Y, 1.5, 5) -- to stand him up again (a throw wears off)
+	end
 	model:PivotTo(CFrame.new(ground + Vector3.new(0, 0.7, 0)) * CFrame.Angles(0, yaw or 0, 0) * CFrame.Angles(-math.pi / 2, 0, 0))
 	root.Anchored = true
 	root.AssemblyLinearVelocity = Vector3.zero
-	for _, p in model:GetDescendants() do
-		if p:IsA("BasePart") then
-			p.CanCollide = false
+	if not g.collide then
+		g.collide = {}
+		for _, p in model:GetDescendants() do
+			if p:IsA("BasePart") then
+				g.collide[p] = p.CanCollide
+				p.CanCollide = false
+			end
 		end
 	end
 	if g.torch then
@@ -549,6 +633,34 @@ local function layDown(g, at, yaw)
 	model:SetAttribute("Downed", true)
 	CollectionService:RemoveTag(model, "NPC") -- no nameplate, no group AI around a body
 	CollectionService:AddTag(model, "DownedGuard")
+end
+
+-- A thrown guard comes round: on his feet where he lay, looking for whoever did it.
+local function standUp(g)
+	local model, root = g.model, g.root
+	local at = root.Position
+	local look = root.CFrame.UpVector * Vector3.new(1, 0, 1) -- lying face down, his head points the way he faced
+	look = if look.Magnitude > 0.1 then look.Unit else Vector3.new(0, 0, -1)
+	local stand = Vector3.new(at.X, at.Y - 0.7 + (g.standHeight or 3), at.Z)
+	model:PivotTo(CFrame.lookAt(stand, stand + look))
+	for p, was in g.collide or {} do
+		if p.Parent then
+			p.CanCollide = was
+		end
+	end
+	g.collide = nil
+	root.Anchored = false
+	g.hum.PlatformStand = false
+	g.hum.AutoRotate = true
+	g.hum.WalkSpeed = S.SearchSpeed
+	g.wakeAt, g.found, g.busy = nil, false, false
+	model:SetAttribute("Downed", nil)
+	CollectionService:RemoveTag(model, "DownedGuard")
+	CollectionService:AddTag(model, "NPC")
+	g.aware = {}
+	g.wary = true
+	setState(g, "Patrol")
+	investigate(g, at)
 end
 
 -- Puts a guard down without the ceremony (tests, scripted moments).
@@ -564,23 +676,30 @@ function Stealth.Down(model, at)
 end
 
 -- ===== takedowns =====
-function Stealth.Takedown(player, model)
+-- `forced` = the choke that ends a neck hold: he is already in your arms, so it is the rear takedown whatever
+-- the room or his state.
+function Stealth.Takedown(player, model, forced)
 	local g = typeof(model) == "Instance" and guards[model]
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if not (g and root and hum and hum.Health > 0) or g.busy or char:GetAttribute("Takedown") or not Combat.CanAct(char) then
+	if not (g and root and hum and hum.Health > 0) or char:GetAttribute("Takedown") then
 		return false
 	end
-	if (g.aware[player] or 0) >= 1 then
-		return false
-	end
-	local kind, spot = Rules.TakedownKind(root.CFrame, g.root.CFrame, g.state)
-	if not kind then
-		return false
-	end
-	if kind ~= "Drop" and not clearLine(root.Position, g.root.Position, { char, g.model }) then
-		return false -- through a wall
+	local kind, spot
+	if forced then
+		kind = "Rear"
+	else
+		if g.busy or not Combat.CanAct(char) or char:GetAttribute("NeckHold") or char:GetAttribute("Carrying") or (g.aware[player] or 0) >= 1 then
+			return false
+		end
+		kind, spot = Rules.TakedownKind(root.CFrame, g.root.CFrame, g.state)
+		if not kind then
+			return false
+		end
+		if kind ~= "Drop" and not clearLine(root.Position, g.root.Position, { char, g.model }) then
+			return false -- through a wall
+		end
 	end
 	g.busy = true
 	g.target = nil
@@ -650,15 +769,297 @@ function Stealth.Takedown(player, model)
 	return true, kind
 end
 
--- ===== crouch, whistle =====
+-- ===== CQC: the throw, the neck hold, bodies =====
+local function yawOf(dir)
+	return math.atan2(-dir.X, -dir.Z)
+end
+
+local function handsFree(char)
+	return not (char:GetAttribute("Takedown") or char:GetAttribute("NeckHold") or char:GetAttribute("Carrying") or char:GetAttribute("Holding"))
+end
+
+-- X tapped in front of or beside a guard (any state but down), or G with him in a neck hold (`fromHold`): he goes
+-- over and down hard. Not a kill and not quiet: he is out for Cqc.Throw.Down seconds, then gets up and searches.
+function Stealth.Throw(player, model, fromHold)
+	local g = typeof(model) == "Instance" and guards[model]
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (g and root and hum and hum.Health > 0) or g.state == "Down" or char:GetAttribute("Takedown") then
+		return false
+	end
+	local groot = g.root
+	local gpos = groot.Position
+	local to = (root.Position - gpos) * Vector3.new(1, 0, 1)
+	if not fromHold then
+		if g.busy or not handsFree(char) or not Combat.CanAct(char) or to.Magnitude > Q.Throw.Reach or math.abs(root.Position.Y - gpos.Y) > 4
+			or not clearLine(root.Position, gpos, { char, g.model }) then
+			return false
+		end
+	end
+	g.busy = true
+	g.target = nil
+	halt(g)
+	local seconds = Q.Throw.Seconds
+	local side = if fromHold then 0 else Q.Throw.Side -- thrown, he lands past your left (his right); shoved, straight ahead
+	local dir -- the way he falls
+	groot.Anchored = true
+	root.Anchored = true
+	if fromHold then
+		-- shoved forward out of the hold: you stay where you are
+		dir = groot.CFrame.LookVector * Vector3.new(1, 0, 1)
+		dir = if dir.Magnitude > 0.1 then dir.Unit else Vector3.new(0, 0, -1)
+	else
+		-- face to face: he is turned to you and comes over your hip
+		dir = if to.Magnitude > 0.1 then to.Unit else groot.CFrame.LookVector
+		groot.CFrame = CFrame.lookAt(gpos, gpos + dir)
+		local me = gpos + dir * Q.Throw.Stand
+		char:PivotTo(CFrame.lookAt(Vector3.new(me.X, root.Position.Y, me.Z), Vector3.new(gpos.X, root.Position.Y, gpos.Z)))
+	end
+	Combat.GrantIFrames(char, seconds + T.IFrames)
+	Combat.SetBusy(char, seconds)
+	local kind = if fromHold then "Shove" else "Throw"
+	char:SetAttribute("Takedown", kind)
+	if char:GetAttribute("Crouched") then
+		Stealth.SetCrouch(player, false)
+	end
+	Remotes.World:FireAllClients("Takedown", kind, char, g.model, nil, seconds)
+	task.delay(seconds, function()
+		if root.Parent then
+			root.Anchored = false
+		end
+		if char.Parent then
+			char:SetAttribute("Takedown", nil)
+		end
+		g.busy = false
+		if g.model.Parent and g.hum.Health > 0 then
+			setState(g, "Down")
+			local right = Vector3.new(-dir.Z, 0, dir.X) -- his right when he faces `dir`
+			layDown(g, gpos + dir * Q.Throw.Fall + right * side, yawOf(dir))
+			g.wakeAt = os.clock() + Q.Throw.Down
+			Stealth.Noise(gpos, Q.Throw.Noise, "Takedown", player)
+			Stealth.TakenDown:Fire(player, g.model, kind)
+		end
+	end)
+	return true, kind
+end
+
+local function setCollide(g, on)
+	if on then
+		for p, was in g.heldCollide or {} do
+			if p.Parent then
+				p.CanCollide = was
+			end
+		end
+		g.heldCollide = nil
+	elseif not g.heldCollide then
+		g.heldCollide = {}
+		for _, p in g.model:GetDescendants() do
+			if p:IsA("BasePart") then
+				g.heldCollide[p] = p.CanCollide
+				p.CanCollide = false
+			end
+		end
+	end
+end
+
+-- X held behind a guard that has not made you: your arm round his neck. He walks where you walk (slowly) for
+-- Cqc.Hold.Seconds; X chokes him out, G throws him down, and if you run out of time he breaks free and has you.
+function Stealth.Grab(player, model)
+	local g = typeof(model) == "Instance" and guards[model]
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (g and root and hum and hum.Health > 0) or g.busy or g.state == "Down" or g.state == "Alert" or holds[player]
+		or not handsFree(char) or not Combat.CanAct(char) or (g.aware[player] or 0) >= 1 then
+		return false
+	end
+	if not Rules.Behind(root.CFrame, g.root.CFrame) or not clearLine(root.Position, g.root.Position, { char, g.model }) then
+		return false
+	end
+	g.busy = true
+	g.target = nil
+	g.grabUntil = os.clock() + Q.Hold.Seconds
+	halt(g)
+	g.root.Anchored = true
+	setCollide(g, false)
+	setState(g, "Held")
+	holds[player] = g
+	if char:GetAttribute("Crouched") then
+		Stealth.SetCrouch(player, false)
+	end
+	if char:GetAttribute("Sprinting") then
+		Combat.SetSprint(player, false)
+	end
+	-- square behind him from the first frame
+	local behind = g.root.CFrame * CFrame.new(0, 0, Q.Hold.Gap)
+	char:PivotTo(CFrame.new(behind.Position.X, root.Position.Y, behind.Position.Z) * g.root.CFrame.Rotation)
+	char:SetAttribute("NeckHold", true)
+	require(script.Parent.Stats).Apply(player)
+	Remotes.World:FireAllClients("Hold", char, g.model, true)
+	return true
+end
+
+-- how: "Choke" (he stays down) | "Throw" (down for a while) | "Break" (he is loose and has you)
+function Stealth.Release(player, how)
+	local g = holds[player]
+	if not g then
+		return false
+	end
+	holds[player] = nil
+	local char = player.Character
+	if char then
+		char:SetAttribute("NeckHold", nil)
+		if char.Parent then
+			require(script.Parent.Stats).Apply(player)
+		end
+	end
+	setCollide(g, true)
+	g.busy = false
+	Remotes.World:FireAllClients("Hold", char, g.model, false)
+	if not g.model.Parent or g.hum.Health <= 0 then
+		return true
+	end
+	setState(g, "Patrol")
+	local done = false
+	if how == "Choke" then
+		done = Stealth.Takedown(player, g.model, true)
+	elseif how == "Throw" then
+		done = Stealth.Throw(player, g.model, true)
+	end
+	if not done then
+		g.root.Anchored = false
+		alert(g, player)
+	end
+	return true
+end
+
+-- X held over a body: it goes on your shoulder (slow, no sprint). X or G puts it down in front of you.
+function Stealth.Carry(player, model)
+	local g = typeof(model) == "Instance" and guards[model]
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (g and root and hum and hum.Health > 0) or g.state ~= "Down" or g.carriedBy or carries[player] or not handsFree(char)
+		or (g.root.Position - root.Position).Magnitude > Q.Carry.Reach then
+		return false
+	end
+	g.carriedBy = player
+	carries[player] = g
+	if char:GetAttribute("Crouched") then
+		Stealth.SetCrouch(player, false)
+	end
+	if char:GetAttribute("Sprinting") then
+		Combat.SetSprint(player, false)
+	end
+	char:SetAttribute("Carrying", true)
+	require(script.Parent.Stats).Apply(player)
+	Remotes.World:FireAllClients("Carry", char, g.model, true)
+	return true
+end
+
+function Stealth.DropBody(player)
+	local g = carries[player]
+	if not g then
+		return false
+	end
+	carries[player] = nil
+	g.carriedBy = nil
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if char then
+		char:SetAttribute("Carrying", nil)
+		if char.Parent then
+			require(script.Parent.Stats).Apply(player)
+		end
+	end
+	if g.model.Parent then
+		local look = if root then root.CFrame.LookVector * Vector3.new(1, 0, 1) else Vector3.new(0, 0, -1)
+		look = if look.Magnitude > 0.1 then look.Unit else Vector3.new(0, 0, -1)
+		local at = if root then root.Position + look * 1.8 else g.root.Position
+		layDown(g, at, yawOf(look))
+		if g.wakeAt then
+			g.wakeAt = math.max(g.wakeAt, os.clock() + 4)
+		end
+	end
+	Remotes.World:FireAllClients("Carry", char, g.model, false)
+	return true
+end
+
+function Stealth.Holding(player)
+	return holds[player] and holds[player].model
+end
+
+function Stealth.Carrying(player)
+	return carries[player] and carries[player].model
+end
+
+-- Each frame: the held guard walks with you, the carried one rides your shoulder; a throw wears off.
+local function followHands(now)
+	for player, g in holds do
+		local char = player.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if not (root and hum and hum.Health > 0 and g.model.Parent and g.hum.Health > 0) or now > g.grabUntil then
+			Stealth.Release(player, "Break")
+		elseif not char:GetAttribute("Takedown") then
+			local front = root.CFrame * CFrame.new(0, 0, -Q.Hold.Gap)
+			g.root.CFrame = CFrame.new(front.Position.X, g.root.Position.Y, front.Position.Z) * root.CFrame.Rotation
+		end
+	end
+	for player, g in carries do
+		local char = player.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if not (root and hum and hum.Health > 0 and g.model.Parent) then
+			Stealth.DropBody(player)
+		else
+			g.root.CFrame = root.CFrame * Q.Carry.Offset * CFrame.Angles(0, math.pi, 0) * CFrame.Angles(-math.pi / 2, 0, 0)
+		end
+	end
+	for _, g in guards do
+		if g.state == "Down" and g.wakeAt and now >= g.wakeAt and not g.carriedBy and not g.busy and g.hum.Health > 0 then
+			standUp(g)
+		end
+	end
+end
+
+-- ===== stance, aim, whistle =====
+-- "Stand" | "Crouch" | "Prone". The character carries `Stance` and `Crouched` (true for both low ones: slower,
+-- quieter, no jump); Stats sets the speed, the guards read Prone for how little of you there is to see.
+local STANCES = { Stand = true, Crouch = true, Prone = true }
+function Stealth.SetStance(player, stance)
+	local char = player.Character
+	if not char or not STANCES[stance] then
+		return
+	end
+	if stance ~= "Stand" and (char:GetAttribute("NeckHold") or char:GetAttribute("Carrying") or char:GetAttribute("Takedown")) then
+		return
+	end
+	if (char:GetAttribute("Stance") or "Stand") ~= stance then
+		char:SetAttribute("Stance", stance)
+		char:SetAttribute("Crouched", stance ~= "Stand")
+		if stance ~= "Stand" and char:GetAttribute("Sprinting") then
+			Combat.SetSprint(player, false)
+		end
+		require(script.Parent.Stats).Apply(player)
+	end
+end
+
 function Stealth.SetCrouch(player, on)
+	Stealth.SetStance(player, if on == true then "Crouch" else "Stand")
+end
+
+-- Holding RMB with a gun out: slower, and a guard who finds it on him freezes (think, "Held up").
+function Stealth.SetAim(player, on)
 	local char = player.Character
 	if not char then
 		return
 	end
-	on = on == true
-	if (char:GetAttribute("Crouched") == true) ~= on then
-		char:SetAttribute("Crouched", on)
+	local def = Weapons.Defs[char:GetAttribute("Weapon") or ""]
+	on = on == true and def ~= nil and def.Family == "Sidearm" and not char:GetAttribute("NeckHold") and not char:GetAttribute("Carrying")
+	if (char:GetAttribute("Aiming") == true) ~= on then
+		char:SetAttribute("Aiming", if on then true else nil)
 		if on and char:GetAttribute("Sprinting") then
 			Combat.SetSprint(player, false)
 		end
@@ -726,6 +1127,28 @@ function Stealth.Init()
 		Stealth.Takedown(player, model)
 	end)
 	Net.On("Crouch", { rate = 4, burst = 6, args = { "boolean" } }, Stealth.SetCrouch)
+	Net.On("Stance", { rate = 6, burst = 8, args = { "string" } }, Stealth.SetStance)
+	Net.On("Aim", { rate = 8, burst = 10, args = { "boolean" } }, Stealth.SetAim)
+	Net.On("Cqc", { rate = 4, burst = 6, args = { "string", "instance?" } }, function(player, what, model)
+		if model ~= nil and typeof(model) ~= "Instance" then
+			return
+		end
+		if what == "Throw" then
+			if holds[player] then
+				Stealth.Release(player, "Throw")
+			else
+				Stealth.Throw(player, model)
+			end
+		elseif what == "Grab" then
+			Stealth.Grab(player, model)
+		elseif what == "Choke" then
+			Stealth.Release(player, "Choke")
+		elseif what == "Carry" then
+			Stealth.Carry(player, model)
+		elseif what == "Drop" then
+			Stealth.DropBody(player)
+		end
+	end)
 	Net.On("Whistle", { rate = 1, burst = 2 }, Stealth.Whistle)
 
 	-- shots: heard, and they put lights out
@@ -760,6 +1183,7 @@ function Stealth.Init()
 
 	local acc, expAcc = 0, 0
 	RunService.Heartbeat:Connect(function(dt)
+		followHands(os.clock())
 		acc += dt
 		expAcc += dt
 		if expAcc >= S.ExposureTick then

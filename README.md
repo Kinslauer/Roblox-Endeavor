@@ -33,8 +33,9 @@ The dodge keeps its stamina cost and i-frames on the server.
 ## Controls (Cursed Gear layout)
 `LMB` attack (your weapon's combo) · `RMB` heavy/critical · `F` block (tap just before a hit to parry) · `Q` dodge ·
 **`E` flicker** · `Z` feint (cancel a swing's windup) · `R` / `Y` / `V` skill slots 1-3 · `X` interact (loot, armory) ·
-`C` crouch · `B` whistle (stealth) · `X` behind an unaware guard: takedown ·
-`Tab` inventory/crafting/equip · `L` loadout · `J` attributes · `M` devour remains · `P` helmetcam (first person, body visible) · `G` grab debris / hold to charge a throw · `H` drop.
+`C` crouch (hold: prone; sprinting: dive) · `Space` up a stance · `B` whistle (stealth) · `X` close quarters (tap behind a guard: takedown; tap in front: throw; hold behind: neck grab, then `X` choke or `G` shove; hold over a body: carry) ·
+With a gun out: `RMB` aim over the shoulder (an unaware guard up close puts his hands up) · `V` sights · `R` reload · `Q` back to a wall (hold `RMB` at its end to lean out; prone: roll) ·
+`Tab` inventory/crafting/equip · `L` loadout · `J` attributes · `M` devour remains · `P` helmetcam (first person, forearms and weapon) · `G` grab debris / hold to charge a throw · `H` drop.
 
 ## Flickering cursed energy (Black Flash)
 Tap `E` just *before* your swing connects (within ~0.28s). A well-timed flick boosts that hit (x1.25) and starts a chain;

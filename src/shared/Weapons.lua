@@ -103,6 +103,7 @@ Weapons.Defs = {
 	-- server/Stealth; anything without one is loud). Made for putting lights out.
 	Whisper = {
 		Name = "Whisper", Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.25, ChargeBonus = 1, Ammo = "Subsonic", Noise = 7,
+		MagSize = 7, ReloadSeconds = 1.5,
 		Attacks = {
 			frames(12, 4, 6, 3, 19, 120, { Ranged = true, Stamina = 4 }),
 		},

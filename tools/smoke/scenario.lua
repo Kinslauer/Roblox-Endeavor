@@ -165,6 +165,84 @@ root().CFrame = M.CF.new(O + M.V3.new(130, 2, -64)); run(0.3)
 check("takedown: from the walkway above it is a drop", Rules.TakedownKind(root().CFrame, g5.HumanoidRootPart.CFrame, Stealth.StateOf(g5)) == "Drop")
 Remotes.Takedown:FireServer(g5); run(1.6)
 check("takedown: the drop puts him down", Stealth.StateOf(g5) == "Down")
+-- ===== Metal Gear handling (2026-11-11): stances, the magazine, the hold-up, CQC, bodies =====
+do
+	local hum = char().Humanoid
+	Stealth.Reset(station); run(0.2)
+	local walk = hum.WalkSpeed
+	Remotes.Stance:FireServer("Prone"); run(0.2)
+	check("stance: prone is flat, a crawl, no jump", char():GetAttribute("Stance") == "Prone" and char():GetAttribute("Crouched") == true and hum.WalkSpeed < walk * 0.3 and hum.JumpHeight == 0)
+	check("stance: prone in the dark is close to invisible", Rules.SightRange(0.06, true, false, true) < Rules.SightRange(0.06, true, false) * 0.5 and Rules.SightRange(0.06, true, false, true) < 3)
+	Remotes.Stance:FireServer("Crouch"); run(0.2)
+	check("stance: up one is a crouch", char():GetAttribute("Stance") == "Crouch" and hum.WalkSpeed > walk * 0.3 and hum.WalkSpeed < walk * 0.7)
+	Remotes.Stance:FireServer("Stand"); run(0.2)
+	check("stance: standing again you can jump", char():GetAttribute("Stance") == "Stand" and char():GetAttribute("Crouched") == false and hum.JumpHeight > 1 and math.abs(hum.WalkSpeed - walk) < 0.01)
+	-- the magazine
+	Inventory0.Add(player, "Subsonic", 12, true)
+	Combat.ResetMags(player); run(0.1)
+	local have0 = Inventory0.Count(player, "Subsonic")
+	check("gun: a full magazine of seven", char():GetAttribute("Mag") == 7 and char():GetAttribute("MagSize") == 7)
+	Remotes.Attack:FireServer(root().CFrame.LookVector); run(1)
+	check("gun: a shot comes out of the magazine and the pack", char():GetAttribute("Mag") == 6 and Inventory0.Count(player, "Subsonic") == have0 - 1)
+	Remotes.Reload:FireServer(); run(0.3)
+	check("gun: R starts the change (busy, flagged)", char():GetAttribute("Reloading") == true and char():GetAttribute("Mag") == 6)
+	run(1.6)
+	check("gun: the new magazine is full", char():GetAttribute("Reloading") == nil and char():GetAttribute("Mag") == 7)
+	Stealth.Reset(station); run(0.2) -- that shot may have found a guard: everyone back to their rounds
+	-- the hold-up: a gun on his back, up close
+	local up = {}
+	for _, g in Stealth.Guards(station) do if Stealth.StateOf(g) ~= "Down" then table.insert(up, g) end end
+	check("cqc: there are guards left standing to try it on", #up >= 2)
+	local ga, gb = up[1], up[2]
+	for _, g in { ga, gb } do -- they stand where they are put (a patrol would walk them out from under the test)
+		local _, brain = Stealth.StateOf(g)
+		brain.patrol, brain.post = nil, nil
+	end
+	local function behindOf(g, d) local r = g.HumanoidRootPart return M.CF.lookAt(r.Position - r.CFrame.LookVector * d, r.Position) end
+	local function frontOf(g, d) local r = g.HumanoidRootPart return M.CF.lookAt(r.Position + r.CFrame.LookVector * d, r.Position) end
+	-- out of everyone else's way: on the open platform, in the dark
+	ga.HumanoidRootPart.CFrame = M.CF.lookAt(O + M.V3.new(-2, 3, -2), O + M.V3.new(-2, 3, -12)); run(0.1)
+	root().CFrame = behindOf(ga, 7); run(0.2)
+	Remotes.Aim:FireServer(true); run(0.8)
+	check("aim: holding it slows you", char():GetAttribute("Aiming") == true and hum.WalkSpeed < walk * 0.7)
+	check("hold-up: a gun on him up close and he freezes", Stealth.StateOf(ga) == "HeldUp")
+	-- the throw, face to face
+	root().CFrame = frontOf(ga, 3); run(0.15)
+	local tap, hold = Rules.Cqc(root().CFrame, ga.HumanoidRootPart.CFrame, Stealth.StateOf(ga), {})
+	check("cqc: in front of him X is a throw, with no hold on offer", tap == "Throw" and hold == nil)
+	Remotes.Aim:FireServer(false)
+	Remotes.Cqc:FireServer("Throw", ga); run(0.2)
+	check("cqc: the throw has you both", char():GetAttribute("Takedown") == "Throw" and root().Anchored == true)
+	run(1.3)
+	check("cqc: thrown, he is down but not for good", Stealth.StateOf(ga) == "Down" and ga:GetAttribute("Downed") == true and char():GetAttribute("Takedown") == nil)
+	-- his body: on the shoulder, moved, put down
+	Remotes.Cqc:FireServer("Carry", ga); run(0.2)
+	check("carry: the body is on your shoulder and you are slow", char():GetAttribute("Carrying") == true and Stealth.Carrying(player) == ga and hum.WalkSpeed < walk * 0.7)
+	root().CFrame = M.CF.lookAt(O + M.V3.new(-2, 3, -6), O + M.V3.new(-2, 3, -16)); run(0.2)
+	check("carry: it goes where you go", (ga.HumanoidRootPart.Position - root().Position).Magnitude < 3)
+	Remotes.Cqc:FireServer("Drop"); run(0.2)
+	check("carry: put down in front of you", char():GetAttribute("Carrying") == nil and Stealth.Carrying(player) == nil and Stealth.StateOf(ga) == "Down"
+		and ((ga.HumanoidRootPart.Position - root().Position) * M.V3.new(1, 0, 1)).Magnitude < 2.5 and math.abs(ga.HumanoidRootPart.CFrame.UpVector.Y) < 0.2)
+	root().CFrame = M.CF.new(O + M.V3.new(-2, 3, 40)); run(0.1)
+	local woke = run(StealthCfg.Cqc.Throw.Down + 3, function() return Stealth.StateOf(ga) ~= "Down" end)
+	check("cqc: he comes round, on his feet and looking", woke and ga:GetAttribute("Downed") == nil and ga.HumanoidRootPart.CFrame.UpVector.Y > 0.9 and ga.HumanoidRootPart.Anchored == false)
+	-- the neck hold
+	Stealth.Reset(station); run(0.2)
+	gb.HumanoidRootPart.CFrame = M.CF.lookAt(O + M.V3.new(-2, 3, -2), O + M.V3.new(-2, 3, -12)); run(0.1)
+	root().CFrame = behindOf(gb, 3); run(0.15)
+	local tap2, hold2 = Rules.Cqc(root().CFrame, gb.HumanoidRootPart.CFrame, Stealth.StateOf(gb), {})
+	check("cqc: behind him a tap is the takedown and a hold is the grab", tap2 == "Rear" and hold2 == "Grab")
+	Remotes.Cqc:FireServer("Grab", gb); run(0.2)
+	check("hold: your arm is round his neck", char():GetAttribute("NeckHold") == true and Stealth.StateOf(gb) == "Held" and Stealth.Holding(player) == gb and hum.WalkSpeed < walk * 0.6)
+	root().CFrame = M.CF.lookAt(O + M.V3.new(-2, 3, 6), O + M.V3.new(-2, 3, -4)); run(0.2)
+	local gap = (gb.HumanoidRootPart.Position - root().Position) * M.V3.new(1, 0, 1)
+	check("hold: he walks where you walk, in front of you", math.abs(gap.Magnitude - StealthCfg.Cqc.Hold.Gap) < 0.2 and gap.Unit:Dot(root().CFrame.LookVector) > 0.95)
+	Remotes.Cqc:FireServer("Choke"); run(0.3)
+	check("hold: X chokes him out", char():GetAttribute("NeckHold") == nil and char():GetAttribute("Takedown") == "Rear")
+	run(2.2)
+	check("hold: and he stays down", Stealth.StateOf(gb) == "Down" and char():GetAttribute("Takedown") == nil and root().Anchored == false)
+	Stealth.Reset(station); run(0.2)
+end
 -- the control room: the locker, the manifest, the lift
 local locker = station:FindFirstChild("Lootable", true)
 check("locker exists", locker ~= nil)

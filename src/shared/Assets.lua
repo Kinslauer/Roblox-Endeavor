@@ -110,6 +110,23 @@ Assets.Anims = {
 	Intro_CloakToss = 130150410671633,
 	Intro_Draw = 125541503895515,
 	Intro_Rack = 77242835230836,
+	-- Metal Gear handling (2026-11-11): prone, the pistol, hands up, CQC, the wall
+	Prone_Idle = 99254683617405,
+	Prone_Crawl = 93255193883909,
+	Prone_RollL = 126125091482574,
+	Prone_RollR = 104668146435989,
+	Pistol_Ready = 106650486186059,
+	Aim_Pistol = 88182789208588,
+	Reload_Pistol = 76268295993088,
+	HandsUp = 107954558883133,
+	Takedown_Throw = 137070777628766,
+	Takedown_ThrowVictim = 113920668067731,
+	Takedown_Shove = 127654576653763,
+	Takedown_ShoveVictim = 76277529951374,
+	Hold = 96501380522226,
+	Held = 112742222259734,
+	Carry = 75410357814439,
+	Cover_Idle = 89904551118164,
 }
 
 -- Character rigs (R15 limb meshes, see server/Rigs.lua): [npcType] = assetId

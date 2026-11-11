@@ -74,6 +74,28 @@ Config.Stealth = {
 		IFrames = 2,
 	},
 	DownSeconds = 0, -- 0 = a downed guard stays down (the subway); the open world sets its own
+	-- Metal Gear handling (owner, 2026-11-11). Stances: C tap = crouch, hold C = prone, sprint + C = dive, Space = up one.
+	Stance = {
+		ProneSpeedMult = 0.22, -- crawl
+		ProneVisibility = 0.45, -- prone, a guard's sight range is multiplied by this...
+		ProneDark = 0.3, ProneDarkVisibility = 0.4, -- ...and by this again while your exposure is under ProneDark
+		ProneHold = 0.3, -- seconds C is held for prone
+		Dive = { Speed = 34, Seconds = 0.45 }, RollSpeed = 22, RollSeconds = 0.4, RollCooldown = 0.7,
+		CameraDrop = { Crouch = -1.3, Prone = -2.3 },
+	},
+	-- Aiming a gun (hold RMB): slower, tighter, over the shoulder; V looks down the sights.
+	Aim = { SpeedMult = 0.55, Distance = 4.5, Fov = 55, SightFov = 48, ShoulderOffset = Vector3.new(1.6, 0.55, 0) },
+	-- A guard that has not made you and finds a gun on him up close freezes with his hands up.
+	HoldUp = { Range = 13, Cone = 14, Keep = 5, Grace = 0.35 }, -- studs, degrees off your aim, seconds he stays frozen after the gun leaves him, seconds on him first
+	-- CQC on X. Tap in front or beside: a throw (he is out for Down seconds, then gets up and searches).
+	-- Hold behind: a neck hold you can walk with; X chokes him out (he stays down), G throws him down.
+	Cqc = {
+		Throw = { Reach = 5, Seconds = 1.1, Down = 25, Noise = 9, Stand = 1.5, Fall = 1.4, Side = 1.3 }, -- Fall/Side = where he lands (the animation's last key)
+		Hold = { Seconds = 12, SpeedMult = 0.45, Gap = 0.95, Press = 0.3 }, -- he breaks free after Seconds; Press = how long X is held to grab
+		Carry = { Reach = 5, SpeedMult = 0.6, Offset = CFrame.new(0.75, 1.75, 0.15) },
+	},
+	-- The wall (Q with a gun out): back to it; hold RMB at its end to lean out and aim.
+	Cover = { Reach = 3.2, Stand = 1.05, Step = 1.9, SpeedMult = 0.5, EdgeProbe = 2.2 },
 }
 Config.EmergenceCinematic = 6 -- seconds between the announcement and the teleport
 Config.PlotOrigin = Vector3.new(0, 2000, 0)

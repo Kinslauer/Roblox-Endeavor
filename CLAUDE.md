@@ -36,8 +36,8 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (273 checks), `war` = Front (88), `warclient` = the Front client plays the first link's stages, the screen and the controls (25), `stress` = budgets under load (5), `client` = the
-  Endeavor client boots + movement, dodge, animation, guard and air checks (32). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
+  `scenario` = Endeavor end to end (299 checks), `war` = Front (88), `warclient` = the Front client plays the first link's stages, the screen and the controls (25), `stress` = budgets under load (5), `client` = the
+  Endeavor client boots + movement, dodge, animation, guard, air and handling checks (44). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
   `python3 tools/realserver/run_luau.py <placeId> script.lua` (POST `.../luau-execution-session-tasks`, poll, print
@@ -105,8 +105,9 @@ Client tab screenshot, because Andy cannot read logs another way.
   recruit permadeath drops everything damaged; conscript bodies are not loot; income only while deployed.
 - Entrenching: foxholes and low sandbags only, on open ground.
 - Controls are the Cursed Gear layout: E flicker, F block/parry, Q dodge, X interact, M devour/app, R/Y/V skills,
-  Z feint, G grab/throw, H drop, Shift sprint, C crouch, B whistle, Tab inventory, L loadout, J attributes, O hideout, N recruit app,
-  P helmetcam. Front: LMB fire, RMB aim, R reload (hold: keep the magazine), T rack/unjam, B selector, 1/2 switch,
+  Z feint, G grab/throw, H drop, Shift sprint, C crouch (hold: prone; sprinting: dive), Space up a stance, B whistle, Tab inventory,
+  L loadout, J attributes, O hideout, N recruit app, P helmetcam. With a gun out (owner, 2026-11-11): RMB aim, V sights, R reload,
+  Q the wall (prone: roll); X close quarters (tap: takedown or throw; hold: neck grab or carry a body). Front: LMB fire, RMB aim, R reload (hold: keep the magazine), T rack/unjam, B selector, 1/2 switch,
   G frag, H dressing, Q/E lean (prone: roll), C crouch (hold: prone; sprinting: dive), Space up a stance / mantle,
   Z binoculars, Y check weapon, K artillery, F dig, V sandbags, M app, U unlink.
 
@@ -263,6 +264,33 @@ Client tab screenshot, because Andy cannot read logs another way.
   from a crouch behind low cover (`lowCoverAhead`), `holdKey` for tap-or-hold keys (C, R), binocular dwell -> Mark.
   Arms are posed per client (prone reach); legs and body by the server. Unseen live: the prone and crouch poses, the
   prone body against rough ground, the dive.
+- Metal Gear handling in Endeavor (owner, 2026-11-11: "the UI and FPV are very cluttered ... you should be able to
+  crouch and go prone. the game should control like Metal gear 4 ... and incorporate the modern gunplay and mechanics
+  of MGSV ... it looked like i grabbed the side of the enemy's body instead of their neck"; plan approved with "yes";
+  ideas only). Third person over the shoulder is the default view; the ride ends there (`setHelmetcam(false)`); P and
+  V-while-aiming are first person, where only forearms, hands and the held weapon are shown. `aimActive()` (Main)
+  turns the body to the camera yaw in both views, except during a takedown/cutscene (that turn is what put the
+  attacker at the guard's side) and while `Handling.HoldsFacing()` (back to a wall).
+  `src/client/Handling.lua` (`Began`/`Ended` keys, `Changed` -> Main's applyAim/FOV/distance, `Drop`, `AimPreset`,
+  `Stance`, `Aiming`, `Sights`, `InCover`): stances (never predicted: the `Stance` attribute), dive and prone roll
+  (`shove`), RMB aim, V sights, R reload, the wall (client only: rays for the wall and its open end, root placed each
+  Heartbeat), and one looping arm animation for what the hands do (`wantArms`: Carry, Hold, Cover_Idle, Aim_Pistol,
+  Pistol_Ready). Server, in `src/server/Stealth.lua`: `SetStance` (attrs `Stance` + `Crouched`), `SetAim` (attr
+  `Aiming`), hold-up in `think` (`gunOn`: a gun within Config.Stealth.HoldUp.Range/Cone on a guard under awareness
+  1 -> state "HeldUp" for Keep seconds after), `Throw` (down for Cqc.Throw.Down, `standUp`), `Grab`/`Release`
+  (state "Held", attr `NeckHold`; `followHands` moves him each Heartbeat; "Choke" = forced rear takedown), `Carry`/
+  `DropBody` (attr `Carrying`), remotes Stance, Aim, Cqc(action, guard?). `Rules.Cqc` (shared/Stealth) = what a tap
+  and a hold of X offer; client/Stealth draws the prompt and sends them (`Key`/`KeyUp`). Stats owns speed and
+  JumpHeight (0 while low or hands full). Magazines: Weapons `MagSize`/`ReloadSeconds` (Whisper 7), Combat
+  `magOf`/`SyncMag`/`Reload`/`ResetMags`, attrs `Mag`/`MagSize`/`Reloading`; the pack count stays the truth.
+  Takedowns: the attacker stands Takedown.RearDistance (1.5) square behind; every victim animation ends in
+  `fallen(F, side)` (tools/anims) = where `layDown` turns the root flat (Takedown.Fall / Cqc.Throw.Fall, Side), and
+  the client swaps to "Downed" with no fade. The attribute `Holding` belongs to thrown chunks (Destruction): the
+  neck hold is `NeckHold`. Screen: vitals in a CanvasGroup that fades after Config.Hud.VitalsHold, empty skill slots
+  hidden, light gem + round count bottom right, no quest line or controls card in the station. Tutorial.Start tops
+  the kit up to Config.Tutorial.Kit on every ride. Prone lowers only the animation and the camera (the humanoid is
+  not resized: no crawling under things yet). Tests: "stance:", "gun:", "hold-up:", "cqc:", "hold:", "carry:" in
+  scenario.lua, "handling:" in client.lua.
 - The arrival (owner, 2026-11-10: "UI and Intro sequence overhauled ... riding a train ... revealing the weapons under
   a cloak ... racking the slide ... pans behind ... zooms into the fpv ... a tutorial stealth level ... subway ...
   based off splinter cell chaos theory and batman arkham involving environmental takedowns and light level hiding";
@@ -325,6 +353,10 @@ Client tab screenshot, because Andy cannot read logs another way.
   The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
 
 ## State (2026-11-11)
+- Endeavor v86 (2026-11-11): Metal Gear handling (stances, aim, sights, magazines, hold-up, throw, neck hold,
+  carrying bodies, the wall); v85 the same day: playtest fixes (pistol every ride, third person, quiet screen, cloak,
+  takedown alignment). Awaits Andy's play-through: docs/TESTING.md "Endeavor: Metal Gear handling". Andy reported
+  "the right click broke" on v79; no fault was found beyond first person not turning the body (fixed); asked what failed.
 - Front v26 (2026-11-11): clean screen, crouch/prone/dive/roll, lean and peek, quick and careful reload, binoculars
   with marking. Awaits Andy's play-through: docs/TESTING.md "Front: clean screen, stances, Metal Gear handling".
 - Endeavor v80 + Front v25 published (2026-11-10, the story joined up) and starting cleanly on real servers

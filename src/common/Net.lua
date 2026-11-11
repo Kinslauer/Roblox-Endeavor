@@ -48,6 +48,7 @@ CHECK["string?"] = function(v) return v == nil or CHECK.string(v) end
 CHECK["text?"] = function(v) return v == nil or CHECK.text(v) end
 CHECK["vector?"] = function(v) return v == nil or CHECK.vector(v) end
 CHECK["boolean?"] = function(v) return v == nil or CHECK.boolean(v) end
+CHECK["instance?"] = function(v) return v == nil or CHECK.instance(v) end
 CHECK["int?"] = function(v) return v == nil or CHECK.int(v) end
 
 -- spec: { rate = per-second refill, burst = bucket size, args = { "string", "int?", ... } }

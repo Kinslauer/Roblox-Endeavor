@@ -177,5 +177,56 @@ do
 	root.CFrame = saved
 	for _ = 1, 20 do M.step(1/30) end
 end
+-- handling (client/Handling.lua): stances on C / Space, and with a gun out RMB aims, V is the sights, R reloads
+do
+	local Handling = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.Handling)
+	local ConfigC = M.mockEnv.__require(RS.Shared.Config)
+	local UIS = game_:GetService("UserInputService")
+	local sent = {}
+	for _, name in { "Stance", "Aim", "Reload", "Heavy", "UseSkill", "Attack" } do
+		sent[name] = {}
+		remotesFolder[name].OnServerEvent:Connect(function(_, a) table.insert(sent[name], a == nil and true or a) end)
+	end
+	local function last(name) return sent[name][#sent[name]] end
+	local function down(key, kind) UIS.InputBegan:Fire({ KeyCode = key or "KeyCode.Unknown", UserInputType = kind or "UserInputType.Keyboard" }, false) end
+	local function up(key, kind) UIS.InputEnded:Fire({ KeyCode = key or "KeyCode.Unknown", UserInputType = kind or "UserInputType.Keyboard" }, false) end
+	local function wait(seconds) for _ = 1, math.ceil(seconds * 30) do M.step(1/30) end end
+	char:SetAttribute("Weapon", "RebarBlade"); wait(0.1)
+	local y0 = hum.CameraOffset.Y
+	down("KeyCode.C"); wait(0.1); up("KeyCode.C"); wait(0.1)
+	check("handling: a tap of C asks for a crouch", last("Stance") == "Crouch")
+	char:SetAttribute("Stance", "Crouch"); char:SetAttribute("Crouched", true); wait(0.2)
+	check("handling: crouched, the camera comes down", y0 - hum.CameraOffset.Y > 1)
+	down("KeyCode.C"); wait(0.5)
+	check("handling: holding C asks for prone", last("Stance") == "Prone")
+	up("KeyCode.C"); wait(0.1)
+	check("handling: letting go after the hold asks for nothing more", last("Stance") == "Prone")
+	char:SetAttribute("Stance", "Prone"); wait(0.2)
+	check("handling: prone, the camera is on the floor", y0 - hum.CameraOffset.Y > 2)
+	down("KeyCode.Space"); wait(0.1)
+	check("handling: Space comes up one stance, not a jump", last("Stance") == "Crouch")
+	char:SetAttribute("Stance", "Stand"); char:SetAttribute("Crouched", false); wait(0.2)
+	-- a blade out: the right button is the heavy attack, R is a skill
+	local heavies = #sent.Heavy
+	down(nil, "UserInputType.MouseButton2"); wait(0.1); up(nil, "UserInputType.MouseButton2")
+	down("KeyCode.R"); wait(0.1)
+	check("handling: with a blade RMB is the heavy and R a skill", #sent.Heavy == heavies + 1 and #sent.UseSkill >= 1 and #sent.Reload == 0 and not Handling.Aiming())
+	-- the pistol out
+	char:SetAttribute("Weapon", "Whisper"); wait(0.3)
+	check("handling: the pistol is held at the ready", Anims.Track(char, "Pistol_Ready") ~= nil and Anims.Track(char, "Pistol_Ready").IsPlaying)
+	heavies = #sent.Heavy
+	local skills = #sent.UseSkill
+	down(nil, "UserInputType.MouseButton2"); wait(0.3)
+	check("handling: with a gun RMB aims (no heavy), in over the shoulder", Handling.Aiming() and last("Aim") == true and #sent.Heavy == heavies
+		and math.abs(hum.CameraOffset.X - ConfigC.Stealth.Aim.ShoulderOffset.X) < 0.01 and Anims.Track(char, "Aim_Pistol").IsPlaying)
+	down("KeyCode.V"); wait(0.2)
+	check("handling: V goes down the sights", Handling.Sights() and player.CameraMaxZoomDistance == 0.5)
+	down("KeyCode.R"); wait(0.1)
+	check("handling: R changes the magazine, not a skill", #sent.Reload == 1 and #sent.UseSkill == skills)
+	up(nil, "UserInputType.MouseButton2"); wait(0.3)
+	check("handling: letting go lowers the gun and leaves the sights", not Handling.Aiming() and last("Aim") == false and not Handling.Sights() and player.CameraMaxZoomDistance > 1
+		and not Anims.Track(char, "Aim_Pistol").IsPlaying)
+	char:SetAttribute("Weapon", "Fists"); wait(0.2)
+end
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

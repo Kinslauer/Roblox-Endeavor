@@ -30,18 +30,26 @@ function Stats.Apply(player, fill)
 	local weightMult = if d.Overweight then Config.Inventory.OverweightSpeedMult else 1
 	char:SetAttribute("Overweight", d.Overweight == true)
 	char:SetAttribute("GearWeight", d.WeightScore or 0) -- armour weight 0..6: Q rolls freely only at 0 (client/Movement)
-	local crouchMult = if char:GetAttribute("Crouched") then Config.Stealth.CrouchSpeedMult else 1
-	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult * sprintMult * weightMult * crouchMult
+	-- stance, aiming, a guard held by the neck, a body on the shoulder (server/Stealth sets the attributes)
+	local SC = Config.Stealth
+	local stance = char:GetAttribute("Stance")
+	local crouchMult = if stance == "Prone" then SC.Stance.ProneSpeedMult elseif char:GetAttribute("Crouched") then SC.CrouchSpeedMult else 1
+	local handsMult = if char:GetAttribute("NeckHold") then SC.Cqc.Hold.SpeedMult elseif char:GetAttribute("Carrying") then SC.Cqc.Carry.SpeedMult
+		elseif char:GetAttribute("Aiming") then SC.Aim.SpeedMult else 1
+	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult * sprintMult * weightMult * crouchMult * handsMult
 
 	char:SetAttribute("Weapon", PlayerData.Get(player).Equipped)
 	HeldWeapons.Attach(char, PlayerData.Get(player).Equipped)
+	require(script.Parent.Combat).SyncMag(player)
 	local worn = {}
 	for _, id in PlayerData.Get(player).Armor do
 		table.insert(worn, id)
 	end
 	WornGear.Apply(char, worn) -- armor only: implants are drawn client-side from the Cyber_<slot> attributes
 	hum.UseJumpPower = false
-	hum.JumpHeight = Config.Movement.JumpHeight * (d.JumpMult or 1)
+	-- no jumping while low or with your hands on someone (Space brings you up a stance instead)
+	local grounded = char:GetAttribute("Crouched") or char:GetAttribute("NeckHold") or char:GetAttribute("Carrying")
+	hum.JumpHeight = if grounded then 0 else Config.Movement.JumpHeight * (d.JumpMult or 1)
 	for _, slot in Cybernetics.Slots do
 		char:SetAttribute("Cyber_" .. slot, PlayerData.Get(player).Cyber[slot])
 	end
