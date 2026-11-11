@@ -121,3 +121,60 @@ def render_workbench(path, objs, size=(900, 700), distance=None, elevation=0.35,
     cam.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
     scene.camera = cam
     bpy.ops.render.render(write_still=True)
+
+# ---------- the material library (tools/textures): UVs and render-time PBR ----------
+TEX = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "textures", "out")
+# studs per texture repeat; keep in step with Assets.Surfaces[name].Tile
+TILE = {"CarBody": 8.0, "CarLivery": 8.0, "CarPanel": 6.0, "CarFloor": 4.0, "Moquette": 2.5, "SeatShell": 4.0,
+        "Stainless": 3.0, "Underframe": 6.0, "Gunmetal": 1.5, "Polymer": 1.0, "Waxcloth": 2.5, "HideLeather": 1.5,
+        "CarTrim": 4.0}
+
+def uv_box(ob, tile=None):
+    """World-scale box mapping: each face takes the two axes across its normal, so every model that uses a
+    library material shows it at the same size (one repeat per TILE[material] studs)."""
+    name = ob.name.rsplit("_", 1)[-1]
+    tile = tile or TILE.get(name, 4.0)
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    uv = bm.loops.layers.uv.verify()
+    M = ob.matrix_world
+    for f in bm.faces:
+        n = f.normal
+        ax = max(range(3), key=lambda i: abs(n[i]))
+        a, b = [(1, 2), (0, 2), (0, 1)][ax]
+        flip = -1 if n[ax] < 0 else 1
+        for l in f.loops:
+            w = M @ l.vert.co
+            u = w[a] * (flip if ax != 2 else 1)
+            v = w[b] * (1 if ax != 2 else flip)
+            l[uv].uv = (u / tile, v / tile)
+    bm.to_mesh(ob.data)
+    bm.free()
+
+def pbr_swap(objs):
+    """For renders: give every object whose name ends in a library material that material's textures."""
+    cache = {}
+    for ob in objs:
+        name = ob.name.rsplit("_", 1)[-1]
+        if not os.path.exists(os.path.join(TEX, f"{name}_col.png")):
+            continue
+        if name not in cache:
+            m = bpy.data.materials.new("PBR_" + name)
+            m.use_nodes = True
+            nt = m.node_tree
+            b = nt.nodes["Principled BSDF"]
+            def tex(kind, noncolor=True):
+                n = nt.nodes.new("ShaderNodeTexImage")
+                n.image = bpy.data.images.load(os.path.join(TEX, f"{name}_{kind}.png"), check_existing=True)
+                if noncolor:
+                    n.image.colorspace_settings.name = "Non-Color"
+                return n
+            nt.links.new(tex("col", False).outputs["Color"], b.inputs["Base Color"])
+            nt.links.new(tex("rgh").outputs["Color"], b.inputs["Roughness"])
+            nt.links.new(tex("mtl").outputs["Color"], b.inputs["Metallic"])
+            nm = nt.nodes.new("ShaderNodeNormalMap")
+            nt.links.new(tex("nrm").outputs["Color"], nm.inputs["Color"])
+            nt.links.new(nm.outputs["Normal"], b.inputs["Normal"])
+            cache[name] = m
+        ob.data.materials.clear()
+        ob.data.materials.append(cache[name])

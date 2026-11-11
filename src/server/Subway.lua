@@ -131,68 +131,98 @@ function Subway.Build(origin)
 	lamp(12, 13.5, -30, "Platform", 30, 1.3, COLD)
 	lamp(12, 13.5, 22, "Platform", 30, 1.5, COLD)
 
-	-- the train car: floor level with the platform, doors on the platform side
+	-- the train car: floor level with the platform, doors on the platform side. The car is 12.6 wide (x -15.8..-3.2),
+	-- 56 long, 10.9 high inside (tools/models/train.py; resized 2026-11-11, "the train car is too small"). The mesh
+	-- shell is what you see; the blocks below are what you stand on and what stops rays (invisible under a shell).
 	local car = Instance.new("Model")
 	car.Name = "Car"
 	car.Parent = model
-	local shell = ModelAssets.Spawn(Assets.Subway and Assets.Subway.Car, CFrame.new(at(-9.5, -3.4, 0)), "CarShell", car)
+	local CX = -9.5 -- the car's centre line
+	local shell = ModelAssets.Spawn(Assets.Subway and Assets.Subway.Car, CFrame.new(at(CX, -3.4, 0)), "CarShell", car)
 	local hide = shell and 1 or 0
 	local function carBox(name, x0, x1, y0, y1, z0, z1, material, color)
-		local p = box(name, x0, x1, y0, y1, z0, z1, material, color, car)
+		local p = box(name, CX + x0, CX + x1, y0, y1, z0, z1, material, color, car)
 		p.Transparency = hide
 		return p
 	end
 	if shell then
 		for _, p in shell:GetDescendants() do
 			if p:IsA("BasePart") then
-				p.CanCollide, p.CanQuery = false, false -- the blocks below do the physics and stop the rays
+				p.CanCollide, p.CanQuery = false, false
 			end
 		end
-		-- the shell is open at the door bay on both sides: the far side's doors stay shut
-		for _, seg in { { -4, 0 }, { 0, 4 } } do
-			box("DoorW", -14, -13.7, 0, 7.6, seg[1], seg[2], Enum.Material.Metal, Color3.fromRGB(88, 96, 108), car)
-		end
 	end
-	carBox("Floor", -14, -5, -0.6, 0, -28, 28, Enum.Material.DiamondPlate, Color3.fromRGB(52, 56, 62))
-	carBox("Under", -13.5, -5.5, -3.4, -0.6, -27, 27, Enum.Material.Metal, Color3.fromRGB(26, 28, 32))
-	carBox("Roof", -14, -5, 8.6, 9.2, -28, 28, Enum.Material.Metal, STEEL)
-	carBox("EndS", -14, -5, 0, 8.6, -28, -27.6, Enum.Material.Metal, STEEL)
-	carBox("EndN", -14, -5, 0, 8.6, 27.6, 28, Enum.Material.Metal, STEEL)
-	carBox("SideW_Low", -14, -13.7, 0, 3.4, -28, 28, Enum.Material.Metal, STEEL)
-	carBox("SideW_High", -14, -13.7, 6.6, 8.6, -28, 28, Enum.Material.Metal, STEEL)
-	local glassW = carBox("GlassW", -13.95, -13.8, 3.4, 6.6, -28, 28, Enum.Material.Glass, Color3.fromRGB(30, 40, 50))
+	-- a door leaf mesh riding on a door block (the block slides; the leaf is welded to it)
+	local function dressDoor(door, platformSide)
+		local id = shell and Assets.Subway and Assets.Subway.Door
+		if not id then
+			return
+		end
+		local leaf = ModelAssets.Spawn(id, CFrame.new(door.Position - Vector3.new(0, door.Size.Y / 2, 0)), "DoorLeaf", door)
+		if not leaf then
+			return
+		end
+		if platformSide then
+			leaf:PivotTo(leaf:GetPivot() * CFrame.Angles(0, math.pi, 0))
+		end
+		for _, p in leaf:GetDescendants() do
+			if p:IsA("BasePart") then
+				p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, false, true
+				local w = Instance.new("WeldConstraint")
+				w.Part0, w.Part1 = door, p
+				w.Parent = p
+			end
+		end
+		door.Transparency = 1
+	end
+	carBox("Floor", -6.0, 6.0, -0.6, 0, -28, 28, Enum.Material.DiamondPlate, Color3.fromRGB(52, 56, 62))
+	carBox("Under", -5.8, 5.8, -3.4, -0.6, -27, 27, Enum.Material.Metal, Color3.fromRGB(26, 28, 32))
+	carBox("Roof", -6.3, 6.3, 10.9, 11.6, -28, 28, Enum.Material.Metal, STEEL)
+	carBox("EndS", -6.3, 6.3, 0, 10.9, -28, -27.6, Enum.Material.Metal, STEEL)
+	carBox("EndN", -6.3, 6.3, 0, 10.9, 27.6, 28, Enum.Material.Metal, STEEL)
+	carBox("SideW_Low", -6.3, -6.0, 0, 3.4, -28, 28, Enum.Material.Metal, STEEL)
+	carBox("SideW_High", -6.3, -6.0, 7.9, 10.9, -28, 28, Enum.Material.Metal, STEEL)
+	local glassW = carBox("GlassW", -6.25, -6.1, 3.4, 7.9, -28, 28, Enum.Material.Glass, Color3.fromRGB(30, 40, 50))
 	glassW.Transparency = if shell then 1 else 0.55
 	for _, seg in { { -28, -4 }, { 4, 28 } } do
-		carBox("SideE_Low", -5.3, -5, 0, 3.4, seg[1], seg[2], Enum.Material.Metal, STEEL)
-		carBox("SideE_High", -5.3, -5, 6.6, 8.6, seg[1], seg[2], Enum.Material.Metal, STEEL)
-		local g = carBox("GlassE", -5.2, -5.05, 3.4, 6.6, seg[1], seg[2], Enum.Material.Glass, Color3.fromRGB(30, 40, 50))
+		carBox("SideE_Low", 6.0, 6.3, 0, 3.4, seg[1], seg[2], Enum.Material.Metal, STEEL)
+		carBox("SideE_High", 6.0, 6.3, 7.9, 10.9, seg[1], seg[2], Enum.Material.Metal, STEEL)
+		local g = carBox("GlassE", 6.1, 6.25, 3.4, 7.9, seg[1], seg[2], Enum.Material.Glass, Color3.fromRGB(30, 40, 50))
 		g.Transparency = if shell then 1 else 0.55
 	end
-	carBox("DoorHead", -5.3, -5, 7.6, 8.6, -4, 4, Enum.Material.Metal, STEEL)
+	carBox("DoorHead", 6.0, 6.3, 9.0, 10.9, -4, 4, Enum.Material.Metal, STEEL)
+	carBox("DoorHeadW", -6.3, -6.0, 9.0, 10.9, -4, 4, Enum.Material.Metal, STEEL)
+	-- the far side's doors stay shut
+	for _, seg in { { -4, 0 }, { 0, 4 } } do
+		local d = box("DoorW", CX - 6.3, CX - 6.0, 0, 9.0, seg[1], seg[2], Enum.Material.Metal, Color3.fromRGB(88, 96, 108), car)
+		dressDoor(d, false)
+	end
+	-- benches: the cushion top is at 1.5, 1.4 deep, against both walls
 	for _, seg in { { -24, -7 }, { 7, 24 } } do
-		carBox("BenchW", -13.7, -12.2, 0, 1.2, seg[1], seg[2], Enum.Material.Fabric, Color3.fromRGB(60, 44, 40))
-		carBox("BenchE", -6.8, -5.3, 0, 1.2, seg[1], seg[2], Enum.Material.Fabric, Color3.fromRGB(60, 44, 40))
+		carBox("BenchW", -5.8, -4.4, 0, 1.5, seg[1], seg[2], Enum.Material.Fabric, Color3.fromRGB(60, 44, 40))
+		carBox("BenchE", 4.4, 5.8, 0, 1.5, seg[1], seg[2], Enum.Material.Fabric, Color3.fromRGB(60, 44, 40))
 	end
 	for _, z in { -16, 0, 16 } do
-		local tube = box("CarLight", -9.9, -9.1, 8.3, 8.5, z - 3, z + 3, Enum.Material.Neon, COLD, car)
+		local tube = box("CarLight", CX - 0.4, CX + 0.4, 10.4, 10.6, z - 3, z + 3, Enum.Material.Neon, COLD, car)
 		tube.CanCollide = false
 		local l = Instance.new("PointLight")
-		l.Range, l.Brightness, l.Color = 16, 0.9, COLD
+		l.Range, l.Brightness, l.Color = 20, 0.9, COLD
 		l.Parent = tube
 	end
-	local carSign = box("CarSign", -9.5 - 2.5, -9.5 + 2.5, 7.4, 8.2, 27.4, 27.6, Enum.Material.Neon, Color3.fromRGB(16, 20, 24), car)
-	carSign.Material = Enum.Material.Glass
+	-- the line display over the north end door (the shell's screen sits just behind it)
+	local carSign = box("CarSign", CX - 2.2, CX + 2.2, 7.9, 8.5, 27.18, 27.26, Enum.Material.Glass, Color3.fromRGB(16, 20, 24), car)
 	level.CarSign = sign(carSign, Enum.NormalId.Front, "> LINE 9 . . . OUTBOUND", Color3.fromRGB(255, 170, 60))
 	-- the doors: closed until the ride is over
 	for i, seg in { { -4, 0 }, { 0, 4 } } do
-		local door = box("Door", -5.3, -5, 0, 7.6, seg[1], seg[2], Enum.Material.Metal, Color3.fromRGB(88, 96, 108), car)
+		local door = box("Door", CX + 6.0, CX + 6.3, 0, 9.0, seg[1], seg[2], Enum.Material.Metal, Color3.fromRGB(88, 96, 108), car)
 		door:SetAttribute("Slide", if i == 1 then -3.8 else 3.8)
+		dressDoor(door, true)
 		table.insert(level.Doors, door)
 	end
 	level.Car = car
-	level.CarCFrame = CFrame.new(at(-9.5, 0, 0))
-	-- you ride on the west bench facing the doors; the seat is where you stand when you get up
-	level.Seat = CFrame.lookAt(at(-11.4, 3, 12), at(-5, 3, 12))
+	level.CarCFrame = CFrame.new(at(CX, 0, 0))
+	-- you ride on the west bench facing the doors (root 3.75 in from the centre line: the hips land over the cushion)
+	level.Seat = CFrame.lookAt(at(CX - 3.75, 3, 12), at(CX + 6, 3, 12))
 	level.Stand = level.CarCFrame * CFrame.new(0, 3, 9) -- in the aisle, facing the doors (client/Intro.lua ends the ride here)
 
 	-- ===== B. the corridor =====

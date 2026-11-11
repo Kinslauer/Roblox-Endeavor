@@ -3,6 +3,15 @@
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
 report).
 
+## Endeavor: the realistic pass, round 1 (train car, pistol, poncho) (2026-11-11)
+Replay the ride: F2 → "Train intro" → Replay.
+- [ ] The car is roomier (about a third wider and taller) and looks like a real metro car: rounded windows with black
+      rubber seals, pale laminate walls, studded rubber floor, moulded seats with blue patterned cushions, steel poles,
+      handrails and hanging grab loops. Surfaces show texture (scratches, grime, fabric weave) up close.
+- [ ] Seen from the platform: grey fluted sides with a red stripe, the doors with windows, wheels and bogies underneath.
+- [ ] The rider's poncho is a dark waxed cloth with a deep hood, no flat boxes; nothing pokes through it.
+- [ ] The pistol is the new one (black slide with grooves, suppressor) in the hand at the end of the ride.
+
 ## Endeavor: the arrival (train, station, stealth) (2026-11-10)
 A new character starts on a train, alone, whatever the rest of the server is doing. To see it again on an existing
 character: F2 → "Train intro" → Replay. Hold Space during the ride to skip it.

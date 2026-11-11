@@ -124,8 +124,8 @@ Assets.Rigs = {
 }
 
 -- The arrival (tools/models/station.py): the rider's cloak (origin = UpperTorso centre) and the train car shell.
-Assets.Intro = { Cloak = 109895496908016 }
-Assets.Subway = { Car = 75078768721035 }
+Assets.Intro = { Cloak = 123115234676222, CloakStand = 87314331142393 } -- the poncho draped seated / standing (tools/models/train.py)
+Assets.Subway = { Car = 111234592172091, Door = 71136245040287 } -- tools/models/train.py (2026-11-11, the realistic pass)
 
 -- Weapons held in the right hand (see server/HeldWeapons.lua): [weaponId] = { Id, Grip }
 -- Grip "Melee" (default): business end along Roblox +Z from the grip; "Pistol": grip along -Z, barrel along +Y.
@@ -136,7 +136,7 @@ Assets.Weapons = {
 	ScrapSpear = { Id = 103214457247078 },
 	Sledge = { Id = 140412858794705 },
 	ArcPistol = { Id = 137041276570028, Grip = "Pistol" },
-	Whisper = { Id = 91277929123948, Grip = "Pistol" }, -- suppressed; the part named Slide moves when it is racked
+	Whisper = { Id = 119706399622183, Grip = "Pistol" }, -- suppressed; the part named Slide moves when it is racked
 	-- the Front's firearms (tools/models/firearms.py): grip at the origin, barrel along Roblox +Z
 	AKM = { Id = 92592283500275, Grip = "Rifle" },
 	M16A1 = { Id = 75033829373197, Grip = "Rifle" },
@@ -396,12 +396,37 @@ Assets.Materials = {
 	BrickDark = { Color = Color3.fromRGB(70, 44, 36), Material = Enum.Material.Brick },
 }
 
+-- The material library (tools/textures, 2026-11-11): tileable PBR surfaces uploaded as swatch models. A MeshPart
+-- named "<Part>_<Name>" gets a clone of that SurfaceAppearance (common/SurfaceLibrary.lua sets Assets.SurfaceFor
+-- on the server). Tile = studs per repeat; tools/models/lib.py TILE uses the same numbers for the models' UVs.
+-- Material/Color below only matter for footsteps, physics and the distant flat look.
+Assets.Surfaces = {
+	CarBody = { Id = 98254339854841, Tile = 8, Material = Enum.Material.Metal, Color = Color3.fromRGB(150, 152, 150) },
+	CarLivery = { Id = 112736865012669, Tile = 8, Material = Enum.Material.Metal, Color = Color3.fromRGB(150, 40, 30) },
+	CarPanel = { Id = 140267941794015, Tile = 6, Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(175, 178, 170) },
+	CarFloor = { Id = 130930165945884, Tile = 4, Material = Enum.Material.Rubber, Color = Color3.fromRGB(50, 52, 55) },
+	Moquette = { Id = 128011240005037, Tile = 2.5, Material = Enum.Material.Fabric, Color = Color3.fromRGB(30, 40, 70) },
+	SeatShell = { Id = 93140818164219, Tile = 4, Material = Enum.Material.Plastic, Color = Color3.fromRGB(55, 62, 70) },
+	Stainless = { Id = 110057387975935, Tile = 3, Material = Enum.Material.Metal, Color = Color3.fromRGB(190, 192, 195) },
+	Underframe = { Id = 104170739046483, Tile = 6, Material = Enum.Material.CorrodedMetal, Color = Color3.fromRGB(40, 38, 36) },
+	Gunmetal = { Id = 125466534889036, Tile = 1.5, Material = Enum.Material.Metal, Color = Color3.fromRGB(45, 46, 48) },
+	Polymer = { Id = 128020204355917, Tile = 1, Material = Enum.Material.Plastic, Color = Color3.fromRGB(30, 30, 32) },
+	Waxcloth = { Id = 86046108044156, Tile = 2.5, Material = Enum.Material.Fabric, Color = Color3.fromRGB(45, 47, 40) },
+	HideLeather = { Id = 91466596182777, Tile = 1.5, Material = Enum.Material.Leather, Color = Color3.fromRGB(50, 36, 28) },
+	CarTrim = { Id = 113939627951069, Tile = 4, Material = Enum.Material.Metal, Color = Color3.fromRGB(30, 32, 34) },
+}
+Assets.SurfaceFor = nil -- function(name) -> SurfaceAppearance template; set by common/SurfaceLibrary on the server
+
 -- Applies the named material to every part of a loaded model.
 function Assets.Dress(model)
 	for _, part in model:GetDescendants() do
 		if part:IsA("BasePart") then
 			local matName = part.Name:match("_(%w+)$")
-			local spec = matName and Assets.Materials[matName]
+			local spec = matName and (Assets.Materials[matName] or Assets.Surfaces[matName])
+			local surface = matName and Assets.Surfaces[matName] and Assets.SurfaceFor and part:IsA("MeshPart") and Assets.SurfaceFor(matName)
+			if surface and not part:FindFirstChildOfClass("SurfaceAppearance") then
+				surface:Clone().Parent = part
+			end
 			if spec then
 				part.Color = spec.Color
 				part.Material = spec.Material

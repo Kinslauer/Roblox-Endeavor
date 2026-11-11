@@ -40,6 +40,7 @@ local ok, err = pcall(function()
 		warn("[Body] failed:", bodyErr)
 	end
 	Gore.Init()
+	require(Server.Common.SurfaceLibrary).Init() -- before anything spawns models: Assets.Dress puts the library surfaces on them
 	Destruction.Init() -- before City, which places props and breach points
 	City.Init()
 	-- Must run before WorldPhase.Init so its CitySpawn pads are found. A bug in the test arena

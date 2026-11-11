@@ -20,6 +20,9 @@ The game loads them by asset ID (`src/shared/Assets.lua`) and falls back to gene
     $BLENDER -b --python tools/models/icons.py            # inventory icons for materials/consumables/ammo/packs (centre origin)
     $BLENDER -b --python tools/models/station.py          # the arrival: Whisper pistol (separate slide), the cloak, the train car shell, the Sentry rig
     $BLENDER -b --python tools/models/industry.py         # the megacity kit: smokestack, tank, cooling tower, pylon, blast furnace, junk pile, giant tree
+    $BLENDER -b --python tools/models/train.py           # the realistic pass: Line 9 car, door leaf, Whisper, poncho (seated/standing), on the texture library
+    $BLENDER -b --python tools/models/render_intro.py    # Cycles stills of that scene -> out/render_*.png (CPU, ~1-2 min a shot)
+    python3 tools/textures/gen.py && $BLENDER -b --python tools/textures/swatches.py   # the material library -> tools/textures/out
     python3 tools/models/preview.py out/X_preview.obj out/X.png   # software preview (Pillow), no OpenGL needed
     ROBLOX_API_KEY=... python3 tools/models/upload.py Name out/Name.fbx [...]   # prints "Name assetId"; key needs Assets: Write
 

@@ -19,7 +19,7 @@ def req(method, url, body=None, ctype=None):
 args = sys.argv[1:]
 for name, path in zip(args[::2], args[1::2]):
     meta = json.dumps({"assetType": "Model", "displayName": name, "description": "Endeavor prop (generated in Blender)", "creationContext": {"creator": {"userId": USER}}})
-    body, ctype = multipart({"request": meta}, os.path.basename(path), open(path, "rb").read(), "model/fbx")
+    body, ctype = multipart({"request": meta}, os.path.basename(path), open(path, "rb").read(), "model/gltf-binary" if path.endswith(".glb") else "model/fbx")
     code, op = req("POST", "https://apis.roblox.com/assets/v1/assets", body, ctype)
     if code != 200: print(name, "FAILED", code, op); continue
     opid = op["operationId"] if "operationId" in op else op.get("path", "").split("/")[-1]

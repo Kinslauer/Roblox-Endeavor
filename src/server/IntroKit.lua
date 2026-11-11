@@ -1,4 +1,5 @@
--- The props the train intro shows on the rider (client/Intro.lua clones them locally): the cloak, the pistol
+-- The props the train intro shows on the rider (client/Intro.lua clones them locally): the cloak (draped seated, and
+-- CloakStand draped standing), the pistol
 -- in its holster and the weapon across the back. Put in ReplicatedStorage.IntroKit at startup.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -36,6 +37,7 @@ function IntroKit.Init()
 	folder.Parent = ReplicatedStorage
 	task.spawn(function()
 		piece(folder, "Cloak", Assets.Intro and Assets.Intro.Cloak)
+		piece(folder, "CloakStand", Assets.Intro and Assets.Intro.CloakStand)
 		piece(folder, "Sidearm", Assets.Weapons.Whisper and Assets.Weapons.Whisper.Id)
 		piece(folder, "Back", Assets.Weapons.PipeClub and Assets.Weapons.PipeClub.Id)
 	end)

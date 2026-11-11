@@ -310,6 +310,20 @@ Client tab screenshot, because Andy cannot read logs another way.
   once Uploaded (PlayerData.wipe); the death screen says STACK REBOOT or that nothing survives; the computer prompt is
   "Upload stack / log in".
 
+- The realistic pass (owner, 2026-11-11: "redo all the models and textures, use blender to make everything more
+  cohesive and realistic. starting with the intro cutscene ... keep iterating ... then extend"): one shared material
+  library. `tools/textures/gen.py` makes tileable PBR sets (colour, normal, roughness, metalness, 1024, seeded numpy
+  noise) per material; `tools/textures/swatches.py` turns each into a 4x4 plane .glb (upload.py sends .glb as
+  model/gltf-binary) and Roblox's import makes a SurfaceAppearance from it. Scripts cannot set SurfaceAppearance maps
+  (Plugin capability) but can clone one, so `src/common/SurfaceLibrary.lua` (Init first in Endeavor's Main) loads the
+  swatches into ReplicatedStorage.Surfaces and `Assets.Dress` clones `Assets.Surfaces[name]` onto every MeshPart named
+  "<Part>_<Name>". Models get world-scale box UVs (`lib.uv_box`, TILE in lib.py = Assets.Surfaces[].Tile), so a
+  texture is the same size everywhere. New library names never reuse an old Assets.Materials name (old models have no
+  UVs). `tools/models/train.py` builds the arrival on it (car 12.6 wide x 56 x 10.9 high inside after "train car is too
+  small", moulded seats with cushion top 1.5, door leaf, Whisper, poncho draped by Blender cloth sim seated and
+  standing = IntroKit "Cloak"/"CloakStand"); `tools/models/render_intro.py` renders Cycles stills for Andy to judge.
+  The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
+
 ## State (2026-11-11)
 - Front v26 (2026-11-11): clean screen, crouch/prone/dive/roll, lean and peek, quick and careful reload, binoculars
   with marking. Awaits Andy's play-through: docs/TESTING.md "Front: clean screen, stances, Metal Gear handling".
