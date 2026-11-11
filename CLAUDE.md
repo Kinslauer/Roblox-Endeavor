@@ -364,6 +364,9 @@ Client tab screenshot, because Andy cannot read logs another way.
   The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
 
 ## State (2026-11-11)
+- Endeavor v87 (2026-11-11): realistic pass round 2, the pistol kit (Whisper rebuilt from parts, 4 variants) and the
+  live cloth cloak; real-server start 7.2s, 0 warnings, IntroKit cloak has 81 bones. Awaits Andy's look:
+  docs/TESTING.md "Endeavor: the realistic pass, round 2".
 - Endeavor v86 (2026-11-11): Metal Gear handling (stances, aim, sights, magazines, hold-up, throw, neck hold,
   carrying bodies, the wall); v85 the same day: playtest fixes (pistol every ride, third person, quiet screen, cloak,
   takedown alignment). Awaits Andy's play-through: docs/TESTING.md "Endeavor: Metal Gear handling". Andy reported
