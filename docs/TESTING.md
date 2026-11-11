@@ -3,6 +3,12 @@
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
 report).
 
+## Endeavor: the realistic pass, round 3 (every gun part) (2026-11-11)
+- [ ] The pistol in the ride is the new hammer-fired one: a 1911-style frame and slide with rear grooves, an outside
+      hammer, a grip safety, chequered grips, a rail under the front with a light, and a suppressor on a threaded
+      barrel. It sits in the hand the right way round and the slide moves alone when racked.
+- [ ] The parts charts (in the project files, realistic-pass/round3) show every part from the charts you sent.
+
 ## Endeavor: the realistic pass, round 2 (pistol kit, live cloak) (2026-11-11)
 Replay the ride: F2 → "Train intro" → Replay.
 - [ ] The cloak moves like cloth: seated, it falls over the knees and onto the bench and floor; nothing of the body

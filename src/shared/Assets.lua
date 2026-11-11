@@ -143,13 +143,24 @@ Assets.Rigs = {
 -- The arrival (tools/models/station.py): the rider's cloak (origin = UpperTorso centre) and the train car shell.
 -- the poncho as one skinned mesh with a grid of bones that client/Cloth.lua simulates (tools/models/train.py build_cloak)
 Assets.Intro = { Cloak = 131482831788974 }
--- The handgun kit (tools/models/pistol_kit.py): every variant is the same components (Frame, Slide, Barrel, Hammer,
--- Trigger, and a Suppressor and Light when fitted), each its own MeshPart, all on the Pistol grip.
-Assets.PistolKit = {
-	Whisper = 114567929391016, -- service frame, long slide, spur hammer, suppressor, light module
-	WhisperBare = 103449141962435, -- the same pistol stripped: threaded barrel, no can, no light
-	WhisperCompact = 89248380490888, -- compact frame, short slide, bobbed hammer, short suppressor
-	WhisperLight = 102428100011593, -- service frame, bobbed hammer, light module, no can
+-- The gun parts library (tools/models/gunparts.py + gun_<platform>.py): every part of a hammer-fired pistol, a
+-- striker-fired pistol, a revolver and an AR-pattern rifle, combined into these guns. Each model is one MeshPart per
+-- moving group and material: Slide/Barrel/Frame/Hammer/Trigger/Grips/Magazine (+ Suppressor, Light, LightLens) for
+-- handguns (Pistol grip), Upper/Lower/Barrel/Charging/Carrier/Stock/Magazine/Muzzle for rifles (Rifle grip).
+Assets.GunKit = {
+	Hammer1911 = 134129735068524, -- hammer-fired, 5 in barrel, spur hammer
+	HammerCommander = 103160933605924, -- hammer-fired, 4.25 in, ring hammer
+	Whisper = 113109859891091, -- hammer-fired, railed frame, threaded barrel, suppressor, light (the arrival's pistol)
+	HammerRail = 115146323108250, -- hammer-fired, railed frame, light
+	Striker19 = 102992385285716, -- striker-fired, compact
+	Striker17 = 72220435844363, -- striker-fired, full size
+	StrikerWhisper = 135877201521289, -- striker-fired, threaded, suppressor, light
+	Revolver4 = 120759454158266, -- double-action six-shot, 4 in barrel, half lug
+	Revolver2 = 129931511458686, -- 2 in snub
+	Revolver6 = 129254275557472, -- 6 in, full lug
+	Rifle16 = 126895041429166, -- AR-pattern carbine, 16 in barrel
+	Rifle10 = 114913695609617, -- AR-pattern, 10.5 in barrel, suppressor, light
+	Rifle20 = 106608856147388, -- AR-pattern, 20 in barrel
 }
 Assets.Subway = { Car = 111234592172091, Door = 71136245040287 } -- tools/models/train.py (2026-11-11, the realistic pass)
 
@@ -162,7 +173,7 @@ Assets.Weapons = {
 	ScrapSpear = { Id = 103214457247078 },
 	Sledge = { Id = 140412858794705 },
 	ArcPistol = { Id = 137041276570028, Grip = "Pistol" },
-	Whisper = { Id = 114567929391016, Grip = "Pistol" }, -- suppressed, light module; built from the pistol kit (below); the part named Slide moves when it is racked
+	Whisper = { Id = 113109859891091, Grip = "Pistol" }, -- Assets.GunKit.Whisper; the part named Slide moves when it is racked
 	-- the Front's firearms (tools/models/firearms.py): grip at the origin, barrel along Roblox +Z
 	AKM = { Id = 92592283500275, Grip = "Rifle" },
 	M16A1 = { Id = 75033829373197, Grip = "Rifle" },

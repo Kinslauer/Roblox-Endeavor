@@ -351,9 +351,7 @@ Client tab screenshot, because Andy cannot read logs another way.
   small", moulded seats with cushion top 1.5, door leaf, Whisper, poncho draped by Blender cloth sim seated and
   standing); `tools/models/render_intro.py` renders Cycles stills for Andy to judge.
   Round 2 (Andy: "strip the model into its components ... There should be a cloth physics simulation on the cloak"):
-  `tools/models/pistol_kit.py` = handgun components (FRAMES Service/Compact, SLIDES Long/Short, HAMMERS Spur/Bobbed,
-  barrel, trigger, can, light module), each its own MeshPart "<Slot>_<Material>", VARIANTS -> `Assets.PistolKit`
-  (Whisper = the arrival's pistol). The cloak is one skinned MeshPart (train.py build_cloak: the standing drape plus
+  (pistol_kit.py, round 2, was replaced in round 3 by the parts library below). The cloak is one skinned MeshPart (train.py build_cloak: the standing drape plus
   the hood, bones "R<row>C<col>" on poncho rings ROWS, columns every COL_STEP segments, "Hood"; parentless bones,
   bilinear weights). A skinned upload's pivot is turned by the FBX node, so IntroKit `piece(.., origin)` resets
   PivotOffset/WorldPivot to the origin. `src/client/Cloth.lua` (`Cloth.Attach(model, char, {Extra, Manual})`): row 0
@@ -361,6 +359,18 @@ Client tab screenshot, because Andy cannot read logs another way.
   drape, pushed out of the character's parts, opts.Extra models and nearby anchored plain block Parts (never meshes:
   a car shell's bounds hold the rider); writes Bone.Transform; ~0.2 ms a frame (real-server test). Intro.lua attaches
   it after the holster and back are welded; the CloakStand swap is gone.
+  Round 3, the gun parts library (Andy: "make every part listed here, and we will combine them in different ways to
+  make a striker fired, hammer operated, and revolver handguns ... an Ar15 ... for a rifle parallel", with a 1911A1,
+  a striker pistol and AR-15 lower/upper parts charts): `tools/models/gunparts.py` (`Part`: side/plan/front prisms,
+  box/span/cyl/tube/spring/rod/ball, `cut=True` cutters applied by Exact boolean with self-intersection on; inches,
+  K = 0.19 studs per inch; `explode` offset or None for the tray row; `hidden` parts are left out of the game model;
+  `to_game` merges by "<group>_<material>"; `stills` renders the assembled view and the numbered exploded chart).
+  Platforms: `gun_hammer.py` (all 49 1911A1 chart parts), `gun_striker.py` (all 33 striker chart parts + 33b),
+  `gun_revolver.py` (32 parts, the usual list for a swing-out double-action), `gun_rifle.py` (L1-L35 lower, U1-U8
+  upper, B1-B10 barrel/nut/handguard/gas block/muzzle/carrier/bolt/magazine/sights). Shared accessories:
+  `suppressor`, `weapon_light`. Variants -> `Assets.GunKit` (13 guns); Assets.Weapons.Whisper = GunKit.Whisper.
+  Run `blender -b --python tools/models/gunparts.py -- <platform|all> [variant] --stills --export`; a full run takes
+  ~7 min a variant (the Exact booleans), so run platforms in parallel processes.
   The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
 
 ## State (2026-11-11)
