@@ -75,6 +75,7 @@ local Intro = require(script.Parent:WaitForChild("Intro")) -- the train ride (cl
 local Handling = require(script.Parent:WaitForChild("Handling")) -- stances, aiming, reload, the wall (client/Handling.lua)
 local Style = require(script.Parent:WaitForChild("Style")) -- lock-on, two weapons, the combo count, knocked (client/Style.lua)
 Style.Start(gui)
+require(script.Parent:WaitForChild("Build")).Start() -- round 5: K fires the core's active; the open book vow
 
 -- A safety net for everything built outside panel/addRow: buttons get the theme's shape, font and a hover;
 -- opaque boxes get rounded corners. Callers' colours are kept.
@@ -360,7 +361,7 @@ Remotes.StatsChanged.OnClientEvent:Connect(function(data)
 	for name, lbl in statLabels do
 		lbl.Text = ("%s: %d"):format(name, data.Stats[name])
 	end
-	levelLabel.Text = ("LV %02d   %d / %d XP"):format(data.Level, data.Xp, data.XpNeeded)
+	levelLabel.Text = ("LV %02d   %d / %d XP%s"):format(data.Level, data.Xp, data.XpNeeded, if (data.CarriedXp or 0) > 0 then ("  +%d"):format(data.CarriedXp) else "")
 end)
 end
 
@@ -371,6 +372,7 @@ local lastCondition, lastUpgrades = {}, {}
 local lastGrid = { W = 5, H = 3, Items = {}, Pack = "", Weight = 0, Carry = 15 }
 local CELL = 34
 local TYPE_COLORS = {
+	Chip = Color3.fromRGB(28, 80, 92), Data = Color3.fromRGB(40, 70, 110),
 	Material = Color3.fromRGB(46, 52, 62), Consumable = Color3.fromRGB(36, 74, 58), Ammo = Color3.fromRGB(30, 66, 86),
 	Weapon = Color3.fromRGB(92, 58, 40), Armor = Color3.fromRGB(46, 54, 96), Cybernetic = Color3.fromRGB(80, 44, 100), Pack = Color3.fromRGB(78, 66, 40),
 }
@@ -913,6 +915,10 @@ local function renderLoadout()
 			addRow(loadoutPanel, ("%s (needs %s)"):format(def.Name, reason), {}, Color3.fromRGB(140, 140, 140))
 		end
 	end
+	-- round 5: the body's batch, grade, vow, load, practice, carried earnings, chips and the stack slot (client/Build)
+	local BuildUI = require(script.Parent:WaitForChild("Build"))
+	BuildUI.Pack = lastInventory
+	BuildUI.Rows(loadoutPanel, addRow, loadout)
 end
 Remotes.LoadoutChanged.OnClientEvent:Connect(function(data)
 	loadout = data
@@ -935,7 +941,8 @@ local deathLine = label({ Size = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0,
 Remotes.Died.OnClientEvent:Connect(function(summary)
 	local m, s = math.floor(summary.Survived / 60), summary.Survived % 60
 	deathText.Text = ("%02d:%02d ALIVE     LV %d     %d KILLS%s"):format(m, s, summary.Level, summary.Kills, if summary.Killer then "\n\n" .. string.upper(tostring(summary.Killer)) else "")
-	deathLine.Text = if summary.Uploaded then "> STACK RESIDENT . . . REBOOTING" else "> NO STACK . . . NO RECOVERY"
+	deathLine.Text = (if summary.Uploaded then "> STACK RESIDENT . . . REBOOTING" else "> NO STACK . . . NO RECOVERY")
+		.. (if (summary.LostXp or 0) > 0 or (summary.LostCredits or 0) > 0 then ("\n> CARRIED . . . LOST %d XP . %d CR"):format(summary.LostXp or 0, summary.LostCredits or 0) else "")
 	deathScreen.BackgroundTransparency, deathRule.Size = 1, UDim2.fromOffset(0, 1)
 	deathTitle.TextTransparency, deathText.TextTransparency, deathLine.TextTransparency = 1, 1, 1
 	deathScreen.Visible = true
@@ -1743,7 +1750,11 @@ renderTerminal = function(t)
 		return function() Remotes.Terminal:FireServer(action, arg) end
 	end
 	addRow(terminalPanel, ("HIDEOUT COMPUTER  -  %d credits  -  %d contracts done"):format(t.Credits or 0, t.Completed or 0), { { text = "Log out", color = Color3.fromRGB(90, 50, 50), fn = send("Close") } }, GREEN)
-	addRow(terminalPanel, if t.Uploaded then "> STACK: RESIDENT" else "> STACK: NONE", {}, DIM)
+	addRow(terminalPanel, (if t.Uploaded then "> STACK: RESIDENT" else "> STACK: NONE") .. "   > " .. (t.Grade or ""), {}, DIM)
+	-- VOWS (round 5): one held for the life; the names are all the machine says
+	for _, v in t.Vows or {} do
+		addRow(terminalPanel, "  > VOW . " .. v.Name, if v.Held then { { text = "Break", color = Color3.fromRGB(110, 60, 40), fn = send("Break") } } else { { text = "Swear", fn = send("Vow", v.Id) } }, if v.Held then Color3.fromRGB(255, 210, 120) else DIM)
+	end
 	-- RAIDS
 	if not t.Apps.RAIDS then
 		addRow(terminalPanel, "RAIDS  -  locked: " .. (t.Locked.RAIDS or ""), {}, DIM)
@@ -1755,7 +1766,11 @@ renderTerminal = function(t)
 			if c.Active then
 				addRow(terminalPanel, ("  %s  -  %d/%d  -  %d cr"):format(c.Title, c.Done, c.Need, c.Credits), { { text = "Drop", color = Color3.fromRGB(110, 60, 40), fn = send("Abandon", c.Id) } }, Color3.fromRGB(255, 210, 120))
 			else
-				addRow(terminalPanel, ("  %s  -  %s  -  %d cr"):format(c.Title, c.Danger, c.Credits), { { text = "Accept", color = Color3.fromRGB(50, 110, 70), fn = send("Accept", c.Id) } })
+				if c.Lock then
+					addRow(terminalPanel, ("  %s  -  > %s"):format(c.Title, c.Lock), {}, DIM) -- the grade it needs (round 5)
+				else
+					addRow(terminalPanel, ("  %s  -  %s  -  %d cr"):format(c.Title, c.Danger, c.Credits), { { text = "Accept", color = Color3.fromRGB(50, 110, 70), fn = send("Accept", c.Id) } }, if c.Trial then Color3.fromRGB(150, 220, 255) else nil)
+				end
 			end
 		end
 	end

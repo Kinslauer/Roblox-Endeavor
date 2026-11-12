@@ -87,6 +87,8 @@ function Stats.Push(player)
 			Xp = data.Xp,
 			XpNeeded = Stats.XpNeeded(data.Level),
 			Max = S.MaxPerStat,
+			CarriedXp = data.Carried and data.Carried.Xp or 0, -- round 5: earned, not yet brought home (server/Builds)
+			Lineage = data.Lineage,
 		})
 	end
 end

@@ -54,6 +54,15 @@ Items.Defs = {
 	FramePack = { Name = "Frame Pack", Type = "Pack", Grid = { 11, 7 }, Carry = 60, Size = { 3, 4 }, Weight = 3.5 },
 	-- the Line 9 consignment (server/Tutorial.lua, server/Hideouts.lua): signing it at a freight-lift bay claims that
 	-- site and unpacks the crates into a computer. One per life; it drops with everything else.
+	-- round 5 (builds): skill chips, fitted at the hideout bench (shared/Builds.Chips), and data shards read at home.
+	-- Data = true: the stack slot takes it (never materials)
+	FocusChip = { Name = "Focus Chip", Type = "Chip", Data = true },
+	HookChip = { Name = "Hook Chip", Type = "Chip", Data = true },
+	TrailChip = { Name = "Trail Chip", Type = "Chip", Data = true },
+	BreathChip = { Name = "Breath Chip", Type = "Chip", Data = true },
+	MirrorChip = { Name = "Mirror Chip", Type = "Chip", Data = true },
+	ArcChip = { Name = "Arc Chip", Type = "Chip", Data = true },
+	DataShard = { Name = "Data Shard", Type = "Data", Data = true },
 	Manifest = { Name = "Line 9 Manifest", Type = "Material", Size = { 1, 1 }, Weight = 0.05, Stack = 1 },
 }
 
@@ -128,6 +137,8 @@ local TYPE_DEFAULTS = {
 	Armor = { Size = { 2, 2 }, Weight = 3, Stack = 1 },
 	Cybernetic = { Size = { 1, 1 }, Weight = 0.5, Stack = 1 },
 	Pack = { Size = { 2, 2 }, Weight = 1, Stack = 1 },
+	Chip = { Size = { 1, 1 }, Weight = 0.05, Stack = 1 },
+	Data = { Size = { 1, 1 }, Weight = 0.05, Stack = 5 },
 }
 function Items.Shape(id)
 	local def = Items.Defs[id]
@@ -237,6 +248,7 @@ Items.LootTables = {
 		{ "ArcPistol", 0.5, 1, 1 }, { "Sledge", 0.3, 1, 1 }, { "RiotPlate", 0.35, 1, 1 }, { "ConduitHarness", 0.4, 1, 1 }, { "PlatedHelm", 0.35, 1, 1 },
 		{ "NeuralCore", 0.4, 1, 1 }, { "OverclockCore", 0.3, 1, 1 }, { "PistonLeg", 0.4, 1, 1 }, { "PlatedCore", 0.4, 1, 1 }, { "EchoArray", 0.3, 1, 1 },
 		{ "BloodTracer", 0.3, 1, 1 }, { "TargetingLens", 0.35, 1, 1 }, { "ArcGauntlet", 0.35, 1, 1 }, { "FramePack", 0.15, 1, 1 },
+		{ "DataShard", 0.6, 1, 2 }, { "FocusChip", 0.12, 1, 1 }, { "TrailChip", 0.12, 1, 1 }, { "ArcChip", 0.1, 1, 1 }, { "BreathChip", 0.12, 1, 1 },
 	},
 	-- salvage from broken props
 	Streetlight = { { "Pipe", 1, 1, 2 }, { "Battery", 0.8, 1, 1 }, { "Glass", 0.6, 1, 2 } },
@@ -252,7 +264,8 @@ Items.LootTables = {
 	Rival = {
 		{ "Scrap", 0.8, 1, 3 }, { "Wire", 0.6, 1, 3 }, { "Medkit", 0.45, 1, 1 }, { "ArcCell", 0.5, 4, 8 }, { "Ration", 0.4, 1, 2 },
 		{ "RebarBlade", 0.1, 1, 1 }, { "PlatedHelm", 0.08, 1, 1 }, { "ConduitHarness", 0.05, 1, 1 }, { "ReflexOptic", 0.05, 1, 1 }, { "PipeGrenade", 0.2, 1, 1 },
-		{ "Round762x51", 0.3, 5, 16 }, { "M1Garand", 0.08, 1, 1 }, -- a crew that works the valley keeps a long rifle
+		{ "Round762x51", 0.3, 5, 16 }, { "M1Garand", 0.08, 1, 1 },
+		{ "DataShard", 0.25, 1, 1 }, { "TrailChip", 0.03, 1, 1 }, { "FocusChip", 0.03, 1, 1 }, -- a crew that works the valley keeps a long rifle
 	},
 	-- station sentries carry what security carries: 9mm for a sidearm (sometimes the sidearm itself) or 5.56 for a
 	-- rifle (sometimes the carbine itself), never the .22 a conduit's quiet pistol takes (owner, 2026-11-12)
@@ -273,12 +286,14 @@ Items.LootTables = {
 		{ "ReflexOptic", 0.3, 1, 1 }, { "TargetingLens", 0.3, 1, 1 }, { "AudioPickup", 0.3, 1, 1 }, { "ChemSniffer", 0.3, 1, 1 },
 		{ "ServoArm", 0.3, 1, 1 }, { "ArcGauntlet", 0.25, 1, 1 }, { "NeuralCore", 0.3, 1, 1 }, { "OverclockCore", 0.2, 1, 1 },
 		{ "PlatedCore", 0.2, 1, 1 }, { "StriderLeg", 0.25, 1, 1 }, { "PistonLeg", 0.2, 1, 1 }, { "EchoArray", 0.2, 1, 1 }, { "BloodTracer", 0.2, 1, 1 },
+		{ "DataShard", 0.5, 1, 2 }, { "HookChip", 0.1, 1, 1 }, { "MirrorChip", 0.1, 1, 1 }, { "BreathChip", 0.08, 1, 1 },
 	},
 	-- the hall's overseers' pockets
 	Overseer = {
 		{ "Round9", 0.8, 4, 10 }, { "Round9AP", 0.2, 3, 8 }, { "ArcCell", 0.7, 3, 8 }, { "Battery", 0.5, 1, 2 }, { "Medkit", 0.35, 1, 1 }, { "Ration", 0.4, 1, 1 },
 		{ "ShockBaton", 0.12, 1, 1 }, { "ReflexOptic", 0.06, 1, 1 }, { "NeuralCore", 0.05, 1, 1 },
 		{ "Round22Sleep", 0.25, 3, 6 }, { "SentryUniform", 0.08, 1, 1 },
+		{ "DataShard", 0.3, 1, 1 }, { "MirrorChip", 0.04, 1, 1 }, { "HookChip", 0.04, 1, 1 },
 	},
 	Raider = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 }, { "Bandage", 0.3, 1, 1 },

@@ -9,6 +9,7 @@ M.mkTree({ Server = { class = "Folder", children = TREE_SERVER } }, SSS)
 M.mkTree({ Common = { class = "Folder", children = TREE_COMMON } }, SSS.Server)
 local Players = game_:GetService("Players")
 M.task.spawn(function() M.loadSource(SSS.Server.Main)() end)
+do local BL = M.mockEnv.__require(RS.Shared.Config).Builds.Lineage; BL.Empty, BL.Rare, BL.Good, BL.Bonus = 0, 0, 0, 0 end
 local Remotes = RS.Remotes
 local Config = M.mockEnv.__require(RS.Shared.Config)
 

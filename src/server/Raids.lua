@@ -185,7 +185,7 @@ local function reward(raid)
 		vault.Anchored = true
 	end
 	for _, p in members do
-		Stats.AddXp(p, R.Xp)
+		require(script.Parent.Builds).Earn(p, R.Xp)
 		Quests.Progress(p, "raid", "Any", 1)
 	end
 	Raids.Completed:Fire(members)
@@ -252,6 +252,10 @@ local function join(player)
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if not (hum and hum.Health > 0 and WorldPhase.IsOpen()) then
 		return
+	end
+	if not require(script.Parent.Builds).CanRaid(player) then
+		Remotes.Announce:FireClient(player, "> BLACKOUT . " .. require(game:GetService("ReplicatedStorage").Shared.Builds).GradeName(require(game:GetService("ReplicatedStorage").Shared.Config).Builds.Grades.Raid), "Warning")
+		return -- the gate opens from GRADE 3 (round 5: the Broker's trials)
 	end
 	if active and not active.open then
 		Remotes.Announce:FireClient(player, "A raid is already underway. Wait for the gate.", "Info")

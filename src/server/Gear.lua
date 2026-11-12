@@ -12,10 +12,12 @@ local Remotes = require(Shared.Remotes)
 local Skills = require(Shared.Skills)
 local Weapons = require(Shared.Weapons)
 local Items = require(Shared.Items)
+local Builds = require(Shared.Builds)
 local Net = require(script.Parent.Common.Net)
 local PlayerData = require(script.Parent.Common.PlayerData)
 
 local S, C, F = Config.Stats, Config.Combat, Config.Flicker
+local BC = Config.Builds
 
 -- Wearable gear: each lives in its own profile table, keyed by slot.
 local SOURCES = {
@@ -46,7 +48,20 @@ for _, name in S.Names do
 end
 
 local function compute(data)
+	-- round 5 (shared/Builds): each body is a Line 9 batch with its own small bonus, rolled once per life
+	if type(data.Lineage) ~= "table" then
+		local rng = Random.new()
+		data.Lineage = Builds.RollLineage(rng:NextNumber(), function(n)
+			return rng:NextInteger(1, n)
+		end)
+	end
 	local stats = table.clone(data.Stats)
+	for stat, n in Builds.LineageStats(data.Lineage) do
+		stats[stat] = (stats[stat] or 0) + n
+	end
+	local empty = data.Lineage.Empty == true
+	-- implant load: pieces past the core's limit stay in the body and give nothing
+	local load, loadMax, over = Builds.Load(data.Cyber, Cybernetics.Pieces, Cybernetics.Slots)
 	local resist = { Physical = 0, Arc = 0 }
 	local tags = {}
 	local sum = { Posture = 0, Speed = 0, ChargeGain = 0, FlickerRate = 0, FlashBonus = 0, ParryBonus = 0, HealthPenalty = 0, Weight = 0,
@@ -57,7 +72,7 @@ local function compute(data)
 		local used = {} -- copies counted so far: two Servo Arms need two in the inventory
 		for slot, id in data[field] do
 			local piece = source.defs[id]
-			local fits = piece and (if field == "Cyber" then Cybernetics.Fits(piece, slot) else piece.Slot == slot)
+			local fits = piece and (if field == "Cyber" then Cybernetics.Fits(piece, slot) and not over[slot] else piece.Slot == slot)
 			if fits and (data.Inventory[id] or 0) > (used[id] or 0) then
 				used[id] = (used[id] or 0) + 1
 				if field == "Cyber" then
@@ -97,28 +112,33 @@ local function compute(data)
 
 	local weight = sum.Weight
 	local speedMult = 1 + sum.Speed - 0.01 * weight
+	local endurance = Builds.PracticeLevel("Endurance", data.Practice and data.Practice.Endurance or 0)
+	local healthMult = (if empty then BC.Empty.Health else 1) * (if data.Vow == "ThinSkin" then BC.Vows.ThinHealth else 1)
+	local damageMult = (if empty then BC.Empty.Damage else 1) * (if data.Vow == "LightHand" then BC.Vows.LightDamage else 1)
+	local chargeMult = (if empty then 0 else 1) * (if data.Vow == "ThinSkin" then BC.Vows.ThinCharge else 1)
 	return {
+		Empty = empty, Vow = data.Vow, Load = load, LoadMax = loadMax, Overloaded = over,
 		Stats = stats,
 		Tags = tags,
 		Resist = resist,
 		WeightScore = weight,
-		MaxHealth = math.max(40, S.BaseHealth + stats.Fortitude * S.HealthPerFortitude - sum.HealthPenalty),
-		MaxStamina = S.BaseStamina + stats.Willpower * S.StaminaPerWillpower,
+		MaxHealth = math.max(40, math.floor((S.BaseHealth + stats.Fortitude * S.HealthPerFortitude - sum.HealthPenalty) * healthMult + 0.5)),
+		MaxStamina = S.BaseStamina + stats.Willpower * S.StaminaPerWillpower + endurance * BC.Practice.Endurance.Stamina,
 		WalkSpeed = (S.BaseWalkSpeed + stats.Agility * S.WalkSpeedPerAgility) * speedMult,
-		MaxPosture = C.BasePosture + stats.Willpower * C.PosturePerWillpower + sum.Posture,
+		MaxPosture = C.BasePosture + stats.Willpower * C.PosturePerWillpower + sum.Posture + (if empty then BC.Empty.Posture else 0),
 		PostureRegen = C.PostureRegenPerSecond * (1 + stats.Willpower * 0.01),
 		StaminaCostMult = 1 + 0.04 * weight,
 		BlockReduction = math.min(0.9, C.BlockReduction + 0.02 * weight),
 		DodgeIFrames = math.max(0.2, C.DodgeIFrames - 0.012 * weight + stats.Agility * 0.002) + sum.DodgeBonus,
 		-- the equipped weapon's condition and upgrade level (Fists never wear)
-		DamageMult = (1 + stats.Strength * S.DamagePerStrength) * (if data.Equipped == "Fists" then 1 else Hideout.ConditionMult((data.Condition or {})[data.Equipped]) * (1 + ((data.Upgrades or {})[data.Equipped] or 0) * Hideout.UpgradeBonus.Weapon)),
+		DamageMult = damageMult * (1 + stats.Strength * S.DamagePerStrength) * (if data.Equipped == "Fists" then 1 else Hideout.ConditionMult((data.Condition or {})[data.Equipped]) * (1 + ((data.Upgrades or {})[data.Equipped] or 0) * Hideout.UpgradeBonus.Weapon)),
 		WeaponBroken = data.Equipped ~= "Fists" and Hideout.ConditionMult((data.Condition or {})[data.Equipped]) == 0,
 		Overweight = Items.GridWeight(data) > Items.Carry(data),
 		PostureDamageMult = 1 + stats.Strength * S.PostureDamagePerStrength,
-		ChargeGain = 1 + sum.ChargeGain + stats.Intelligence * S.ChargePerIntelligence,
+		ChargeGain = (1 + sum.ChargeGain + stats.Intelligence * S.ChargePerIntelligence) * chargeMult,
 		FlickerRate = 1 + sum.FlickerRate + stats.Intelligence * F.RatePerIntelligence,
 		FlashBonus = sum.FlashBonus,
-		ParryWindow = C.ParryWindow + sum.ParryBonus,
+		ParryWindow = C.ParryWindow + sum.ParryBonus + (if empty then BC.Empty.ParryBonus else 0),
 		JumpMult = 1 + sum.Jump,
 		Hearing = sum.Hearing, -- studs (client senses)
 		Scent = sum.Scent,
@@ -157,6 +177,7 @@ function Gear.Push(player)
 			FlickerRate = d.FlickerRate, FlashBonus = d.FlashBonus,
 			Hearing = d.Hearing, Scent = d.Scent, Track = d.Track, Lift = d.Lift, Conversion = d.Conversion, JumpMult = d.JumpMult,
 			Weapon = data.Equipped, Armor = data.Armor, Cyber = data.Cyber, Slots = data.SkillSlots, Condition = data.Condition, Upgrades = data.Upgrades,
+			Build = require(script.Parent.Builds).Snapshot(player), -- round 5: lineage, grade, vow, load, chips, practice, carried, stack
 		})
 		-- senses and the voice are player attributes (the client draws them); what is in the body sits on the
 		-- character as Cyber_<slot> so every client can draw the metal
@@ -166,6 +187,8 @@ function Gear.Push(player)
 		player:SetAttribute("Machine", d.Conversion >= 1)
 		local char = player.Character
 		if char then
+			char:SetAttribute("Empty", d.Empty == true or nil)
+			char:SetAttribute("Vow", d.Vow)
 			for _, slot in Cybernetics.Slots do
 				char:SetAttribute("Cyber_" .. slot, data.Cyber[slot])
 			end
@@ -207,6 +230,9 @@ local function slotKey(i)
 end
 
 local function autoSlot(data, d)
+	if d.Empty then
+		return -- the empty body holds no skills
+	end
 	-- Newly unlocked skills drop into the first free slot so players never miss them.
 	local slotted = {}
 	for _, id in data.SkillSlots do

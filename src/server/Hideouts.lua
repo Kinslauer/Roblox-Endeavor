@@ -1013,6 +1013,29 @@ function Hideouts.Init()
 	end)
 end
 
+-- Round 5 (server/Builds): where earnings are banked and chips are fitted.
+-- AtBay: inside your own (or your crew's) built bay, or, while you have no bay, at the freight lift of any free one.
+function Hideouts.AtBay(player, position)
+	local site = siteOfPlayer(player)
+	if site then
+		return site.Built ~= nil and Hideouts.Inside(site, position)
+	end
+	for _, s in sites do
+		if not s.Owner and s.LiftCFrame and (s.LiftCFrame.Position - position).Magnitude <= Config.Builds.Bank.LiftReach then
+			return true
+		end
+	end
+	return false
+end
+
+-- AtBench: close to the bench of your own (or your crew's) built bay.
+function Hideouts.AtBench(player, position)
+	local site = siteOfPlayer(player)
+	local bench = site and site.Built and site.Built:FindFirstChild("Bench")
+	return bench ~= nil and (bench.Position - position).Magnitude <= 12
+end
+Hideouts.SiteOf = siteOfPlayer
+
 Hideouts.Sites = sites
 Hideouts.Restore = restore
 Hideouts.Push = push

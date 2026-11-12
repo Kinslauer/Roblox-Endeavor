@@ -222,8 +222,8 @@ function Combat.Flicker(player)
 		return
 	end
 	local s, t = st(char), os.clock()
-	if t < s.stunned or t - s.lastFlickPress < F.Cooldown then
-		return
+	if t < s.stunned or t - s.lastFlickPress < F.Cooldown or Gear.Get(player).Empty then
+		return -- the empty body cannot hold a flicker (round 5)
 	end
 	local cost = F.Cost / Gear.Get(player).FlickerRate
 	if (char:GetAttribute("Charge") or 0) < cost then
@@ -636,6 +636,20 @@ local function applyDamage(attacker, victim, amount, opts)
 		tag(attacker, victim)
 	end
 
+	-- round 5: the empty body's first blow on someone stuns longer; the Mirror chip on Iron Bastion breaks the
+	-- striker's posture with his own blow
+	if attacker:GetAttribute("Empty") and attacker ~= victim then
+		vs.emptyHit = vs.emptyHit or setmetatable({}, { __mode = "k" })
+		if t - (vs.emptyHit[attacker] or -1e9) > Config.Builds.Empty.FirstWindow then
+			opts = table.clone(opts)
+			opts.Stun = (opts.Stun or C.HitStunDefault) * Config.Builds.Empty.FirstStun
+		end
+		vs.emptyHit[attacker] = t
+	end
+	if vs.mirrorUntil and t < vs.mirrorUntil and attacker ~= victim then
+		Combat.AddPosture(attacker, (opts.Posture or 0) * Config.Builds.Chips.MirrorShare + 4)
+		fx("Block", victim)
+	end
 	if result ~= "blocked" and t >= math.max(vs.hyperarmorUntil, vs.swingArmorUntil) then
 		Combat.Stun(victim, opts.Stun or C.HitStunDefault)
 		if opts.Knockback and opts.Knockback > 0 then
@@ -750,6 +764,23 @@ local function pulse(char, spec, mods, seen, tracer)
 		end
 		if mods.onHit then
 			mods.onHit(result, model)
+		end
+		-- the Arc chip on Overload: a charged hit jumps to the next body near (round 5)
+		if overloaded and (result == "hit" or result == "guardbreak") and s.arcJumpUntil and os.clock() < s.arcJumpUntil and not seen.__arcJumped then
+			seen.__arcJumped = true
+			local mroot = model:FindFirstChild("HumanoidRootPart")
+			local best, bestD = nil, Config.Builds.Chips.ArcJump
+			for _, other in workspace:GetChildren() do
+				local oh = other:IsA("Model") and other ~= char and other ~= model and other:FindFirstChildOfClass("Humanoid")
+				local orr = oh and oh.Health > 0 and other:FindFirstChild("HumanoidRootPart")
+				if orr and mroot and (orr.Position - mroot.Position).Magnitude < bestD then
+					best, bestD = other, (orr.Position - mroot.Position).Magnitude
+				end
+			end
+			if best then
+				Combat.Damage(char, best, hitDamage * Config.Builds.Chips.ArcShare, { Type = "Arc", Posture = 5, Stun = 0.3, Unblockable = true })
+				fx("ArcJump", model, best)
+			end
 		end
 		return result
 	end
@@ -1522,6 +1553,7 @@ function Combat.Reload(player)
 		local count = math.min(weapon.MagSize, Inventory.Count(player, if swapLoad then want else ammoOf(player, weapon)))
 		seconds = (weapon.ReloadSeconds or 1.5) * G.HandBase + G.PerRound * count
 	end
+	seconds *= require(script.Parent.Builds).ReloadMult(player) -- hands that have done it before (round 5 practice)
 	if jam == "DoubleFeed" then
 		seconds += G.Jam.Clear.DoubleFeed
 	end
@@ -1537,6 +1569,7 @@ function Combat.Reload(player)
 		end
 		char:SetAttribute("Reloading", nil)
 		if isAlive(char) and weaponOf(player) == weapon then
+			require(script.Parent.Builds).Practice(player, "Reload", 1)
 			if kind == "Spare" then
 				spares[player][weapon.Name] += 1
 			else

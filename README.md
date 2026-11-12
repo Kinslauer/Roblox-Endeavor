@@ -38,6 +38,7 @@ With a gun out: `RMB` aim over the shoulder (an unaware guard up close puts his 
 `Tab` inventory/crafting/equip · `L` loadout · `J` attributes · `M` devour remains · `P` helmetcam (first person, forearms and weapon) · `G` grab debris / hold to charge a throw · `H` drop.
 With a gun: `T` also clears a jam (a double feed needs `R`), `R` on a full magazine loads a spare by hand, select a cartridge in the pack and press Load to change the load, `X` on a dropped gun takes it into the hand. `1` swap to the carried second weapon (works mid-combo) · `2` dress the worst wound from the kit's pouches · middle mouse lock on (then attack toward the target: lunge; away: rising cut) · `X` on a knocked-down player: pick up · `F` held on one: finish.
 Stealth: `3` throw a bolt (a noise where it lands) · `X` by a locker: hide / step out · `E` with a guard in a neck hold: question him (once).
+Builds: `K` fire the core implant's active (Neural Core: Quicken, Overclock Core: Spike) · loadout (`L`) shows the body's batch, grade, implant load, carried pay, chips and the stack slot.
 
 ## Flickering cursed energy (Black Flash)
 Tap `E` just *before* your swing connects (within ~0.28s). A well-timed flick boosts that hit (x1.25) and starts a chain;

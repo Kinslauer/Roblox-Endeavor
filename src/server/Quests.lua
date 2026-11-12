@@ -70,7 +70,7 @@ function Quests.Progress(player, kind, target, amount)
 	quest.Progress = math.min(def.Count, quest.Progress + amount)
 	if quest.Progress >= def.Count then
 		profile.Quest = nil
-		Stats.AddXp(player, def.Reward.Xp)
+		require(script.Parent.Builds).Earn(player, def.Reward.Xp)
 		Inventory.AddAll(player, def.Reward.Items)
 		Remotes.Announce:FireClient(player, "Quest complete: " .. def.Title, "Info")
 		Quests.Assign(player, def.Id)

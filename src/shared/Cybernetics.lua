@@ -9,6 +9,8 @@
 --   Arm   - (left and right) Strength, FlashBonus (extra Black Flash multiplier), ChargeGain; Lift lets the
 --           arms pick up heavier debris (Config.Destruction.Grab.Classes[*].Lift)
 --   Leg   - (left and right) Speed (walk speed share), Jump (jump height share), DodgeBonus (i-frames, s)
+-- Load (round 5, shared/Builds): each piece costs Load (default by kind, Config.Builds.Load.ByKind) against
+-- Config.Builds.Load.Base + the core's LoadCap; Active names a K effect (Config.Builds.Actives).
 -- Paired slots take any piece of their kind; two of the same piece need two in the inventory.
 local Cybernetics = {}
 
@@ -34,17 +36,17 @@ Cybernetics.Pieces = {
 	TargetingLens = { Name = "Targeting Lens", Slot = "Eyes", Stats = { Intelligence = 2 }, ParryBonus = 0.05, Tags = { "Cyber" } },
 	-- Ears
 	AudioPickup = { Name = "Audio Pickup", Slot = "Ears", Stats = { Willpower = 1 }, Hearing = 60, Tags = { "Cyber" } },
-	EchoArray = { Name = "Echo Array", Slot = "Ears", Hearing = 100, ParryBonus = 0.03, HealthPenalty = 5, Tags = { "Cyber" } },
+	EchoArray = { Name = "Echo Array", Slot = "Ears", Load = 2, Hearing = 100, ParryBonus = 0.03, HealthPenalty = 5, Tags = { "Cyber" } },
 	-- Nose
 	ChemSniffer = { Name = "Chem Sniffer", Slot = "Nose", Stats = { Intelligence = 1 }, Scent = 45, Tags = { "Cyber" } },
 	BloodTracer = { Name = "Blood Tracer", Slot = "Nose", Scent = 35, Track = true, Tags = { "Cyber" } },
 	-- Core
-	NeuralCore = { Name = "Neural Core", Slot = "Core", Stats = { Willpower = 3 }, FlickerRate = 0.25, Tags = { "Cyber" } },
-	OverclockCore = { Name = "Overclock Core", Slot = "Core", Stats = { Agility = 2, Strength = 2 }, FlashBonus = 0.6, FlickerRate = 0.15, HealthPenalty = 20, Tags = { "Cyber", "Conduit" } },
-	PlatedCore = { Name = "Plated Core", Slot = "Core", Stats = { Fortitude = 3 }, Posture = 20, Resist = { Physical = 0.06 }, Speed = -0.03, Tags = { "Cyber" } },
+	NeuralCore = { Name = "Neural Core", Slot = "Core", Stats = { Willpower = 3 }, FlickerRate = 0.25, LoadCap = 4, Active = "Quicken", Tags = { "Cyber" } },
+	OverclockCore = { Name = "Overclock Core", Slot = "Core", Stats = { Agility = 2, Strength = 2 }, FlashBonus = 0.6, FlickerRate = 0.15, HealthPenalty = 20, LoadCap = 1, Active = "Spike", Tags = { "Cyber", "Conduit" } },
+	PlatedCore = { Name = "Plated Core", Slot = "Core", Stats = { Fortitude = 3 }, LoadCap = 3, Posture = 20, Resist = { Physical = 0.06 }, Speed = -0.03, Tags = { "Cyber" } },
 	-- Arms
 	ServoArm = { Name = "Servo Arm", Slot = "Arm", Stats = { Strength = 3 }, FlashBonus = 0.3, Lift = 1, Tags = { "Cyber" } },
-	ArcGauntlet = { Name = "Arc Gauntlet", Slot = "Arm", Stats = { Intelligence = 2 }, Resist = { Arc = 0.1 }, ChargeGain = 0.2, Tags = { "Cyber", "Conduit" } },
+	ArcGauntlet = { Name = "Arc Gauntlet", Slot = "Arm", Load = 3, Stats = { Intelligence = 2 }, Resist = { Arc = 0.1 }, ChargeGain = 0.2, Tags = { "Cyber", "Conduit" } },
 	-- Legs
 	StriderLeg = { Name = "Strider Leg", Slot = "Leg", Stats = { Agility = 1 }, Speed = 0.05, Tags = { "Cyber" } },
 	PistonLeg = { Name = "Piston Leg", Slot = "Leg", Jump = 0.2, DodgeBonus = 0.03, Tags = { "Cyber" } },

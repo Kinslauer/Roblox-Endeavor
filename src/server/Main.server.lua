@@ -93,6 +93,11 @@ local ok, err = pcall(function()
 	ImplantLibrary.Init()
 	require(Server.Kit).Init() -- two weapons, the rig and belt, quick dressings
 	require(Server.Knock).Init() -- knocked down, not dead
+	-- builds (round 5): chips, actives, the stack slot, practice, carried earnings, the Rootwork basin
+	local buildsOk, buildsErr = pcall(require(Server.Builds).Init)
+	if not buildsOk then
+		warn("[Builds] failed:", buildsErr)
+	end
 	-- wounds on every player body (isolated: a fault here must not stop the city)
 	local medOk, medErr = pcall(require(Server.Medicine).Init)
 	if not medOk then

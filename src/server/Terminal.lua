@@ -20,6 +20,11 @@ local PlayerData = require(Common.PlayerData)
 local Inventory = require(script.Parent.Inventory)
 local NPCs = require(script.Parent.NPCs)
 local Raids = require(script.Parent.Raids)
+local BuildRules = require(Shared.Builds)
+local BG = Config.Builds.Grades
+local function builds()
+	return require(script.Parent.Builds)
+end
 
 local Terminal = {}
 local board = {} -- [id] = { Id, Kind, Title, Target, Need, Reward, Danger }
@@ -65,6 +70,42 @@ function Terminal.BuildBoard()
 		end
 	end
 	board.Raid = { Id = "Raid", Kind = "Raid", Title = "Clear the Blackout raid", Target = "Any", Need = 1, Reward = T.Rewards.Raid, Danger = "High" }
+	-- what a grade opens (round 5): the raid and High sites from GRADE 3, Severe sites and bounties from GRADE 2
+	for _, def in board do
+		def.Grade = if def.Kind == "Raid" then BG.Raid elseif def.Danger == "Severe" then BG.Severe elseif def.Danger == "High" then BG.High else nil
+	end
+	-- the Broker's trials: each passed one raises the grade by one; a death fails the one in hand (server/Builds)
+	local byDanger = { Medium = {}, High = {}, Severe = {} }
+	for _, site in L.Sites do
+		table.insert(byDanger[site.Danger] or byDanger.High, site)
+	end
+	local function siteTrial(grade, list, fallback)
+		local site = list[1] or fallback[1]
+		if not site then
+			return
+		end
+		local need = 0
+		for _, g in site.Guards do
+			need += g[2]
+		end
+		board["Trial_" .. grade] = { Id = "Trial_" .. grade, Kind = "Clear", Target = site.Key, Need = need, Reward = T.Rewards.Trial, Danger = site.Danger, Trial = grade,
+			Title = ("TRIAL . %s: clear %s"):format(BuildRules.GradeName(grade), site.Name) }
+	end
+	siteTrial(3, byDanger.Medium, if #byDanger.High > 0 then byDanger.High else byDanger.Severe)
+	board.Trial_2 = { Id = "Trial_2", Kind = "Raid", Target = "Any", Need = 1, Reward = T.Rewards.Trial, Danger = "High", Trial = 2, Title = "TRIAL . GRADE 2: clear the Blackout raid" }
+	local bounty
+	for id, def in board do
+		if def.Kind == "Bounty" then
+			bounty = def
+			break
+		end
+	end
+	if bounty then
+		board.Trial_1 = { Id = "Trial_1", Kind = "Bounty", Target = bounty.Target, Need = 1, Reward = T.Rewards.Trial, Danger = "Severe", Trial = 1, Title = ("TRIAL . GRADE 1: %s"):format(bounty.Target) }
+	else
+		siteTrial(1, byDanger.High, byDanger.Severe)
+	end
+	siteTrial(0, byDanger.Severe, byDanger.High)
 	return board
 end
 
@@ -85,8 +126,14 @@ function Terminal.State(player)
 	local contracts = {}
 	for id, def in board do
 		local active = k.Contracts[id]
+		local grade = k.Grade or BG.Start
+		local lock = if def.Trial then (if grade ~= def.Trial + 1 then BuildRules.GradeName(def.Trial + 1) else nil)
+			elseif def.Grade and grade > def.Grade then BuildRules.GradeName(def.Grade) else nil
+		if def.Trial and grade <= def.Trial then
+			continue -- passed
+		end
 		table.insert(contracts, { Id = id, Title = def.Title, Kind = def.Kind, Need = def.Need, Danger = def.Danger, Credits = def.Reward.Credits,
-			Active = active ~= nil, Done = active and active.Done or 0 })
+			Active = active ~= nil, Done = active and active.Done or 0, Lock = lock, Trial = def.Trial })
 	end
 	table.sort(contracts, function(a, b)
 		if a.Active ~= b.Active then
@@ -113,7 +160,12 @@ function Terminal.State(player)
 	table.sort(archive, function(a, b)
 		return a.Order < b.Order
 	end)
-	return { Uploaded = k.Uploaded == true, Apps = apps, Contracts = contracts, House = house, Market = market, Archive = archive, Credits = data.War.Credits or 0, Completed = k.Completed or 0, MaxActive = T.MaxActive,
+	local vows = {}
+	for _, id in BuildRules.VowOrder do
+		table.insert(vows, { Id = id, Name = BuildRules.Vows[id].Name, Held = data.Vow == id })
+	end
+	local carriedXp, carriedCr = builds().Carried(player)
+	return { Grade = BuildRules.GradeName(k.Grade), Vows = vows, Carried = { Xp = carriedXp, Credits = carriedCr }, Uploaded = k.Uploaded == true, Apps = apps, Contracts = contracts, House = house, Market = market, Archive = archive, Credits = data.War.Credits or 0, Completed = k.Completed or 0, MaxActive = T.MaxActive,
 		Locked = { RAIDS = "find the Broker", HOUSE = "find the Fixer", MARKET = "find the Dealer" } }
 end
 
@@ -195,6 +247,13 @@ function Terminal.Accept(player, id)
 	if k.Contracts[id] then
 		return false, "Already on your board"
 	end
+	local grade = k.Grade or BG.Start
+	if def.Trial and grade ~= def.Trial + 1 then
+		return false, "> " .. BuildRules.GradeName(def.Trial + 1)
+	end
+	if def.Grade and grade > def.Grade then
+		return false, "> " .. BuildRules.GradeName(def.Grade)
+	end
 	if activeCount(k) >= T.MaxActive then
 		return false, ("You can hold %d contracts"):format(T.MaxActive)
 	end
@@ -222,8 +281,8 @@ function Terminal.Intel(player)
 		return nil
 	end
 	local candidates = {}
-	for id in board do
-		if not k.Contracts[id] then
+	for id, def in board do
+		if not k.Contracts[id] and not def.Trial then
 			table.insert(candidates, id)
 		end
 	end
@@ -241,12 +300,15 @@ local function complete(player, k, id)
 	local def = board[id]
 	k.Contracts[id] = nil
 	k.Completed = (k.Completed or 0) + 1
-	local data = PlayerData.Get(player)
-	if data then
-		data.War.Credits = (data.War.Credits or 0) + def.Reward.Credits
-	end
+	-- the pay rides with the body until it is home (round 5: server/Builds)
+	builds().Earn(player, 0, def.Reward.Credits)
 	for itemId, n in def.Reward.Items or {} do
 		Inventory.Add(player, itemId, n)
+	end
+	if def.Trial then
+		k.Grade = def.Trial
+		builds().SetGrade(player, def.Trial)
+		announce(player, "> " .. BuildRules.GradeName(def.Trial), "Emergence")
 	end
 	announce(player, ("Contract complete: %s. +%d credits."):format(def.Title, def.Reward.Credits), "Reward")
 	Remotes.Announce:FireAllClients(("%s completed a contract: %s"):format(player.DisplayName or player.Name, def.Title), "Kill")
@@ -335,7 +397,17 @@ function Terminal.Init()
 		if not open[player] then
 			return announce(player, "You are not at a computer.", "Warning")
 		end
-		local fn = ({ Accept = Terminal.Accept, Abandon = Terminal.Abandon, Order = Terminal.Order, Buy = Terminal.Buy })[action]
+		local fn = ({ Accept = Terminal.Accept, Abandon = Terminal.Abandon, Order = Terminal.Order, Buy = Terminal.Buy,
+			Vow = function(p, id)
+				local ok = builds().Swear(p, id)
+				Terminal.Push(p)
+				return ok
+			end,
+			Break = function(p)
+				local ok = builds().Break(p)
+				Terminal.Push(p)
+				return ok
+			end })[action]
 		if fn then
 			local ok, why = fn(player, tostring(arg))
 			if not ok and why then

@@ -959,6 +959,45 @@ Play these on the published places (Studio's Play button cannot teleport between
 - Collapsed building stumps may collide as solid hulls (MeshPart collision can't be set from scripts).
 - Studio's Play button cannot teleport between places.
 
+### Endeavor: builds (2026-11-12, Endeavor v109)
+Round 5 of the reference picks. Nothing here was seen in game before publishing. Most of it shows on the loadout
+panel (L), at the bottom, under STACK.
+- [ ] Every new body has a batch line under STACK, like "LINE 9 . BATCH 0417 . STRENGTH +1". The attribute it names
+      is that much higher than the points you spent (J). A rare batch adds to two attributes and shows in gold.
+- [ ] (Rare, about one body in a hundred.) The batch line reads EMPTY: E does nothing, no skills unlock, but the body
+      has more health and posture, parries a little more easily, and its first blow on someone stuns longer.
+- [ ] LOAD n/m on the loadout panel. Rip implants in at the Autonet until the number passes the limit: the pieces
+      past it stay in you but give nothing. A Neural Core raises the limit most, a Plated Core a little less, an
+      Overclock Core hardly at all.
+- [ ] With a Neural Core in: press K. Skill cooldowns run at half speed for 10 seconds, then K waits 90 seconds.
+      With an Overclock Core: press K, and the next skill within 15 seconds hits twice as hard.
+- [ ] Chips (the Dealer sells them; overseers, rivals, relic sites and the barrens stores carry them). At your own
+      bench, Use one from the pack (or Fit on the loadout panel): it goes onto its skill and shows under STACK.
+      Away from the bench it refuses with "> BENCH". Remove takes it back out, at the bench.
+- [ ] What each chip does: Focus (Surge reaches much further, only ahead of you), Hook (Shatter Strike drags the body
+      to you and holds it), Trail (Phase Step leaves a glowing line that hurts whoever crosses it), Breath (Second
+      Wind also stops light bleeding and halves pain), Mirror (blows that land on you during Iron Bastion break the
+      striker's posture), Arc (during Overload, a charged hit jumps to the next body nearby).
+- [ ] Xp and credits earned out in the city do not count yet: the level line shows "+120" beside the xp, and the
+      loadout panel shows CARRIED. Walk into your own bay (or, with no bay yet, to any free bay's freight lift):
+      "> BANKED . . . 120 XP . 300 CR" and the level goes up. Die before that: the death screen adds
+      "> CARRIED . . . LOST ...".
+- [ ] Vows at the hideout computer: OPEN BOOK, LIGHT HAND, THIN SKIN. Swear one: OPEN BOOK puts a green stamina line
+      over your head for everyone, and over whoever you face you see their stamina and posture. LIGHT HAND: weaker
+      hits, half as much xp again. THIN SKIN: less health, more charge. Break ends it; a death ends it too.
+- [ ] Grades: the computer's top line shows GRADE 4. The Blackout gate refuses you ("> BLACKOUT . GRADE 3"), and High
+      sites need GRADE 3, Severe sites and bounties GRADE 2. The Broker's board has one TRIAL at a time (in blue).
+      Pass it and the grade rises (GRADE 3, then 2, 1, SPECIAL). Die with a trial in hand and it is gone.
+- [ ] Practice: sprint, reload and search containers a lot. "> ENDURANCE 1" (more stamina), "> RELOAD 1" (faster
+      reloads), "> SEARCH 1" (faster searching). The levels show under STACK. They die with the body.
+- [ ] The stack slot: three places under STACK. A chip or a Data Shard in the pack has a Stack button there; scrap
+      and other materials never do. With an uploaded stack, what is in the slot is still there after a death. Take
+      puts it back in the pack. A Data Shard used at home gives 300 xp at once ("> SHARD READ").
+- [ ] The Rootwork (the green pocket with the giant tree): four standing stones (SEED, RAIN, VINE, ROOT) around a
+      patch of moss, and a slab with a riddle. Touch the stones in the riddle's order (X): each one glows. The last
+      one raises a basin of still water for two minutes. Kneel there (hold X): every attribute point comes back to
+      spend again (J). Once per life.
+
 ### Endeavor: stealth (2026-11-12, Endeavor v108)
 Round 4 of the reference picks. Nothing here was seen in game before publishing. Try it in the station (the ride
 in) or below the Sumps (the shaft on the Sumps plaza).

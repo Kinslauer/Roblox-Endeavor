@@ -50,7 +50,7 @@ commit, the smoke tests, a real-server start check, a publish, and lines in docs
 4. **Stealth** (Endeavor): questioning a held guard, sleeping rounds, thrown distractions, hiding places, a second
    of slow time when seen (NPCs only), clothes that hide you, guards who adapt, radios on guards (round 3's EMP),
    shifts and sleep (with round 6's hour).
-5. **Builds** (Endeavor): skill modifier chips, implant load and active implants, vows, a rolled trait per body, the
+5. **Builds** (Endeavor; built 2026-11-12, Endeavor v109): skill modifier chips, implant load and active implants, vows, a rolled trait per body, the
    empty body, grade trials, earnings carried until you extract to your bay, a hidden respec, skills that grow by
    doing, the stack slot (data and chips only) that survives death.
 6. **World and money** (Endeavor): the hour picks a time of day (any order) and weather; party; party runs in the

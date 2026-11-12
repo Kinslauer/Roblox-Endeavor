@@ -38,6 +38,8 @@ Terminal.Market = {
 	{ Id = "RiotPlate", Price = 600 },
 	{ Id = "Sledge", Price = 450 },
 	{ Id = "BreachingCharge", Price = 150, Count = 2 },
+	{ Id = "FocusChip", Price = 900 }, { Id = "HookChip", Price = 900 }, { Id = "TrailChip", Price = 900 },
+	{ Id = "BreathChip", Price = 700 }, { Id = "MirrorChip", Price = 1000 }, { Id = "ArcChip", Price = 1000 },
 }
 
 -- RAIDS: contract templates. The server rolls one Clear per frontier site, one Bounty per rolled bounty
@@ -46,6 +48,7 @@ Terminal.Rewards = {
 	Clear = { Medium = { Credits = 180, Items = { Medkit = 2 } }, High = { Credits = 300, Items = { Medkit = 2, PipeGrenade = 2 } }, Severe = { Credits = 520, Items = { BreachingCharge = 1, ArcCell = 10 } } },
 	Bounty = { Credits = 400, Items = { Medkit = 2, Powder = 3 } },
 	Raid = { Credits = 350, Items = { ArcCell = 12 } },
+	Trial = { Credits = 150, Items = { DataShard = 1 } }, -- a passed trial raises the grade (shared/Builds)
 }
 Terminal.MaxActive = 2 -- contracts you can hold at once
 

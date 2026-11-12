@@ -466,6 +466,17 @@ function Inventory.Use(player, itemId, direction)
 		require(script.Parent.Combat).SelectLoad(player, itemId)
 		return
 	end
+	-- round 5 (server/Builds): a chip is fitted at the bench; a data shard is read at home
+	if def and def.Type == "Chip" and hum and hum.Health > 0 then
+		require(script.Parent.Builds).Fit(player, itemId)
+		return
+	end
+	if def and def.Type == "Data" and hum and hum.Health > 0 and Inventory.Count(player, itemId) > 0 then
+		if require(script.Parent.Builds).ReadShard(player) then
+			Inventory.Remove(player, itemId, 1)
+		end
+		return
+	end
 	if not (def and def.Type == "Consumable" and hum and hum.Health > 0) then
 		return
 	end

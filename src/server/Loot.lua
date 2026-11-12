@@ -90,12 +90,13 @@ local function search(c, key, player)
 				break
 			end
 			local shape = Items.Shape(nextItem.Id)
-			task.wait(I.SearchBase + I.SearchPerCell * shape.Size[1] * shape.Size[2])
+			task.wait((I.SearchBase + I.SearchPerCell * shape.Size[1] * shape.Size[2]) * require(script.Parent.Builds).SearchMult(player))
 			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 			if not (root and c.Part.Parent and (root.Position - c.Part.Position).Magnitude <= I.SearchReach) then
 				break -- walked away or it is gone: the search stops where it was
 			end
 			c.Seen[player][nextItem] = true
+			require(script.Parent.Builds).Practice(player, "Search", 1) -- hands that have searched before (round 5)
 			send(c, key, player)
 		end
 		c.Searching[player] = nil
@@ -274,7 +275,7 @@ function Loot.Spawn(cframe, bundle, opts)
 			local char, hum = eater.Character, eater.Character:FindFirstChildOfClass("Humanoid")
 			part.Parent = nil
 			local xp = if opts.Devour.Npc then D.NpcXp else D.XpBase + D.XpPerLevel * (opts.Devour.Level or 1)
-			Stats.AddXp(eater, xp)
+			require(script.Parent.Builds).Earn(eater, xp) -- carried until home (round 5)
 			char:SetAttribute("Charge", char:GetAttribute("MaxCharge"))
 			hum.Health = math.min(hum.MaxHealth, hum.Health + hum.MaxHealth * D.HealFraction)
 			Remotes.CombatEvent:FireAllClients("Devour", char)

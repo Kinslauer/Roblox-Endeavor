@@ -62,14 +62,17 @@ function Permadeath.Handle(player, char)
 		if killerProfile then
 			killerProfile.Kills += 1
 		end
-		Stats.AddXp(killer, 50 + profile.Level * 25)
+		require(script.Parent.Builds).Earn(killer, 50 + profile.Level * 25)
 		Quests.Progress(killer, "kill", "Player", 1)
 	end
 	Remotes.Announce:FireAllClients(
 		player.DisplayName .. (if killerName then " was eliminated by " .. killerName else " has fallen") .. ".", "Kill")
 
 	local survived = recordLegacy(player.UserId, profile)
-	Remotes.Died:FireClient(player, { Survived = survived, Kills = profile.Kills, Level = profile.Level, Killer = killerName, Uploaded = profile.Knowledge and profile.Knowledge.Uploaded == true })
+	local carried = profile.Carried -- earnings never brought home are lost with the body (round 5)
+	require(script.Parent.Builds).OnDeath(player, profile)
+	Remotes.Died:FireClient(player, { Survived = survived, Kills = profile.Kills, Level = profile.Level, Killer = killerName, Uploaded = profile.Knowledge and profile.Knowledge.Uploaded == true,
+		LostXp = carried and carried.Xp or 0, LostCredits = carried and carried.Credits or 0 })
 	player:SetAttribute("LastCombat", nil) -- the fight is over; quitting now is not combat-logging
 	PlayerData.Reset(player)
 end

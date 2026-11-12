@@ -77,10 +77,26 @@ How to read it:
 - The hideout and the route north belong to the crew and outlive any one conduit. [Andy 2026-10-31]
 - Contacts, the computer's apps and fragments are learned by meeting people in the world. [Andy 2026-10-31]
 
+**Canon (Endeavor v109, round 5)**
+- On death an uploaded stack keeps one small slot of what it uploaded: data shards and chips, never materials.
+  Without an upload the slot dies with the body like everything else. [Andy 2026-11-12: "data uploaded from the
+  stack upon death is kept in an inventory slot"; the STACK slot]
+- A conduit keeps what it earns only by bringing it home: xp and credits earned out in the city are carried until
+  the body is in its own bay ("> BANKED"), and lost if it dies first. [Andy 2026-11-12: "You must extract to keep
+  what you find"]
+- Every body is a Line 9 batch ("LINE 9 . BATCH 0417"), and batches differ: each gives its body a small bonus to one
+  attribute, a rare batch a strong one. About one body in a hundred is empty: it cannot hold a flicker or a skill,
+  and is harder for it. A batch is not a class. [Claude 2026-11-12, round 5; fits the stack hardware canon]
+- The Broker grades conduits, GRADE 4 up to SPECIAL, by trials on the RAIDS board. A grade opens the Blackout gate
+  and the harder contracts. The stack remembers its grade; a trial in hand fails with a death. [Claude 2026-11-12]
+- Vows are sworn at the hideout computer: OPEN BOOK, LIGHT HAND, THIN SKIN. The machine says only the name.
+  [Claude 2026-11-12]
+- In the Rootwork, four standing stones (SEED, RAIN, VINE, ROOT) and a riddle cut into a root ("FIRST WHAT FALLS /
+  THEN WHAT DRINKS IT / THEN WHAT CLIMBS ON IT / LAST WHAT SLEEPS IN IT"). Answered, they raise a basin of still
+  water where a body lets go of what it was trained into ("> ATTRIBUTES . . . RELEASED"), once a life. Nothing
+  says why it works there (open question 5 stays open). [Claude 2026-11-12]
+
 **Truth**
-- On death the stack keeps one slot of what it uploaded: data, valuable chips and information, never materials.
-  [Andy 2026-11-12: "data uploaded from the stack upon death is kept in an inventory slot"]
-- A conduit keeps what it finds only by bringing it home (extracting). [Andy 2026-11-12]
 - Conduits can build a humanoid drone and send it out on a run in their place. It has less health, needs armour,
   is poor in melee and good with guns. [Andy 2026-11-12]
 
@@ -277,6 +293,9 @@ How to read it:
    facilities). (One way down, the Sumps shaft to Barrens Hall 2, is now Canon.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: round 5, builds (Endeavor v109): Andy's stack slot and extraction are now Canon; Line 9 batches and the
+  empty body; the Broker's grades; vows at the computer; the still basin in the Rootwork (it hints at nothing about
+  what the pockets are). Chips are skill modules sold and found like implants; nothing here touches an open question.
 - 2026-11-12: round 4, stealth (Endeavor v108): the station's sentries and the barrens' overseers work shifts and
   some sleep on them (Canon, Claude's addition); a held guard will say how many of his crew are on shift; sleeping
   darts in a .22 case; a soot poncho; the sentries' own slate uniform. Nothing here touches an open question.

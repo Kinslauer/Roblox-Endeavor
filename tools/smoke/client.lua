@@ -283,5 +283,28 @@ do
 	check("stealth4: 3 throws a bolt", okKey2 and three == true)
 	for _ = 1, 30 do M.step(1 / 30) end
 end
+-- builds (round 5): the loadout panel's rows and the open book readout
+do
+	local BuildC = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.Build)
+	local rows = {}
+	local okRows, n = pcall(function()
+		BuildC.Pack = { FocusChip = 1, DataShard = 2, Scrap = 4 }
+		return BuildC.Rows({}, function(_, text) table.insert(rows, text) end, { Build = {
+			Lineage = { Batch = 417, Stat = "Strength", Bonus = 2 }, Batch = "LINE 9 . BATCH 0417", Grade = "GRADE 4", Vow = "OPEN BOOK",
+			Load = 5, LoadMax = 11, Active = "Quicken", Chips = { Surge = "FocusChip" }, Practice = { Endurance = 1, Reload = 0, Search = 2 },
+			Carried = { Xp = 40, Credits = 25 }, Stack = { { Id = "DataShard", Count = 1 } }, StackSlots = 3 } })
+	end)
+	local text = table.concat(rows, "|")
+	if not okRows then print("builds error:", n) end
+	check("builds: the loadout shows the batch, grade, load, carried pay, chips and the stack", okRows and text:find("BATCH 0417", 1, true) ~= nil and text:find("CARRIED", 1, true) ~= nil
+		and text:find("FOCUS CHIP", 1, true) ~= nil and text:find("[1] Data Shard", 1, true) ~= nil and text:find("Scrap", 1, true) == nil)
+	local okStep = pcall(function()
+		local c = player.Character
+		if c then c:SetAttribute("Vow", "OpenBook") end
+		for _ = 1, 10 do M.step(1 / 30) end
+		if c then c:SetAttribute("Vow", nil) end
+	end)
+	check("builds: the open book readout runs without error", okStep and #M.errors == 0)
+end
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

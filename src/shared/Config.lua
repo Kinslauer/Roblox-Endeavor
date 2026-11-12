@@ -900,4 +900,37 @@ Config.Guns = {
 	RadioRadius = 140, -- a guard with a working radio calls the whole level (voice: Config.Stealth.CallRadius)
 }
 
+-- Builds (round 5 of docs/Reference-Picks-Plan.md; shared/Builds.lua, server/Builds.lua)
+Config.Builds = {
+	-- each body's Line 9 batch: Empty first, then Rare, then Good; the rest roll Bonus
+	Lineage = { Empty = 0.01, Rare = 0.06, Good = 0.25, Bonus = 1, GoodBonus = 2, RareBonus = 4, RareSecond = 2 },
+	-- the empty body: no flicker, no skills, a harder body
+	Empty = { Health = 1.15, Damage = 1.12, Posture = 20, ParryBonus = 0.06, FirstStun = 1.6, FirstWindow = 4 },
+	-- implant load: the core sets the limit
+	Load = { Base = 7, ByKind = { Eyes = 1, Ears = 1, Nose = 1, Core = 1, Arm = 2, Leg = 1 } },
+	Actives = {
+		Quicken = { Seconds = 10, Cooldown = 90, CooldownMult = 0.5 },
+		Spike = { Window = 15, Cooldown = 60, Power = 2 },
+	},
+	Chips = {
+		FocusReach = 1.8, FocusCone = 0.5, -- cos of the half angle
+		HookStun = 1.4, HookPull = 45,
+		TrailSeconds = 1.6, TrailWidth = 3.5, TrailDamage = 9, TrailTick = 0.4,
+		BreathPain = 0.5,
+		MirrorShare = 1.0,
+		ArcJump = 14, ArcShare = 0.5,
+	},
+	Vows = { LightDamage = 0.75, LightXp = 1.5, ThinHealth = 0.7, ThinCharge = 1.5, OpenReach = 60 },
+	Grades = { Start = 4, Raid = 3, Severe = 2, High = 3 },
+	Practice = {
+		Endurance = { Per = 40, Max = 10, Stamina = 4 }, -- a point per second of sprinting
+		Reload = { Per = 6, Max = 10, Faster = 0.03 }, -- a point per reload
+		Search = { Per = 10, Max = 10, Faster = 0.05 }, -- a point per item found in a container
+	},
+	Bank = { Every = 1, LiftReach = 12 }, -- earnings are banked inside your own bay (or at a bay's lift while you have none)
+	Stack = { Slots = 3 },
+	DataShardXp = 300, -- a data shard read at home
+	Respec = { Window = 120 }, -- seconds a solved riddle keeps the basin open
+}
+
 return Config

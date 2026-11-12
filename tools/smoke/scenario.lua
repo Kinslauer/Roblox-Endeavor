@@ -6,6 +6,8 @@ M.mkTree({ Server = { class = "Folder", children = TREE_SERVER } }, SSS)
 M.mkTree({ Common = { class = "Folder", children = TREE_COMMON } }, SSS.Server)
 local Players = game_:GetService("Players")
 M.task.spawn(function() M.loadSource(SSS.Server.Main)() end)
+-- every body rolls a Line 9 batch (round 5): no bonus and never the empty body in these tests (the builds block sets its own)
+do local BL = M.mockEnv.__require(RS.Shared.Config).Builds.Lineage; BL.Empty, BL.Rare, BL.Good, BL.Bonus = 0, 0, 0, 0 end
 local Remotes = RS.Remotes
 
 local function makePlayer(name, id)
@@ -545,6 +547,10 @@ local gatePrompt
 for _, d in workspace_.RaidGate:GetDescendants() do if d.ClassName == "ProximityPrompt" then gatePrompt = d end end
 check("gate has a prompt", gatePrompt ~= nil)
 as(player)
+do -- the Blackout gate opens from GRADE 3 (round 5); this run checks the raid itself
+	local k = M.mockEnv.__require(SSS.Server.Common.PlayerData).Get(player).Knowledge
+	k.Grade = 3
+end
 gatePrompt.Triggered:Fire(player); run(1)
 local pos = player.Character.HumanoidRootPart.Position
 check("player moved into the raid arena", math.abs(pos.X - (-3000)) < 60)
@@ -1381,6 +1387,7 @@ do
 		pd = unuploaded
 		Terminal.Open(player)
 		check("computer: the first log-in uploads the stack", pd.Knowledge.Uploaded == true)
+		pd.Knowledge.Grade = 0 -- every contract open to a SPECIAL grade (the grade gates have their own checks)
 		check("computer: RAIDS is locked until the Broker is met", Terminal.Accept(player, cid) == false)
 		Terminal.Meet(player, "Broker"); run(0.1)
 		check("computer: meeting the Broker unlocks RAIDS", pd.Knowledge.Contacts.Broker == true and Terminal.Accept(player, cid) == true)
@@ -1395,7 +1402,8 @@ do
 		local NPCs_ = M.mockEnv.__require(SSS.Server.NPCs)
 		for _ = 1, need do NPCs_.Killed:Fire("Raider", fake, player) end
 		run(0.2)
-		check("computer: clearing the site completes the contract and pays", pd.Knowledge.Contracts[cid] == nil and pd.War.Credits == board[cid].Reward.Credits and pd.Knowledge.Completed == 1)
+		check("computer: clearing the site completes the contract and pays", pd.Knowledge.Contracts[cid] == nil and pd.War.Credits + (pd.Carried and pd.Carried.Credits or 0) == board[cid].Reward.Credits and pd.Knowledge.Completed == 1)
+		pd.Carried = nil
 		-- a dead rival's intel lands a contract on the board
 		local rival = M.newInstance("Model"); rival.Name = "Rival Conduit"
 		NPCs_.Killed:Fire("Rival", rival, player); run(0.1)
@@ -1785,6 +1793,161 @@ do
 	hum.Health = hum.MaxHealth
 	char:PivotTo(M.CF.new(0, 5, 0))
 	run(0.5)
+end
+
+-- builds (round 5: batches, the empty body, implant load, actives, chips, vows, grades, carried pay, practice, the stack slot, the basin)
+do
+	as(player)
+	mendMe()
+	local pd = PlayerData_.Get(player)
+	local Cfg = M.mockEnv.__require(RS.Shared.Config)
+	local BRules = M.mockEnv.__require(RS.Shared.Builds)
+	local BS = M.mockEnv.__require(SSS.Server.Builds)
+	local GearS = M.mockEnv.__require(SSS.Server.Gear)
+	local CombatS = M.mockEnv.__require(SSS.Server.Combat)
+	local InvS = M.mockEnv.__require(SSS.Server.Inventory)
+	local SkillS = M.mockEnv.__require(SSS.Server.SkillRunner)
+	local TermS = M.mockEnv.__require(SSS.Server.Terminal)
+	local HideS = M.mockEnv.__require(SSS.Server.Hideouts)
+	local Cyb = M.mockEnv.__require(RS.Shared.Cybernetics)
+	-- the batch rules, with the shipped odds
+	local BL = Cfg.Builds.Lineage
+	local saved = { BL.Empty, BL.Rare, BL.Good, BL.Bonus }
+	BL.Empty, BL.Rare, BL.Good, BL.Bonus = 0.01, 0.06, 0.25, 1
+	local seq = 0
+	local function pick(n) seq += 1; return (seq % n) + 1 end
+	local e, r, g, c = BRules.RollLineage(0.005, pick), BRules.RollLineage(0.03, pick), BRules.RollLineage(0.2, pick), BRules.RollLineage(0.9, pick)
+	check("batch: one in a hundred bodies is empty, a rare one is strong in two attributes", e.Empty == true and r.Rare == true and r.Bonus == BL.RareBonus and r.Second ~= nil and r.Second ~= r.Stat)
+	check("batch: a good batch adds two, the rest one", g.Bonus == BL.GoodBonus and c.Bonus == BL.Bonus and BRules.BatchName(c):match("^LINE 9 %. BATCH %d%d%d%d$") ~= nil)
+	BL.Empty, BL.Rare, BL.Good, BL.Bonus = saved[1], saved[2], saved[3], saved[4]
+	pd.Lineage = { Batch = 416, Stat = "Strength", Bonus = 0 }; GearS.Recompute(player)
+	local str0 = GearS.Get(player).Stats.Strength
+	pd.Lineage = { Batch = 417, Stat = "Strength", Bonus = 3 }; GearS.Recompute(player)
+	check("batch: the body's bonus shows in its attributes", GearS.Get(player).Stats.Strength == str0 + 3)
+	-- the empty body
+	local hp0 = GearS.Get(player).MaxHealth
+	pd.Lineage = { Batch = 1, Empty = true }; GearS.Recompute(player); run(0.1)
+	local de = GearS.Get(player)
+	char():SetAttribute("Charge", 100)
+	CombatS.Flicker(player)
+	pd.SkillSlots["1"] = "Surge"
+	SkillS.Use(player, 1); run(0.1)
+	check("empty body: no flicker, no skills", char():GetAttribute("Charge") == 100 and de.Empty == true and de.ChargeGain == 0 and char():GetAttribute("Empty") == true)
+	check("empty body: a harder body and a wider parry", de.MaxHealth > hp0 - 5 * 0 and de.ParryWindow > Cfg.Combat.ParryWindow)
+	local NPCsB = M.mockEnv.__require(SSS.Server.NPCs)
+	local dummy = NPCsB.Spawn("Raider", root().Position + M.V3.new(0, 0, -3), { Parent = game_.Workspace })
+	run(0.1)
+	local t0 = M.mockEnv.os.clock()
+	CombatS.Damage(char(), dummy, 1, { Stun = 0.5 })
+	local first = CombatS.State(dummy).stunned - t0
+	run(1)
+	CombatS.Damage(char(), dummy, 1, { Stun = 0.5 })
+	local second = CombatS.State(dummy).stunned - M.mockEnv.os.clock()
+	check("empty body: the first blow on someone stuns longer than the next", first > 0.5 * Cfg.Builds.Empty.FirstStun - 0.05 and second < 0.55)
+	dummy:Destroy()
+	pd.Lineage = { Batch = 2, Stat = "Strength", Bonus = 0 }; pd.SkillSlots["1"] = nil; GearS.Recompute(player)
+	-- implant load
+	local cyber = { Eyes = "ReflexOptic", Ears = "EchoArray", Nose = "ChemSniffer", Core = "OverclockCore", LeftArm = "ArcGauntlet", RightArm = "ServoArm", LeftLeg = "StriderLeg", RightLeg = "StriderLeg" }
+	local load, max, over = BRules.Load(cyber, Cyb.Pieces, Cyb.Slots)
+	check("load: the core sets the limit and pieces past it give nothing", max == Cfg.Builds.Load.Base + 1 and load <= max and over.RightArm == true and over.LeftArm == nil and over.Eyes == nil)
+	local _, maxN = BRules.Load({ Core = "NeuralCore" }, Cyb.Pieces, Cyb.Slots)
+	check("load: a neural core carries more", maxN == Cfg.Builds.Load.Base + 4)
+	-- actives on K
+	for _, id in { "NeuralCore" } do InvS.Add(player, id, 1) end
+	local savedCyber = table.clone(pd.Cyber)
+	pd.Cyber = { Core = "NeuralCore" }; GearS.Recompute(player)
+	check("active: the neural core's active is Quicken", BS.ActiveOf(player) == "Quicken")
+	check("active: K fires it once, then it waits", BS.Active(player) == true and BS.CooldownMult(player) == Cfg.Builds.Actives.Quicken.CooldownMult and BS.Active(player) == false)
+	pd.Cyber = savedCyber; GearS.Recompute(player)
+	-- chips at the bench
+	local site0 = HideS.SiteOf(player)
+	local bench = site0 and site0.Built and site0.Built:FindFirstChild("Bench")
+	InvS.Add(player, "FocusChip", 1)
+	root().CFrame = M.CF.new(M.V3.new(5000, 5, 5000)); run(0.1)
+	check("chips: a chip is fitted only at the bench", BS.Fit(player, "FocusChip") == false and InvS.Count(player, "FocusChip") == 1)
+	if bench then root().CFrame = M.CF.new(bench.Position + M.V3.new(0, 0, 3)); run(0.1) end
+	Remotes.UseItem:FireServer("FocusChip"); run(0.2)
+	check("chips: at the bench it goes onto its skill", BS.ChipOn(player, "Surge") == "FocusChip" and InvS.Count(player, "FocusChip") == 0)
+	check("chips: taken out at the bench, it comes back", BS.Unfit(player, "Surge") == true and InvS.Count(player, "FocusChip") == 1 and BS.ChipOn(player, "Surge") == nil)
+	-- the Trail chip leaves a live line
+	local strip = SkillS.Trail(char(), M.V3.new(0, 5, 0), M.V3.new(0, 5, -20), 1)
+	check("chips: the trail chip lays a line along the blink", strip ~= nil and strip.Name == "PhaseTrail" and math.abs(strip.Size.Z - 20) < 0.1)
+	-- carried pay, banked at home
+	pd.Carried = nil
+	root().CFrame = M.CF.new(M.V3.new(5000, 5, 5000)); run(0.1)
+	local lvl0, xp0, cr0 = pd.Level, pd.Xp, pd.War.Credits
+	BS.Earn(player, 40, 25)
+	check("carried: pay earned out in the city rides with the body", pd.Carried and pd.Carried.Xp == 40 and pd.Carried.Credits == 25 and pd.War.Credits == cr0 and pd.Xp == xp0 and pd.Level == lvl0)
+	if site0 then root().CFrame = M.CF.new(site0.Position + M.V3.new(2, 5, 2)); run(1.2) end
+	check("carried: at home it is banked", pd.Carried == nil and pd.War.Credits == cr0 + 25 and (pd.Xp ~= xp0 or pd.Level ~= lvl0))
+	-- vows
+	local dm0 = GearS.Get(player).DamageMult
+	TermS.Open(player)
+	Remotes.Terminal:FireServer("Vow", "LightHand"); run(0.1)
+	check("vow: sworn at the computer, the hand is lighter", pd.Vow == "LightHand" and GearS.Get(player).DamageMult < dm0)
+	root().CFrame = M.CF.new(M.V3.new(5000, 5, 5000)); run(0.1)
+	BS.Earn(player, 100, 0)
+	check("vow: and it earns more", pd.Carried and pd.Carried.Xp == math.floor(100 * Cfg.Builds.Vows.LightXp + 0.5))
+	Remotes.Terminal:FireServer("Break"); run(0.1)
+	check("vow: broken, the hand is back", pd.Vow == nil and math.abs(GearS.Get(player).DamageMult - dm0) < 1e-6)
+	pd.Carried = nil
+	-- grades and trials
+	local k = pd.Knowledge
+	local savedGrade = k.Grade
+	k.Grade = 4
+	k.Contracts = {}
+	k.Contacts.Broker = true
+	local board = TermS.Board()
+	local raidOk = TermS.Accept(player, "Raid")
+	check("grade: GRADE 4 cannot take the raid", raidOk == false and board.Trial_3 ~= nil)
+	check("grade: the trial for GRADE 3 is open", TermS.Accept(player, "Trial_3") == true and TermS.Accept(player, "Trial_2") == false)
+	local fake = M.newInstance("Model"); fake.Name = "Guard"; fake:SetAttribute("Site", board.Trial_3.Target)
+	for _ = 1, board.Trial_3.Need do NPCsB.Killed:Fire("Raider", fake, player) end
+	run(0.2)
+	check("grade: passing it raises the grade and opens the raid", k.Grade == 3 and TermS.Accept(player, "Raid") == true)
+	k.Contracts = {}
+	TermS.Accept(player, "Trial_2")
+	BS.OnDeath(player, pd)
+	check("grade: a death fails the trial in hand", k.Contracts.Trial_2 == nil)
+	k.Grade = savedGrade or 0
+	k.Contracts = {}
+	TermS.Close(player)
+	pd.Carried = nil
+	-- practice
+	local savedP = pd.Practice
+	pd.Practice = {}
+	local r0 = BS.ReloadMult(player)
+	for _ = 1, Cfg.Builds.Practice.Reload.Per do BS.Practice(player, "Reload", 1) end
+	check("practice: reloading makes the hands faster", BS.Level(player, "Reload") == 1 and BS.ReloadMult(player) < r0)
+	local st0 = GearS.Get(player).MaxStamina
+	BS.Practice(player, "Endurance", Cfg.Builds.Practice.Endurance.Per * 3)
+	check("practice: running raises stamina", BS.Level(player, "Endurance") == 2 and GearS.Get(player).MaxStamina == st0 + 2 * Cfg.Builds.Practice.Endurance.Stamina)
+	pd.Practice = savedP; GearS.Recompute(player)
+	-- the stack slot
+	k.Stack = {}
+	InvS.Add(player, "DataShard", 2); InvS.Add(player, "Scrap", 1)
+	check("stack: it takes data, never materials", BS.Store(player, "DataShard") == true and BS.Store(player, "Scrap") == false and #k.Stack == 1 and k.Stack[1].Count == 1)
+	BS.Store(player, "FocusChip")
+	k.Uploaded = true
+	local after = PlayerData_.Reset(player); run(0.1)
+	check("stack: it survives the reboot", after.Knowledge.Stack and #after.Knowledge.Stack == 2 and (after.Inventory.DataShard or 0) == 0)
+	pd = after
+	check("stack: and it can be taken out again", BS.Unstore(player, 1) == true and InvS.Count(player, "DataShard") == 1)
+	pd.Knowledge.Stack = {}
+	-- the basin in the Rootwork
+	local basin = BS.Basin()
+	check("respec: the basin is built in the Rootwork, under the moss", basin ~= nil and basin.Prompt.Enabled == false)
+	pd.Stats.Strength = 3; pd.FreePoints = 0; pd.Respecced = nil
+	check("respec: a wrong order does nothing", BS.Touch(player, "SEED") == "reset" and BS.Respec(player) == false)
+	for _, w in { "RAIN", "ROOT", "VINE" } do BS.Touch(player, w) end
+	local solved = BS.Touch(player, "SEED")
+	check("respec: the riddle's order raises it", solved == "solved" and basin.Prompt.Enabled == true)
+	check("respec: kneeling there gives every point back, once a life", BS.Respec(player) == true and pd.Stats.Strength == 0 and pd.FreePoints == 3 and BS.Respec(player) == false)
+	-- the blackout gate needs GRADE 3
+	pd.Knowledge.Grade = 4
+	check("grade: the Blackout gate refuses GRADE 4", BS.CanRaid(player) == false)
+	pd.Knowledge.Grade = 0
+	GearS.Recompute(player)
 end
 
 -- stealth (round 4: the second before he shouts, guards who adapt, lockers, darts, bolts, clothes, questions, shifts)
