@@ -851,7 +851,8 @@ Client tab screenshot, because Andy cannot read logs another way.
   "the right click broke" on v79; no fault was found beyond first person not turning the body (fixed); asked what failed.
 - Front v43 (2026-11-12): jointed fingers on the first-person hands, closed on the gun by code (CLAUDE.md "The
   gun in the view", step 4). Unseen in game: all of it; the hand frames are guesses checked only by drawings from
-  real-server numbers. Awaits Andy: docs/TESTING.md "Front: fingers".
+  real-server numbers. Real server: start 4.3s, 0 warnings, ReplicatedStorage.ViewHands holds 51 dressed pieces.
+  Awaits Andy: docs/TESTING.md "Front: fingers".
 - Front v42 (2026-11-12): gun handling a step at a time on R and T (magazine out, magazine in, the action), contact
   jolts, the magazine that falls, landing dip. Real server (the client modules run there on the M4A1, G17, Garand):
   the dropped magazine appears, the well is empty, the magazine seats exactly, the action waits for T, the left hand
