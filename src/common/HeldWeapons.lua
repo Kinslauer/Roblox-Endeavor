@@ -69,6 +69,32 @@ function HeldWeapons.Assemble(weaponId, attachments)
 	return holder
 end
 
+-- A melee weapon's grip laid in the palm, where jointed fingers (client/Hands.lua) close round it: its axis runs
+-- across the hand, the handle's own thickness out from the palm side (-X of a right hand), at the height of the
+-- middle of the palm (Config.WarMovement.Fingers.Palm from the wrist), scaled to the hand. Along the hand it stays
+-- where it was (-0.3: the hand on the back half of the handle), so the blade reaches as far as before. nil when the
+-- model has no part named Grip_<material> (the old grip is used).
+local PALM_HALF, PALM_Y, REF_Y, REF_X = 0.046, -0.17, 0.564, 0.2867
+function HeldWeapons.MeleeGrip(model, origin, hand)
+	local radius
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") and string.split(p.Name, "_")[1] == "Grip" then
+			local rel = origin:ToObjectSpace(p.CFrame)
+			local half = p.Size / 2
+			local function ext(axis)
+				return math.abs(rel.RightVector:Dot(axis)) * half.X + math.abs(rel.UpVector:Dot(axis)) * half.Y + math.abs(rel.LookVector:Dot(axis)) * half.Z
+			end
+			radius = (ext(Vector3.xAxis) + ext(Vector3.yAxis)) / 2
+			break
+		end
+	end
+	if not radius then
+		return nil
+	end
+	local s = math.clamp((hand.Size.Y / REF_Y + hand.Size.X / REF_X) / 2, 0.6, 2.2)
+	return CFrame.new(-(PALM_HALF * s + 0.004 + radius), hand.Size.Y / 2 + PALM_Y * s, -0.3) * CFrame.Angles(0, math.pi, 0), radius
+end
+
 -- opts (optional): Grip = a GRIPS name instead of the model's own, Scale = the size in the hand (1 = as modelled),
 -- Name / Part / C0 = carry it somewhere else (Endeavor's Kit: "StowedWeapon" on a torso or leg, C0 the mount).
 function HeldWeapons.Attach(char, weaponId, attachments, opts)
@@ -135,8 +161,13 @@ function HeldWeapons.Attach(char, weaponId, attachments, opts)
 	local grip = Instance.new("Weld")
 	grip.Name = "Grip"
 	grip.Part0, grip.Part1 = hand, primary
-	grip.C0 = (opts and opts.C0) or GRIPS[(opts and opts.Grip) or (if assembled then spec.Grip else entry.Grip) or "Melee"] or GRIPS.Melee
+	local gripName = (opts and opts.Grip) or (if assembled then spec.Grip else entry.Grip) or "Melee"
+	grip.C0 = (opts and opts.C0) or (gripName == "Melee" and HeldWeapons.MeleeGrip(model, origin, hand)) or GRIPS[gripName] or GRIPS.Melee
 	grip.C1 = origin:ToObjectSpace(primary.CFrame)
+	if gripName == "Melee" and not (opts and opts.C0) then
+		local _, radius = HeldWeapons.MeleeGrip(model, origin, hand)
+		model:SetAttribute("GripRadius", radius) -- how thick the handle is: the fingers close round this
+	end
 	grip.Parent = primary
 	model.Parent = char
 	return model

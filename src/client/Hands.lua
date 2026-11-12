@@ -51,9 +51,14 @@ local function handleCast(side, r, tilt)
 	end
 end
 
--- The pose for a hold kind on one side; aim = the firing finger goes to the trigger.
-function Hands.Hold(kind, side, aim)
-	local key = ("%s|%d|%s"):format(kind, side, tostring(aim == true))
+-- The pose for a hold kind on one side; aim = the firing finger goes to the trigger; radius = the real handle's
+-- thickness in this hand's own size (a melee weapon's GripRadius over the hand's scale: HeldWeapons lays that handle
+-- straight across the palm, so its hold has no tilt).
+function Hands.Hold(kind, side, aim, radius)
+	if radius then
+		radius = math.clamp(math.round(radius * 200) / 200, 0.02, 0.2)
+	end
+	local key = ("%s|%d|%s|%s"):format(kind, side, tostring(aim == true), tostring(radius))
 	local pose = holds[key]
 	if pose then
 		return pose
@@ -62,7 +67,7 @@ function Hands.Hold(kind, side, aim)
 	if not h then
 		pose = Fingers.Relaxed()
 	else
-		local cast = handleCast(side, h.Radius, h.Tilt or 0)
+		local cast = handleCast(side, radius or h.Radius, if radius then 0 else h.Tilt or 0)
 		local gun = h.Trigger == true
 		pose = Fingers.Grasp(CFrame.identity, side, cast, { Register = gun and not aim, Thumb = if gun then FT.FiringThumb else nil })
 		if gun and aim then
@@ -196,6 +201,7 @@ local function choose(char, b)
 	local held = char:FindFirstChild("HeldWeapon")
 	local aim = char:GetAttribute("Aiming") == true
 	local right, left = "Open", "Open"
+	local radius -- a melee handle's own thickness
 	if char:GetAttribute("Carrying") or char:GetAttribute("NeckHold") then
 		return "Grab", "Grab", false
 	end
@@ -216,6 +222,8 @@ local function choose(char, b)
 		end
 	elseif held then
 		right = C.Families[def and def.Family or ""] or "Grip"
+		local r = held:GetAttribute("GripRadius")
+		radius = if type(r) == "number" then r / b.Scale else nil
 		-- the off hand on the haft when the guard or a two-handed blow brings it there
 		local axis = weaponAxis(char)
 		local hand = char:FindFirstChild("LeftHand")
@@ -230,7 +238,7 @@ local function choose(char, b)
 	elseif def and def.Family == "Fists" then
 		right, left = "Fist", "Fist"
 	end
-	return right, left, aim
+	return right, left, aim, radius
 end
 
 -- ===== every frame =====
@@ -346,13 +354,14 @@ function Hands.Step(dt)
 	for char, b in bodies do
 		if clock >= b.HoldAt then
 			b.HoldAt = clock + C.HoldEvery
-			local ok, right, left, aim = pcall(choose, char, b)
+			local ok, right, left, aim, radius = pcall(choose, char, b)
 			if ok then
 				if b.Sides.Right then
-					b.Sides.Right.Goal = Hands.Hold(right, 1, aim)
+					b.Sides.Right.Goal = Hands.Hold(right, 1, aim, radius)
 				end
 				if b.Sides.Left then
-					b.Sides.Left.Goal = Hands.Hold(left, -1, false)
+					-- the off hand on the same haft closes round the same thickness
+					b.Sides.Left.Goal = Hands.Hold(left, -1, false, if left == right then radius else nil)
 				end
 			end
 		end
