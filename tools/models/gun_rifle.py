@@ -33,6 +33,7 @@ VARIANTS = {
     "Rifle20": dict(barrel=20.0, rail=13.0),
     # the Front's M16A1, as components (no accessories built in)
     "AR20": dict(barrel=20.0, rail=12.0), "AR16": dict(barrel=16.0, rail=10.0), "AR10": dict(barrel=10.5, rail=7.0),
+    "ARA1": dict(barrel=20.0, rail=12.0, a1=True),                       # the M16A1's own receiver: carry handle, fixed stock
 }
 
 # which component each moving group belongs to (gunparts.export_components)
@@ -41,7 +42,7 @@ COMPONENTS = {"Upper": "Receiver", "Lower": "Receiver", "Charging": "Receiver", 
 
 def anchors(o):
     BL, RL = o.get("barrel", 16.0), o.get("rail", 10.0)
-    return {"Muzzle": (0, 3.4 + BL, 0), "Optic": (0, -1.2, 0.92), "Under": (0, 3.4 + 0.3 + RL * 0.55, -0.78), "MuzzleEnd": (0, 3.4 + BL + 2.0, 0)}
+    return {"Muzzle": (0, 3.4 + BL, 0), "Optic": (0, -1.2, 2.05 if o.get("a1") else 0.92), "Under": (0, 3.4 + 0.3 + RL * 0.55, -0.78), "MuzzleEnd": (0, 3.4 + BL + 2.0, 0)}
 
 @platform("rifle", "Rifle", VARIANTS, origin=(0, OY, OZ))
 def build(o):
@@ -64,6 +65,9 @@ def build(o):
     u.span((-0.42, Y0, 0.55), (0.42, Y1, 0.92), bev=0.03)                  # the flat top rail
     for k in range(int((Y1 - Y0) / 0.394)):                                 # rail slots
         u.span((-0.5, Y0 + 0.2 + k * 0.394, 0.8), (0.5, Y0 + 0.4 + k * 0.394, 0.95), cut=True)
+    if o.get("a1"):                                                         # the carry handle with the rear sight in it
+        u.side([(Y0 + 0.3, 0.85), (Y1 - 0.9, 0.85), (Y1 - 1.4, 1.3), (Y1 - 1.8, 1.95), (Y0 + 0.6, 2.05), (Y0 + 0.3, 1.7)], 0.5, bev=0.06)
+        u.span((-0.4, Y0 + 1.5, 1.12), (0.4, Y1 - 2.4, 1.72), cut=True)
     u.cyl(0.62, 0.35, (0, Y1 - 0.15, 0), seg=28)                            # barrel extension threads boss
     u.span((0.2, -1.0, -0.38), (0.7, 1.7, 0.25), cut=True)                 # ejection port
     u.side([(-2.6, 0.0), (-1.8, 0.0), (-1.9, 0.35), (-2.5, 0.35)], 0.5, x=0.5, bev=0.06)    # forward assist housing
@@ -184,10 +188,16 @@ def build(o):
     L(4, "Gunmetal", "Stock", None, hidden=True).spring(0.42, 0.04, 6.4, 22, (0, Y0 - 4.2, -0.05))
     st = L(3, "Polymer", "Stock", (0, -6, -0.3))
     s0 = Y0 - 4.0
-    st.side([(s0, 0.65), (s0 - 4.6, 0.75), (s0 - 5.4, 0.85), (s0 - 5.6, -2.9), (s0 - 5.0, -2.95), (s0 - 4.4, -1.4),
-             (s0 - 1.6, -0.95), (s0, -0.9)], 1.25, bev=0.15)
+    if o.get("a1"):                                                         # the long fixed stock
+        st.side([(Y0 - 0.5, 0.62), (Y0 - 10.2, 0.5), (Y0 - 10.2, -3.4), (Y0 - 9.4, -3.4), (Y0 - 0.5, -0.95)], 1.3, bev=0.15)
+    else:
+        st.side([(s0, 0.65), (s0 - 4.6, 0.75), (s0 - 5.4, 0.85), (s0 - 5.6, -2.9), (s0 - 5.0, -2.95), (s0 - 4.4, -1.4),
+                 (s0 - 1.6, -0.95), (s0, -0.9)], 1.25, bev=0.15)
     st.cyl(0.6, 12, (0, s0 - 3, -0.05), seg=24, cut=True)                   # the bore for the buffer tube
-    st.span((-0.7, s0 - 5.7, -2.95), (0.7, s0 - 5.35, 0.9), bev=0.05)       # rubber butt pad
+    if o.get("a1"):
+        st.span((-0.7, Y0 - 10.45, -3.4), (0.7, Y0 - 10.15, 0.55), bev=0.05)
+    else:
+        st.span((-0.7, s0 - 5.7, -2.95), (0.7, s0 - 5.35, 0.9), bev=0.05)   # rubber butt pad
 
     # ---------------------------------------------------------------- magazine
     mg = B(8, "Gunmetal", "Magazine", (0, 1.0, -4.0))

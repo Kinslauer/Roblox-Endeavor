@@ -192,8 +192,8 @@ profile (same ProfileService store, same universe). Code lives in `src/war/` and
   server (DataStore) and decay, so the scales keep tipping forever; a faction's share sets its conduits' credit income.
 - **The hill**: one sector of the 3x3 front is hot. Presence earns tickets every 5s, kills inside earn more, holding the
   majority for 60s captures it (+50) and moves it. It moves anyway after 7 minutes. Sectors it leaves rebuild.
-- **Weapons** (`src/shared/Firearms.lua`, `src/war/server/Guns.lua`): AKM, AK-47, SKS, Mosin, Makarov (Pact); M16A1, M14,
-  M1 Garand, M1911 (Union); Glock 17 and a service revolver (both). The AK, AR and Garand / M14 rifles are put
+- **Weapons** (`src/shared/Firearms.lua`, `src/war/server/Guns.lua`): AKM, AK-47, AK-74, SKS, Mosin, Makarov (Pact); M16A1, M14,
+  M1 Garand, M1A, M4A1, M1911 (Union); Glock 17 and a service revolver (both). The AK, AR and Garand / M14 rifles are put
   together in game from components (`src/shared/GunParts.lua`): receiver, a short / standard / long barrel, a muzzle
   device, scope and foregrip. Each is a mechanism: chamber, magazine, bolt, safety, selector, and five wearing parts (receiver,
   barrel, bolt, magazine, stock). Worn parts jam, spread and kick more. Reloads are staged (eject, insert, rack); a quick

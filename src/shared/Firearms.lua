@@ -13,6 +13,7 @@ Firearms.Parts = { "Receiver", "Barrel", "Bolt", "Magazine", "Stock" }
 -- Ammo: velocity (studs/s), damage at the muzzle, falloff to this fraction at Range, armor penetration.
 Firearms.Ammo = {
 	["7.62x39"] = { Velocity = 715 * 3.3, Damage = 48, Range = 400, Falloff = 0.65, Pen = 0.55, Mass = 8 },
+	["5.45x39"] = { Velocity = 900 * 3.3, Damage = 36, Range = 430, Falloff = 0.6, Pen = 0.5, Mass = 3.4 },
 	["5.56x45"] = { Velocity = 960 * 3.3, Damage = 38, Range = 450, Falloff = 0.6, Pen = 0.5, Mass = 4 },
 	["9x18"] = { Velocity = 315 * 3.3, Damage = 26, Range = 60, Falloff = 0.5, Pen = 0.2, Mass = 6 },
 	[".45ACP"] = { Velocity = 260 * 3.3, Damage = 34, Range = 60, Falloff = 0.5, Pen = 0.2, Mass = 15 },
@@ -31,6 +32,18 @@ Firearms.Defs = {
 	AK47 = { Family = "AK", Name = "AK-47", Class = "Rifle", Ammo = "7.62x39", MagSize = 30, Modes = { "Safe", "Auto", "Semi" }, RPM = 600,
 		Recoil = { 1.8, 0.9 }, Spread = 2.5, AdsSpread = 0.48, Ergonomics = 0.5, Weight = 3.9, Faction = "Pact", Price = 820,
 		Reload = { EjectMag = 0.6, InsertMag = 0.9, Rack = 0.5 }, Slots = { "Optic", "Muzzle", "Grip", "Barrel" } },
+	-- the small-bore AK: flatter and softer to shoot than the AKM; AK barrels and muzzle devices fit it
+	AK74 = { Family = "AK", Name = "AK-74", Class = "Rifle", Ammo = "5.45x39", MagSize = 30, Modes = { "Safe", "Auto", "Semi" }, RPM = 650,
+		Recoil = { 1.3, 0.65 }, Spread = 2.1, AdsSpread = 0.4, Ergonomics = 0.58, Weight = 3.3, Faction = "Pact", Price = 1000,
+		Reload = { EjectMag = 0.6, InsertMag = 0.9, Rack = 0.5 }, Slots = { "Optic", "Muzzle", "Grip", "Barrel" } },
+	-- the carbine of the AR family: flat top, collapsing stock, 30 rounds
+	M4A1 = { Family = "AR", Name = "M4A1", Class = "Carbine", Ammo = "5.56x45", MagSize = 30, Modes = { "Safe", "Semi", "Auto" }, RPM = 800,
+		Recoil = { 1.3, 0.65 }, Spread = 2.1, AdsSpread = 0.38, Ergonomics = 0.75, Weight = 2.9, Faction = "Union", Price = 1100,
+		Reload = { EjectMag = 0.5, InsertMag = 0.8, Rack = 0.45 }, Slots = { "Optic", "Muzzle", "Grip", "Barrel" } },
+	-- the M14's action, semi-automatic, in a black synthetic stock
+	M1A = { Family = "Garand", Name = "M1A", Class = "Battle Rifle", Ammo = "7.62x51", MagSize = 20, Modes = { "Safe", "Semi" }, RPM = 500,
+		Recoil = { 2.4, 1.0 }, Spread = 1.4, AdsSpread = 0.22, Ergonomics = 0.55, Weight = 4.0, Faction = "Union", Price = 1050,
+		Reload = { EjectMag = 0.6, InsertMag = 0.9, Rack = 0.5 }, Slots = { "Optic", "Muzzle", "Barrel" } },
 	M16A1 = { Family = "AR", Name = "M16A1", Class = "Rifle", Ammo = "5.56x45", MagSize = 20, Modes = { "Safe", "Semi", "Auto" }, RPM = 750,
 		Recoil = { 1.2, 0.6 }, Spread = 1.9, AdsSpread = 0.35, Ergonomics = 0.65, Weight = 3.0, Faction = "Union", Price = 950,
 		Reload = { EjectMag = 0.5, InsertMag = 0.8, Rack = 0.45 }, Slots = { "Optic", "Muzzle", "Grip", "Barrel" } },

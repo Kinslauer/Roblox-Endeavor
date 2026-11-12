@@ -778,6 +778,16 @@ Open the recruit app (M at the base, or the locker) and look at the weapons list
 - [ ] Die: the carried spare parts are in your body's loot, damaged. Unlink: they go back in the locker.
 - [ ] The Glock shows as "G17" and the Union scope as "3x scope" (model names, no maker names).
 
+### Front: one more gun in each family (2026-11-12, Front vNEXT)
+- [ ] The recruit app lists three new rifles: AK-74 (Pact), M4A1 and M1A (Union).
+- [ ] AK-74: a straighter black magazine and a long round muzzle brake. It kicks less than the AKM. The short and
+      long AK barrels fit it.
+- [ ] M4A1: flat top and short collapsing stock, 30 rounds. Its long barrel is the M16A1's barrel.
+- [ ] M16A1: it now has its own carry handle and long fixed stock. A scope sits on top of the handle.
+- [ ] M1A: the M14 in a black stock, single shots only, tighter groups. M14 barrels fit it.
+- [ ] Rifle size: every parts-built rifle is now about 0.55 of its old size in the hands, close to real scale
+      against the body (before, a rifle was longer than the soldier is tall). Say if it now looks too small.
+
 ## The story joined up (2026-11-10, new this round: Endeavor v80, Front v25)
 Play these on the published places (Studio's Play button cannot teleport between places).
 - [ ] At the bottom of the station, copying the manifest at the console also puts a "Line 9 Manifest" in your pack (Tab).

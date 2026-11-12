@@ -20,12 +20,30 @@ GunParts.Guns = {
 			Short = { Asset = 121894960584895, Muzzle = Vector3.new(0.0, 0.3325, 3.4295), Under = Vector3.new(0.0, 0.1425, 1.8335), End = Vector3.new(0.0, 0.3325, 3.5435) },
 			Long = { Asset = 125461404932017, Muzzle = Vector3.new(0.0, 0.3325, 5.4815), Under = Vector3.new(0.0, 0.1425, 1.8335), End = Vector3.new(0.0, 0.3325, 5.5955) },
 		} },
-	M16A1 = { Grip = "Rifle", Receiver = 87650923408286, Muzzle = 135032422034852, Optic = Vector3.new(0.0, 0.5643, 0.1045),
+	M16A1 = { Grip = "Rifle", Receiver = 138139370161567, Muzzle = 135032422034852, Optic = Vector3.new(0.0, 0.779, 0.1045),
 		Barrels = {
 			Standard = { Asset = 138142340954930, Muzzle = Vector3.new(0.0, 0.3895, 4.7785), Under = Vector3.new(0.0, 0.2413, 2.2895), End = Vector3.new(0.0, 0.3895, 5.1585) },
 			Short = { Asset = 74368744514910, Muzzle = Vector3.new(0.0, 0.3895, 2.9735), Under = Vector3.new(0.0, 0.2413, 1.767), End = Vector3.new(0.0, 0.3895, 3.3535) },
 			Long = { Asset = 138142340954930, Muzzle = Vector3.new(0.0, 0.3895, 4.7785), Under = Vector3.new(0.0, 0.2413, 2.2895), End = Vector3.new(0.0, 0.3895, 5.1585) },
 			Carbine = { Asset = 100931017421210, Muzzle = Vector3.new(0.0, 0.3895, 4.0185), Under = Vector3.new(0.0, 0.2413, 2.0805), End = Vector3.new(0.0, 0.3895, 4.3985) },
+		} },
+	M4A1 = { Grip = "Rifle", Receiver = 109283570309759, Muzzle = 96360506148566, Optic = Vector3.new(0.0, 0.5643, 0.1045),
+		Barrels = {
+			Standard = { Asset = 100931017421210, Muzzle = Vector3.new(0.0, 0.3895, 4.0185), Under = Vector3.new(0.0, 0.2413, 2.0805), End = Vector3.new(0.0, 0.3895, 4.3985) },
+			Short = { Asset = 74368744514910, Muzzle = Vector3.new(0.0, 0.3895, 2.9735), Under = Vector3.new(0.0, 0.2413, 1.767), End = Vector3.new(0.0, 0.3895, 3.3535) },
+			Long = { Asset = 138142340954930, Muzzle = Vector3.new(0.0, 0.3895, 4.7785), Under = Vector3.new(0.0, 0.2413, 2.2895), End = Vector3.new(0.0, 0.3895, 5.1585) },
+		} },
+	AK74 = { Grip = "Rifle", Receiver = 109273543326364, Muzzle = 139572667413474, Optic = Vector3.new(0.0, 0.5225, -0.0095),
+		Barrels = {
+			Standard = { Asset = 100754225285798, Muzzle = Vector3.new(0.0, 0.3325, 4.1705), Under = Vector3.new(0.0, 0.1425, 1.8335), End = Vector3.new(0.0, 0.3325, 4.2845) },
+			Short = { Asset = 121894960584895, Muzzle = Vector3.new(0.0, 0.3325, 3.4295), Under = Vector3.new(0.0, 0.1425, 1.8335), End = Vector3.new(0.0, 0.3325, 3.5435) },
+			Long = { Asset = 125461404932017, Muzzle = Vector3.new(0.0, 0.3325, 5.4815), Under = Vector3.new(0.0, 0.1425, 1.8335), End = Vector3.new(0.0, 0.3325, 5.5955) },
+		} },
+	M1A = { Grip = "Rifle", Receiver = 78787996332950, Muzzle = 125547352932698, Optic = Vector3.new(0.0, 0.456, 0.532),
+		Barrels = {
+			Standard = { Asset = 125682988243180, Muzzle = Vector3.new(0.0, 0.2945, 5.187), Under = Vector3.new(0.0, 0.057, 2.28), End = Vector3.new(0.0, 0.2945, 5.32) },
+			Short = { Asset = 97640775980923, Muzzle = Vector3.new(0.0, 0.2945, 4.427), Under = Vector3.new(0.0, 0.057, 2.28), End = Vector3.new(0.0, 0.2945, 4.56) },
+			Long = { Asset = 94471906655710, Muzzle = Vector3.new(0.0, 0.2945, 5.947), Under = Vector3.new(0.0, 0.057, 2.28), End = Vector3.new(0.0, 0.2945, 6.08) },
 		} },
 	M14 = { Grip = "Rifle", Receiver = 77967180458056, Muzzle = 125547352932698, Optic = Vector3.new(0.0, 0.456, 0.532),
 		Barrels = {

@@ -22,6 +22,7 @@ VARIANTS = {
     "AKShort": dict(barrel=12.4, brake="slant", ribbed=True),
     "AKLong": dict(barrel=23.2, brake="slant", ribbed=True),
     "AK47": dict(barrel=16.3, brake="nut", ribbed=False),
+    "AK74": dict(chart=True, title="AK74", barrel=16.3, brake="74", ribbed=True, mag="74"),      # 5.45: a straighter plastic magazine, a long brake
 }
 # which component each moving group belongs to (gunparts.export_components)
 COMPONENTS = {"Body": "Receiver", "Carrier": "Receiver", "Trigger": "Receiver", "Magazine": "Receiver", "Stock": "Receiver",
@@ -96,16 +97,17 @@ def build(o):
     part(29, "Gunmetal", "Stock", None).tube(0.32, 0.26, 0.12, (-0.68, Y0 - 6.5, -2.6), axis="X", seg=14)
 
     # ---------------------------------------------------------------- magazine: thirty rounds on a curve
-    mg = part(18, "Gunmetal", "Magazine", (0, 1.0, -5.0))
+    m74 = o.get("mag") == "74"
+    mg = part(18, "Polymer" if m74 else "Gunmetal", "Magazine", (0, 1.0, -5.0))
     front, back = [], []
-    R = 11.0                                                                 # the curve's radius; its centre lies ahead
+    R = 21.0 if m74 else 11.0                                                # the curve's radius; its centre lies ahead
     for k in range(11):
-        th = 0.55 * k / 10
+        th = (0.29 if m74 else 0.55) * k / 10
         by, bz = 0.45 + R * (1 - math.cos(th)), -1.15 - R * math.sin(th)
         back.append((by, bz))
         front.append((by + 2.85 * math.cos(th), bz + 2.85 * math.sin(th)))
     mg.side(front + back[::-1], 0.9, bev=0.06)
-    if o.get("ribbed", True):
+    if o.get("ribbed", True) and not m74:
         for k in (3, 5, 7):
             (bx, bz), (fx, fz) = back[k], front[k]
             for sx in (-1, 1):
@@ -145,7 +147,12 @@ def build(o):
     # ---------------------------------------------------------------- muzzle device (on the threads, Y1 + BL - 0.6)
     MZ = Y1 + BL - 0.6
     md = part(28, "Gunmetal", "Muzzle", (0, 15, 2.0))
-    if o.get("brake", "slant") == "slant":
+    if o.get("brake") == "74":                                               # the long two-chamber brake
+        md.tube(0.34, 0.16, 0.9, (0, MZ + 0.45, 0), seg=18)
+        md.tube(0.44, 0.17, 2.3, (0, MZ + 2.0, 0), seg=20)
+        md.span((-0.6, MZ + 1.2, -0.13), (0.6, MZ + 2.0, 0.13), cut=True)     # the side ports
+        md.span((-0.13, MZ + 2.3, 0.1), (0.13, MZ + 2.9, 0.6), cut=True)      # the top vents
+    elif o.get("brake", "slant") == "slant":
         md.side([(MZ, -0.36), (MZ + 0.95, -0.36), (MZ + 1.45, 0.2), (MZ + 1.2, 0.36), (MZ, 0.36)], 0.72, bev=0.06, M=T(0, 0, 0))
         md.cyl(0.17, 3.0, (0, MZ + 0.8, 0), seg=12, cut=True)
     else:

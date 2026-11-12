@@ -9,13 +9,16 @@ V = lambda p: "Vector3.new(%s, %s, %s)" % tuple(p)
 GUNS = {
     "AKM": ("AK", "AK", {"Standard": "AK", "Short": "AKShort", "Long": "AKLong"}),
     "AK47": ("AK47", "AK47", {"Standard": "AK", "Short": "AKShort", "Long": "AKLong"}),
-    "M16A1": ("AR20", "AR20", {"Standard": "AR20", "Short": "AR10", "Long": "AR20", "Carbine": "AR16"}),
+    "M16A1": ("ARA1", "AR20", {"Standard": "AR20", "Short": "AR10", "Long": "AR20", "Carbine": "AR16"}),
+    "M4A1": ("AR16", "AR16", {"Standard": "AR16", "Short": "AR10", "Long": "AR20"}),
+    "AK74": ("AK74", "AK74", {"Standard": "AK", "Short": "AKShort", "Long": "AKLong"}),
+    "M1A": ("M1A", "M14", {"Standard": "M14", "Short": "M14Short", "Long": "M14Long"}),
     "M14": ("M14", "M14", {"Standard": "M14", "Short": "M14Short", "Long": "M14Long"}),
     "M1Garand": ("Garand", "Garand", {"Standard": "Garand", "Short": "GarandShort", "Long": "GarandLong"}),
 }
 out = []
 for gun, (recv, muz, barrels) in GUNS.items():
-    a0 = anc(barrels["Standard"])
+    a0 = anc(recv)                      # the sight line belongs to the receiver (a carry handle sits higher)
     out.append(f'\t{gun} = {{ Grip = "Rifle", Receiver = {ids[f"Gun_{recv}_Receiver"]}, Muzzle = {ids[f"Gun_{muz}_Muzzle"]}, Optic = {V(a0["Optic"])},\n\t\tBarrels = {{')
     for opt, var in barrels.items():
         a = anc(var)

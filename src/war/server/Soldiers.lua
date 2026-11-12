@@ -22,6 +22,7 @@ local Factions = require(script.Parent.Factions)
 local Guns = require(script.Parent.Guns)
 local Hill = require(script.Parent.Hill)
 
+local GunParts = require(Shared.GunParts)
 local W = Config.War
 local Soldiers = {}
 
@@ -44,7 +45,7 @@ local function pushWeapon(player)
 	local held = soldiers[player]
 	if player.Character and held then
 		local w = held.Weapons[held.Active]
-		HeldWeapons.Attach(player.Character, w and w.Id, w and w.Attachments)
+		HeldWeapons.Attach(player.Character, w and w.Id, w and w.Attachments, if w and GunParts.Guns[w.Id] then { Scale = W.GunScale } else nil)
 		local worn = {}
 		if held.Armor then
 			table.insert(worn, held.Armor.Id)

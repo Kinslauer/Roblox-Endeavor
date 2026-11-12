@@ -483,6 +483,13 @@ do
 	local Battlefield = M.mockEnv.__require(SSS.Server.Battlefield)
 	local D = Firearms.Defs
 	check("family: guns of one pattern share a family", D.AKM.Family == "AK" and D.AK47.Family == "AK" and D.M14.Family == "Garand" and D.M1Garand.Family == "Garand" and D.M16A1.Family == "AR")
+	local GP = M.mockEnv.__require(RS.Shared.GunParts)
+	check("family: one more gun in each family, built on the family's own barrels", D.AK74.Family == "AK" and D.M4A1.Family == "AR" and D.M1A.Family == "Garand"
+		and GP.Guns.AK74.Barrels.Short.Asset == GP.Guns.AKM.Barrels.Short.Asset and GP.Guns.AK74.Receiver ~= GP.Guns.AKM.Receiver and GP.Guns.AK74.Muzzle ~= GP.Guns.AKM.Muzzle
+		and GP.Guns.M4A1.Barrels.Long.Asset == GP.Guns.M16A1.Barrels.Standard.Asset and GP.Guns.M4A1.Receiver ~= GP.Guns.M16A1.Receiver
+		and GP.Guns.M1A.Barrels.Standard.Asset == GP.Guns.M14.Barrels.Standard.Asset and GP.Guns.M1A.Receiver ~= GP.Guns.M14.Receiver)
+	check("family: the M16A1's scope sits on its carry handle, higher than on the flat top", GP.Guns.M16A1.Optic.Y > GP.Guns.M4A1.Optic.Y)
+	check("family: the AK-74 fires its own round, the M1A is semi only", Firearms.Ammo[D.AK74.Ammo] ~= nil and D.AK74.Ammo ~= D.AKM.Ammo and not table.find(D.M1A.Modes, "Auto"))
 	check("family: each pattern has its own field rule", Firearms.CanField(D.M16A1, "Barrel") and not Firearms.CanField(D.AKM, "Barrel") and Firearms.CanField(D.AKM, "Muzzle") and Firearms.CanField(D.AKM, "Optic") and not Firearms.CanField(D.M14, "Optic") and Firearms.CanField(D.M14, "Muzzle"))
 	local war = M.mockEnv.__require(SSS.Server.Common.PlayerData).Get(g).War
 	for _, id in { "AKM", "BarrelShort", "Suppressor", "Compensator", "PSO", "Foregrip" } do war.Locker[id] = { count = 1, condition = 100 } end

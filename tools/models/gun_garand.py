@@ -23,6 +23,7 @@ VARIANTS = {
     "M14": dict(barrel=22.0, mag=True, hider=True),
     "M14Short": dict(barrel=18.0, mag=True, hider=True),
     "M14Long": dict(barrel=26.0, mag=True, hider=True),
+    "M1A": dict(chart=True, title="M1A", barrel=22.0, mag=True, hider=True, synthetic=True),     # the same action in a black synthetic stock
 }
 COMPONENTS = {"Body": "Receiver", "Carrier": "Receiver", "Trigger": "Receiver", "Magazine": "Receiver", "Stock": "Receiver",
               "Barrel": "Barrel", "Muzzle": "Muzzle"}
@@ -72,7 +73,8 @@ def build(o):
 
     # ---------------------------------------------------------------- stock: one long piece of walnut
     ST1 = Y1 + 7.6
-    st = part(9, "Wood", "Stock", (0, -3.0, -1.5))
+    FUR = "Polymer" if o.get("synthetic") else "Wood"
+    st = part(9, FUR, "Stock", (0, -3.0, -1.5))
     st.side([(ST1, -0.2), (ST1, -1.2), (0.5, -1.55), (-1.2, -1.7), (-4.2, -1.6), (-5.6, -2.5), (-6.6, -2.7), (-16.6, -4.7),
              (-17.0, -4.6), (-17.2, -0.9), (-16.9, -0.75), (-9.0, -0.1), (-6.4, 0.2), (-5.2, 0.1), (Y0 + 0.2, -0.3)], 1.5, bev=0.25)
     st.span((-0.63, Y0 + 0.1, -0.8), (0.63, Y1 + 0.2, 1.0), cut=True)        # the receiver's bed
@@ -80,7 +82,7 @@ def build(o):
     st.cyl(0.5, 9.0, (0, Y1 + 4.0, 0.0), cut=True)                           # the barrel channel
     part(10, "Gunmetal", "Stock", (0, -6.0, -1.5)).span((-0.72, -17.4, -4.75), (0.72, -17.15, -0.85), bev=0.07)
     part(23, "Gunmetal", "Stock", None).tube(0.34, 0.27, 0.12, (0, -13.0, -4.15), axis="X", seg=14)
-    rh = part(11, "Wood", "Stock", (0, 3.0, 3.6))
+    rh = part(11, FUR, "Stock", (0, 3.0, 3.6))
     rh.front([(-0.7, -0.15), (0.7, -0.15), (0.72, 0.3), (0.45, 0.72), (-0.45, 0.72), (-0.72, 0.3)], 5.4, y=Y1 + 0.5 + 2.7, bev=0.12)
     part(12, "Gunmetal", "Stock", (0, 7.0, -1.5)).tube(0.82, 0.5, 0.35, (0, ST1 + 0.05, -0.55), seg=20)
     part(22, "Gunmetal", "Stock", None).tube(0.28, 0.22, 0.1, (0, ST1 + 0.3, -1.4), axis="X", seg=12)

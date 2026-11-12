@@ -198,6 +198,7 @@ How to read it:
   has a quick change); every other change is a barracks job. Guns are known by their model designation, not by a
   maker. [Andy 2026-11-12: "Front soldiers can do it on the fly with smaller attachments or quick change barrels.
   But they can do everything at the barracks"]
+- Guns of one pattern take each other's barrels and muzzle devices (AK-74 and AKM; M4A1 and M16A1; M1A and M14). [Front]
 - The Front's guns are real Cold War patterns (AK, AR, Garand and M14, 1911, service revolver), and they come as
   parts: a locker order can fit a different barrel, muzzle device or sight to the same receiver. A few later arms
   (the Glock 17) are there too, and the Garands there are chambered in 7.62x51; like everything else they arrived by shipment, and neither side makes them.

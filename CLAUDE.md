@@ -36,7 +36,7 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (321 checks), `war` = Front (112), `warclient` = the Front client plays the first link's stages, the screen and the controls (29), `stress` = budgets under load (5), `client` = the
+  `scenario` = Endeavor end to end (321 checks), `war` = Front (120), `warclient` = the Front client plays the first link's stages, the screen and the controls (29), `stress` = budgets under load (5), `client` = the
   Endeavor client boots + movement, dodge, animation, guard, air and handling checks (44). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
@@ -536,6 +536,15 @@ Client tab screenshot, because Andy cannot read logs another way.
   abort. Client: `Hud.Fit` rows above the check panel (Hud.FitSlots = keys 1-4), Main `fieldMod`; app buttons
   Carry / Leave. Display names are model designations ("G17", "3x scope"), no maker brands. Tests: "family:",
   "spares:", "field:", "barracks:" in war.lua, "parts:" in warclient.lua.
+  One more per family (owner, 2026-11-12: "I added the domain, start with one additional weapon from every
+  family"): a family member is a new receiver on the family's existing barrels. AK74 (gun_ak variant AK74: mag="74",
+  brake="74"; 5.45x39), M4A1 (the flat-top AR16 receiver; 30 rounds), M1A (gun_garand variant M1A: synthetic=True;
+  semi only); the M16A1 moved to its own receiver ARA1 (a1=True: carry handle, fixed stock; Optic anchor on the
+  handle, so gunparts_lua.py now reads Optic from the receiver's variant). `Config.War.GunScale` 0.55: parts are
+  0.19 studs an inch, over twice body scale, so Soldiers.pushWeapon passes `{ Scale }` to HeldWeapons.Attach for
+  component guns (the Endeavor thread's finding; Endeavor uses 0.5). The site is reachable with plain curl (WebFetch
+  cannot resolve it); its list has 172 guns: AK and AR variants, SCAR, G36, AUG, MDR, SA58, SKS, SVT, RPD, PKM, M60,
+  pistols (M9A3, M1911, M45, Five-seveN, Glock 17/18C/19X, USP, PL-15, Desert Eagle), revolvers, bolt actions.
 
 ## State (2026-11-12)
 - Endeavor v101 (2026-11-12): rifles. The 5.56 Carbine (AR parts), the AK-47 (7.62x39) and the M1 Garand (7.62x51)
@@ -590,6 +599,8 @@ Client tab screenshot, because Andy cannot read logs another way.
   carrying bodies, the wall); v85 the same day: playtest fixes (pistol every ride, third person, quiet screen, cloak,
   takedown alignment). Awaits Andy's play-through: docs/TESTING.md "Endeavor: Metal Gear handling". Andy reported
   "the right click broke" on v79; no fault was found beyond first person not turning the body (fixed); asked what failed.
+- Front vNEXT (2026-11-12): AK-74, M4A1, M1A; the M16A1's own receiver; rifles shrunk to body scale (0.55).
+  REALNEXT Unseen in game: the new size in the hands. Awaits Andy: docs/TESTING.md "Front: one more gun in each family".
 - Front v34 (2026-11-12): gun families, carried spare parts, changing parts in the field (hold Y, 1-4) and
   everything at the barracks. Real server: start 4.2s, 0 warnings, all 5 rifles assemble. Awaits Andy: docs/TESTING.md "Front: gun families and changing parts in
   the field". Next: more guns from Andy's list, family by family.
