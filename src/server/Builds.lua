@@ -586,7 +586,10 @@ function Builds.Init()
 					if char:GetAttribute("Sprinting") and Vector3.new(root.AssemblyLinearVelocity.X, 0, root.AssemblyLinearVelocity.Z).Magnitude > 8 then
 						Builds.Practice(player, "Endurance", B.Bank.Every)
 					end
-					if data.Carried and Builds.AtHome(player) then
+					if (data.Carried or data.FoundRun) and Builds.AtHome(player) then
+						pcall(function()
+							lazy("Economy").BankFound(player) -- round 6: found-in-run items become sellable at home
+						end)
 						Builds.Bank(player)
 					end
 				end

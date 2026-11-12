@@ -499,7 +499,7 @@ function NPCs.Spawn(typeName, position, opts)
 		end
 		while alive and model.Parent and hum.Health > 0 do
 			local now = os.clock()
-			local target, dist = nearestTarget(root, def.Aggro, opts.Filter)
+			local target, dist = nearestTarget(root, def.Aggro * (if root.Position.Y > -100 then require(script.Parent.Sky).SightMult() else 1), opts.Filter) -- round 6: night, rain and fog
 			if target and not opts.NoLeash and (root.Position - home).Magnitude > AI.Leash then
 				target = nil -- leashed: give up and walk back
 			end

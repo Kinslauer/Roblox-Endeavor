@@ -546,6 +546,11 @@ function Inventory.Craft(player, recipeId)
 	if not recipe then
 		return
 	end
+	-- round 6: weapons, armour and cybernetics take time at the bench (server/Economy)
+	local Economy = require(script.Parent.Economy)
+	if Economy.Timed(recipe) then
+		return Economy.Queue(player, recipeId)
+	end
 	for itemId, count in recipe.Inputs do
 		if Inventory.Count(player, itemId) < count then
 			return

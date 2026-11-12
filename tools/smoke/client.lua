@@ -306,5 +306,32 @@ do
 	end)
 	check("builds: the open book readout runs without error", okStep and #M.errors == 0)
 end
+-- world and money (round 6): the party list, the invite, the run clock, the computer's economy rows
+do
+	local BayC = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.Bay)
+	local World = game_:GetService("ReplicatedStorage").Remotes.World
+	local okEv = pcall(function()
+		World.OnClientEvent:Fire("Party", { player.UserId, 999 }, player.UserId)
+		World.OnClientEvent:Fire("PartyInvite", 999, "Mate")
+		World.OnClientEvent:Fire("Run", "Fuses", 420)
+		for _ = 1, 12 do M.step(1 / 30) end
+	end)
+	check("bay: the party, the invite and the work-order clock draw", okEv and BayC.Elements ~= nil and BayC.Elements.Invite.Visible == true and BayC.Elements.Clock.Visible == true
+		and BayC.Elements.Clock.Text:find("FUSES", 1, true) ~= nil)
+	local rows = {}
+	local okRows = pcall(function()
+		BayC.Rows({}, function(_, text) table.insert(rows, text) end)
+		BayC.TerminalRows({}, function(_, text) table.insert(rows, text) end, { Credits = 100, Apps = { RAIDS = true, HOUSE = true, MARKET = true }, Economy = {
+			Loyalty = { Broker = 1, Fixer = 2, Dealer = 1 }, Swaps = { { Id = "A", Contact = "Fixer", Text = "10 Scrap for 6 Cloth" }, { Id = "B", Contact = "Dealer", Text = "x", Lock = 2 } },
+			Board = { { Key = "1:1", Seller = "Mate", Name = "Splint", Count = 2, Price = 50 } }, Mine = {}, Found = { { Id = "Splint", Name = "Splint", Count = 1, Value = 25 } },
+			Slots = 2, Rep = 0, Mults = { 1, 1.5, 2 }, Fee = 0.1, Drop = { Price = 250, Wait = 0 } } }, function() return function() end end)
+	end)
+	local text = table.concat(rows, "|")
+	check("bay: the loadout answers the invite; the computer shows trust, swaps, the exchange and the drop", okRows and text:find("Mate asks you to join", 1, true) ~= nil
+		and text:find("TRUST", 1, true) ~= nil and text:find("EXCHANGE", 1, true) ~= nil and text:find("LINE 9 DROP", 1, true) ~= nil and text:find("found: Splint", 1, true) ~= nil)
+	World.OnClientEvent:Fire("Run", nil)
+	for _ = 1, 5 do M.step(1 / 30) end
+	check("bay: the clock goes when the order closes", BayC.Elements and BayC.Elements.Clock.Visible == false and #M.errors == 0)
+end
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

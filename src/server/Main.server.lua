@@ -98,6 +98,15 @@ local ok, err = pcall(function()
 	if not buildsOk then
 		warn("[Builds] failed:", buildsErr)
 	end
+	-- world and money (round 6): parties, keys and locked rooms, party runs below the Sumps, the bay economy
+	for _, name in { "Party", "Keys", "Runs", "Economy" } do
+		local okW, errW = pcall(function()
+			require(Server[name]).Init()
+		end)
+		if not okW then
+			warn("[" .. name .. "] failed:", errW)
+		end
+	end
 	-- wounds on every player body (isolated: a fault here must not stop the city)
 	local medOk, medErr = pcall(require(Server.Medicine).Init)
 	if not medOk then

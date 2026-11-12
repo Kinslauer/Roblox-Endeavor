@@ -1950,6 +1950,184 @@ do
 	GearS.Recompute(player)
 end
 
+-- world and money (round 6: the hour's sky, parties, keys, party runs, fuel, timed crafting, the condenser, trust, swaps, the exchange, the drop)
+do
+	as(player)
+	mendMe()
+	local pd = PlayerData_.Get(player)
+	local Cfg = M.mockEnv.__require(RS.Shared.Config)
+	local WC = Cfg.World
+	local SkyS = M.mockEnv.__require(SSS.Server.Sky)
+	local PartyS = M.mockEnv.__require(SSS.Server.Party)
+	local KeysS = M.mockEnv.__require(SSS.Server.Keys)
+	local RunsS = M.mockEnv.__require(SSS.Server.Runs)
+	local EcoS = M.mockEnv.__require(SSS.Server.Economy)
+	local InvS = M.mockEnv.__require(SSS.Server.Inventory)
+	local HideS = M.mockEnv.__require(SSS.Server.Hideouts)
+	local TermS = M.mockEnv.__require(SSS.Server.Terminal)
+	local BarS = M.mockEnv.__require(SSS.Server.Barrens)
+	local CombatS = M.mockEnv.__require(SSS.Server.Combat)
+	local Random = M.mockEnv.Random
+	local os = M.mockEnv.os or os
+	-- the sky
+	check("sky: the hour has already picked a time of day and a weather", workspace_:GetAttribute("TimeOfDay") ~= nil and workspace_:GetAttribute("Weather") ~= nil)
+	local nat = WC.Sky.Natural
+	WC.Sky.Natural = 1
+	local nextOk = SkyS.Pick(Random.new(1), "Dawn") == "Day" and SkyS.Pick(Random.new(1), "Night") == "Dawn"
+	WC.Sky.Natural = 0
+	local jumped = true
+	for i = 1, 20 do if SkyS.Pick(Random.new(i), "Day") == "Day" then jumped = false end end
+	WC.Sky.Natural = nat
+	check("sky: a natural hour moves on to the next time of day; otherwise it jumps to any other", nextOk and jumped)
+	SkyS.Apply("Day", "Clear")
+	local daySight = SkyS.SightMult()
+	SkyS.Apply("Night", "Fog")
+	check("sky: night and fog shorten what guards see; the Lighting follows", SkyS.SightMult() < daySight * 0.7 and workspace_:GetAttribute("Weather") == "Fog")
+	SkyS.Apply("Dusk", "Rain")
+	check("sky: rain covers noise in the open, not underground", SkyS.NoiseMult(M.V3.new(0, 5, 0)) < 1 and SkyS.NoiseMult(M.V3.new(0, -300, 0)) == 1)
+	SkyS.Apply("Day", "Clear")
+	-- the party
+	local mate = makePlayer("Mate", 141)
+	Players.PlayerAdded:Fire(mate); run(2)
+	local mc = mate.Character
+	mc.HumanoidRootPart.CFrame = char().HumanoidRootPart.CFrame * M.CF.new(0, 0, 4)
+	check("party: an invite reaches only someone standing with you", PartyS.Invite(player, tostring(mate.UserId)) == true)
+	check("party: accepting joins the leader's party", PartyS.Accept(mate, tostring(player.UserId)) == true and PartyS.Allies(player, mate) and #PartyS.Members(mate) == 2
+		and mate:GetAttribute("Party") == player.UserId)
+	run(Cfg.SpawnProtection + 0.5)
+	local mh = mc:FindFirstChildOfClass("Humanoid")
+	local before = mh.Health
+	CombatS.Damage(char(), mc, 30)
+	check("party: members cannot hurt each other", mh.Health == before)
+	-- keys and locked rooms
+	local cage
+	for _, r in KeysS.Rooms() do if r.Key == "ShelterKey" then cage = r end end
+	check("keys: the S4 store cage stands locked in the hall with a crate inside", cage ~= nil and cage.Locked == true and cage.Door.CanCollide == true and cage.Crate ~= nil and cage.Crate.Parent ~= nil)
+	if cage then
+		InvS.Remove(player, "ShelterKey", InvS.Count(player, "ShelterKey"))
+		check("keys: without the key the door stays shut", KeysS.Unlock(player, cage) == false and cage.Locked)
+		InvS.Add(player, "ShelterKey", 1)
+		check("keys: the right key opens it and is used up", KeysS.Unlock(player, cage) == true and not cage.Locked and cage.Door.CanCollide == false and InvS.Count(player, "ShelterKey") == 0)
+		KeysS.Reset()
+		check("keys: the hour relocks the door and refills the crate", cage.Locked == true and cage.Crate ~= nil and cage.Crate.Parent ~= nil)
+	end
+	-- a party run below the Sumps: both go down, take an order, blind the counter
+	local B = Cfg.Barrens
+	for _, p in { player, mate } do
+		p.Character:PivotTo(M.CF.new(B.Head + M.V3.new(0, 3, -6)))
+		M.task.spawn(function() BarS.Descend(p) end)
+	end
+	run(B.FadeSeconds + 0.4)
+	mc.HumanoidRootPart.CFrame = char().HumanoidRootPart.CFrame * M.CF.new(0, 0, 3)
+	local xp0 = (pd.Carried and pd.Carried.Xp) or 0
+	local r = RunsS.Start(player, "Fuses")
+	check("runs: a work order takes the whole party standing with you", r ~= nil and #r.Members == 2 and RunsS.Start(player) == nil)
+	if r then
+		for i = 1, 3 do r.Fuses[i].Prompt.Triggered:Fire(player) end
+		run(0.5)
+		local partial = RunsS.Current() == r
+		r.Fuses[4].Prompt.Triggered:Fire(mate)
+		run(0.6)
+		check("runs: blinding the counter closes the order and pays both, carried until home", partial and RunsS.Current() == nil and ((pd.Carried and pd.Carried.Xp) or 0) > xp0
+			and PlayerData_.Get(mate).Carried ~= nil)
+	end
+	local saw
+	for _, e in M.FireLog do if e[1] == "World" and e[3] == "Run" and e[4] == "Fuses" then saw = true end end
+	check("runs: the screen hears of the order", saw == true)
+	-- the copy waits on noise
+	RunsS.Stop(false)
+	run(0.1)
+	-- (the cooldown between orders)
+	check("runs: the board rests between orders", RunsS.Start(player) == nil)
+	for _, p in { player, mate } do BarS.Leave(p); p.Character:PivotTo(M.CF.new(0, 5, 0)) end
+	PartyS.Leave(mate)
+	check("party: leaving breaks a party of two", player:GetAttribute("Party") == nil and mate:GetAttribute("Party") == nil)
+	-- the bay: fuel, the bench, the condenser
+	local site = HideS.SiteOf(player)
+	local h = pd.Hideout
+	check("bay: the test conduit has a built bay", site ~= nil and site.Built ~= nil)
+	if site and site.Built then
+		h.Modules.Generator, h.Modules.Alarm = true, true
+		h.Fuel = 0.15
+		run(2.5)
+		check("fuel: the alarm burns the generator dry; the bay goes dark", EcoS.Powered(site) == false and site.Built:GetAttribute("Dark") == true)
+		InvS.Add(player, "FuelCan", 1)
+		check("fuel: a can at the generator brings it back", EcoS.Refuel(player, site) == true and h.Fuel == WC.Fuel.PerCan and site.Built:GetAttribute("Dark") == false)
+		local bench = site.Built:FindFirstChild("Bench")
+		char():PivotTo(M.CF.new(0, 5, 0))
+		InvS.Add(player, "Scrap", 12); InvS.Add(player, "Cloth", 4)
+		local blades = InvS.Count(player, "RebarBlade") + ((h.Vault and h.Vault.RebarBlade) or 0)
+		InvS.Craft(player, "RebarBlade")
+		check("craft: a weapon needs the bench", h.Craft == nil)
+		char():PivotTo(bench.CFrame * M.CF.new(0, 0, 3))
+		InvS.Craft(player, "RebarBlade")
+		check("craft: at the bench a weapon takes time", h.Craft ~= nil and h.Craft.Output == "RebarBlade" and InvS.Count(player, "RebarBlade") + ((h.Vault and h.Vault.RebarBlade) or 0) == blades)
+		check("craft: one job at a time", InvS.Craft(player, "RebarBlade") == false)
+		local fuel0 = h.Fuel
+		local left0 = h.Craft.Left
+		run(1.2)
+		check("craft: a running generator doubles the pace and burns fuel", left0 - h.Craft.Left >= 1.5 and h.Fuel < fuel0 - 0.5)
+		h.Craft.Left = 0.2
+		run(1.2)
+		check("craft: the finished piece goes to the vault or the pack", h.Craft == nil and InvS.Count(player, "RebarBlade") + ((h.Vault and h.Vault.RebarBlade) or 0) == blades + 1)
+		local band = InvS.Count(player, "Bandage")
+		InvS.Craft(player, "Bandage")
+		check("craft: dressings are still made at once", InvS.Count(player, "Bandage") == band + 2)
+		h.Modules.Condenser = true
+		h.CondenserAt = os.time() - WC.Condenser.Period * 20
+		local rations = InvS.Count(player, "Ration")
+		check("condenser: it fills while you are away, up to its tank", EcoS.Condensed(h) == WC.Condenser.Cap and EcoS.Drain(player, site) == WC.Condenser.Cap
+			and InvS.Count(player, "Ration") == rations + WC.Condenser.Cap and EcoS.Condensed(h) == 0)
+	end
+	-- trust and swaps
+	local k = pd.Knowledge
+	k.Contacts.Fixer, k.Contacts.Dealer, k.Contacts.Broker = true, true, true
+	k.Loyalty = nil
+	pd.War.Credits = 5000
+	check("trust: every contact starts at the first level", EcoS.Loyalty(player, "Dealer") == 1)
+	local ok1 = TermS.Buy(player, "MirrorChip")
+	check("trust: the Dealer keeps some goods for those he trusts", ok1 == false and pd.War.Credits == 5000)
+	TermS.Buy(player, "ReflexOptic")
+	check("trust: credits spent with a contact earn trust", EcoS.LoyaltyPoints(player, "Dealer") == 650 * WC.Loyalty.PerCredit)
+	EcoS.AddLoyalty(player, "Dealer", 400)
+	check("trust: at its level the good is for sale", EcoS.Loyalty(player, "Dealer") >= 3 and TermS.Buy(player, "MirrorChip") == true)
+	InvS.Add(player, "Scrap", 10)
+	local cloth = InvS.Count(player, "Cloth")
+	check("swap: goods for goods with a contact", EcoS.Swap(player, "ScrapForCloth") == true and InvS.Count(player, "Cloth") == cloth + 6)
+	check("swap: a swap above your trust is refused", EcoS.Swap(player, "CellsForFuel") == false)
+	-- the exchange: only what was found in a run, and banked
+	InvS.Add(player, "Splint", 2)
+	check("exchange: an item you did not find cannot be listed", EcoS.List(player, "Splint:2:1") == false)
+	EcoS.Found(player, "Splint", 2)
+	check("exchange: found but not yet home, it still cannot", EcoS.Sellable(player, "Splint") == 0)
+	EcoS.BankFound(player)
+	local cr = pd.War.Credits
+	check("exchange: banked at home, it can be listed for a fee", EcoS.Sellable(player, "Splint") == 2 and EcoS.List(player, "Splint:2:2") == true and pd.War.Credits < cr and InvS.Count(player, "Splint") == 0)
+	local st = EcoS.State(mate)
+	local row = st and st.Board[1]
+	check("exchange: another conduit sees the listing while the seller is online", row ~= nil and row.Id == "Splint" and row.Count == 2)
+	local md = PlayerData_.Get(mate)
+	md.War.Credits = 1000
+	cr = pd.War.Credits
+	check("exchange: buying pays the seller and gives them reputation", row ~= nil and EcoS.Take(mate, row.Key) == true and InvS.Count(mate, "Splint") == 2 and pd.War.Credits == cr + row.Price and (pd.Hideout.Rep or 0) == 1)
+	check("exchange: a bought item is not found in a run", EcoS.Sellable(mate, "Splint") == 0 and EcoS.List(mate, "Splint:2:1") == false)
+	-- the drop
+	pd.Hideout.DropAt = nil
+	cr = pd.War.Credits
+	check("drop: the Fixer sends a consignment to the bay's lift", EcoS.Drop(player) == true and pd.War.Credits == cr - WC.Drop.Price and EcoS.Drop(player) == false)
+	run(WC.Drop.Delay + 0.5)
+	local found
+	for _, d in workspace_:GetDescendants() do
+		if d.Name == "Lootable" and d:GetAttribute("Label") == "Consignment" and site and site.LiftCFrame and (d.Position - site.LiftCFrame.Position).Magnitude < 4 then found = d end
+	end
+	check("drop: the crate stands in the lift", found ~= nil)
+	local tstate = TermS.State(player)
+	check("computer: trust, swaps, the exchange and the drop show on it", tstate.Economy ~= nil and #tstate.Economy.Swaps == #M.mockEnv.__require(RS.Shared.Terminal).Swaps and tstate.Economy.Drop.Wait > 0)
+	pd.War.Credits = 0
+	mate:Destroy()
+	run(0.2)
+end
+
 -- stealth (round 4: the second before he shouts, guards who adapt, lockers, darts, bolts, clothes, questions, shifts)
 do
 	as(player)

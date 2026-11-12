@@ -36,8 +36,8 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (441 checks), `war` = Front (149), `warclient` = the Front client plays the first link's stages, the screen, the controls, the gun in the view, its code-made animation and the fingers (67), `stress` = budgets under load (5), `client` = the
-  Endeavor client boots + movement, dodge, animation, guard, air and handling checks (52). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
+  `scenario` = Endeavor end to end (482 checks), `war` = Front (149), `warclient` = the Front client plays the first link's stages, the screen, the controls, the gun in the view, its code-made animation and the fingers (67), `stress` = budgets under load (5), `client` = the
+  Endeavor client boots + movement, dodge, animation, guard, air and handling checks (57). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
   `python3 tools/realserver/run_luau.py <placeId> script.lua` (POST `.../luau-execution-session-tasks`, poll, print
@@ -768,7 +768,39 @@ Client tab screenshot, because Andy cannot read logs another way.
   Tests: "batch:", "empty body:", "load:", "active:", "chips:", "carried:", "vow:", "grade:", "practice:", "stack:",
   "respec:" in scenario.lua, "builds:" in client.lua. Not done: chip and shard icons, a drawn look for the empty body,
   Hook/Trail/Mirror/Arc have no sound of their own, NPCs have no Stamina attribute (the open book reads full).
+- World and money (round 6 of docs/Reference-Picks-Plan.md; ideas from Tarkov, nothing copied). Tuning
+  `Config.World` (Sky, Party, Runs, Keys, Craft, Fuel, Condenser, Loyalty, Exchange, Drop). `src/server/Sky.lua`:
+  Cycle.Run -> `Sky.Roll` (time of day: Natural share moves to the next in Sky.Order, else any other; weather
+  Clear/Rain/Fog), `Apply` sets Lighting + workspace attrs TimeOfDay/Weather; `SightMult` (NPC aggro above Y -100),
+  `NoiseMult` (Stealth.Noise; rain, open air only). Client Air: rain emitter on the camera, fog adds Atmosphere
+  density/haze, `holdSky` keeps the green pockets ("Clean" air) at Sky.Pocket locally. `src/server/Party.lua`: player
+  attr `Party` = leader UserId, `Allies` (Combat.applyDamage returns "none"), `Members`, Invite (InviteReach),
+  Accept/Decline/Leave, Remote "Party", World "Party"(ids, leader)/"PartyInvite"(id, name); Terminal shares NPC kills
+  within ShareRadius. `src/server/Keys.lua`: rooms with a LockedDoor (X "Unlock", key used up, World "Unlocked"), an
+  anchored crate rolled from a table; Strongrooms (StrongroomKey, table Vault) by `clearSpot` near each core district,
+  the S4 Store cage (ShelterKey, table Barrens + DataShard) in the hall; Cycle.Run -> `Keys.Reset`. `src/server/
+  Runs.lua`: one run at a time in Barrens Hall 2, board "WorkOrders" at the shaft foot; tasks Drain/Carry/Fuses/Copy/
+  Cage (Start/Step/Stop/Heard), members = party within JoinReach, `finish` pays Items.Roll("Barrens") +
+  Builds.Earn; char attr `RunCrate` (Stats speed/jump, Combat.CanAct); Stealth.Noise -> `Runs.Heard`; World
+  "Run"(task, seconds | nil). `src/server/Economy.lua`: `Powered`/`Refuel` (h.Fuel; Hideouts turret/alarm need
+  `Hideouts.Powered`; bay model attrs Dark/Fuel/Craft/CraftLeft/Condensed via `Mark`), `Queue` (Inventory.Craft hands
+  over recipes whose output Type is in Craft.Seconds: bench only, h.Craft, 2x pace + fuel burn while powered, done
+  into the vault else the pack), `Condensed`/`Drain` (module Condenser, h.CondenserAt, os.time), `Loyalty`/
+  `AddLoyalty` (Knowledge.Loyalty; Terminal `pay(.., contact, need)`, contracts PerContract; House/Market `Loyalty`
+  fields; `Terminal.Swaps` -> `Swap`), `Found` (Loot.Take -> data.FoundRun) / `BankFound` (Builds' home tick ->
+  data.Hideout.Found) / `Sellable` / `List` ("id:count:step", Mults x Values[type], Fee) / `Unlist` / `Take`
+  ("sellerId:index"; online sellers only; Hideout.Rep -> Slots), `Drop` (Fixer, Loot crate at site.LiftCFrame after
+  Delay), `State` -> Terminal.State.Economy; Terminal actions Swap/List/Unlist/Take/Drop. Client `src/client/Bay.lua`
+  (Start from Main: party rows upper left, invite card, run clock, Unlocked flash, Dark bays flicker; `Rows` on the
+  L panel: invite answer, members, Invite buttons; `TerminalRows` at the end of renderTerminal). Tests: "sky:",
+  "party:", "keys:", "runs:", "fuel:", "craft:", "condenser:", "trust:", "swap:", "exchange:", "drop:" in
+  scenario.lua, "bay:" in client.lua. Not done: the Fuses can only be cut (not shot), runs give no Front reward, the
+  exchange has no search or partial buys, the strongroom look is plain parts.
 ## State (2026-11-12)
+- Endeavor v110 (2026-11-12): world and money, round 6 of the reference picks (the hour's time of day and weather,
+  parties, strongrooms and the S4 store cage, five party runs below the Sumps, generator fuel, timed crafting, the
+  condenser, trust and swaps, the conduits' exchange, the Line 9 drop). Awaits Andy: docs/TESTING.md "Endeavor:
+  world and money". Next: round 7 (things you make).
 - Endeavor v109 (2026-11-12): builds, round 5 of the reference picks (Line 9 batches and the rare empty body, implant
   load and K actives, skill chips at the bench, vows at the computer, the Broker's grade trials, xp and credits
   carried until home, practice, the stack slot kept through a reboot, the riddle basin in the Rootwork). Real server:

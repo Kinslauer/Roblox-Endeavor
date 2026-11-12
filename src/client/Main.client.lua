@@ -75,6 +75,7 @@ local Intro = require(script.Parent:WaitForChild("Intro")) -- the train ride (cl
 local Handling = require(script.Parent:WaitForChild("Handling")) -- stances, aiming, reload, the wall (client/Handling.lua)
 local Style = require(script.Parent:WaitForChild("Style")) -- lock-on, two weapons, the combo count, knocked (client/Style.lua)
 Style.Start(gui)
+require(script.Parent:WaitForChild("Bay")).Start(gui) -- round 6: the party list, the work-order clock, dark bays
 require(script.Parent:WaitForChild("Build")).Start() -- round 5: K fires the core's active; the open book vow
 
 -- A safety net for everything built outside panel/addRow: buttons get the theme's shape, font and a hover;
@@ -919,6 +920,7 @@ local function renderLoadout()
 	local BuildUI = require(script.Parent:WaitForChild("Build"))
 	BuildUI.Pack = lastInventory
 	BuildUI.Rows(loadoutPanel, addRow, loadout)
+	require(script.Parent:WaitForChild("Bay")).Rows(loadoutPanel, addRow) -- round 6: the party
 end
 Remotes.LoadoutChanged.OnClientEvent:Connect(function(data)
 	loadout = data
@@ -1780,7 +1782,11 @@ renderTerminal = function(t)
 	else
 		addRow(terminalPanel, "HOUSE  -  materials for the hideout, delivered to your pack", {}, GREEN)
 		for _, h in t.House do
-			addRow(terminalPanel, ("  %s  -  %d cr"):format(h.Name, h.Price), { { text = "Order", color = Color3.fromRGB(50, 110, 70), fn = send("Order", h.Id) } }, if h.Price > (t.Credits or 0) then DIM else nil)
+			if h.Lock then
+				addRow(terminalPanel, ("  %s  -  > TRUST %d"):format(h.Name, h.Lock), {}, DIM)
+			else
+				addRow(terminalPanel, ("  %s  -  %d cr"):format(h.Name, h.Price), { { text = "Order", color = Color3.fromRGB(50, 110, 70), fn = send("Order", h.Id) } }, if h.Price > (t.Credits or 0) then DIM else nil)
+			end
 		end
 	end
 	-- ARCHIVE: what you have read; it needs no contact, only eyes
@@ -1794,9 +1800,14 @@ renderTerminal = function(t)
 	else
 		addRow(terminalPanel, "MARKET  -  the black market", {}, GREEN)
 		for _, m in t.Market do
-			addRow(terminalPanel, ("  %s  -  %d cr"):format(m.Name, m.Price), { { text = "Buy", color = Color3.fromRGB(50, 110, 70), fn = send("Buy", m.Id) } }, if m.Price > (t.Credits or 0) then DIM else nil)
+			if m.Lock then
+				addRow(terminalPanel, ("  %s  -  > TRUST %d"):format(m.Name, m.Lock), {}, DIM)
+			else
+				addRow(terminalPanel, ("  %s  -  %d cr"):format(m.Name, m.Price), { { text = "Buy", color = Color3.fromRGB(50, 110, 70), fn = send("Buy", m.Id) } }, if m.Price > (t.Credits or 0) then DIM else nil)
+			end
 		end
 	end
+	require(script.Parent:WaitForChild("Bay")).TerminalRows(terminalPanel, addRow, t, send) -- round 6: trust, swaps, the exchange, the drop
 end
 renderContainer = function()
 	clear(containerPanel)

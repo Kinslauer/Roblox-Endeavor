@@ -1081,3 +1081,43 @@ Front:
       it), and your own rifle goes down where you stood.
 - [ ] Strip a fallen recruit (hold X): you also take its stack tag. Unlink at your locker: the tags are paid in
       credits.
+
+### Endeavor: world and money (2026-11-12, Endeavor v110)
+Round 6 of the reference picks. Nothing here was seen in game before publishing.
+- [ ] The hour: after each white-out the sky may change (dawn, day, dusk or night, often the next one in order, but
+      sometimes any other) and so may the weather (clear, rain or fog). Rain falls around you and hides footsteps out
+      in the open; fog closes in the haze. At night and in fog, enemies notice you from less far away. Nothing
+      announces it. Inside a green pocket the sky stays a quiet afternoon whatever the hour picked.
+- [ ] Party: stand next to another conduit, open the loadout panel (L): their name has an Invite button. They see
+      "> PARTY . YOUR NAME . [L]" and answer Join or No on their own L panel. Up to four. Members show at the upper
+      left with a health line; no markers through walls. You cannot hurt each other, a kill counts on every nearby
+      member's contracts, and Leave on the L panel quits.
+- [ ] Keys: a Strongroom Key (rare from rivals, sentries, raiders and the valley's relic sites) opens a small concrete
+      STRONGROOM near the middle of each core district (hold X on its door). The key is used up, the crate inside is
+      worth it, and the next hour locks the door and fills the crate again. An S4 Store Key (overseers below the
+      Sumps carry it sometimes) opens the wire cage "S4 . STORE" in the corner of Barrens Hall 2.
+- [ ] Party runs: below the Sumps, the WORK ORDERS board at the shaft foot (hold X "Take order"). Everyone in your
+      party standing with you joins. A clock at the top of the screen counts 7 minutes. The five orders:
+      DRAIN THE GALLERY (sludge rises in the pipe gallery; turn the three valves in the order their gauges show; an
+      overseer comes for each), CARRY THE CRATE (one runner lifts the STACK HARDWARE crate in the hall and walks it,
+      slow and unarmed, to the yellow square at the shaft foot; it clatters), BLIND THE COUNTER (cut the four fuses
+      around the office counter within 40 seconds of the first; each cut wakes the room), COPY THE ROLL (stand at the
+      office console in the light while no guard is up; any noise pauses it), HOLD THE CAGE (take three blue cells
+      from the hall, load them on the yellow square, then stay on it while waves of overseers come). A closed order
+      gives each runner barrens stores, xp and credits (carried until home). Time out or all dead: "> ORDER . VOID".
+- [ ] Fuel: a built generator now runs on fuel. Hold X on it with a Fuel Can (supply crates, raiders, the Fixer) to
+      load it. The turret and alarm burn it slowly and stop when it is dry; then your bay's lights stutter.
+- [ ] Timed crafting: weapons, armour and cybernetics are now made at your bench over time (90, 120, 150 seconds,
+      quicker at a higher workshop tier, twice as fast while the generator runs). "> BENCH . DONE" when it is ready,
+      in the vault (or your pack). One job at a time. Dressings, ammo and packs are still made at once.
+- [ ] The Condenser (a new bay module): it makes a ration every 15 minutes of real time, also while you are away,
+      up to six. Hold X "Drain" to take them.
+- [ ] Trust: the computer's TRUST line shows your level with each contact. Spending credits with a contact and closing
+      the Broker's contracts raises it ("> THE DEALER . TRUST 2"). Some goods read "> TRUST 3" until you reach it
+      (chips, AP rounds, fuel, keys). SWAPS trade goods for goods (10 Scrap for 6 Cloth, stack tags for 9mm, ...).
+- [ ] The exchange (on the computer): loot you take from containers during a life counts as found. Once you are
+      home it shows under EXCHANGE as "found: ..." with three price buttons. Listing costs a 10% fee and the item
+      leaves your pack. Other conduits see it while you are online and can Buy it; you get the credits and a point of
+      reputation (more slots at 5 and 10). Bought or crafted items can never be listed. Pull takes a listing back.
+- [ ] LINE 9 DROP (on the computer, needs the Fixer): pay 250 credits and 40 seconds later a consignment crate stands
+      in your bay's freight lift ("> LINE 9 . BAY nn . ARRIVED"). Once every 10 minutes.

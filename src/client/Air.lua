@@ -95,12 +95,63 @@ local function setMotes(kind)
 	motes.Rate = m.Rate
 end
 
+-- round 6 (server/Sky): the hour's weather. Fog thickens the haze, rain falls round the camera; neither reaches
+-- below ground or into the green pockets (they stand outside the hour).
+local rainPart, rain
+local function setRain(on)
+	if not rainPart or not rainPart.Parent then
+		rainPart = Instance.new("Part")
+		rainPart.Name = "AirRain"
+		rainPart.Anchored, rainPart.CanCollide, rainPart.CanQuery, rainPart.CanTouch = true, false, false, false
+		rainPart.Transparency = 1
+		rainPart.Size = Vector3.new(70, 1, 70)
+		rainPart.Parent = workspace.CurrentCamera
+		rain = Instance.new("ParticleEmitter")
+		rain.Shape = Enum.ParticleEmitterShape.Box
+		rain.EmissionDirection = Enum.NormalId.Bottom
+		rain.Lifetime = NumberRange.new(0.8, 1.1)
+		rain.Speed = NumberRange.new(70, 85)
+		rain.Size = NumberSequence.new(0.06)
+		rain.Squash = NumberSequence.new(-3)
+		rain.Color = ColorSequence.new(Color3.fromRGB(170, 180, 200))
+		rain.Transparency = NumberSequence.new(0.55)
+		rain.LightInfluence = 1
+		rain.Orientation = Enum.ParticleOrientation.VelocityParallel
+		rain.Rate = 0
+		rain.Parent = rainPart
+	end
+	rain.Rate = if on then 900 else 0
+end
+Air.RainOn = function()
+	return rain ~= nil and rain.Rate > 0
+end
+
+-- The green pockets stand outside the hour (docs/LORE.md): inside one the sky holds a quiet afternoon on this
+-- screen only, whatever the hour picked; leaving it puts the hour's sky back (Config.World.Sky.Times).
+local function holdSky(name)
+	local S = Config.World.Sky
+	local def = S.Times[if name == "Clean" then S.Pocket else workspace:GetAttribute("TimeOfDay")]
+	if not def then
+		return
+	end
+	Lighting.ClockTime, Lighting.Brightness = def.Clock, def.Brightness
+	Lighting.Ambient, Lighting.OutdoorAmbient, Lighting.FogColor = def.Ambient, def.Outdoor, def.Fog
+	Lighting.FogEnd = if name ~= "Clean" and workspace:GetAttribute("Weather") == "Fog" then def.FogEnd * 0.45 else def.FogEnd
+end
+Air.HoldSky = holdSky
+
 local function blend(name)
+	holdSky(name)
 	local p = C.Air[name] or C.Air.City
 	local info = TweenInfo.new(C.AirBlend, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 	local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
+	local weather = workspace:GetAttribute("Weather")
+	local open = name ~= "Under" and name ~= "Clean"
+	local fog = open and weather == "Fog"
+	setRain(open and weather == "Rain")
 	if atmo then
-		TweenService:Create(atmo, info, { Density = p.Density, Offset = p.Offset, Haze = p.Haze, Glare = p.Glare, Color = p.Color, Decay = p.Decay }):Play()
+		local F = Config.World.Sky.Fog
+		TweenService:Create(atmo, info, { Density = p.Density + (if fog then F.Density else 0), Offset = p.Offset, Haze = p.Haze + (if fog then F.Haze else 0), Glare = p.Glare, Color = p.Color, Decay = p.Decay }):Play()
 	end
 	local grade = Lighting:FindFirstChild("CityGrade")
 	if grade then
@@ -138,6 +189,9 @@ function Air.Start()
 		if motePart and cam then
 			motePart.CFrame = CFrame.new(cam.CFrame.Position)
 		end
+		if rainPart and cam then
+			rainPart.CFrame = CFrame.new(cam.CFrame.Position + Vector3.new(0, 30, 0))
+		end
 		acc += dt
 		if acc < 0.4 then
 			return
@@ -154,6 +208,16 @@ function Air.Start()
 		if not ok and not warned then
 			warned = true
 			warn("[Air] " .. tostring(err))
+		end
+	end)
+	workspace:GetAttributeChangedSignal("Weather"):Connect(function()
+		if current then
+			blend(current)
+		end
+	end)
+	workspace:GetAttributeChangedSignal("TimeOfDay"):Connect(function()
+		if current == "Clean" then
+			task.defer(holdSky, current) -- after the server's Lighting arrives
 		end
 	end)
 	local function watch(char)

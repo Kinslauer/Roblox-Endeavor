@@ -153,6 +153,10 @@ How to read it:
 - The hour reaches the barrens like everywhere outside the green pockets: every hour the slave is back at its crank.
   [Barrens]
 - Signs down there name places (S4, Barrens, Hall 2), never a corporation (open question 2).
+- (Endeavor v110) A WORK ORDERS board at the shaft foot hands out orders to whoever takes them: drain the pipe
+  gallery, carry a STACK HARDWARE crate to the freight cage, blind the office's OUTPUT counter, copy the HANDS roll,
+  hold the freight cage while it climbs. Who posts the orders is never said (open question 2). The S4 store, a wire
+  cage in the hall's corner, opens only to an S4 store key. [Runs, Keys]
 
 **Hinted**
 - Fragment "Shift Card" (by the shaft head): a punch card for S4 . BARRENS . HALL 2, clocked in every hour, never
@@ -182,6 +186,15 @@ How to read it:
 **Truth**
 - Every hour the time of day changes. Sometimes it moves on naturally (dawn, midday, night), but it can come in any
   order. [Andy 2026-11-12]
+
+**Canon (Endeavor v110, round 6)**
+- The hour picks the time of day (dawn, day, dusk, night; half the time the next one in order) and the weather
+  (clear, rain, fog). Nothing announces it. In the dark, rain and fog, guards and hostiles see less far; rain hides
+  footsteps in the open. [Sky; Andy's Truth above]
+- The green pockets keep their own quiet afternoon whatever the hour picked (their "outside the hour" holds for the
+  sky too). [Claude 2026-11-12; fits the pocket Truth]
+- The hour also relocks the strongrooms and the S4 store cage and fills their crates again: a locked room comes
+  back like everything else. [Keys]
 
 **Truth**
 - In the green pockets grass grows, trees and flowers bloom, and the hour's effects are nullified, for reasons
@@ -293,6 +306,11 @@ How to read it:
    facilities). (One way down, the Sumps shaft to Barrens Hall 2, is now Canon.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: round 6, world and money (Endeavor v110): the hour's time of day and weather are Canon (Andy's Truth);
+  the green pockets keep their own sky (Claude). Strongrooms in the core districts and the S4 store open to keys and
+  relock each hour. The work orders below the Sumps come from nobody named. The Fixer can send a Line 9 consignment
+  up to a bay's freight lift (Line 9 still only runs up). Parties, trust with contacts, swaps, the conduits' exchange
+  and bay fuel carry no story of their own; nothing here touches an open question.
 - 2026-11-12: round 5, builds (Endeavor v109): Andy's stack slot and extraction are now Canon; Line 9 batches and the
   empty body; the Broker's grades; vows at the computer; the still basin in the Rootwork (it hints at nothing about
   what the pockets are). Chips are skill modules sold and found like implants; nothing here touches an open question.

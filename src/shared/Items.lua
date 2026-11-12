@@ -63,6 +63,12 @@ Items.Defs = {
 	MirrorChip = { Name = "Mirror Chip", Type = "Chip", Data = true },
 	ArcChip = { Name = "Arc Chip", Type = "Chip", Data = true },
 	DataShard = { Name = "Data Shard", Type = "Data", Data = true },
+	-- round 6 (world and money): keys open locked rooms (server/Keys), fuel runs the bay's generator, cells load the
+	-- shelter cage (server/Runs)
+	StrongroomKey = { Name = "Strongroom Key", Type = "Key" },
+	ShelterKey = { Name = "S4 Store Key", Type = "Key" },
+	FuelCan = { Name = "Fuel Can", Type = "Material", Fuel = true },
+	CageCell = { Name = "Cage Cell", Type = "Material" },
 	Manifest = { Name = "Line 9 Manifest", Type = "Material", Size = { 1, 1 }, Weight = 0.05, Stack = 1 },
 }
 
@@ -89,6 +95,8 @@ local SHAPES = {
 	Tag = { Size = { 1, 1 }, Weight = 0.02, Stack = 20 },
 	Round22Sleep = { Size = { 1, 1 }, Weight = 0.04, Stack = 50 },
 	Bolt = { Size = { 1, 1 }, Weight = 0.15, Stack = 10 },
+	FuelCan = { Size = { 1, 2 }, Weight = 2.5, Stack = 2 },
+	CageCell = { Size = { 1, 1 }, Weight = 1.5, Stack = 3 },
 	SootPoncho = { Size = { 2, 2 }, Weight = 0.8 },
 	SentryUniform = { Size = { 2, 2 }, Weight = 1.2 },
 	Round556 = { Size = { 1, 1 }, Weight = 0.12, Stack = 30 },
@@ -138,6 +146,7 @@ local TYPE_DEFAULTS = {
 	Cybernetic = { Size = { 1, 1 }, Weight = 0.5, Stack = 1 },
 	Pack = { Size = { 2, 2 }, Weight = 1, Stack = 1 },
 	Chip = { Size = { 1, 1 }, Weight = 0.05, Stack = 1 },
+	Key = { Size = { 1, 1 }, Weight = 0.05, Stack = 3 },
 	Data = { Size = { 1, 1 }, Weight = 0.05, Stack = 5 },
 }
 function Items.Shape(id)
@@ -227,7 +236,7 @@ Items.LootTables = {
 	Supply = {
 		{ "Scrap", 1, 3, 7 }, { "Wire", 0.7, 1, 4 }, { "Cloth", 0.7, 1, 3 }, { "ArcCell", 0.5, 4, 10 }, { "Powder", 0.25, 1, 2 }, { "PipeGrenade", 0.15, 1, 2 },
 		{ "Medkit", 0.5, 1, 2 }, { "Ration", 0.6, 1, 2 }, { "Bandage", 0.5, 1, 2 }, { "Tourniquet", 0.2, 1, 1 }, { "Splint", 0.15, 1, 1 },
-		{ "Painkillers", 0.2, 1, 2 }, { "Hemostat", 0.1, 1, 1 },
+		{ "Painkillers", 0.2, 1, 2 }, { "Hemostat", 0.1, 1, 1 }, { "FuelCan", 0.25, 1, 1 },
 		{ "RebarBlade", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 }, { "ScrapSpear", 0.12, 1, 1 }, { "Sledge", 0.06, 1, 1 }, { "ArcPistol", 0.05, 1, 1 },
 		{ "PlatedHelm", 0.1, 1, 1 }, { "RiotPlate", 0.06, 1, 1 }, { "ArcHood", 0.08, 1, 1 }, { "ConduitHarness", 0.04, 1, 1 }, { "ServoGreaves", 0.07, 1, 1 },
 		{ "ReflexOptic", 0.06, 1, 1 }, { "TargetingLens", 0.05, 1, 1 }, { "ServoArm", 0.05, 1, 1 }, { "ArcGauntlet", 0.04, 1, 1 }, { "NeuralCore", 0.04, 1, 1 }, { "OverclockCore", 0.02, 1, 1 },
@@ -265,7 +274,7 @@ Items.LootTables = {
 		{ "Scrap", 0.8, 1, 3 }, { "Wire", 0.6, 1, 3 }, { "Medkit", 0.45, 1, 1 }, { "ArcCell", 0.5, 4, 8 }, { "Ration", 0.4, 1, 2 },
 		{ "RebarBlade", 0.1, 1, 1 }, { "PlatedHelm", 0.08, 1, 1 }, { "ConduitHarness", 0.05, 1, 1 }, { "ReflexOptic", 0.05, 1, 1 }, { "PipeGrenade", 0.2, 1, 1 },
 		{ "Round762x51", 0.3, 5, 16 }, { "M1Garand", 0.08, 1, 1 },
-		{ "DataShard", 0.25, 1, 1 }, { "TrailChip", 0.03, 1, 1 }, { "FocusChip", 0.03, 1, 1 }, -- a crew that works the valley keeps a long rifle
+		{ "DataShard", 0.25, 1, 1 }, { "TrailChip", 0.03, 1, 1 }, { "FocusChip", 0.03, 1, 1 }, { "StrongroomKey", 0.06, 1, 1 }, -- a crew that works the valley keeps a long rifle
 	},
 	-- station sentries carry what security carries: 9mm for a sidearm (sometimes the sidearm itself) or 5.56 for a
 	-- rifle (sometimes the carbine itself), never the .22 a conduit's quiet pistol takes (owner, 2026-11-12)
@@ -277,7 +286,7 @@ Items.LootTables = {
 		{ "Scrap", 0.8, 1, 2 }, { "Ration", 0.45, 1, 1 }, { "Cloth", 0.4, 1, 2 }, { "Wire", 0.3, 1, 2 },
 		{ "Medkit", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 }, { "Bandage", 0.35, 1, 2 }, { "Tourniquet", 0.12, 1, 1 },
 		{ "PlateCarrier", 0.06, 1, 1 }, { "DutyBelt", 0.12, 1, 1 }, -- security's own kit
-		{ "SentryUniform", 0.1, 1, 1 }, { "Bolt", 0.3, 1, 3 },
+		{ "SentryUniform", 0.1, 1, 1 }, { "Bolt", 0.3, 1, 3 }, { "StrongroomKey", 0.04, 1, 1 },
 	},
 	-- the barrens under the Sumps (server/Barrens.lua): the stores of the hall, rich in implants and cells
 	Barrens = {
@@ -293,13 +302,13 @@ Items.LootTables = {
 		{ "Round9", 0.8, 4, 10 }, { "Round9AP", 0.2, 3, 8 }, { "ArcCell", 0.7, 3, 8 }, { "Battery", 0.5, 1, 2 }, { "Medkit", 0.35, 1, 1 }, { "Ration", 0.4, 1, 1 },
 		{ "ShockBaton", 0.12, 1, 1 }, { "ReflexOptic", 0.06, 1, 1 }, { "NeuralCore", 0.05, 1, 1 },
 		{ "Round22Sleep", 0.25, 3, 6 }, { "SentryUniform", 0.08, 1, 1 },
-		{ "DataShard", 0.3, 1, 1 }, { "MirrorChip", 0.04, 1, 1 }, { "HookChip", 0.04, 1, 1 },
+		{ "DataShard", 0.3, 1, 1 }, { "MirrorChip", 0.04, 1, 1 }, { "HookChip", 0.04, 1, 1 }, { "ShelterKey", 0.1, 1, 1 },
 	},
 	Raider = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 }, { "Bandage", 0.3, 1, 1 },
 		{ "PipeClub", 0.1, 1, 1 }, { "ScavHelm", 0.08, 1, 1 }, { "ScrapVest", 0.08, 1, 1 }, { "ScrapGreaves", 0.08, 1, 1 },
 		{ "ChemSniffer", 0.03, 1, 1 },
-		{ "Round762x39", 0.3, 6, 18 }, { "Round762x39AP", 0.08, 4, 10 }, { "AK47", 0.05, 1, 1 }, -- the gun every scavenger can keep running
+		{ "Round762x39", 0.3, 6, 18 }, { "Round762x39AP", 0.08, 4, 10 }, { "AK47", 0.05, 1, 1 }, { "StrongroomKey", 0.02, 1, 1 }, { "FuelCan", 0.08, 1, 1 }, -- the gun every scavenger can keep running
 	},
 }
 

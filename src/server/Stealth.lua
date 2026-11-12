@@ -376,6 +376,10 @@ function Stealth.Noise(position, radius, kind, player)
 		return
 	end
 	local level = player and levels[player]
+	radius *= require(script.Parent.Sky).NoiseMult(position) -- round 6: rain covers noise in the open
+	pcall(function()
+		require(script.Parent.Runs).Heard(position, kind) -- a copy run below pauses on any noise
+	end)
 	for _, g in guards do
 		if g.state ~= "Down" and g.state ~= "Alert" and g.state ~= "Spotted" and (not level or g.level == level) then
 			local d = (g.root.Position - position).Magnitude
@@ -786,6 +790,16 @@ function Stealth.SpawnGuard(position, opts)
 		guards[model] = nil
 	end)
 	return model, g
+end
+
+-- Puts a guard straight on Alert against a player (round 6: the shelter runs send overseers in).
+function Stealth.Alarm(model, player)
+	local g = guards[model]
+	if g and g.state ~= "Down" then
+		alert(g, player, true)
+		return true
+	end
+	return false
 end
 
 function Stealth.StateOf(model)

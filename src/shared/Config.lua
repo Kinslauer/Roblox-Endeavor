@@ -969,4 +969,36 @@ Config.Builds = {
 	Respec = { Window = 120 }, -- seconds a solved riddle keeps the basin open
 }
 
+-- World and money (round 6 of docs/Reference-Picks-Plan.md)
+Config.World = {
+	-- the hour picks a time of day and a weather (server/Sky.lua). Natural = the chance it moves on to the next time
+	-- (dawn, day, dusk, night); otherwise any other time comes.
+	Sky = {
+		Pocket = "Day", Natural = 0.5, Start = "Night",
+		Times = {
+			Dawn = { Clock = 6.3, Brightness = 1.5, Ambient = Color3.fromRGB(66, 58, 70), Outdoor = Color3.fromRGB(92, 80, 92), Fog = Color3.fromRGB(110, 84, 86), FogEnd = 1300, Sight = 0.9 },
+			Day = { Clock = 13, Brightness = 2.3, Ambient = Color3.fromRGB(86, 84, 92), Outdoor = Color3.fromRGB(120, 118, 124), Fog = Color3.fromRGB(140, 130, 118), FogEnd = 1600, Sight = 1 },
+			Dusk = { Clock = 18.3, Brightness = 1.4, Ambient = Color3.fromRGB(70, 48, 58), Outdoor = Color3.fromRGB(96, 64, 70), Fog = Color3.fromRGB(104, 64, 58), FogEnd = 1300, Sight = 0.9 },
+			Night = { Clock = 22.5, Brightness = 1.1, Ambient = Color3.fromRGB(38, 36, 62), Outdoor = Color3.fromRGB(42, 40, 70), Fog = Color3.fromRGB(26, 22, 44), FogEnd = 1400, Sight = 0.75 },
+		},
+		Order = { "Dawn", "Day", "Dusk", "Night" },
+		Weather = { Clear = 0.55, Rain = 0.25, Fog = 0.2 },
+		Rain = { Sight = 0.85, Noise = 0.7 }, -- rain covers noise outdoors
+		Fog = { Sight = 0.6, Density = 0.22, Haze = 2.5 },
+	},
+	Party = { Max = 4, InviteSeconds = 60, ShareRadius = 250, InviteReach = 30 },
+	-- party runs in the shelters (server/Runs.lua): one at a time in Barrens Hall 2
+	Runs = { Seconds = 420, JoinReach = 30, Xp = 250, Credits = 200, Cooldown = 120,
+		Drain = { Rise = 0.018, Top = 3.6, Damage = 6 }, Carry = { SpeedMult = 0.6 }, Fuses = { Window = 30, Count = 4 },
+		Copy = { Seconds = 40, Reach = 5, Light = 0.4 }, Cage = { Cells = 3, Hold = 50, Reach = 9, Wave = 15 } },
+	Keys = { ShelterKey = "S4 STORE", StrongroomKey = "STRONGROOM" },
+	Craft = { Seconds = { Weapon = 90, Armor = 120, Cybernetic = 150 }, TierMult = { 1, 0.75, 0.5 }, FuelPerSecond = 1 },
+	Fuel = { Start = 600, PerCan = 300, Idle = 0.1, Max = 3000 }, -- seconds of running; Idle = per second the turret and alarm burn
+	Condenser = { Period = 900, Cap = 6, Output = "Ration" }, -- makes a little while you are away (real time)
+	Loyalty = { Levels = { 0, 120, 360, 800 }, PerCredit = 0.1, PerContract = 30 },
+	Exchange = { Fee = 0.1, Slots = 2, SlotsPerRep = 5, MaxSlots = 6, Mults = { 1, 1.5, 2 },
+		Values = { Material = 6, Ammo = 2, Consumable = 25, Weapon = 160, Armor = 130, Cybernetic = 320, Chip = 420, Data = 110, Pack = 90 } },
+	Drop = { Price = 250, Delay = 40, Cooldown = 600 },
+}
+
 return Config

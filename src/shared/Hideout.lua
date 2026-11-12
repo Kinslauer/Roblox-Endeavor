@@ -17,12 +17,13 @@ Hideout.Modules = {
 	Walls = { Name = "Perimeter walls", Desc = "A compound wall with a gate. Gate tier rises with your workshop tier.", Cost = { Scrap = 30, SheetMetal = 8 }, Tier = 1 },
 	Alarm = { Name = "Alarm", Desc = "Tells you and your crew the moment someone hostile is inside.", Cost = { Wire = 6, Battery = 2 }, Tier = 1 },
 	Turret = { Name = "Arc turret", Desc = "Shoots anything hostile within 40 studs.", Cost = { Scrap = 25, Wire = 12, Battery = 4 }, Tier = 2, Damage = 14, Range = 40, Interval = 1.1 },
-	Generator = { Name = "Generator", Desc = "Powers the turret and alarm. Without it they are scrap.", Cost = { Scrap = 15, Battery = 3, Wire = 4 }, Tier = 2 },
+	Generator = { Name = "Generator", Desc = "Powers the turret and alarm and speeds the bench. Runs on fuel cans.", Cost = { Scrap = 15, Battery = 3, Wire = 4 }, Tier = 2 },
 	Forge = { Name = "Forge", Desc = "Needed for +2 and +3 upgrades.", Cost = { Scrap = 50, SheetMetal = 20, Powder = 4 }, Tier = 2 },
 	Bunks = { Name = "Bunks", Desc = "Your crew spawns here instead of the city.", Cost = { Cloth = 12, Scrap = 10 }, Tier = 1 },
 	Autonet = { Name = "Autonet", Desc = "The table that rips cybernetics in and out of a body. Every rip costs a third of your health.", Cost = { SheetMetal = 6, Wire = 10, Battery = 3, Glass = 2 }, Tier = 1 },
 	Shelves = { Name = "Shelving", Desc = "Two more rows of vault grid per level, three levels. Build it again to add a level.", Cost = { Scrap = 20, SheetMetal = 6 }, Tier = 1, Levels = 3, RowsPerLevel = 2 },
 	Computer = { Name = "Computer", Desc = "A terminal with a stack reader. Its apps come online when you meet the people who run them.", Cost = { Battery = 4, Wire = 12, Glass = 3, SheetMetal = 4 }, Tier = 1 },
+	Condenser = { Name = "Condenser", Desc = "Pulls water and protein out of the air. A ration every quarter hour, while you are away too, until the tank is full.", Cost = { SheetMetal = 4, Pipe = 3, Glass = 2, Wire = 2 }, Tier = 1 },
 	Medbay = { Name = "Medbay", Desc = "Slow healing while inside the compound.", Cost = { Cloth = 10, Wire = 4, Glass = 4 }, Tier = 2 },
 }
 Hideout.GateTier = { "Weak", "Standard", "Reinforced" } -- by workshop tier

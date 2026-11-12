@@ -211,6 +211,31 @@ local function build(site, h)
 		local light = Instance.new("PointLight")
 		light.Range, light.Brightness, light.Color = 20, 1, Color3.fromRGB(255, 220, 120)
 		light.Parent = gen
+		-- round 6: it runs on fuel (server/Economy)
+		local fp = Instance.new("ProximityPrompt")
+		fp.ObjectText, fp.ActionText, fp.HoldDuration = "Generator", "Load fuel", 0.8
+		fp.MaxActivationDistance, fp.RequiresLineOfSight, fp.KeyboardKeyCode = 8, false, Enum.KeyCode.X
+		fp.Parent = gen
+		fp.Triggered:Connect(function(player)
+			if isMember(site, player) then
+				require(script.Parent.Economy).Refuel(player, site)
+			end
+		end)
+	end
+	if h.Modules.Condenser then
+		-- round 6: a still that pulls water and protein out of the air, real time, while you are away too
+		local still = part(model, { Name = "Condenser", Size = Vector3.new(3, 5, 3), Position = c + Vector3.new(6, GROUND_TOP + 3.5, 12), Color = Color3.fromRGB(110, 130, 120), Material = Enum.Material.Metal })
+		local glass = part(model, { Name = "CondenserGlass", Size = Vector3.new(2.2, 2.6, 0.2), Position = c + Vector3.new(6, GROUND_TOP + 4, 10.4), Color = Color3.fromRGB(150, 220, 200), Material = Enum.Material.Glass, Transparency = 0.4, CanCollide = false })
+		local cp = Instance.new("ProximityPrompt")
+		cp.ObjectText, cp.ActionText, cp.HoldDuration = "Condenser", "Drain", 0.6
+		cp.MaxActivationDistance, cp.RequiresLineOfSight, cp.KeyboardKeyCode = 8, false, Enum.KeyCode.X
+		cp.Parent = still
+		cp.Triggered:Connect(function(player)
+			if isMember(site, player) then
+				require(script.Parent.Economy).Drain(player, site)
+			end
+		end)
+		local _ = glass
 	end
 	if h.Modules.Turret and h.Modules.Generator then
 		local turret = dress(part(model, { Name = "Turret", Size = Vector3.new(2, 4, 2), Position = c + Vector3.new(12, GROUND_TOP + 3, -8), Color = Color3.fromRGB(40, 90, 140), Material = Enum.Material.Metal }), Assets.Hideout.Turret)
@@ -687,8 +712,8 @@ end
 
 local function turretTick(site)
 	local turret = site.Turret
-	if not turret or not turret.Parent then
-		return
+	if not turret or not turret.Parent or (Hideouts.Powered and not Hideouts.Powered(site)) then
+		return -- round 6: no fuel, no turret
 	end
 	local def = HideoutDefs.Modules.Turret
 	local best, bestDist = nil, def.Range
@@ -720,7 +745,7 @@ end
 local function alarmTick(site)
 	local owner = ownerPlayer(site)
 	local h = owner and hideoutOf(owner)
-	if not (h and h.Modules.Alarm and h.Modules.Generator) then
+	if not (h and h.Modules.Alarm and h.Modules.Generator) or (Hideouts.Powered and not Hideouts.Powered(site)) then
 		return
 	end
 	for _, p in Players:GetPlayers() do

@@ -24,6 +24,9 @@ Terminal.House = {
 	{ Id = "PowderLot", Name = "Powder keg (4 Powder)", Price = 80, Items = { Powder = 4 } },
 	{ Id = "GlassLot", Name = "Glass crate (4 Glass)", Price = 45, Items = { Glass = 4 } },
 	{ Id = "ClothLot", Name = "Cloth bale (10 Torn Cloth)", Price = 30, Items = { Cloth = 10 } },
+	-- round 6: goods a contact only sells to someone they trust (Loyalty = the level it needs)
+	{ Id = "FuelLot", Name = "Fuel (2 cans)", Price = 90, Items = { FuelCan = 2 }, Loyalty = 2 },
+	{ Id = "KeyLot", Name = "Strongroom key", Price = 260, Items = { StrongroomKey = 1 }, Loyalty = 3 },
 }
 
 -- MARKET: the black market. Dearer than the Reach's trader; sells what the trader will not.
@@ -38,8 +41,20 @@ Terminal.Market = {
 	{ Id = "RiotPlate", Price = 600 },
 	{ Id = "Sledge", Price = 450 },
 	{ Id = "BreachingCharge", Price = 150, Count = 2 },
-	{ Id = "FocusChip", Price = 900 }, { Id = "HookChip", Price = 900 }, { Id = "TrailChip", Price = 900 },
-	{ Id = "BreathChip", Price = 700 }, { Id = "MirrorChip", Price = 1000 }, { Id = "ArcChip", Price = 1000 },
+	{ Id = "FocusChip", Price = 900, Loyalty = 2 }, { Id = "HookChip", Price = 900, Loyalty = 2 }, { Id = "TrailChip", Price = 900, Loyalty = 2 },
+	{ Id = "BreathChip", Price = 700, Loyalty = 2 }, { Id = "MirrorChip", Price = 1000, Loyalty = 3 }, { Id = "ArcChip", Price = 1000, Loyalty = 3 },
+	{ Id = "Round9AP", Price = 120, Count = 15, Loyalty = 2 },
+	{ Id = "ShelterKey", Price = 400, Loyalty = 4 },
+}
+
+-- Swaps (round 6): goods for goods, no credits. Each needs a level of the contact's trust and earns Points of it.
+Terminal.Swaps = {
+	{ Id = "ScrapForCloth", Contact = "Fixer", Give = { Scrap = 10 }, Get = { Cloth = 6 }, Loyalty = 1, Points = 8 },
+	{ Id = "CellsForFuel", Contact = "Fixer", Give = { Battery = 2 }, Get = { FuelCan = 1 }, Loyalty = 2, Points = 12 },
+	{ Id = "TagsForAmmo", Contact = "Broker", Give = { Tag = 3 }, Get = { Round9 = 30 }, Loyalty = 1, Points = 15 },
+	{ Id = "PowderForKey", Contact = "Broker", Give = { Powder = 4, Tag = 4 }, Get = { StrongroomKey = 1 }, Loyalty = 2, Points = 25 },
+	{ Id = "ShardsForChip", Contact = "Dealer", Give = { DataShard = 3 }, Get = { BreathChip = 1 }, Loyalty = 2, Points = 30 },
+	{ Id = "CoreParts", Contact = "Dealer", Give = { Battery = 4, Glass = 3, Wire = 6 }, Get = { ChemSniffer = 1 }, Loyalty = 3, Points = 30 },
 }
 
 -- RAIDS: contract templates. The server rolls one Clear per frontier site, one Bounty per rolled bounty

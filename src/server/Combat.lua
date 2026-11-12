@@ -76,6 +76,7 @@ function Combat.CanAct(char)
 	local s = st(char)
 	local t = os.clock()
 	return isAlive(char) and t >= s.stunned and t >= s.busyUntil - BUFFER and not char:GetAttribute("Knocked") and not char:GetAttribute("Hidden")
+		and not char:GetAttribute("RunCrate")
 end
 
 -- Two weapons (server/Kit): a swap may come mid-chain, between swings; never while stunned, knocked or reloading.
@@ -545,6 +546,9 @@ local function applyDamage(attacker, victim, amount, opts)
 	local ap, vp = Players:GetPlayerFromCharacter(attacker), Players:GetPlayerFromCharacter(victim)
 	if ap and vp and not WorldPhase.IsOpen() then
 		return "none" -- no PvP during the prologue (they should never meet anyway)
+	end
+	if ap and vp and require(script.Parent.Party).Allies(ap, vp) then
+		return "none" -- a party does not hurt its own (round 6)
 	end
 	if victim:GetAttribute("Contact") then
 		return "none" -- contacts cannot be hurt

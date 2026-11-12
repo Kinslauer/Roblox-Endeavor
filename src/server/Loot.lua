@@ -144,6 +144,9 @@ function Loot.Take(player, key, index)
 			local taken = item.Count - (left or 0)
 			if taken > 0 then
 				applyMeta(item.Id)
+				pcall(function()
+					require(script.Parent.Economy).Found(player, item.Id, taken) -- round 6: found in a run
+				end)
 				item.Count -= taken
 				if item.Count <= 0 then
 					table.remove(c.Box.Items, i)

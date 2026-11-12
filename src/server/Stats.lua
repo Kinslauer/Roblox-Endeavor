@@ -35,7 +35,7 @@ function Stats.Apply(player, fill)
 	local SC = Config.Stealth
 	local stance = char:GetAttribute("Stance")
 	local crouchMult = if stance == "Prone" then SC.Stance.ProneSpeedMult elseif char:GetAttribute("Crouched") then SC.CrouchSpeedMult else 1
-	local handsMult = if char:GetAttribute("NeckHold") then SC.Cqc.Hold.SpeedMult elseif char:GetAttribute("Carrying") then SC.Cqc.Carry.SpeedMult
+	local handsMult = if char:GetAttribute("NeckHold") then SC.Cqc.Hold.SpeedMult elseif char:GetAttribute("Carrying") or char:GetAttribute("RunCrate") then SC.Cqc.Carry.SpeedMult
 		elseif char:GetAttribute("Aiming") then SC.Aim.SpeedMult else 1
 	-- wounds (common/WoundService): a leg out or broken slows you and stops the sprint
 	local woundMult = char:GetAttribute("WoundSpeed") or 1
@@ -58,7 +58,7 @@ function Stats.Apply(player, fill)
 	require(script.Parent.Kit).Apply(player, char) -- the rig and belt, the carried second weapon at its mount
 	hum.UseJumpPower = false
 	-- no jumping while low or with your hands on someone (Space brings you up a stance instead)
-	local grounded = char:GetAttribute("Crouched") or char:GetAttribute("NeckHold") or char:GetAttribute("Carrying") or char:GetAttribute("WoundNoJump") or char:GetAttribute("Knocked")
+	local grounded = char:GetAttribute("Crouched") or char:GetAttribute("NeckHold") or char:GetAttribute("Carrying") or char:GetAttribute("RunCrate") or char:GetAttribute("WoundNoJump") or char:GetAttribute("Knocked")
 	hum.JumpHeight = if grounded then 0 else Config.Movement.JumpHeight * (d.JumpMult or 1)
 	for _, slot in Cybernetics.Slots do
 		char:SetAttribute("Cyber_" .. slot, PlayerData.Get(player).Cyber[slot])

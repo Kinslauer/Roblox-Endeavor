@@ -9,6 +9,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config)
+local function economy() -- round 6: trust, swaps, the exchange, the drop (server/Economy)
+	return require(script.Parent.Economy)
+end
 local F = require(Shared.Frontier)
 local Items = require(Shared.Items)
 local Remotes = require(Shared.Remotes)
@@ -143,11 +146,12 @@ function Terminal.State(player)
 	end)
 	local house, market = {}, {}
 	for _, h in T.House do
-		table.insert(house, { Id = h.Id, Name = h.Name, Price = h.Price })
+		table.insert(house, { Id = h.Id, Name = h.Name, Price = h.Price, Lock = if economy().Loyalty(player, "Fixer") < (h.Loyalty or 1) then h.Loyalty else nil })
 	end
 	for _, m in T.Market do
 		local def = Items.Defs[m.Id]
-		table.insert(market, { Id = m.Id, Name = (def and def.Name or m.Id) .. (if (m.Count or 1) > 1 then (" x%d"):format(m.Count) else ""), Price = m.Price })
+		table.insert(market, { Id = m.Id, Name = (def and def.Name or m.Id) .. (if (m.Count or 1) > 1 then (" x%d"):format(m.Count) else ""), Price = m.Price,
+			Lock = if economy().Loyalty(player, "Dealer") < (m.Loyalty or 1) then m.Loyalty else nil })
 	end
 	-- ARCHIVE: what this conduit has read, in the order read
 	local archive = {}
@@ -165,7 +169,10 @@ function Terminal.State(player)
 		table.insert(vows, { Id = id, Name = BuildRules.Vows[id].Name, Held = data.Vow == id })
 	end
 	local carriedXp, carriedCr = builds().Carried(player)
-	return { Grade = BuildRules.GradeName(k.Grade), Vows = vows, Carried = { Xp = carriedXp, Credits = carriedCr }, Uploaded = k.Uploaded == true, Apps = apps, Contracts = contracts, House = house, Market = market, Archive = archive, Credits = data.War.Credits or 0, Completed = k.Completed or 0, MaxActive = T.MaxActive,
+	local okE, econ = pcall(function()
+		return economy().State(player)
+	end)
+	return { Economy = okE and econ or nil, Grade = BuildRules.GradeName(k.Grade), Vows = vows, Carried = { Xp = carriedXp, Credits = carriedCr }, Uploaded = k.Uploaded == true, Apps = apps, Contracts = contracts, House = house, Market = market, Archive = archive, Credits = data.War.Credits or 0, Completed = k.Completed or 0, MaxActive = T.MaxActive,
 		Locked = { RAIDS = "find the Broker", HOUSE = "find the Fixer", MARKET = "find the Dealer" } }
 end
 
@@ -302,6 +309,7 @@ local function complete(player, k, id)
 	k.Completed = (k.Completed or 0) + 1
 	-- the pay rides with the body until it is home (round 5: server/Builds)
 	builds().Earn(player, 0, def.Reward.Credits)
+	economy().AddLoyalty(player, "Broker", Config.World.Loyalty.PerContract)
 	for itemId, n in def.Reward.Items or {} do
 		Inventory.Add(player, itemId, n)
 	end
@@ -335,15 +343,22 @@ end
 Terminal.Progress = progress
 
 -- ===== house and market =====
-local function pay(player, price)
+-- contact = who is paid: every credit spent with a contact earns their trust (round 6: server/Economy)
+local function pay(player, price, contact, need)
 	local data = PlayerData.Get(player)
 	if not data then
 		return false, "No profile"
+	end
+	if contact and need and economy().Loyalty(player, contact) < need then
+		return false, ("> TRUST %d NEEDED"):format(need)
 	end
 	if (data.War.Credits or 0) < price then
 		return false, ("Not enough credits (%d needed)"):format(price)
 	end
 	data.War.Credits -= price
+	if contact then
+		economy().AddLoyalty(player, contact, price * Config.World.Loyalty.PerCredit)
+	end
 	return true
 end
 
@@ -354,7 +369,7 @@ function Terminal.Order(player, id)
 	end
 	for _, h in T.House do
 		if h.Id == id then
-			local ok, why = pay(player, h.Price)
+			local ok, why = pay(player, h.Price, "Fixer", h.Loyalty)
 			if not ok then
 				return false, why
 			end
@@ -376,7 +391,7 @@ function Terminal.Buy(player, id)
 	end
 	for _, m in T.Market do
 		if m.Id == id then
-			local ok, why = pay(player, m.Price)
+			local ok, why = pay(player, m.Price, "Dealer", m.Loyalty)
 			if not ok then
 				return false, why
 			end
@@ -397,7 +412,15 @@ function Terminal.Init()
 		if not open[player] then
 			return announce(player, "You are not at a computer.", "Warning")
 		end
+		local function econ(name)
+			return function(p, a)
+				local ok, why = economy()[name](p, a)
+				Terminal.Push(p)
+				return ok, why
+			end
+		end
 		local fn = ({ Accept = Terminal.Accept, Abandon = Terminal.Abandon, Order = Terminal.Order, Buy = Terminal.Buy,
+			Swap = econ("Swap"), List = econ("List"), Unlist = econ("Unlist"), Take = econ("Take"), Drop = econ("Drop"),
 			Vow = function(p, id)
 				local ok = builds().Swear(p, id)
 				Terminal.Push(p)
@@ -420,12 +443,28 @@ function Terminal.Init()
 		if not killer then
 			return
 		end
-		local site = model:GetAttribute("Site")
-		if site then
-			progress(killer, "Clear", site, 1)
+		-- a kill counts for every member of the killer's party nearby (round 6: server/Party)
+		local who = { killer }
+		local okP, members = pcall(function()
+			return require(script.Parent.Party).Members(killer)
+		end)
+		if okP and members then
+			local kroot = killer.Character and killer.Character:FindFirstChild("HumanoidRootPart")
+			for _, m in members do
+				local mroot = m.Character and m.Character:FindFirstChild("HumanoidRootPart")
+				if m ~= killer and kroot and mroot and (mroot.Position - kroot.Position).Magnitude <= Config.World.Party.ShareRadius then
+					table.insert(who, m)
+				end
+			end
 		end
-		if model:GetAttribute("Bounty") then
-			progress(killer, "Bounty", model.Name, 1)
+		for _, p in who do
+			local site = model:GetAttribute("Site")
+			if site then
+				progress(p, "Clear", site, 1)
+			end
+			if model:GetAttribute("Bounty") then
+				progress(p, "Bounty", model.Name, 1)
+			end
 		end
 		if typeName == "Rival" then
 			Terminal.Intel(killer)
