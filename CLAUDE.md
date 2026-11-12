@@ -53,6 +53,8 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   log and commit, because the repository is on GitHub and the key can publish over the live game.
   Roblox sometimes answers 409 "server busy" on the start place; the script retries, and a later retry works.
 - Maps: `tools/smoke/dumpworld.lua` / `dumpfront.lua` + `tools/smoke/map.py` draw the generated worlds.
+- Fetch and rebase BEFORE publishing, not only before pushing: a publish from a stale tree puts the live place back
+  to before the other sessions' rounds (happened 2026-11-12, Front v29/v32 and Endeavor v96; fixed by v33/v98).
 - Commit style: one commit per round, push to `claude/roblox-permadeath-openworld-cj3jfk` (the only branch; no PRs),
   because Andy reads and publishes from that one branch. Other sessions push to it too: fetch and rebase before you push.
 - The user tests in Studio (File → Open from Roblox, so DataStores work) or the Roblox app; Studio's Play button
@@ -516,7 +518,7 @@ Client tab screenshot, because Andy cannot read logs another way.
   the control room. Unseen in game: the UI at the new scale (blind change: watch for text that overflows its plate),
   the tracer and kick. Awaits Andy: docs/TESTING.md "Endeavor: station fixes". Andy has not yet seen v86 on the
   one-piece bodies.
-- Front v29 + Endeavor v96 (2026-11-12): realistic pass round 6, strippable soldiers (bare clone body in the tank,
+- Front v33 + Endeavor v98 (2026-11-12): realistic pass round 6, strippable soldiers (bare clone body in the tank,
   battle attire from the barracks, kit and armour as layers, looted bodies stay stripped, cybernetic limbs and a
   heavy armour set rigged but given by no item yet). Endeavor only shares Rigs/Skin/Assets. Real servers: Front start
   5.3s, 0 warnings, every group hides and shows the right pieces on both sides, 4 layers of 15 bones on one body,
