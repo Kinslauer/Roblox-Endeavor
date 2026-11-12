@@ -788,7 +788,7 @@ Open the recruit app (M at the base, or the locker) and look at the weapons list
 - [ ] Rifle size: every parts-built rifle is now about 0.55 of its old size in the hands, close to real scale
       against the body (before, a rifle was longer than the soldier is tall). Say if it now looks too small.
 
-### Front: single shot, semi-automatic, automatic (2026-11-12, Front vNEXT)
+### Front: single shot, semi-automatic, automatic (2026-11-12, Front v37)
 - [ ] In the recruit app each gun in the locker says its kind: single shot, semi-auto or automatic.
 - [ ] Single shot (Mosin): one shot, then nothing happens until you rack it with T. The selector (B) reads SINGLE.
 - [ ] Semi-automatic (M1 Garand, M16A1, M1A, SKS, the pistols): one shot for each click, no racking. Holding the

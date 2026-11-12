@@ -605,7 +605,7 @@ Client tab screenshot, because Andy cannot read logs another way.
   carrying bodies, the wall); v85 the same day: playtest fixes (pistol every ride, third person, quiet screen, cloak,
   takedown alignment). Awaits Andy's play-through: docs/TESTING.md "Endeavor: Metal Gear handling". Andy reported
   "the right click broke" on v79; no fault was found beyond first person not turning the body (fixed); asked what failed.
-- Front vNEXT (2026-11-12): the three actions named and shown; M16A1 semi only; the Mosin's selector reads SINGLE.
+- Front v37 (2026-11-12; real server 0 warnings): the three actions named and shown; M16A1 semi only; the Mosin's selector reads SINGLE.
 - Front v36 (2026-11-12): AK-74, M4A1, M1A; the M16A1's own receiver; rifles shrunk to body scale (0.55).
   Real server: start 4.4s, 0 warnings, all four assemble (M4A1 3.6 studs in the hand, M1A 4.6). Unseen in game: the new size in the hands. Awaits Andy: docs/TESTING.md "Front: one more gun in each family".
 - Front v34 (2026-11-12): gun families, carried spare parts, changing parts in the field (hold Y, 1-4) and
