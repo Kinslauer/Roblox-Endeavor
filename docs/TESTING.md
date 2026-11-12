@@ -732,7 +732,7 @@ Open the recruit app (M at the base, or the locker) and look at the weapons list
 - [ ] The M1911, Glock 17 and Service Revolver (sidearm, key 2) show the new pistol models. The revolver holds 6.
 - [ ] SKS, Mosin and Makarov still show their old one-piece models (not rebuilt yet).
 
-### Front: gun families and changing parts in the field (2026-11-12, Front v32)
+### Front: gun families and changing parts in the field (2026-11-12, Front v34)
 - [ ] In the recruit app (M), each attachment in the locker has a "Carry" button. Carried parts show on the line
       "Carried spare parts" (at most four). "Leave" takes one off the list. You need a second copy to both mount
       and carry the same part.

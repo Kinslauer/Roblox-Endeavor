@@ -561,8 +561,8 @@ Client tab screenshot, because Andy cannot read logs another way.
   carrying bodies, the wall); v85 the same day: playtest fixes (pistol every ride, third person, quiet screen, cloak,
   takedown alignment). Awaits Andy's play-through: docs/TESTING.md "Endeavor: Metal Gear handling". Andy reported
   "the right click broke" on v79; no fault was found beyond first person not turning the body (fixed); asked what failed.
-- Front v32 (2026-11-12): gun families, carried spare parts, changing parts in the field (hold Y, 1-4) and
-  everything at the barracks. REALCHECK32 Awaits Andy: docs/TESTING.md "Front: gun families and changing parts in
+- Front v34 (2026-11-12): gun families, carried spare parts, changing parts in the field (hold Y, 1-4) and
+  everything at the barracks. Real server: start 4.2s, 0 warnings, all 5 rifles assemble. Awaits Andy: docs/TESTING.md "Front: gun families and changing parts in
   the field". Next: more guns from Andy's list, family by family.
 - Front v31 (2026-11-12): guns built from components (AK, AR, Garand/M14 with three barrel lengths, muzzle devices,
   scopes, foregrip), new AK-47, M1 Garand, Glock 17, service revolver. Real server: start 3.0s, 0 warnings, all 5 rifles assemble in every barrel with suppressor, scope and foregrip. Unseen in game: the grip of the new
