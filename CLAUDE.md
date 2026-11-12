@@ -720,7 +720,7 @@ Client tab screenshot, because Andy cannot read logs another way.
   pain, concussion, bruising under plate, six treatment items, surgery, medbay healing, the Reach's doctor, scars,
   hunger, the body outline). Real servers: Endeavor start 9.4s, Front 3.9s, 0 warnings; on the real Conduit body
   every limb maps to its wound part. Awaits Andy: docs/TESTING.md "Endeavor and Front: wounds". Next: round 2 (the
-  kit and two weapons). Asked Andy what "120t weights and use 80b" means (the humanoid drone row).
+  kit and two weapons). Andy answered the drone row: it carries a lot of weight and fights mainly with guns.
 - Endeavor v103 (2026-11-12): fire actions. The Whisper is racked by hand (T) after every round, the Carbine,
   Garand and Duty Pistol are semi-automatic, the AK-47 automatic. Real server: start 7.8s, 0 warnings. Unseen in game: the rack animation
   on the standing body. Awaits Andy: docs/TESTING.md "Endeavor: single shot, semi-automatic, automatic".
