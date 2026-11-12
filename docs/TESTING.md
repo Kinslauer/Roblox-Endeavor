@@ -778,7 +778,7 @@ Open the recruit app (M at the base, or the locker) and look at the weapons list
 - [ ] Die: the carried spare parts are in your body's loot, damaged. Unlink: they go back in the locker.
 - [ ] The Glock shows as "G17" and the Union scope as "3x scope" (model names, no maker names).
 
-### Front: one more gun in each family (2026-11-12, Front vNEXT)
+### Front: one more gun in each family (2026-11-12, Front v36)
 - [ ] The recruit app lists three new rifles: AK-74 (Pact), M4A1 and M1A (Union).
 - [ ] AK-74: a straighter black magazine and a long round muzzle brake. It kicks less than the AKM. The short and
       long AK barrels fit it.
