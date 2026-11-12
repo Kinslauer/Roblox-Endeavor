@@ -37,8 +37,26 @@ local Skills = require(Shared:WaitForChild("Skills"))
 
 local player = Players.LocalPlayer
 
+-- Where a shot or a throw should go: from the shoulder to whatever the reticle is on (the camera sits over the
+-- shoulder, so its own direction, used from the body, would land beside the reticle).
 local function cameraDirection()
-	return workspace.CurrentCamera.CFrame.LookVector
+	local cam = workspace.CurrentCamera
+	local look = cam.CFrame.LookVector
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return look
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { char }
+	local hit = workspace:Raycast(cam.CFrame.Position, look * 400, params)
+	local point = if hit then hit.Position else cam.CFrame.Position + look * 400
+	local dir = point - (root.Position + Vector3.new(0, 1.2, 0))
+	if dir.Magnitude < 4 or dir.Unit:Dot(look) < 0.5 then
+		return look -- something between the camera and the body: keep the plain direction
+	end
+	return dir.Unit
 end
 
 local gui = Instance.new("ScreenGui")
@@ -128,7 +146,7 @@ local function bar(pos, size, color, name)
 		for q = 1, 3 do -- quarter notches
 			make("Frame", { Size = UDim2.new(0, 1, 0, 4), Position = UDim2.new(q / 4, 0, 1, -4), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.3, BorderSizePixel = 0, ZIndex = 3 }, back)
 		end
-		label({ Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.fromOffset(6, 0), Text = name, TextSize = 8, Font = UI.Title, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.new(0, 0, 0), TextTransparency = 0.25, ZIndex = 2, Parent = back })
+		label({ Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.fromOffset(6, 0), Text = name, TextSize = 10, Font = UI.Title, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.new(0, 0, 0), TextTransparency = 0.25, ZIndex = 2, Parent = back })
 		barValue[fill] = label({ Size = UDim2.new(0.5, -6, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), Text = "", TextSize = 11, Font = UI.Mono, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = UI.Text, ZIndex = 2, Parent = back })
 		make("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.5, Thickness = 1 }, barValue[fill])
 	end
@@ -199,7 +217,7 @@ local function refreshBackdrop()
 end
 panel = function(size, position, title, plain)
 	local chrome = Kit.plate({ Name = "Chrome", Visible = false })
-	local head = label({ Size = UDim2.new(1, -24, 0, HEADER), Position = UDim2.fromOffset(12, 0), Text = Kit.spaced(title or "", 1), Font = UI.Title, TextSize = 10,
+	local head = label({ Size = UDim2.new(1, -24, 0, HEADER), Position = UDim2.fromOffset(12, 0), Text = Kit.spaced(title or "", 1), Font = UI.Title, TextSize = 11,
 		TextColor3 = UI.Accent, TextXAlignment = Enum.TextXAlignment.Left, Parent = chrome })
 	head.Name = "Title"
 	make("Frame", { Size = UDim2.new(1, -2, 0, 1), Position = UDim2.fromOffset(1, HEADER - 1), BackgroundColor3 = UI.Line, BackgroundTransparency = 0.35, BorderSizePixel = 0 }, chrome)
@@ -214,8 +232,9 @@ panel = function(size, position, title, plain)
 	local function follow()
 		local at, extent, origin = frame.AbsolutePosition, frame.AbsoluteSize, gui.AbsolutePosition
 		if typeof(at) == "Vector2" and typeof(extent) == "Vector2" and typeof(origin) == "Vector2" then
-			chrome.Position = UDim2.fromOffset(at.X - origin.X, at.Y - origin.Y - HEADER)
-			chrome.Size = UDim2.fromOffset(extent.X, extent.Y + HEADER)
+			local k = Kit.Scale() -- real pixels back to the scaled layer's own units
+			chrome.Position = UDim2.fromOffset((at.X - origin.X) / k, (at.Y - origin.Y) / k - HEADER)
+			chrome.Size = UDim2.fromOffset(extent.X / k, extent.Y / k + HEADER)
 		else
 			chrome.Position = UDim2.new(position.X.Scale, position.X.Offset, position.Y.Scale, position.Y.Offset - HEADER)
 			chrome.Size = UDim2.new(size.X.Scale, size.X.Offset, size.Y.Scale, size.Y.Offset + HEADER)
@@ -260,7 +279,7 @@ local function addRow(frame, text, buttons, textColor)
 	local width = #buttons * (BW + GAP)
 	if header then
 		local title = text:gsub("^%-%-%s*", ""):gsub("%s*%-%-$", "")
-		label({ Size = UDim2.new(1, 0, 0, 20), Text = string.upper(title), Font = UI.Title, TextSize = 10, TextColor3 = textColor or UI.Dim,
+		label({ Size = UDim2.new(1, 0, 0, 20), Text = string.upper(title), Font = UI.Title, TextSize = 11, TextColor3 = textColor or UI.Dim,
 			TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, Parent = row })
 		make("Frame", { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, 2), BackgroundColor3 = UI.Line, BackgroundTransparency = 0.4, BorderSizePixel = 0 }, row)
 		make("Frame", { Size = UDim2.fromOffset(18, 1), Position = UDim2.new(0, 0, 1, 2), BackgroundColor3 = UI.Accent, BorderSizePixel = 0 }, row)
@@ -271,7 +290,7 @@ local function addRow(frame, text, buttons, textColor)
 	for i, b in buttons do
 		local btn = make("TextButton", {
 			Size = UDim2.fromOffset(BW, 24), Position = UDim2.new(1, -(BW + GAP) * (#buttons - i + 1) + GAP, 0, 2), Text = string.upper(b.text),
-			BackgroundColor3 = b.color or UI.Button, TextColor3 = UI.Text, TextSize = 10, Font = UI.Bold,
+			BackgroundColor3 = b.color or UI.Button, TextColor3 = UI.Text, TextSize = 11, Font = UI.Bold,
 		}, row)
 		stroke(btn, if b.color then Color3.new(1, 1, 1) else UI.Accent, if b.color then 0.8 else 0.55)
 		btn.Activated:Connect(b.fn)
@@ -403,9 +422,11 @@ local function cellAt(frame, screenPos)
 	if not frame or not frame.Parent or not frame.Visible then
 		return 0, 0, false
 	end
-	local rel = screenPos - frame.AbsolutePosition
+	local k = Kit.Scale()
+	local rel = (Vector2.new(screenPos.X, screenPos.Y) - frame.AbsolutePosition) / k
+	local extent = frame.AbsoluteSize / k
 	local x, y = math.floor(rel.X / CELL) + 1, math.floor(rel.Y / CELL) + 1
-	return x, y, rel.X >= -CELL and rel.Y >= -CELL and rel.X <= frame.AbsoluteSize.X + CELL and rel.Y <= frame.AbsoluteSize.Y + CELL
+	return x, y, rel.X >= -CELL and rel.Y >= -CELL and rel.X <= extent.X + CELL and rel.Y <= extent.Y + CELL
 end
 
 -- Draws any grid ({ W, H, Items }) into `frame`. `source` tags the stacks for drag/drop ("pack" or "vault").
@@ -555,7 +576,7 @@ local function drawGridInto(gridF, grid, source, holder)
 				lastClick.index, lastClick.source, lastClick.t = index, source, os.clock()
 				tooltip.Visible = false
 				drag = { index = index, rot = item.Rot, startPos = input.Position, moved = false, size = Vector2.new(w, h), source = source, item = item }
-				drag.ghost = make("Frame", { Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4), Position = UDim2.fromOffset(input.Position.X - 10, input.Position.Y - 10), BackgroundColor3 = frame.BackgroundColor3, BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 50 }, gui)
+				drag.ghost = make("Frame", { Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4), Position = UDim2.fromOffset(input.Position.X / Kit.Scale() - 10, input.Position.Y / Kit.Scale() - 10), BackgroundColor3 = frame.BackgroundColor3, BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 50 }, gui)
 				make("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = short(def and def.Name or item.Id), TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 12, ZIndex = 51 }, drag.ghost)
 			end
 		end)
@@ -621,7 +642,7 @@ UserInputService.InputChanged:Connect(function(input)
 			w, h = h, w
 		end
 		drag.ghost.Size = UDim2.fromOffset(w * CELL - 4, h * CELL - 4)
-		drag.ghost.Position = UDim2.fromOffset(input.Position.X - CELL / 2, input.Position.Y - CELL / 2)
+		drag.ghost.Position = UDim2.fromOffset(input.Position.X / Kit.Scale() - CELL / 2, input.Position.Y / Kit.Scale() - CELL / 2)
 		-- preview: tint the cells under the ghost in the grid it is over
 		local target, tx, ty
 		for _, gf in { gridFrame, vaultGridFrame, containerGridFrame } do
@@ -645,7 +666,7 @@ UserInputService.InputChanged:Connect(function(input)
 			clearPreview()
 		end
 	elseif not drag and input.UserInputType == Enum.UserInputType.MouseMovement and tooltip.Visible then
-		tooltip.Position = UDim2.fromOffset(input.Position.X + 16, input.Position.Y + 12)
+		tooltip.Position = UDim2.fromOffset(input.Position.X / Kit.Scale() + 16, input.Position.Y / Kit.Scale() + 12)
 	end
 end)
 UserInputService.InputEnded:Connect(function(input)
@@ -996,6 +1017,7 @@ floatWord = function(char, text, color, big)
 		StudsOffsetWorldSpace = Vector3.new((math.random() * 2 - 1) * D.Spread, 1.5, (math.random() * 2 - 1) * D.Spread) }, anchor)
 	local lbl = make("TextLabel", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Font = Enum.Font.GothamBlack, TextSize = if big then D.HeavyTextSize else D.TextSize,
 		TextColor3 = color, TextStrokeTransparency = 0.2, TextStrokeColor3 = Color3.new(0, 0, 0), Text = text }, bb)
+	Kit.Board(bb)
 	liveNumbers += 1
 	Debris:AddItem(bb, D.Life)
 	task.delay(D.Life, function()
@@ -1850,7 +1872,7 @@ end)
 -- ===== Controls card (F1 toggles; shown for the first two minutes) =====
 local controls = Kit.plate({ Name = "Controls", Size = UDim2.fromOffset(336, 252), Position = UDim2.new(1, -356, 1, -282), BackgroundTransparency = 0.2 })
 do
-	label({ Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(12, 2), Text = Kit.spaced("Controls", 1), Font = UI.Title, TextSize = 10, TextColor3 = UI.Accent, TextXAlignment = Enum.TextXAlignment.Left, Parent = controls })
+	label({ Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(12, 2), Text = Kit.spaced("Controls", 1), Font = UI.Title, TextSize = 11, TextColor3 = UI.Accent, TextXAlignment = Enum.TextXAlignment.Left, Parent = controls })
 	label({ Size = UDim2.fromOffset(60, 24), Position = UDim2.new(1, -70, 0, 2), Text = "F1", Font = UI.Mono, TextSize = 11, TextColor3 = UI.Faint, TextXAlignment = Enum.TextXAlignment.Right, Parent = controls })
 	make("Frame", { Size = UDim2.new(1, -2, 0, 1), Position = UDim2.fromOffset(1, 26), BackgroundColor3 = UI.Line, BackgroundTransparency = 0.35, BorderSizePixel = 0 }, controls)
 	local KEYS = {
@@ -2426,18 +2448,43 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 	elseif kind == "Bolt" then
 		local from = typeof(a) == "Instance" and a:FindFirstChild("HumanoidRootPart")
 		if from then
-			-- c = the weapon's Noise when it fires a round and not an arc: a faint streak and a cough, no beam
+			-- c = the weapon's Noise when it fires a round and not an arc: a tracer, a muzzle flash, dust where it lands
 			local quiet = type(c) == "number"
 			local muzzle = from.Position + Vector3.new(0, if quiet then 1.2 else 0, 0)
+			local held = quiet and a:FindFirstChild("HeldWeapon")
+			if held and held:IsA("Model") then
+				muzzle = held:GetPivot().Position + from.CFrame.LookVector * 1.1 + Vector3.new(0, 0.15, 0)
+			end
 			local length = (b - muzzle).Magnitude
 			local beam = make("Part", {
-				Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon,
-				Color = if quiet then Color3.fromRGB(255, 236, 200) else Color3.fromRGB(120, 200, 255), Transparency = if quiet then 0.6 else 0,
-				Size = Vector3.new(if quiet then 0.05 else 0.2, if quiet then 0.05 else 0.2, length), CFrame = CFrame.lookAt(muzzle, b) * CFrame.new(0, 0, -length / 2),
+				Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false, Material = Enum.Material.Neon,
+				Color = if quiet then Color3.fromRGB(255, 226, 170) else Color3.fromRGB(120, 200, 255), Transparency = if quiet then 0.15 else 0,
+				Size = Vector3.new(if quiet then 0.09 else 0.2, if quiet then 0.09 else 0.2, length), CFrame = CFrame.lookAt(muzzle, b) * CFrame.new(0, 0, -length / 2),
 			}, workspace)
-			Debris:AddItem(beam, if quiet then 0.05 else 0.1)
 			if quiet then
+				TweenService:Create(beam, TweenInfo.new(0.16), { Transparency = 1, Size = Vector3.new(0.02, 0.02, length) }):Play()
+				Debris:AddItem(beam, 0.18)
+				local flash = make("Part", { Shape = Enum.PartType.Ball, Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+					Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 214, 150), Transparency = 0.2, Size = Vector3.new(0.5, 0.5, 0.5), CFrame = CFrame.new(muzzle) }, workspace)
+				make("PointLight", { Range = 9, Brightness = 2.2, Color = Color3.fromRGB(255, 210, 150) }, flash)
+				TweenService:Create(flash, TweenInfo.new(0.07), { Transparency = 1, Size = Vector3.new(0.9, 0.9, 0.9) }):Play()
+				Debris:AddItem(flash, 0.08)
+				sparks(b, { Count = 7, Color = Color3.fromRGB(255, 220, 170), Size = 0.2, Speed = 10, Life = 0.25 })
 				Sounds.Play("ShotQuiet", from)
+				-- the hand kicks: the gun arm jumps and settles (on top of whatever the arm animation holds)
+				pose(a, "RightShoulder", CFrame.Angles(math.rad(9), 0, 0), 0.03)
+				pose(a, "RightElbow", CFrame.Angles(math.rad(7), 0, 0), 0.03)
+				task.delay(0.05, function()
+					pose(a, "RightShoulder", CFrame.identity, 0.16)
+					pose(a, "RightElbow", CFrame.identity, 0.16)
+				end)
+				if a == player.Character then
+					local cam = workspace.CurrentCamera
+					cam.CFrame = cam.CFrame * CFrame.Angles(math.rad(0.7), 0, 0)
+					shake(0.12)
+				end
+			else
+				Debris:AddItem(beam, 0.1)
 			end
 		end
 	elseif kind == "Damage" and typeof(a) == "Instance" and type(b) == "table" then
@@ -2448,6 +2495,7 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 			local billboard = make("BillboardGui", { Size = UDim2.fromOffset(120, 36), StudsOffset = Vector3.new(math.random(-15, 15) / 10, 2.5, 0), AlwaysOnTop = true }, root)
 			local color = if result == "blocked" then Color3.fromRGB(170, 170, 190) elseif dtype == "Arc" then Color3.fromRGB(90, 220, 255) elseif amount >= 30 then Color3.fromRGB(255, 150, 50) else Color3.fromRGB(255, 225, 90)
 			local text = make("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = ("%d"):format(math.round(amount)), TextColor3 = color, Font = Enum.Font.GothamBold, TextScaled = true, TextStrokeTransparency = 0.3 }, billboard)
+			Kit.Board(billboard)
 			Debris:AddItem(billboard, 1.0)
 			TweenService:Create(billboard, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { StudsOffset = billboard.StudsOffset + Vector3.new(0, 3, 0) }):Play()
 			TweenService:Create(text, TweenInfo.new(0.9), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
@@ -3032,7 +3080,7 @@ local function hear()
 			flatLook = flatLook.Unit
 			local right = flatLook:Cross(Vector3.yAxis)
 			local size = cam.ViewportSize
-			local r = math.min(size.X, size.Y) * SN.RingScale
+			local r = math.min(size.X, size.Y) * SN.RingScale / Kit.Scale()
 			for _, model in senseBodies() do
 				local root = model:FindFirstChild("HumanoidRootPart")
 				local hum = model:FindFirstChildOfClass("Humanoid")
@@ -3164,6 +3212,7 @@ local function plate(model)
 		local bb = make("BillboardGui", { Name = "Nameplate", Adornee = anchor, Size = NP.Size, StudsOffset = NP.Offset, AlwaysOnTop = false, MaxDistance = NP.FadeEnd, ResetOnSpawn = false }, gui)
 		local lbl = make("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = if who then who.DisplayName else (hum.DisplayName ~= "" and hum.DisplayName or model.Name),
 			TextColor3 = if who then NP.Color else NP.NpcColor, Font = Enum.Font.GothamMedium, TextSize = NP.TextSize, TextXAlignment = Enum.TextXAlignment.Left, TextStrokeTransparency = 0.5 }, bb)
+		Kit.Board(bb)
 		plates[model] = { gui = bb, label = lbl, hum = hum, anchor = anchor }
 	end)
 end

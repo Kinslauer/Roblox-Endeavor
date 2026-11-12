@@ -26,7 +26,7 @@ local player = Players.LocalPlayer
 
 local Stealth = {}
 
-local WORDS = { Rear = "TAKEDOWN", Drop = "DROP", Panel = "FUSE BOX", Rail = "LIVE RAIL", Ledge = "LEDGE", Throw = "THROW" }
+local WORDS = { Rear = "TAKEDOWN", Drop = "DROP", Panel = "FUSE BOX", Rail = "LIVE RAIL", Ledge = "LEDGE", Throw = "THROW", Search = "SEARCH" }
 local Q = S.Cqc
 
 local gui
@@ -97,6 +97,7 @@ local function markFor(model)
 	local frame = Kit.make("Frame", { Size = UDim2.fromOffset(16, 16), Position = UDim2.fromOffset(5, 5), Rotation = 45, BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.5, BorderSizePixel = 0, ClipsDescendants = true }, bb)
 	Kit.make("UIStroke", { Color = UI.Text, Thickness = 1.5 }, frame)
 	local fill = Kit.make("Frame", { Size = UDim2.fromScale(1, 1), AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1, 1), BackgroundColor3 = UI.Text, BorderSizePixel = 0 }, frame)
+	Kit.Board(bb)
 	m = { gui = bb, frame = frame, fill = fill, stroke = frame:FindFirstChildOfClass("UIStroke") }
 	marks[model] = m
 	return m
@@ -169,6 +170,7 @@ local function buildPrompt()
 	prompt = Kit.make("BillboardGui", { Name = "TakedownPrompt", Size = UDim2.fromOffset(250, 28), StudsOffset = Vector3.new(0, 0.6, 0), AlwaysOnTop = true, MaxDistance = 40, Enabled = false }, gui)
 	local _, _, word = Kit.keyHint(prompt, "X", "TAKEDOWN", UDim2.fromOffset(0, 1))
 	promptWord = word
+	Kit.Board(prompt)
 end
 
 -- What X would do now: { guard, tap, hold } (words from Rules.Cqc; a body offers only hold = "Carry"),
@@ -194,7 +196,9 @@ local function findOffer()
 			if d < 26 and (not bestD or d < bestD) then
 				if model:GetAttribute("Downed") then
 					if d <= Q.Carry.Reach then
-						best, bestD = { guard = model, hold = "Carry" }, d + 3 -- a standing guard in reach comes first
+						-- a body: tap goes through its pockets (until they are empty), hold shoulders it
+						local emptied = groot:GetAttribute("Looted") == true
+						best, bestD = { guard = model, tap = if emptied then nil else "Search", hold = "Carry" }, d + 3 -- a standing guard in reach comes first
 					end
 				else
 					local info = awareness[model]
@@ -421,7 +425,9 @@ end
 --   G: with a guard in your arms, throws him down; with a body up, puts it down.
 local xDown -- { offer, at, used }
 local function tapX(o)
-	if o.tap == "Throw" then
+	if o.tap == "Search" then
+		Remotes.Cqc:FireServer("Search", o.guard)
+	elseif o.tap == "Throw" then
 		Remotes.Cqc:FireServer("Throw", o.guard)
 	elseif o.tap then
 		Remotes.Takedown:FireServer(o.guard)

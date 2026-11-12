@@ -50,7 +50,7 @@ function Subway.Build(origin)
 		local gui = Instance.new("SurfaceGui")
 		gui.Face = face
 		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		gui.PixelsPerStud = 24
+		gui.PixelsPerStud = 72 -- sharp up close (24 read as low resolution)
 		gui.LightInfluence = 0.6
 		gui.Parent = part
 		local label = Instance.new("TextLabel")
@@ -59,7 +59,7 @@ function Subway.Build(origin)
 		label.Text = text
 		label.Font = Enum.Font.Michroma
 		label.TextScaled = size == nil
-		label.TextSize = size or 14
+		label.TextSize = (size or 14) * 3
 		label.TextColor3 = color or Color3.fromRGB(214, 220, 226)
 		label.Parent = gui
 		return label
@@ -245,8 +245,8 @@ function Subway.Build(origin)
 	box("HallN", 44, 108, 0, 14, 60, 62, Enum.Material.Concrete, CONCRETE)
 	box("Barrier", 71.5, 72.5, 0, 4, 0, 24, Enum.Material.Metal, STEEL)
 	box("Barrier", 71.5, 72.5, 0, 4, 36, 60, Enum.Material.Metal, STEEL)
-	for _, z in { 27, 30, 33 } do
-		box("Turnstile", 71, 73, 0, 3.6, z - 0.5, z + 0.5, Enum.Material.Metal, Color3.fromRGB(120, 126, 134))
+	for _, z in { 28, 32 } do -- three lanes, each wide enough for a guard to walk (a 2-stud lane stopped them)
+		box("Turnstile", 71, 73, 0, 3.6, z - 0.3, z + 0.3, Enum.Material.Metal, Color3.fromRGB(120, 126, 134))
 	end
 	local booth = box("Booth", 76, 86, 0, 10, 2, 12, Enum.Material.Metal, Color3.fromRGB(46, 52, 60))
 	sign(booth, Enum.NormalId.Back, "TICKETS", Color3.fromRGB(120, 130, 140))

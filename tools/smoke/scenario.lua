@@ -182,7 +182,15 @@ do
 	Combat.ResetMags(player); run(0.1)
 	local have0 = Inventory0.Count(player, "Subsonic")
 	check("gun: a full magazine of seven", char():GetAttribute("Mag") == 7 and char():GetAttribute("MagSize") == 7)
+	local log0 = #M.FireLog
 	Remotes.Attack:FireServer(root().CFrame.LookVector); run(1)
+	local swung, bolted = false, false
+	for i = log0 + 1, #M.FireLog do
+		local e = M.FireLog[i]
+		if e[1] == "CombatEvent" and e[3] == "Swing" then swung = true end
+		if e[1] == "CombatEvent" and e[3] == "Bolt" then bolted = true end
+	end
+	check("gun: a shot is a shot (a round leaves, nobody swings)", bolted and not swung)
 	check("gun: a shot comes out of the magazine and the pack", char():GetAttribute("Mag") == 6 and Inventory0.Count(player, "Subsonic") == have0 - 1)
 	Remotes.Reload:FireServer(); run(0.3)
 	check("gun: R starts the change (busy, flagged)", char():GetAttribute("Reloading") == true and char():GetAttribute("Mag") == 6)
@@ -223,6 +231,17 @@ do
 	Remotes.Cqc:FireServer("Drop"); run(0.2)
 	check("carry: put down in front of you", char():GetAttribute("Carrying") == nil and Stealth.Carrying(player) == nil and Stealth.StateOf(ga) == "Down"
 		and ((ga.HumanoidRootPart.Position - root().Position) * M.V3.new(1, 0, 1)).Magnitude < 2.5 and math.abs(ga.HumanoidRootPart.CFrame.UpVector.Y) < 0.2)
+	-- his pockets: every guard can be searched, in the station too
+	local LootS = M.mockEnv.__require(SSS.Server.Loot)
+	local subs0 = Inventory0.Count(player, "Subsonic")
+	Remotes.Cqc:FireServer("Search", ga); run(0.2)
+	local pocketKey = ga.HumanoidRootPart:GetAttribute("ContainerKey")
+	local carried = LootS.Contents(ga.HumanoidRootPart)
+	check("loot: a downed guard has pockets, with rounds in them", pocketKey ~= nil and (carried.Subsonic or 0) >= 2)
+	LootS.RevealAll(ga.HumanoidRootPart, player)
+	Remotes.ContainerTake:FireServer(pocketKey, 0); run(0.2)
+	check("loot: emptied into the pack, the body stays", Inventory0.Count(player, "Subsonic") == subs0 + carried.Subsonic and ga.Parent ~= nil
+		and ga.HumanoidRootPart:GetAttribute("Looted") == true and Stealth.StateOf(ga) == "Down")
 	root().CFrame = M.CF.new(O + M.V3.new(-2, 3, 40)); run(0.1)
 	local woke = run(StealthCfg.Cqc.Throw.Down + 3, function() return Stealth.StateOf(ga) ~= "Down" end)
 	check("cqc: he comes round, on his feet and looking", woke and ga:GetAttribute("Downed") == nil and ga.HumanoidRootPart.CFrame.UpVector.Y > 0.9 and ga.HumanoidRootPart.Anchored == false)

@@ -13,6 +13,7 @@
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PathfindingService = game:GetService("PathfindingService")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage.Shared
@@ -22,6 +23,8 @@ local Rules = require(Shared.Stealth)
 local Weapons = require(Shared.Weapons)
 local Combat = require(script.Parent.Combat)
 local NPCs = require(script.Parent.NPCs)
+local Loot = require(script.Parent.Loot)
+local Items = require(Shared.Items)
 local Net = require(script.Parent.Common.Net)
 
 local S = Config.Stealth
@@ -190,13 +193,79 @@ local function face(g, position, alpha)
 	root.CFrame = root.CFrame:Lerp(want, alpha or 0.35)
 end
 
+-- Guards walk a planned route (PathfindingService), not a straight line: a straight line to a cut fuse box runs
+-- into the turnstiles, a wall or the stair well (Andy, 2026-11-12: "the guard got stuck on the way up"). The plan
+-- is made off the brain's loop (ComputeAsync yields); until it arrives, and if none is found, he walks straight.
+local function planRoute(g, goal)
+	local nav = g.nav
+	nav.goal, nav.at, nav.busy = goal, os.clock(), true
+	task.spawn(function()
+		local path
+		local ok = pcall(function()
+			path = PathfindingService:CreatePath({ AgentRadius = S.Path.Radius, AgentHeight = S.Path.Height, AgentCanJump = false, WaypointSpacing = S.Path.Spacing })
+			path:ComputeAsync(g.root.Position, goal)
+		end)
+		nav.busy = false
+		if nav.goal ~= goal then
+			return
+		end
+		if ok and path and path.Status == Enum.PathStatus.Success then
+			nav.points, nav.index = path:GetWaypoints(), 2
+		else
+			nav.points = nil
+		end
+	end)
+end
+
 local function walk(g, position, speed)
 	g.hum.WalkSpeed = speed
-	g.hum:MoveTo(Vector3.new(position.X, g.root.Position.Y, position.Z))
+	local nav, now, at = g.nav, os.clock(), g.root.Position
+	if not nav.walking then
+		nav.walking, nav.movedAt, nav.lastPos = true, now, at
+	elseif (at - nav.lastPos).Magnitude > 0.6 then
+		nav.movedAt, nav.lastPos = now, at
+	end
+	local stuck = now - nav.movedAt > S.Path.Stuck
+	if not nav.busy and (not nav.goal or (nav.goal - position).Magnitude > S.Path.Replan or now - nav.at > S.Path.Refresh or (stuck and now - nav.at > S.Path.Stuck)) then
+		if stuck then
+			g.hum.Jump = true -- a lip or a body in the way
+			nav.movedAt = now
+		end
+		planRoute(g, position)
+	end
+	local points = nav.points
+	local wp = points and points[nav.index]
+	while wp and ((wp.Position - at) * Vector3.new(1, 0, 1)).Magnitude < S.Path.Reach do
+		nav.index += 1
+		wp = points[nav.index]
+	end
+	if wp then
+		g.hum:MoveTo(wp.Position)
+	else
+		g.hum:MoveTo(Vector3.new(position.X, at.Y, position.Z))
+	end
 end
 
 local function halt(g)
+	g.nav.walking = false
 	g.hum:MoveTo(g.root.Position)
+end
+
+-- How far a guard would have to walk to `goal` (nil when no route is found). Yields.
+local function routeLength(g, goal)
+	local length
+	pcall(function()
+		local path = PathfindingService:CreatePath({ AgentRadius = S.Path.Radius, AgentHeight = S.Path.Height, AgentCanJump = false })
+		path:ComputeAsync(g.root.Position, goal)
+		if path.Status == Enum.PathStatus.Success then
+			local points = path:GetWaypoints()
+			length = 0
+			for i = 2, #points do
+				length += (points[i].Position - points[i - 1].Position).Magnitude
+			end
+		end
+	end)
+	return length
 end
 
 local function investigate(g, position, seconds)
@@ -467,7 +536,7 @@ local function think(g, now, dt)
 
 	if g.state == "Search" then
 		local flat = (g.spot - g.root.Position) * Vector3.new(1, 0, 1)
-		if flat.Magnitude > 3 and now - g.stateAt < 10 then
+		if flat.Magnitude > 3 and now - g.stateAt < (if g.fix then S.Path.FixSeconds - S.FixDelay - 2 else 10) then
 			walk(g, g.spot, S.SearchSpeed)
 		else
 			halt(g)
@@ -512,7 +581,7 @@ end
 function Stealth.SpawnGuard(position, opts)
 	opts = opts or {}
 	local g = { aware = {}, seen = {}, state = "Patrol", stateAt = os.clock(), level = opts.Level, patrol = opts.Patrol, looks = opts.Looks,
-		wait = opts.Wait or 3, post = opts.Post, index = 1, waitUntil = 0, searchUntil = 0, lastSeenAt = 0 }
+		wait = opts.Wait or 3, post = opts.Post, index = 1, waitUntil = 0, searchUntil = 0, lastSeenAt = 0, nav = { at = 0, movedAt = 0 } }
 	local model = NPCs.Spawn(opts.Type or "Sentry", position, {
 		Parent = opts.Parent or opts.Level,
 		Filter = function(player)
@@ -958,6 +1027,28 @@ function Stealth.Carry(player, model)
 	return true
 end
 
+-- X tapped over a body: go through its pockets (the same search-and-take grid as any container). Every guard
+-- carries something (Items.LootTables.Sentry), in the station too, so the loop is learned on the first one.
+function Stealth.Search(player, model)
+	local g = typeof(model) == "Instance" and guards[model]
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not (g and root) or g.state ~= "Down" or g.carriedBy or not handsFree(char) or (g.root.Position - root.Position).Magnitude > Q.Carry.Reach + 1 then
+		return false
+	end
+	if not g.pockets then
+		g.pockets = true
+		Loot.Attach(g.root, Items.Roll(g.loot or "Sentry"), { Label = "Sentry", CanTake = function()
+			return g.state == "Down"
+		end })
+	end
+	if g.root:GetAttribute("Looted") then
+		g.model:SetAttribute("Looted", true)
+		return false
+	end
+	return Loot.Open(player, g.root)
+end
+
 function Stealth.DropBody(player)
 	local g = carries[player]
 	if not g then
@@ -1088,20 +1179,31 @@ function Stealth.Breaker(player, part)
 	part:SetAttribute("Cut", true)
 	Stealth.SetCircuit(level, part:GetAttribute("Circuit"), false)
 	Remotes.World:FireAllClients("Sparks", part.Position)
-	local nearest, best = nil, 90
-	for _, g in guards do
-		if g.level == level and g.state ~= "Down" and g.state ~= "Alert" then
-			local d = (g.root.Position - part.Position).Magnitude
-			if d < best then
-				nearest, best = g, d
+	-- whoever has the shortest walk to it comes to fix it (not the nearest through a wall or a floor)
+	local stand = part:GetAttribute("Stand")
+	local goal = if typeof(stand) == "Vector3" then stand else part.Position
+	task.spawn(function()
+		local nearest, best, straight, bestStraight = nil, S.Path.FixWalk, nil, 90
+		for _, g in guards do
+			if g.level == level and g.state ~= "Down" and g.state ~= "Alert" and g.state ~= "Held" then
+				local d = (g.root.Position - goal).Magnitude
+				if d < bestStraight then
+					straight, bestStraight = g, d
+				end
+				if d < S.Path.FixWalk then
+					local length = routeLength(g, goal)
+					if length and length < best then
+						nearest, best = g, length
+					end
+				end
 			end
 		end
-	end
-	if nearest then
-		local stand = part:GetAttribute("Stand")
-		investigate(nearest, if typeof(stand) == "Vector3" then stand else part.Position, 30)
-		nearest.fix = part
-	end
+		nearest = nearest or straight
+		if nearest and part.Parent and part:GetAttribute("Cut") and nearest.state ~= "Down" and nearest.state ~= "Alert" then
+			investigate(nearest, goal, S.Path.FixSeconds)
+			nearest.fix = part
+		end
+	end)
 	return true
 end
 
@@ -1143,6 +1245,8 @@ function Stealth.Init()
 			Stealth.Grab(player, model)
 		elseif what == "Choke" then
 			Stealth.Release(player, "Choke")
+		elseif what == "Search" then
+			Stealth.Search(player, model)
 		elseif what == "Carry" then
 			Stealth.Carry(player, model)
 		elseif what == "Drop" then

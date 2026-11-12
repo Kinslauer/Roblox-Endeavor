@@ -727,7 +727,16 @@ local function pulse(char, spec, mods, seen, tracer)
 		fx("Bolt", char, if result then result.Position else origin + look * spec.Range, mods.weapon and mods.weapon.Noise)
 		Combat.Shot:Fire(char, result and result.Instance, if result then result.Position else origin + look * spec.Range, mods.weapon)
 		local model = result and result.Instance:FindFirstAncestorOfClass("Model")
+		while model and not getHum(model) and model.Parent and model.Parent:IsA("Model") do
+			model = model.Parent -- a piece of a one-piece body (the Skin model inside the character)
+		end
 		if model and getHum(model) then
+			-- a round in the head: the weapon's Headshot multiplier on bodies the game runs, a smaller one on players
+			local head = model:FindFirstChild("Head")
+			if head and result.Position.Y >= head.Position.Y - head.Size.Y / 2 - 0.15 then
+				local w = mods.weapon
+				damage *= if Players:GetPlayerFromCharacter(model) then C.HeadshotPlayers else (w and w.Headshot) or C.Headshot
+			end
 			strike(model)
 		elseif result and Combat.World then
 			Combat.World.Bolt(char, result.Instance, damage, mods.weapon)
@@ -1091,7 +1100,11 @@ function Combat.Swing(char, spec, mods)
 	if spec.Ranged then
 		mods.shape = nil -- a shot has no blade arc to trace or to pose the arm along
 	end
-	fx("Swing", char, mods.label, mods.shape, spec.Windup, spec.Active, spec.End, spec.Range)
+	if not spec.Ranged then
+		-- a shot is not a swing: the client draws it from "Bolt" when the round leaves (Andy, 2026-11-12: the pistol
+		-- "operated like a melee weapon" because every client played the swing for it)
+		fx("Swing", char, mods.label, mods.shape, spec.Windup, spec.Active, spec.End, spec.Range)
+	end
 	if mods.shape then
 		-- a guard can see it coming (guardThreat) from the first frame of the windup
 		local scale = Swings.ScaleOf(char)

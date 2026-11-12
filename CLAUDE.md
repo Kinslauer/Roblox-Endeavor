@@ -113,7 +113,7 @@ Client tab screenshot, because Andy cannot read logs another way.
 - Controls are the Cursed Gear layout: E flicker, F block/parry, Q dodge, X interact, M devour/app, R/Y/V skills,
   Z feint, G grab/throw, H drop, Shift sprint, C crouch (hold: prone; sprinting: dive), Space up a stance, B whistle, Tab inventory,
   L loadout, J attributes, O hideout, N recruit app, P helmetcam. With a gun out (owner, 2026-11-11): RMB aim, V sights, R reload,
-  Q the wall (prone: roll); X close quarters (tap: takedown or throw; hold: neck grab or carry a body). Front: LMB fire, RMB aim, R reload (hold: keep the magazine), T rack/unjam, B selector, 1/2 switch,
+  Q the wall (prone: roll); X close quarters (tap: takedown, throw or search a body; hold: neck grab or carry a body). Front: LMB fire, RMB aim, R reload (hold: keep the magazine), T rack/unjam, B selector, 1/2 switch,
   G frag, H dressing, Q/E lean (prone: roll), C crouch (hold: prone; sprinting: dive), Space up a stance / mantle,
   Z binoculars, Y check weapon, K artillery, F dig, V sandbags, M app, U unlink.
 
@@ -297,6 +297,23 @@ Client tab screenshot, because Andy cannot read logs another way.
   the kit up to Config.Tutorial.Kit on every ride. Prone lowers only the animation and the camera (the humanoid is
   not resized: no crawling under things yet). Tests: "stance:", "gun:", "hold-up:", "cqc:", "hold:", "carry:" in
   scenario.lua, "handling:" in client.lua.
+- Station fixes (owner, 2026-11-12: "the guard got stuck on the way up", "The whisper pistol ... fired no
+  projectile, instead it operated like a melee weapon", "The enemies should all ALWAYS be lootable, even in the
+  tutorial, to help players get used to the loop", "All UI elements ... are either low resolution or too small to
+  read"). Guards walk planned routes: Stealth `walk` follows PathfindingService waypoints (`planRoute`, off the brain
+  loop; straight line until the plan arrives; Config.Stealth.Path), `Stealth.Breaker` sends the guard with the
+  shortest route (`routeLength`), turnstile lanes are 3.4+ wide (a guard needs 3). Shots: Combat.Swing sends no
+  "Swing" fx for a Ranged spec; the client draws "Bolt" (tracer, muzzle flash, impact dust, arm kick, camera kick);
+  the client's `cameraDirection()` aims from the shoulder at what the reticle is on; a round in the head multiplies
+  damage (Weapons `Headshot`, else Config.Combat.Headshot; HeadshotPlayers on players; Whisper 8 = one round on a
+  Sentry). Loot: every body is lootable. `Loot.Attach(part, bundle, opts)` = a container on an existing part (no
+  prop, no prompt, opts.Keep: emptied sets attribute `Looted`, the part stays), `Loot.Open(player, part)`;
+  `Stealth.Search` (Cqc "Search") rolls Items.LootTables.Sentry into a downed guard's root; client: tap X on a body =
+  SEARCH, hold = CARRY. A dead NPC's spoils are what was left in its pockets (300 s). UI scale: `Kit.Init` puts a
+  UIScale on the HUD = viewport height / Kit.DesignHeight (680), 1 to 2.6 (`Kit.Scale()`, `Kit.Attach(screenGui)`,
+  `Kit.Board(billboard)` grows a built BillboardGui once). Anything that turns real pixels into offsets inside the
+  HUD divides by Kit.Scale() (panel chrome `follow`, `cellAt`, drag ghost, tooltip, hearing ring). Station signs
+  are 72 pixels per stud.
 - The arrival (owner, 2026-11-10: "UI and Intro sequence overhauled ... riding a train ... revealing the weapons under
   a cloak ... racking the slide ... pans behind ... zooms into the fpv ... a tutorial stealth level ... subway ...
   based off splinter cell chaos theory and batman arkham involving environmental takedowns and light level hiding";
@@ -416,6 +433,12 @@ Client tab screenshot, because Andy cannot read logs another way.
   The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
 
 ## State (2026-11-12)
+- Endeavor v92 (2026-11-12): station fixes after Andy's play of v86 ("handles INCREDIBLY well"): guards path-find,
+  the Whisper shoots visibly and headshots count, every guard can be searched, the whole UI scales with the screen.
+  Real server: start 12.6s, 0 warnings; routes found from every guard post to the fuse box, up the stairs and into
+  the control room. Unseen in game: the UI at the new scale (blind change: watch for text that overflows its plate),
+  the tracer and kick. Awaits Andy: docs/TESTING.md "Endeavor: station fixes". Andy has not yet seen v86 on the
+  one-piece bodies.
 - Front v28 + Endeavor v91 (2026-11-12): realistic pass round 5, one-piece soldiers on the Front (Union, Pact, the
   fallen, the calcified, simulation figures, tank clones); Endeavor only moved Rigs to common. Real servers: Front
   start 2.9s, 0 warnings, both skins 15 bones / 18 pieces, gear pieces hide and show, 9 simulation figures and 2 tank

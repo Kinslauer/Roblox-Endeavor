@@ -55,6 +55,7 @@ local function buildScreen()
 	screen = Instance.new("ScreenGui")
 	screen.Name, screen.ResetOnSpawn, screen.IgnoreGuiInset, screen.DisplayOrder = "Intro", false, true, 50
 	screen.Parent = player:WaitForChild("PlayerGui")
+	Kit.Attach(screen)
 	cover = Kit.make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, ZIndex = 5 }, screen)
 	title = Kit.label({ Size = UDim2.new(1, 0, 0, 60), Position = UDim2.new(0, 0, 0.5, -44), Text = Kit.spaced("Endeavor", 2), Font = UI.Title, TextSize = 44, TextTransparency = 1, ZIndex = 6, Parent = screen })
 	rule = Kit.make("Frame", { Size = UDim2.fromOffset(0, 1), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.5, 24), BackgroundColor3 = UI.Accent, BorderSizePixel = 0, ZIndex = 6 }, screen)

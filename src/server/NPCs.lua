@@ -48,7 +48,7 @@ NPCs.Types = {
 	Rival = { Health = 170, Speed = 15, Damage = 15, Posture = 22, Range = 6.5, Cooldown = 1.25, Telegraph = 0.4, Active = 10, Recovery = 14, Aggro = 100, Xp = 140, Loot = "Rival",
 		Color = Color3.fromRGB(70, 60, 90), Size = Vector3.new(2, 5, 1), Weapon = "RebarBlade" },
 	-- station security (server/Stealth.SpawnGuard): it only fights once it has made you
-	Sentry = { Health = 85, Speed = 14, Damage = 11, Posture = 10, Range = 6.5, Cooldown = 1.4, Telegraph = 0.45, Active = 12, Recovery = 18, Aggro = 120, Xp = 45, Loot = "Raider",
+	Sentry = { Health = 85, Speed = 14, Damage = 11, Posture = 10, Range = 6.5, Cooldown = 1.4, Telegraph = 0.45, Active = 12, Recovery = 18, Aggro = 120, Xp = 45, Loot = "Sentry",
 		Color = Color3.fromRGB(52, 60, 74), Size = Vector3.new(2, 5, 1), Type = "Arc", Stun = 0.4, Weapon = "ShockBaton" },
 	Warden = { Health = 900, Speed = 11, Damage = 26, Posture = 35, Range = 8, Cooldown = 2.0, Telegraph = 0.7, Active = 14, Recovery = 26, Aggro = 140, Xp = 600, Loot = "Supply",
 		Color = Color3.fromRGB(150, 30, 60), Size = Vector3.new(3.5, 8, 2), Knockback = 45, Hyperarmor = true, Boss = true, Weapon = "RebarBlade",
@@ -266,11 +266,20 @@ function NPCs.Spawn(typeName, position, opts)
 			Stats.AddXp(killer, math.floor(def.Xp * scale + 0.5))
 			Quests.Progress(killer, "kill", typeName, 1)
 		end
-		local spoils = Items.Roll(def.Loot)
-		if next(spoils) == nil then
-			spoils.Scrap = 1
+		-- every body can be looted, always: what it carried lies where it fell. A body whose pockets were already
+		-- opened while it was down (Stealth.Search) leaves what is still in them, or nothing if they were emptied.
+		local spoils
+		if root:GetAttribute("Looted") then
+			spoils = {}
+		elseif root:GetAttribute("ContainerKey") then
+			spoils = Loot.Contents(root)
+		else
+			spoils = Items.Roll(def.Loot)
+			if next(spoils) == nil then
+				spoils.Scrap = 1
+			end
 		end
-		Loot.Spawn(root.CFrame, spoils, { Label = typeName .. " spoils", Lifetime = 120, Devour = { Npc = true } })
+		Loot.Spawn(root.CFrame, spoils, { Label = typeName .. " spoils", Lifetime = 300, Devour = { Npc = true } })
 		NPCs.Killed:Fire(typeName, model, killer)
 		if opts.OnDied then
 			opts.OnDied(model, killer)

@@ -18,8 +18,77 @@ local UI = Kit.Theme
 
 local root -- the ScreenGui things parent to by default
 
+-- One scale for the whole screen (owner, 2026-11-12: "either low resolution or too small to read"). Everything is
+-- drawn for a screen Kit.DesignHeight pixels tall and a UIScale grows it to the real one, so text is the same share
+-- of the screen on a laptop and on a 4K monitor, and is drawn at the real resolution. Code that turns real pixels
+-- (the mouse, AbsolutePosition) into offsets inside a scaled layer divides by Kit.Scale().
+Kit.DesignHeight, Kit.DesignWidth, Kit.MaxScale = 680, 1150, 2.6
+local scale = 1
+local scaled = {} -- UIScale instances that follow the screen
+
+local function measure()
+	local cam = workspace.CurrentCamera
+	local size = cam and cam.ViewportSize
+	if typeof(size) ~= "Vector2" or size.Y <= 0 then
+		return 1
+	end
+	return math.clamp(math.min(size.Y / Kit.DesignHeight, size.X / Kit.DesignWidth), 1, Kit.MaxScale)
+end
+
+function Kit.Scale()
+	return scale
+end
+
+-- Puts a screen layer (a ScreenGui) on the shared scale.
+function Kit.Attach(layer)
+	local u = Instance.new("UIScale")
+	u.Name = "KitScale"
+	u.Scale = scale
+	u.Parent = layer
+	table.insert(scaled, u)
+	return u
+end
+
+-- A BillboardGui is its own layer and is sized in pixels: grow it and everything in it once, after it is built.
+function Kit.Board(board)
+	local k = scale
+	if k == 1 then
+		return board
+	end
+	local function grow(u)
+		return UDim2.new(u.X.Scale, u.X.Offset * k, u.Y.Scale, u.Y.Offset * k)
+	end
+	board.Size = grow(board.Size)
+	for _, d in board:GetDescendants() do
+		if d:IsA("GuiObject") then
+			d.Size, d.Position = grow(d.Size), grow(d.Position)
+			if (d:IsA("TextLabel") or d:IsA("TextButton")) and not d.TextScaled then
+				d.TextSize = math.floor(d.TextSize * k + 0.5)
+			end
+		elseif d:IsA("UIStroke") then
+			d.Thickness *= k
+		end
+	end
+	return board
+end
+
 function Kit.Init(gui)
 	root = gui
+	scale = measure()
+	Kit.Attach(gui)
+	local function refresh()
+		scale = measure()
+		for _, u in scaled do
+			u.Scale = scale
+		end
+	end
+	local cam = workspace.CurrentCamera
+	if cam then
+		pcall(function()
+			cam:GetPropertyChangedSignal("ViewportSize"):Connect(refresh)
+		end)
+	end
+	task.delay(1, refresh) -- the viewport is often not its final size on the first frame
 end
 
 function Kit.corner(inst, r)
@@ -106,10 +175,10 @@ end
 -- A key cap with a word beside it ("[X] TAKEDOWN" without the brackets).
 function Kit.keyHint(parent, key, word, position)
 	local holder = Kit.make("Frame", { Size = UDim2.fromOffset(200, 26), Position = position or UDim2.new(), BackgroundTransparency = 1 }, parent)
-	local cap = Kit.make("TextLabel", { Size = UDim2.fromOffset(24, 24), BackgroundColor3 = UI.Panel, BackgroundTransparency = 0.1, Text = key, Font = UI.Bold, TextSize = 13, TextColor3 = UI.Text, BorderSizePixel = 0 }, holder)
+	local cap = Kit.make("TextLabel", { Size = UDim2.fromOffset(24, 24), BackgroundColor3 = UI.Panel, BackgroundTransparency = 0.1, Text = key, Font = UI.Bold, TextSize = 14, TextColor3 = UI.Text, BorderSizePixel = 0 }, holder)
 	Kit.corner(cap, 3)
 	Kit.stroke(cap, UI.Accent, 0.2)
-	local text = Kit.label({ Size = UDim2.new(1, -32, 1, 0), Position = UDim2.fromOffset(32, 0), Text = word, Font = UI.Title, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, Parent = holder })
+	local text = Kit.label({ Size = UDim2.new(1, -32, 1, 0), Position = UDim2.fromOffset(32, 0), Text = word, Font = UI.Title, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = holder })
 	Kit.make("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.4, Thickness = 1 }, text)
 	return holder, cap, text
 end

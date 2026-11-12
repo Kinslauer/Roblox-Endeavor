@@ -158,7 +158,13 @@ function Loot.Take(player, key, index)
 	if #c.Box.Items == 0 then
 		containers[key] = nil
 		Remotes.World:FireClient(player, "ContainerClose", key)
-		c.Part:Destroy()
+		if c.Opts.Keep then
+			-- a body's pockets: the body stays, it only has nothing left on it
+			c.Part:SetAttribute("ContainerKey", nil)
+			c.Part:SetAttribute("Looted", true)
+		else
+			c.Part:Destroy()
+		end
 	else
 		send(c, key, player)
 	end
@@ -281,6 +287,40 @@ function Loot.Spawn(cframe, bundle, opts)
 	part:SetNetworkOwner(nil) -- clients must not be able to drag loot around
 	Debris:AddItem(part, opts.Lifetime or Config.CorpseLifetime)
 	return part
+end
+
+-- A body's pockets: a container on a part that already exists (no crate, no prompt, nothing destroyed when it is
+-- emptied). Whoever owns the body decides who may open it and calls Loot.Open. opts: Label, Meta, CanTake(player).
+function Loot.Attach(part, bundle, opts)
+	opts = opts or {}
+	opts.Keep = true
+	if part:GetAttribute("ContainerKey") or next(bundle) == nil then
+		return part:GetAttribute("ContainerKey")
+	end
+	nextKey += 1
+	local key = tostring(nextKey)
+	part:SetAttribute("ContainerKey", key)
+	containers[key] = { Part = part, Box = containerFor(bundle), Meta = opts.Meta, Opts = opts, Seen = setmetatable({}, { __mode = "k" }), Searching = setmetatable({}, { __mode = "k" }),
+		CanTake = function(who)
+			local hum = who.Character and who.Character:FindFirstChildOfClass("Humanoid")
+			return part.Parent ~= nil and hum ~= nil and hum.Health > 0 and (not opts.CanTake or opts.CanTake(who))
+		end }
+	part.Destroying:Connect(function()
+		containers[key] = nil
+	end)
+	return key
+end
+
+-- Opens a container on the looter's screen and starts their search of it (what a loot prompt does).
+function Loot.Open(player, part)
+	local key = part:GetAttribute("ContainerKey")
+	local c = key and containers[key]
+	if not c or not c.CanTake(player) then
+		return false
+	end
+	send(c, key, player)
+	search(c, key, player)
+	return true
 end
 
 function Loot.Init()

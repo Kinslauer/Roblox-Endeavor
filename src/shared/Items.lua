@@ -180,6 +180,11 @@ Items.LootTables = {
 		{ "Scrap", 0.8, 1, 3 }, { "Wire", 0.6, 1, 3 }, { "Medkit", 0.45, 1, 1 }, { "ArcCell", 0.5, 4, 8 }, { "Ration", 0.4, 1, 2 },
 		{ "RebarBlade", 0.1, 1, 1 }, { "PlatedHelm", 0.08, 1, 1 }, { "ConduitHarness", 0.05, 1, 1 }, { "ReflexOptic", 0.05, 1, 1 }, { "PipeGrenade", 0.2, 1, 1 },
 	},
+	-- station sentries: what a new conduit needs to learn the loop with (rounds for the Whisper, something to eat)
+	Sentry = {
+		{ "Subsonic", 1, 2, 4 }, { "Scrap", 0.8, 1, 2 }, { "Ration", 0.45, 1, 1 }, { "Cloth", 0.4, 1, 2 }, { "Wire", 0.3, 1, 2 },
+		{ "Medkit", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 },
+	},
 	Raider = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 },
 		{ "PipeClub", 0.1, 1, 1 }, { "ScavHelm", 0.08, 1, 1 }, { "ScrapVest", 0.08, 1, 1 }, { "ScrapGreaves", 0.08, 1, 1 },

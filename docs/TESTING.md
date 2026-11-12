@@ -62,6 +62,23 @@ Replay the ride: F2 → "Train intro" → Replay.
 - [x] (replaced in round 2) The rider's poncho is a dark waxed cloth with a deep hood, no flat boxes; nothing pokes through it.
 - [x] (replaced in round 2) The pistol is the new one (black slide with grooves, suppressor) in the hand at the end of the ride.
 
+## Endeavor: station fixes (2026-11-12, Endeavor v92)
+Try it in the station (F2 → "Train intro" → Replay).
+- [ ] Left click with the Whisper: a pale tracer leaves the muzzle, the muzzle flashes, the hand kicks, dust jumps
+      where the round lands. Nobody swings an arm. The round lands where the reticle is, also in third person.
+- [ ] Shoot a ceiling lamp in the ticket hall: it goes out. One round in an unaware sentry's head puts him down
+      for good; body shots take several.
+- [ ] Cut the fuse box (X on the grey box to the right as you leave the corridor): one guard walks to it through
+      a turnstile lane or along the corridor, does not stick on a turnstile or a wall, and stands with his face in
+      the box. Try it three times: he arrives every time.
+- [ ] Stand over a guard you took down: the prompt reads SEARCH . HOLD: CARRY. Tap X: his pockets open like any
+      container (rounds for the Whisper every time, often scrap, a ration or cloth). Take everything: the prompt
+      now only offers CARRY. A guard you killed leaves a bag with the same things.
+- [ ] Every bar, number, prompt, panel and key cap is larger than before and the same share of the screen at any
+      window size. Text is sharp. Open the pack (Tab) and drag an item: the item follows the mouse and drops in the
+      cell under it. The panel frame still sits exactly around each panel.
+- [ ] Station signs (LINE 9, CONCOURSE, TICKETS, CONTROL) are sharp up close.
+
 ## Endeavor: Metal Gear handling (stances, the gun, hands) (2026-11-11)
 Try it in the station (F2 → "Train intro" → Replay) with the Whisper out. Stances, aiming and reload work anywhere.
 - [ ] Tap C: crouch. Tap C again: stand. Hold C for a third of a second: you lie prone and crawl slowly; the

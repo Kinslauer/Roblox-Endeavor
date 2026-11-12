@@ -61,6 +61,8 @@ Config.Stealth = {
 	StepNoiseAwareness = 0.9, -- awareness per second from hearing your steps (no sight needed)
 	WhistleCooldown = 3,
 	BodyAlarm = true, -- a guard that sees a downed one goes searching and calls the rest
+	-- how guards find their way: agent size for the route planner, when to plan again, and the fuse box errand
+	Path = { Radius = 1.5, Height = 5.5, Spacing = 4, Reach = 2, Replan = 3, Refresh = 6, Stuck = 1.2, FixWalk = 140, FixSeconds = 40 },
 	FixDelay = 4, -- seconds a guard spends at a cut breaker before the lights come back
 	Takedown = {
 		Reach = 5.5, -- studs from the guard
@@ -629,6 +631,8 @@ Config.Body = {
 }
 
 Config.Combat = {
+	Headshot = 2.5, -- a round in the head of a body the game runs, when the weapon names no Headshot of its own
+	HeadshotPlayers = 1.5, -- and in a player's
 	-- the traced blade (shared/Swings, Combat.traceBlade)
 	HitStop = 0.06, -- seconds the blade holds when it bites into a body
 	ClashRadius = 0.9, -- studs between two live blades that counts as meeting
