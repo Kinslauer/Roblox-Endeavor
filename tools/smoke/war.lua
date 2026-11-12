@@ -490,6 +490,16 @@ do
 		and GP.Guns.M1A.Barrels.Standard.Asset == GP.Guns.M14.Barrels.Standard.Asset and GP.Guns.M1A.Receiver ~= GP.Guns.M14.Receiver)
 	check("family: the M16A1's scope sits on its carry handle, higher than on the flat top", GP.Guns.M16A1.Optic.Y > GP.Guns.M4A1.Optic.Y)
 	check("family: the AK-74 fires its own round, the M1A is semi only", Firearms.Ammo[D.AK74.Ammo] ~= nil and D.AK74.Ammo ~= D.AKM.Ammo and not table.find(D.M1A.Modes, "Auto"))
+	local Guns2 = M.mockEnv.__require(SSS.Server.Guns)
+	local bolt, semi, auto = Guns2.Make("Mosin", 100), Guns2.Make("M16A1", 100), Guns2.Make("AKM", 100)
+	bolt.Mode, semi.Mode = "Single", "Semi"
+	local first = Guns2.Trigger(bolt)
+	local second = Guns2.Trigger(bolt)
+	Guns2.Rack(bolt)
+	bolt.Busy, bolt.LastShot = 0, 0
+	check("action: single shot fires once, then nothing until it is racked", Firearms.ActionOf(D.Mosin) == "Single" and first == "fired" and second ~= "fired" and bolt.Chamber == true and Guns2.Trigger(bolt) == "fired")
+	check("action: semi-automatic loads the next round itself and has no automatic setting", Firearms.ActionOf(D.M16A1) == "Semi" and Firearms.ActionOf(D.M1Garand) == "Semi" and Guns2.Trigger(semi) == "fired" and semi.Chamber == true and not table.find(D.M16A1.Modes, "Auto"))
+	check("action: the AKs are automatic, and the shop says which kind each gun is", Firearms.ActionOf(D.AKM) == "Auto" and Firearms.ActionOf(D.AK47) == "Auto" and Firearms.ActionOf(D.AK74) == "Auto" and auto.Mode == "Safe" and Recruit.Catalog().Mosin.Action == "Single" and Recruit.Catalog().M1Garand.Action == "Semi")
 	check("family: each pattern has its own field rule", Firearms.CanField(D.M16A1, "Barrel") and not Firearms.CanField(D.AKM, "Barrel") and Firearms.CanField(D.AKM, "Muzzle") and Firearms.CanField(D.AKM, "Optic") and not Firearms.CanField(D.M14, "Optic") and Firearms.CanField(D.M14, "Muzzle"))
 	local war = M.mockEnv.__require(SSS.Server.Common.PlayerData).Get(g).War
 	for _, id in { "AKM", "BarrelShort", "Suppressor", "Compensator", "PSO", "Foregrip" } do war.Locker[id] = { count = 1, condition = 100 } end

@@ -500,7 +500,8 @@ local function renderApp()
 		if slot.condition < 100 then
 			table.insert(buttons, { text = "Fix", color = Color3.fromRGB(120, 90, 40), fn = function() Remotes.WarRepair:FireServer(id) end })
 		end
-		row(("%s x%d  (%d%%)"):format(item.Name, slot.count, slot.condition), buttons, if slot.condition < 50 then Color3.fromRGB(255, 150, 120) else nil)
+		local kindOf = if item.Kind == "Weapon" and item.Action then "  " .. Firearms.ActionNames[item.Action] else ""
+		row(("%s x%d  (%d%%)%s"):format(item.Name, slot.count, slot.condition, kindOf), buttons, if slot.condition < 50 then Color3.fromRGB(255, 150, 120) else nil)
 	end
 	row("-- SHOP --", {})
 	local cids = {}

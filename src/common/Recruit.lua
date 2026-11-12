@@ -14,7 +14,7 @@ local Recruit = {}
 function Recruit.Catalog()
 	local out = {}
 	for id, def in Firearms.Defs do
-		out[id] = { Kind = "Weapon", Name = def.Name, Price = def.Price, Faction = def.Faction, Class = def.Class }
+		out[id] = { Kind = "Weapon", Name = def.Name, Price = def.Price, Faction = def.Faction, Class = def.Class, Action = Firearms.ActionOf(def) }
 	end
 	for id, def in Firearms.Attachments do
 		if def.Price > 0 then

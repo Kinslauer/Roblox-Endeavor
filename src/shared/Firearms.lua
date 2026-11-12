@@ -44,7 +44,7 @@ Firearms.Defs = {
 	M1A = { Family = "Garand", Name = "M1A", Class = "Battle Rifle", Ammo = "7.62x51", MagSize = 20, Modes = { "Safe", "Semi" }, RPM = 500,
 		Recoil = { 2.4, 1.0 }, Spread = 1.4, AdsSpread = 0.22, Ergonomics = 0.55, Weight = 4.0, Faction = "Union", Price = 1050,
 		Reload = { EjectMag = 0.6, InsertMag = 0.9, Rack = 0.5 }, Slots = { "Optic", "Muzzle", "Barrel" } },
-	M16A1 = { Family = "AR", Name = "M16A1", Class = "Rifle", Ammo = "5.56x45", MagSize = 20, Modes = { "Safe", "Semi", "Auto" }, RPM = 750,
+	M16A1 = { Family = "AR", Name = "M16A1", Class = "Rifle", Ammo = "5.56x45", MagSize = 20, Modes = { "Safe", "Semi" }, RPM = 750,
 		Recoil = { 1.2, 0.6 }, Spread = 1.9, AdsSpread = 0.35, Ergonomics = 0.65, Weight = 3.0, Faction = "Union", Price = 950,
 		Reload = { EjectMag = 0.5, InsertMag = 0.8, Rack = 0.45 }, Slots = { "Optic", "Muzzle", "Grip", "Barrel" } },
 	SKS = { Name = "SKS", Class = "Carbine", Ammo = "7.62x39", MagSize = 10, Modes = { "Safe", "Semi" }, RPM = 400,
@@ -57,7 +57,7 @@ Firearms.Defs = {
 	M1Garand = { Family = "Garand", Name = "M1 Garand", Class = "Battle Rifle", Ammo = "7.62x51", MagSize = 8, Modes = { "Safe", "Semi" }, RPM = 350,
 		Recoil = { 2.8, 1.0 }, Spread = 1.5, AdsSpread = 0.25, Ergonomics = 0.5, Weight = 4.3, Faction = "Union", Price = 800,
 		Reload = { EjectMag = 0.2, InsertMag = 1.1, Rack = 0.3 }, Slots = { "Optic", "Muzzle", "Barrel" } },
-	Mosin = { Name = "Mosin-Nagant", Class = "Bolt Action", Ammo = "7.62x54R", MagSize = 5, Modes = { "Safe", "Semi" }, RPM = 40, BoltAction = true,
+	Mosin = { Name = "Mosin-Nagant", Class = "Bolt Action", Ammo = "7.62x54R", MagSize = 5, Modes = { "Safe", "Single" }, RPM = 40, BoltAction = true,
 		Recoil = { 4.5, 1.5 }, Spread = 1.2, AdsSpread = 0.15, Ergonomics = 0.45, Weight = 4.0, Faction = "Pact", Price = 700,
 		Reload = { EjectMag = 0, InsertMag = 2.4, Rack = 0.8 }, Slots = { "Optic" } },
 	Makarov = { Name = "Makarov PM", Class = "Pistol", Ammo = "9x18", MagSize = 8, Modes = { "Safe", "Semi" }, RPM = 350,
@@ -87,6 +87,17 @@ Firearms.Attachments = {
 	BarrelLong = { Name = "Long barrel", Slot = "Barrel", Velocity = 1.08, Spread = 0.75, Recoil = 0.92, Ergonomics = -0.1, Price = 340 },
 	Foregrip = { Name = "Foregrip", Slot = "Grip", Recoil = 0.85, Ergonomics = 0.1, Price = 180 },
 }
+
+-- The three kinds of action (owner, 2026-11-12). Single: one round per working of the action; the shooter racks
+-- it by hand after every shot (BoltAction; selector word "Single"). Semi: the gun loads the next round itself, one
+-- shot per pull of the trigger. Auto: rounds keep leaving while the trigger is held (a selector with "Auto").
+function Firearms.ActionOf(def)
+	if def.BoltAction then
+		return "Single"
+	end
+	return if table.find(def.Modes, "Auto") then "Auto" else "Semi"
+end
+Firearms.ActionNames = { Single = "single shot", Semi = "semi-auto", Auto = "automatic" }
 
 -- Families: guns of one pattern take each other's parts. Each has its own quirk for what a soldier can change
 -- away from the barracks (Field): small attachments everywhere they screw or clamp on, a barrel only where the
