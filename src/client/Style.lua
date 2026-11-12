@@ -24,6 +24,8 @@ local lostFor = 0
 local mark -- BillboardGui on the target
 local count, lastHit = 0, 0
 local countGui, countLabel
+local rangeLabel -- round 3: range marks under the reticle while aiming a gun
+local G = Config.Guns
 
 local function myRoot()
 	local c = player.Character
@@ -234,6 +236,12 @@ function Style.Event(kind, a, b, c, d, e)
 		task.delay(K.SwapSeconds * 0.5, function()
 			pcall(Joints.Pose, char, "RightShoulder", CFrame.new(), K.SwapSeconds * 0.5)
 		end)
+	elseif kind == "Grab" and a == char then
+		-- a gun off the floor: the hand goes down to it and back
+		pcall(Joints.Pose, char, "RightShoulder", CFrame.Angles(math.rad(-50), 0, math.rad(-10)), 0.15)
+		task.delay(0.15, function()
+			pcall(Joints.Pose, char, "RightShoulder", CFrame.new(), 0.2)
+		end)
 	elseif kind == "Knocked" and a == char then
 		if b then
 			Anims.Play(char, "Prone_Idle", { fade = 0.2 })
@@ -247,6 +255,57 @@ end
 function Style.Count()
 	return count
 end
+
+-- Round 3 (guns and ammo), each frame with a gun out: the range to what the reticle is on while aiming (in metres,
+-- Config.Guns.MetresPerStud), tired arms sway the view (ArmFatigue), a hot barrel smokes (Heat).
+local swayT = 0
+function Style.Gun(dt)
+	local _, char = myRoot()
+	local cam = workspace.CurrentCamera
+	local aiming = char ~= nil and char:GetAttribute("Aiming") == true and char:GetAttribute("Mag") ~= nil
+	if rangeLabel then
+		local text = ""
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		if aiming and cam and root then
+			local params = RaycastParams.new()
+			params.FilterType = Enum.RaycastFilterType.Exclude
+			params.FilterDescendantsInstances = { char }
+			local hit = workspace:Raycast(cam.CFrame.Position, cam.CFrame.LookVector * 1000, params)
+			text = if hit then ("%d m"):format(math.floor((hit.Position - root.Position).Magnitude * G.MetresPerStud + 0.5)) else "---"
+		end
+		rangeLabel.Text = text
+		rangeLabel.Visible = text ~= ""
+	end
+	local tired = if aiming then (char:GetAttribute("ArmFatigue") or 0) else 0
+	if tired > 0.05 and cam then
+		swayT += dt
+		local amp = math.rad(G.Fatigue.Sway * tired)
+		cam.CFrame = cam.CFrame * CFrame.Angles(math.sin(swayT * 1.3) * amp * 0.6, math.sin(swayT * 0.9 + 1) * amp, 0)
+	end
+	local held = char and char:FindFirstChild("HeldWeapon")
+	local part = held and held.PrimaryPart
+	if part then
+		local smoke = part:FindFirstChild("HeatSmoke")
+		local hot = (char:GetAttribute("Heat") or 0) > G.Heat.Hot
+		if hot and not smoke then
+			smoke = Instance.new("ParticleEmitter")
+			smoke.Name = "HeatSmoke"
+			smoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
+			smoke.Color = ColorSequence.new(Color3.fromRGB(200, 200, 200))
+			smoke.Transparency = NumberSequence.new(0.8, 1)
+			smoke.Size = NumberSequence.new(0.15, 0.6)
+			smoke.Lifetime = NumberRange.new(0.6, 1.1)
+			smoke.Speed = NumberRange.new(0.5, 1.2)
+			smoke.Acceleration = Vector3.new(0, 2, 0)
+			smoke.Rate = 6
+			smoke.LightInfluence = 0.6
+			smoke.Parent = part
+		elseif smoke then
+			smoke.Enabled = hot
+		end
+	end
+end
+
 
 function Style.Start(gui)
 	countGui = gui
@@ -266,9 +325,26 @@ function Style.Start(gui)
 	if countGui then
 		countLabel.Parent = countGui
 	end
+	rangeLabel = Instance.new("TextLabel")
+	rangeLabel.Name = "RangeMark"
+	rangeLabel.BackgroundTransparency = 1
+	rangeLabel.AnchorPoint = Vector2.new(0.5, 0)
+	rangeLabel.Position = UDim2.new(0.5, 0, 0.5, 26)
+	rangeLabel.Size = UDim2.fromOffset(80, 16)
+	rangeLabel.Font = Enum.Font.RobotoMono
+	rangeLabel.TextSize = 12
+	rangeLabel.TextColor3 = Color3.fromRGB(200, 236, 246)
+	rangeLabel.TextTransparency = 0.25
+	rangeLabel.TextStrokeTransparency = 0.7
+	rangeLabel.Text = ""
+	rangeLabel.Visible = false
+	if countGui then
+		rangeLabel.Parent = countGui
+	end
 	Remotes.CombatEvent.OnClientEvent:Connect(Style.Event)
 	RunService:BindToRenderStep("StyleLock", 201, function(dt) -- just after the camera (RenderPriority.Camera = 200)
 		Style.Step(dt)
+		Style.Gun(dt)
 		if count > 0 and os.clock() - lastHit > K.ComboReset then
 			count = 0
 			if countLabel then

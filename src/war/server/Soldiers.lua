@@ -62,7 +62,7 @@ local function pushWeapon(player)
 	if s then
 		Remotes.Weapon:FireClient(player, "State", Guns.Snapshot(s.Weapons[s.Active]), s.Active, { Grenades = s.Grenades, Medkits = s.Medkits, Sandbags = s.Sandbags,
 			Armor = s.Armor and { Id = s.Armor.Id, Condition = s.Armor.Condition }, Helmet = s.Helmet and { Id = s.Helmet.Id, Condition = s.Helmet.Condition },
-			Spares = s.Spares })
+			Spares = s.Spares, Tags = s.Tags })
 	end
 end
 
@@ -164,6 +164,8 @@ function Soldiers.Give(player, piece)
 			-- the magazines come with the rifle (or the pistol, when there is no rifle)
 			if piece == "Primary" or not kit.Primary then
 				Guns.AddMagazines(w, kit.Magazines or 0)
+				w.Load = kit.Load or "Ammo" -- the round type the order loaded (Firearms.Loads)
+				w.Loose = (kit.Loose or 0) * w.Def.MagSize
 			end
 		end
 	elseif piece == "Armor" or piece == "Helmet" then
@@ -301,9 +303,11 @@ function Soldiers.Damage(victimModel, amount, attacker, zone, pen, kind, at)
 		amount *= 0.25 -- friendly fire hurts, but not as much
 	end
 	local bruise = 0
+	local stopped = 0
 	if s then
 		local before = amount
 		amount = armorAbsorb(s, zone or "Torso", amount, pen or 0)
+		stopped = if before > 0 then (before - amount) / before else 0
 		if zone ~= "Limb" then
 			bruise = before - amount -- what the plate took, the body still feels until the plate is gone
 		end
@@ -312,7 +316,7 @@ function Soldiers.Damage(victimModel, amount, attacker, zone, pen, kind, at)
 		if s.Intro and hum.Health - amount <= 1 and Soldiers.Intro then
 			Soldiers.Intro.Desync(victim)
 			Remotes.Soldier:FireClient(victim, "Hurt", amount, zone)
-			return amount
+			return amount, stopped
 		end
 		if digging[victim] then
 			digging[victim] = nil -- a hit stops the shovel; you stand back up
@@ -341,7 +345,69 @@ function Soldiers.Damage(victimModel, amount, attacker, zone, pen, kind, at)
 	if attacker and attacker.Parent then
 		Remotes.Soldier:FireClient(attacker, "HitMarker", zone, hum.Health <= 0)
 	end
-	return amount
+	return amount, stopped
+end
+
+-- ===== grabbing a dropped gun (round 3): a fallen recruit's rifle lies beside it, whole =====
+-- X on it swaps it for the rifle in your hands, on the spot: its wear, its parts, the rounds left in it. Yours goes
+-- down where it stood. It lies Config.Guns.DropSeconds.
+local droppedGuns = setmetatable({}, { __mode = "k" }) -- model -> weapon state
+local function dropGun(w, at)
+	local folder = workspace:FindFirstChild("DroppedGuns") or Instance.new("Folder")
+	folder.Name = "DroppedGuns"
+	folder.Parent = workspace
+	local ground = workspace:Raycast(at + Vector3.new(0, 3, 0), Vector3.new(0, -16, 0), groundOnly())
+	local model = Instance.new("Model")
+	model.Name = "DroppedGun"
+	model:SetAttribute("WeaponId", w.Id)
+	local holder = Instance.new("Part")
+	holder.Name = "Holder"
+	holder.Size = Vector3.new(1.6, 0.4, 1.6)
+	holder.Transparency, holder.Anchored, holder.CanCollide, holder.CanTouch = 1, true, false, false
+	holder.CFrame = CFrame.new(if ground then ground.Position + Vector3.new(0, 0.15, 0) else at) * CFrame.Angles(0, rng:NextNumber() * math.pi * 2, 0)
+	holder.Parent = model
+	model.PrimaryPart = holder
+	pcall(HeldWeapons.Attach, model, w.Id, w.Attachments, { Name = "Gun", Part = "Holder", Scale = if GunParts.Guns[w.Id] then W.GunScale else nil, C0 = CFrame.Angles(0, 0, math.rad(90)) })
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "Grab"
+	prompt.ObjectText, prompt.ActionText = w.Def.Name, "Take"
+	prompt.KeyboardKeyCode, prompt.HoldDuration = Enum.KeyCode.X, 0.4
+	prompt.MaxActivationDistance, prompt.RequiresLineOfSight = 7, false
+	prompt.Parent = holder
+	prompt.Triggered:Connect(function(player)
+		Soldiers.Grab(player, model)
+	end)
+	droppedGuns[model] = w
+	w.Aiming, w.Reloading = false, false
+	model.Parent = folder
+	game:GetService("Debris"):AddItem(model, Config.Guns.DropSeconds)
+	return model
+end
+Soldiers.DropGun = dropGun
+
+function Soldiers.Grab(player, model)
+	local s = soldiers[player]
+	local w = model and droppedGuns[model]
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local holder = model and model:FindFirstChild("Holder")
+	if not (s and w and root and holder and model.Parent) or s.Intro or s.Pending then
+		return false
+	end
+	if (root.Position - holder.Position).Magnitude > 9 then
+		return false
+	end
+	droppedGuns[model] = nil
+	model:Destroy()
+	local old = s.Weapons.Primary
+	if old and not s.Issued.Primary then
+		dropGun(old, root.Position + root.CFrame.LookVector * 1.5) -- yours goes down where you stood
+	end
+	s.Weapons.Primary = w
+	s.Issued.Primary = nil -- picked up in the field: it is this recruit's now, and drops with it
+	s.Active = "Primary"
+	w.Busy = os.clock() + 0.6
+	pushWeapon(player)
+	return true
 end
 
 -- ===== death: everything on the body stays on the battlefield, damaged =====
@@ -353,7 +419,13 @@ local function dropBody(player, char, s)
 	local loot = {}
 	for _, slot in { "Primary", "Sidearm" } do
 		local w = s.Weapons[slot]
-		if w and not s.Issued[slot] then
+		if w and slot == "Primary" and not s.Issued[slot] then
+			-- the rifle falls beside the body, whole, for the next pair of hands (its attachments stay on it)
+			for _, name in Firearms.Parts do
+				w.Parts[name] = math.max(0, w.Parts[name] - W.Death.PartDamage)
+			end
+			dropGun(w, root.Position + root.CFrame.RightVector * 1.8)
+		elseif w and not s.Issued[slot] then
 			local worst = 100
 			for _, name in Firearms.Parts do
 				w.Parts[name] = math.max(0, w.Parts[name] - W.Death.PartDamage)
@@ -383,8 +455,11 @@ local function dropBody(player, char, s)
 		end
 	end
 	if #loot == 0 then
-		return
+		return -- nothing of its own on it (issued gear only): the body is not loot, like a conscript's
 	end
+	-- stack tags: the fallen's own, and any it took off others
+	local tags = 1 + (s.Tags or 0)
+	s.Tags = 0
 	local body = Instance.new("Part")
 	body.Name, body.Size, body.Anchored = "RecruitRemains", Vector3.new(4, 1, 2), true
 	body.CFrame = CFrame.new(root.Position - Vector3.new(0, 2, 0))
@@ -417,7 +492,12 @@ local function dropBody(player, char, s)
 			Recruit.LockerAdd(war, item.Id, item.Condition, 1)
 			table.insert(names, ("%s (%d%%)"):format(item.Id, item.Condition))
 		end
-		Remotes.Announce:FireClient(looter, "Recovered: " .. table.concat(names, ", ") .. ". It all needs repair.", "Info")
+		local ls = soldiers[looter]
+		if ls then
+			ls.Tags = (ls.Tags or 0) + tags -- paid at the locker (standDown)
+			table.insert(names, ("%d stack tag%s"):format(tags, if tags == 1 then "" else "s"))
+		end
+		Remotes.Announce:FireClient(looter, "Recovered: " .. (if #names > 0 then table.concat(names, ", ") else "nothing") .. ". It all needs repair.", "Info")
 		pushApp(looter)
 		if fallen then
 			-- the body stays where it fell, down to its battle attire, until it calcifies
@@ -504,6 +584,16 @@ end
 -- at the terminal it tapped in from and reads what the link cost (server/NeuralNet.lua Returned).
 local unlinking = {} -- [player] = true while the teleport is in flight
 
+-- stack tags taken off the fallen are paid for at the locker
+function Soldiers.PayTags(war, s)
+	local n = s.Tags or 0
+	if n > 0 then
+		war.Credits += n * Config.Guns.TagCredits
+		s.Tags = 0
+	end
+	return n
+end
+
 local function standDown(player, s)
 	local war = warOf(player)
 	if not war then
@@ -523,6 +613,7 @@ local function standDown(player, s)
 		end
 		if slot == "Primary" then
 			mags += #w.Spare
+			s.ReturnLoad = w.Load
 		end
 	end
 	if not s.Issued.Primary then
@@ -541,8 +632,9 @@ local function standDown(player, s)
 		Recruit.LockerAdd(war, id, piece.Condition, 1)
 	end
 	if mags > 0 then
-		Recruit.LockerAdd(war, "Ammo", 100, mags)
+		Recruit.LockerAdd(war, if s.ReturnLoad and Firearms.Loads[s.ReturnLoad] then s.ReturnLoad else "Ammo", 100, mags)
 	end
+	Soldiers.PayTags(war, s)
 	if (s.Grenades or 0) > 0 then
 		Recruit.LockerAdd(war, "Grenade", 100, s.Grenades)
 	end
@@ -960,13 +1052,15 @@ local function onFire(player, dir)
 		local stance = MV.Stance[s.Stance or "Stand"]
 		w.Steady = stance.Spread * Firearms.CyberEffect(s.Cyber).Spread
 			* (1 + (player.Character:GetAttribute("WoundShake") or 0) * Config.Wounds.SpreadPerShake) -- pain, a bad arm
+			* (1 + (w.Fatigue or 0)) -- tired arms (round 3: the gun's weight held up)
 		local wall = workspace:Raycast(eye, muzzle - eye, ray)
 		if wall then
 			muzzle = wall.Position - dir.Unit * 0.3 -- muzzle against a wall: the round starts on your side of it
 		end
 		Guns.Shoot(player, w, muzzle, dir.Unit, function(model, zone, damage, pen, at)
-			local dealt = Soldiers.Damage(model, damage, player, zone, pen, "Bullet", at)
+			local dealt, stopped = Soldiers.Damage(model, damage, player, zone, pen, "Bullet", at)
 			Remotes.Weapon:FireAllClients("Impact", at, Vector3.yAxis, dealt > 0)
+			return (stopped or 0) >= 0.6 -- mostly stopped by plate: it may glance on (Guns.Shoot)
 		end)
 		Remotes.Weapon:FireClient(player, "Recoil", w.Def.Recoil[1] * Firearms.RecoilMult(w.Parts) * MV.Stance[s.Stance or "Stand"].Recoil * Guns.AttMult(w, "Recoil"), w.Def.Recoil[2] * MV.Stance[s.Stance or "Stand"].Recoil)
 	elseif result ~= "busy" then
@@ -974,6 +1068,23 @@ local function onFire(player, dir)
 	end
 	if result ~= "busy" then
 		pushWeapon(player)
+	end
+end
+
+-- Tired arms (round 3): the gun held up tires them by its weight (Firearms Defs Weight, against a 3.2 kg rifle's
+-- Config.Guns.Fatigue.Weight.Rifle), rest brings them back. w.Fatigue widens the spread and sways the view.
+function Soldiers.FatigueTick(dt)
+	local F = Config.Guns.Fatigue
+	for _, s in soldiers do
+		for slot, w in s.Weapons do
+			local f = w.Fatigue or 0
+			if slot == s.Active and w.Aiming then
+				f = math.min(1, f + dt * F.Rate * (w.Def.Weight or F.Weight.Rifle))
+			else
+				f = math.max(0, f - dt * F.Recover)
+			end
+			w.Fatigue = if f > 0 then f else nil
+		end
 	end
 end
 
@@ -1074,6 +1185,23 @@ function Soldiers.Init()
 		local _, w = active(player)
 		if w then
 			w.Aiming = aiming
+			pushWeapon(player)
+		end
+	end)
+	task.spawn(function()
+		local last = os.clock()
+		while true do
+			task.wait(0.5)
+			local now = os.clock()
+			Soldiers.FatigueTick(now - last)
+			last = now
+			-- the screen hears about tired arms and a hot barrel while they change
+			for player, s in soldiers do
+				local w = s.Weapons[s.Active]
+				if w and (w.Fatigue or Guns.Heat(w) > 0) then
+					pushWeapon(player)
+				end
+			end
 		end
 	end)
 	Net.On("Stance", { rate = 6, burst = 10, args = { "string" } }, function(player, stance)

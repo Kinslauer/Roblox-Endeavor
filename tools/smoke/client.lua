@@ -253,6 +253,13 @@ do -- client/Style: the quiet combo count, the lunge, the swap and quick-med key
 	end)
 	if not okKeys then print("style keys error:", keysErr) end
 	check("style: 1 and 2 are the swap and the quick dressing", okKeys and keysErr == true)
+	-- round 3: the range under the dot while aiming a gun, tired arms, a hot barrel
+	c:SetAttribute("Aiming", true); c:SetAttribute("Mag", 7); c:SetAttribute("ArmFatigue", 0.5); c:SetAttribute("Heat", 0.9)
+	local okGun, gunErr = pcall(Style.Gun, 1 / 30)
+	if not okGun then print("style gun error:", gunErr) end
+	check("style: a gun aimed runs the range mark, the sway and the heat without error", okGun)
+	for _, k in { "Aiming", "Mag", "ArmFatigue", "Heat" } do c:SetAttribute(k, nil) end
+	Style.Gun(1 / 30)
 end
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

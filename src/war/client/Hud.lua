@@ -72,6 +72,9 @@ function Hud.Init(screenGui)
 	el.Chamber = bar({ Size = UDim2.fromOffset(4, 4), Position = UDim2.new(1, -40, 0, 38) }, w) -- lit: a round is chambered
 	el.Mode = text({ Size = UDim2.fromOffset(48, 12), Position = UDim2.new(1, -48, 0, 70), TextSize = 11, TextXAlignment = Enum.TextXAlignment.Right }, w)
 	el.Pips = make("Frame", { Size = UDim2.fromOffset(110, 10), Position = UDim2.new(1, -166, 0, 71), BackgroundTransparency = 1 }, w)
+	-- round 3: the load in the magazines and the loose rounds behind them; the range under the dot while aiming
+	el.Load = text({ Size = UDim2.fromOffset(110, 12), Position = UDim2.new(1, -166, 0, 58), TextSize = 10, TextColor3 = DIM, TextXAlignment = Enum.TextXAlignment.Right }, w)
+	el.Range = text({ Size = UDim2.fromOffset(80, 12), Position = UDim2.new(0.5, -40, 0.5, 30), TextSize = 11, TextColor3 = DIM, Text = "" })
 
 	-- the checked weapon: parts, vest, helmet
 	local c = make("Frame", { Size = UDim2.fromOffset(170, 112), Position = UDim2.new(1, -194, 1, -226), BackgroundColor3 = Color3.fromRGB(8, 10, 12), BackgroundTransparency = 0.35, BorderSizePixel = 0, Visible = false })
@@ -196,8 +199,11 @@ function Hud.Weapon(weapon, slotName, kit)
 	el.Chamber.BackgroundTransparency = if weapon.Chamber then 0 else 0.8
 	el.Mode.Text = weapon.Mode:upper()
 	el.Mode.TextColor3 = if weapon.Mode == "Safe" then AMBER else DIM
-	el.Status.Text = if weapon.Jammed then "JAM  [T]" elseif weapon.Reloading then "" elseif weapon.BoltOpen then "BOLT OPEN  [R]" elseif not weapon.Chamber then "CHAMBER EMPTY  [T]" else ""
+	local JAMS = { Stovepipe = "STOVEPIPE  [T]", Feed = "FAILURE TO FEED  [T]", DoubleFeed = "DOUBLE FEED  [T]" }
+	el.Status.Text = if weapon.Jammed then (JAMS[weapon.JamKind or ""] or "JAM  [T]") elseif (weapon.Heat or 0) >= 0.95 then "HOT" elseif weapon.Reloading then "" elseif weapon.BoltOpen then "BOLT OPEN  [R]" elseif not weapon.Chamber then "CHAMBER EMPTY  [T]" else ""
 	el.Status.TextColor3 = if weapon.Jammed then RED else AMBER
+	local loose = weapon.Loose or 0
+	el.Load.Text = (if weapon.Load and weapon.Load ~= "Ball" then weapon.Load:upper() .. "  " else "") .. (if loose > 0 then "+" .. loose else "")
 	-- spare magazines: one pip each
 	for i = 1, math.max(#pips, math.min(weapon.Spare, 10)) do
 		if not pips[i] then
@@ -359,6 +365,11 @@ function Hud.Feed(words)
 end
 
 -- ===== binoculars and marks =====
+-- The range to what the dot is on, in metres (empty hides it).
+function Hud.Range(metres)
+	el.Range.Text = if metres then ("%d m"):format(metres) else ""
+end
+
 function Hud.Binoculars(on)
 	el.Binos.Visible = on
 	el.Cross.Visible = not on

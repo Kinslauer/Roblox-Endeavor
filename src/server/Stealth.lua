@@ -279,9 +279,11 @@ local function investigate(g, position, seconds)
 end
 
 local function callOthers(g, position)
+	-- by voice to the guards near, by radio to every guard in the level (Config.Guns.RadioRadius) while it works
+	local reach = if g.model:GetAttribute("Radio") then math.max(S.CallRadius, Config.Guns.RadioRadius) else S.CallRadius
 	for _, other in guards do
 		if other ~= g and other.level == g.level and other.state ~= "Down" and other.state ~= "Alert"
-			and (other.root.Position - g.root.Position).Magnitude <= S.CallRadius then
+			and (other.root.Position - g.root.Position).Magnitude <= reach then
 			investigate(other, position)
 		end
 	end
@@ -618,6 +620,7 @@ function Stealth.SpawnGuard(position, opts)
 	end
 	model:SetAttribute("Guard", true)
 	model:SetAttribute("StealthState", "Patrol")
+	model:SetAttribute("Radio", opts.Radio ~= false) -- a radio on the shoulder: an alert reaches the whole level (an EMP round kills it)
 	CollectionService:AddTag(model, "Guard")
 	guards[model] = g
 	model.Destroying:Connect(function()

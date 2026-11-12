@@ -178,4 +178,20 @@ function Firearms.RepairCost(def, parts)
 	return math.ceil(def.Price * 0.004 * missing)
 end
 
+-- Round types (round 3 of docs/Reference-Picks-Plan.md): the recruit's magazines carry one load, chosen in the
+-- order; each is its own locker unit (three magazines' worth). Pen adds to the cartridge's, Damage scales it.
+Firearms.Loads = {
+	Ammo = { Name = "Ball", Pen = 0, Damage = 1 },
+	AmmoAP = { Name = "AP", Pen = 0.25, Damage = 0.85, Price = 110 },
+	AmmoHP = { Name = "Soft point", Pen = -0.15, Damage = 1.3, Price = 80 },
+}
+function Firearms.LoadOf(id)
+	return Firearms.Loads[id or "Ammo"] or Firearms.Loads.Ammo
+end
+
+-- Jams come in kinds: a stovepipe (the case caught in the port: a rack clears it), a failure to feed (clear the
+-- action), a double feed (two rounds fighting for the chamber: the magazine has to come out).
+Firearms.JamKinds = { { "Stovepipe", 0.4 }, { "Feed", 0.45 }, { "DoubleFeed", 0.15 } }
+Firearms.JamSeconds = { Stovepipe = 0.7, Feed = 1.2, DoubleFeed = 2.4 }
+
 return Firearms

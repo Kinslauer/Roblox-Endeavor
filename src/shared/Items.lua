@@ -31,6 +31,14 @@ Items.Defs = {
 	Round556 = { Name = "5.56", Type = "Ammo", Caliber = "5.56" },
 	Round762x39 = { Name = "7.62x39", Type = "Ammo", Caliber = "7.62x39" },
 	Round762x51 = { Name = "7.62x51", Type = "Ammo", Caliber = "7.62x51" },
+	-- loads inside a calibre (Weapons.Loads): Use one from the pack to load it next
+	Round22Emp = { Name = ".22 EMP", Type = "Ammo", Caliber = ".22" },
+	Round9AP = { Name = "9mm AP", Type = "Ammo", Caliber = "9mm" },
+	Round9HP = { Name = "9mm HP", Type = "Ammo", Caliber = "9mm" },
+	Round556AP = { Name = "5.56 AP", Type = "Ammo", Caliber = "5.56" },
+	Round762x39AP = { Name = "7.62x39 AP", Type = "Ammo", Caliber = "7.62x39" },
+	-- tags from the dead (round 3): what is left of a conduit's stack link on the body
+	Tag = { Name = "Stack Tag", Type = "Material" },
 	DutyPistol = { Name = "Duty Pistol", Type = "Weapon" },
 	Carbine = { Name = "Carbine", Type = "Weapon" },
 	AK47 = { Name = "AK-47", Type = "Weapon" },
@@ -61,6 +69,12 @@ local SHAPES = {
 	ArcCell = { Size = { 1, 1 }, Weight = 0.1, Stack = 30 },
 	Round22 = { Size = { 1, 1 }, Weight = 0.04, Stack = 50 },
 	Round9 = { Size = { 1, 1 }, Weight = 0.1, Stack = 30 },
+	Round22Emp = { Size = { 1, 1 }, Weight = 0.04, Stack = 50 },
+	Round9AP = { Size = { 1, 1 }, Weight = 0.1, Stack = 30 },
+	Round9HP = { Size = { 1, 1 }, Weight = 0.1, Stack = 30 },
+	Round556AP = { Size = { 1, 1 }, Weight = 0.12, Stack = 30 },
+	Round762x39AP = { Size = { 1, 1 }, Weight = 0.16, Stack = 30 },
+	Tag = { Size = { 1, 1 }, Weight = 0.02, Stack = 20 },
 	Round556 = { Size = { 1, 1 }, Weight = 0.12, Stack = 30 },
 	Round762x39 = { Size = { 1, 1 }, Weight = 0.16, Stack = 30 },
 	Round762x51 = { Size = { 1, 1 }, Weight = 0.25, Stack = 24 },
@@ -174,6 +188,8 @@ Items.Recipes = {
 	ArcCell = { Output = "ArcCell", Count = 6, Inputs = { Battery = 1, Wire = 2 } },
 	Round22 = { Output = "Round22", Count = 10, Inputs = { Powder = 1, Scrap = 1 } },
 	Round9 = { Output = "Round9", Count = 6, Inputs = { Powder = 1, Scrap = 1 } },
+	Round22Emp = { Output = "Round22Emp", Count = 6, Inputs = { Powder = 1, Battery = 1 } },
+	Round9HP = { Output = "Round9HP", Count = 6, Inputs = { Powder = 1, Scrap = 1, Wire = 1 } },
 	Round556 = { Output = "Round556", Count = 4, Inputs = { Powder = 1, Scrap = 1 } },
 	Round762x39 = { Output = "Round762x39", Count = 4, Inputs = { Powder = 1, Scrap = 1 } },
 	Round762x51 = { Output = "Round762x51", Count = 3, Inputs = { Powder = 1, Scrap = 1 } },
@@ -232,8 +248,8 @@ Items.LootTables = {
 	-- rifle (sometimes the carbine itself), never the .22 a conduit's quiet pistol takes (owner, 2026-11-12)
 	Sentry = {
 		{ Pick = {
-			{ Weight = 0.65, Items = { { "Round9", 1, 8, 15 }, { "DutyPistol", 0.3, 1, 1 } } },
-			{ Weight = 0.35, Items = { { "Round556", 1, 15, 30 }, { "Carbine", 0.35, 1, 1 } } },
+			{ Weight = 0.65, Items = { { "Round9", 1, 8, 15 }, { "Round9HP", 0.15, 4, 8 }, { "DutyPistol", 0.3, 1, 1 } } },
+			{ Weight = 0.35, Items = { { "Round556", 1, 15, 30 }, { "Round556AP", 0.12, 5, 10 }, { "Carbine", 0.35, 1, 1 } } },
 		} },
 		{ "Scrap", 0.8, 1, 2 }, { "Ration", 0.45, 1, 1 }, { "Cloth", 0.4, 1, 2 }, { "Wire", 0.3, 1, 2 },
 		{ "Medkit", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 }, { "Bandage", 0.35, 1, 2 }, { "Tourniquet", 0.12, 1, 1 },
@@ -249,14 +265,14 @@ Items.LootTables = {
 	},
 	-- the hall's overseers' pockets
 	Overseer = {
-		{ "Round9", 0.8, 4, 10 }, { "ArcCell", 0.7, 3, 8 }, { "Battery", 0.5, 1, 2 }, { "Medkit", 0.35, 1, 1 }, { "Ration", 0.4, 1, 1 },
+		{ "Round9", 0.8, 4, 10 }, { "Round9AP", 0.2, 3, 8 }, { "ArcCell", 0.7, 3, 8 }, { "Battery", 0.5, 1, 2 }, { "Medkit", 0.35, 1, 1 }, { "Ration", 0.4, 1, 1 },
 		{ "ShockBaton", 0.12, 1, 1 }, { "ReflexOptic", 0.06, 1, 1 }, { "NeuralCore", 0.05, 1, 1 },
 	},
 	Raider = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 }, { "Bandage", 0.3, 1, 1 },
 		{ "PipeClub", 0.1, 1, 1 }, { "ScavHelm", 0.08, 1, 1 }, { "ScrapVest", 0.08, 1, 1 }, { "ScrapGreaves", 0.08, 1, 1 },
 		{ "ChemSniffer", 0.03, 1, 1 },
-		{ "Round762x39", 0.3, 6, 18 }, { "AK47", 0.05, 1, 1 }, -- the gun every scavenger can keep running
+		{ "Round762x39", 0.3, 6, 18 }, { "Round762x39AP", 0.08, 4, 10 }, { "AK47", 0.05, 1, 1 }, -- the gun every scavenger can keep running
 	},
 }
 

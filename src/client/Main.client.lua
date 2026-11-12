@@ -705,6 +705,8 @@ renderInventory = function()
 		local id, def, buttons = item.Id, Items.Defs[item.Id], {}
 		if def.Type == "Consumable" then
 			table.insert(buttons, { text = if def.Throwable then "Throw" elseif def.Plantable then "Plant" else "Use", fn = function() Remotes.UseItem:FireServer(id, cameraDirection()) end })
+		elseif def.Type == "Ammo" and def.Caliber then
+			table.insert(buttons, { text = "Load", fn = function() Remotes.UseItem:FireServer(id) end }) -- this load goes in next
 		elseif def.Type == "Weapon" then
 			local held = lastEquipped == id
 			table.insert(buttons, { text = if held then "Unequip" else "Equip", color = if held then Color3.fromRGB(120, 70, 70) else nil, fn = function()
@@ -787,29 +789,35 @@ end)
 -- ===== The gun's count (bottom right, only with a gun out): rounds in the magazine, large; spare rounds, small =====
 do
 	local rounds = label({ Name = "Rounds", Size = UDim2.fromOffset(90, 34), Position = UDim2.new(1, -196, 1, -78), Text = "", Font = UI.Mono, TextSize = 30, TextColor3 = UI.Text, TextXAlignment = Enum.TextXAlignment.Right })
-	local spare = label({ Name = "Spare", Size = UDim2.fromOffset(70, 18), Position = UDim2.new(1, -100, 1, -64), Text = "", Font = UI.Mono, TextSize = 13, TextColor3 = UI.Dim, TextXAlignment = Enum.TextXAlignment.Left })
+	local spare = label({ Name = "Spare", Size = UDim2.fromOffset(96, 32), Position = UDim2.new(1, -100, 1, -64), TextYAlignment = Enum.TextYAlignment.Top, Text = "", Font = UI.Mono, TextSize = 13, TextColor3 = UI.Dim, TextXAlignment = Enum.TextXAlignment.Left })
 	make("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.5, Thickness = 1 }, rounds)
 	make("UIStroke", { Color = Color3.new(0, 0, 0), Transparency = 0.5, Thickness = 1 }, spare)
 	local function refresh()
 		local char = player.Character
 		local def = char and Weapons.Defs[char:GetAttribute("Weapon") or ""]
-		local ammo = def and def.Ammo
+		local ammo = def and (char:GetAttribute("AmmoItem") or def.Ammo) -- the load in the gun (server/Combat round 3)
 		rounds.Visible, spare.Visible = ammo ~= nil, ammo ~= nil
 		if ammo then
 			local have = lastInventory and lastInventory[ammo] or 0
 			local mag = char:GetAttribute("Mag")
 			if type(mag) == "number" then
-				rounds.Text, spare.Text = tostring(mag), "/ " .. math.max(have - mag, 0)
+				-- loaded spare magazines as bars after the loose count; a load other than the standard one by name
+				local bars = string.rep("|", math.clamp(char:GetAttribute("MagSpares") or 0, 0, 6))
+				local load = char:GetAttribute("Load")
+				rounds.Text, spare.Text = tostring(mag), "/ " .. math.max(have - mag, 0) .. (if bars ~= "" then " " .. bars else "") .. (if load then "\n" .. load else "")
 			else
 				rounds.Text, spare.Text = tostring(have), ""
 			end
-			rounds.TextColor3 = if (if type(mag) == "number" then mag else have) <= 0 or char:GetAttribute("Chambered") == false then UI.Harm else UI.Text -- red: empty, or nothing chambered (T)
+			rounds.TextColor3 = if (if type(mag) == "number" then mag else have) <= 0 or char:GetAttribute("Chambered") == false or char:GetAttribute("Jam") then UI.Harm else UI.Text -- red: empty, or nothing chambered (T)
 		end
 	end
 	local function bind(char)
 		char:GetAttributeChangedSignal("Weapon"):Connect(refresh)
 		char:GetAttributeChangedSignal("Mag"):Connect(refresh)
 		char:GetAttributeChangedSignal("Chambered"):Connect(refresh)
+		for _, name in { "MagSpares", "Load", "AmmoItem", "Jam" } do
+			char:GetAttributeChangedSignal(name):Connect(refresh)
+		end
 		refresh()
 	end
 	player.CharacterAdded:Connect(bind)
@@ -1664,6 +1672,9 @@ local function renderApp()
 		elseif item.Kind == "Armor" then
 			local helmet = Firearms.Armor[id] and Firearms.Armor[id].Head
 			table.insert(buttons, { text = "Wear", fn = function() order({ [if helmet then "Helmet" else "Armor"] = id }) end })
+		elseif item.Kind == "Ammo" then
+			-- the round type the next recruit's magazines carry (the Front, round 3)
+			table.insert(buttons, { text = if (lo.Load or "Ammo") == id then "Loaded" else "Load", fn = function() order({ Load = id }) end })
 		end
 		if slot.condition < 100 then
 			table.insert(buttons, { text = "Fix", color = Color3.fromRGB(120, 90, 40), fn = function() Remotes.WarRepair:FireServer(id) end })
@@ -1702,6 +1713,9 @@ renderMarket = function(m)
 	for _, item in m.Stock or {} do
 		local name = if (item.Count or 1) > 1 then ("%s x%d"):format(item.Name, item.Count) else item.Name
 		addRow(marketPanel, ("%s - %d cr"):format(name, item.Price), { { text = "Buy", color = Color3.fromRGB(50, 110, 70), fn = function() Remotes.Buy:FireServer(item.Id) end } }, if item.Price > (m.Credits or 0) then Color3.fromRGB(150, 150, 160) else nil)
+	end
+	if (m.Tags or 0) > 0 then
+		addRow(marketPanel, ("Stack tags x%d - %d cr each"):format(m.Tags, m.TagPrice or 0), { { text = "Sell", color = Color3.fromRGB(110, 90, 50), fn = function() Remotes.Buy:FireServer("SellTags") end } })
 	end
 	addRow(marketPanel, "", { { text = "Close", color = Color3.fromRGB(90, 50, 50), fn = function() marketPanel.Visible = false end } })
 end
@@ -2530,6 +2544,29 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 		local helmet = c == "Helmet"
 		sparks(b, { Count = if helmet then 12 else 6, Color = Color3.fromRGB(255, 236, 190), Size = 0.2, Speed = if helmet then 20 else 9, Life = 0.25 })
 		Sounds.Play("HitClang", b, { Pitch = if helmet then 2.1 else 0.8, Volume = if helmet then 1 else 0.6 })
+	elseif kind == "Emp" and typeof(b) == "Vector3" then
+		-- the light EMP round discharges: a small blue crackle, and the radio on him is dead
+		sparks(b, { Count = 10, Color = Color3.fromRGB(120, 200, 255), Size = 0.14, Speed = 7, Life = 0.35 })
+		Sounds.Play("Sparks", b, { Volume = 0.35, Pitch = 1.6 })
+	elseif kind == "Ricochet" and typeof(b) == "Vector3" and typeof(c) == "Vector3" then
+		-- a round off plate at a glance: a short streak on its new line
+		local seg = c - b
+		if seg.Magnitude > 0.1 then
+			local streak = make("Part", { Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false, Material = Enum.Material.Neon,
+				Color = Color3.fromRGB(255, 220, 160), Size = Vector3.new(0.05, 0.05, seg.Magnitude), CFrame = CFrame.lookAt(b + seg / 2, c) }, workspace)
+			TweenService:Create(streak, TweenInfo.new(0.12), { Transparency = 1 }):Play()
+			Debris:AddItem(streak, 0.15)
+		end
+		Sounds.Play("HitClang", b, { Pitch = 2.6, Volume = 0.5 })
+	elseif kind == "PlateBreak" and typeof(b) == "Vector3" then
+		-- the plate gives: shards, a crack
+		sparks(b, { Count = 18, Color = Color3.fromRGB(150, 150, 140), Size = 0.25, Speed = 14, Life = 0.5 })
+		Sounds.Play("BreakMetal", b, { Volume = 0.7, Pitch = 1.4 })
+	elseif kind == "Jam" and a == player.Character then
+		local root = a:FindFirstChild("HumanoidRootPart")
+		if root then
+			Sounds.Play("DryClick", root, { Pitch = 0.7, Volume = 0.9 })
+		end
 	elseif kind == "Damage" and typeof(a) == "Instance" and type(b) == "table" then
 		-- our hit landed: float the number off the victim and nudge the camera
 		local root = a:FindFirstChild("Head") or a:FindFirstChild("HumanoidRootPart")

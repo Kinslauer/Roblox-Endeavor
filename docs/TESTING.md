@@ -936,3 +936,44 @@ Play these on the published places (Studio's Play button cannot teleport between
 - Weapon grip angles and sound levels are first guesses: say what feels off.
 - Collapsed building stumps may collide as solid hulls (MeshPart collision can't be set from scripts).
 - Studio's Play button cannot teleport between places.
+
+### Endeavor and Front: guns and ammo (2026-11-12, Endeavor v107 + Front v41)
+Round 3 of the reference picks. Nothing here was seen in game before publishing.
+Endeavor:
+- [ ] Rounds come in loads: .22 EMP (the station's armory locker has 8), 9mm AP and hollow point, 5.56 AP, 7.62x39 AP
+      (from sentries, overseers and raiders, and the bench makes .22 EMP and 9mm HP). Select one in the pack (Tab) and
+      press Load: the magazine is changed for it at once, by hand. The round counter shows the load's name under it.
+- [ ] Shoot a guard with an EMP round. On his helmet or vest: a small blue crackle and nothing else, he does not turn.
+      On flesh: he feels it (less than a normal round) and comes for you. Either way his radio is dead: when he
+      raises the alarm, only the guards close enough to hear him come, not the whole station.
+- [ ] A guard with his radio working: alert one, and guards from all over the station come.
+- [ ] Shoot the same plate over and over: it wears through (about 8 .22 rounds on a helmet, 20 on a carrier) and
+      then the rounds reach the body. A round that hits a plate at a slant glances off with a streak; it can hit
+      whoever stands behind.
+- [ ] Fire a lot quickly (the AK-47 on automatic): the barrel smokes, the rounds wander, and at the end it will not
+      fire ("> AK-47 . . . TOO HOT") until it cools.
+- [ ] Jams: now and then a gun stops (more when hot or worn) with a dull click and a red round counter. T clears a
+      feed failure or a stovepipe. A double feed needs R (the magazine out).
+- [ ] Magazines: with the pack full of rounds, bars after the spare count show loaded spare magazines. R swaps one in
+      quickly. With none loaded, R thumbs rounds in one by one (slower). R on a full magazine loads a spare by hand.
+- [ ] Hold a gun up aiming (RMB) for a while: the view starts to sway and the rounds drift, more with a rifle.
+      Lower it and the arms come back.
+- [ ] While aiming, the distance in metres shows under the dot.
+- [ ] Kill a sentry who carried a pistol or carbine: the gun lies on the floor beside the body. Hold X on it: it goes
+      straight into your hand.
+- [ ] A dead player's remains hold a Stack Tag. The trader in Verdant Reach buys tags (a Sell row in the market).
+Front:
+- [ ] The shop sells AP and soft point ammunition. In the locker, press Load on one: the next recruit's magazines carry
+      it (its name shows above the spare pips). AP goes through vests better and hurts less; soft point the opposite.
+- [ ] Every recruit with magazines also carries a magazine's worth of loose rounds (+20 or +30 by the pips). With no
+      magazine left, R thumbs them into the one in the gun.
+- [ ] Long bursts heat the barrel: the spread opens and the gun stops at "HOT" until it cools.
+- [ ] Jams have kinds: STOVEPIPE (T clears it fast), FAILURE TO FEED (T, slower), DOUBLE FEED (T, slowest; a reload
+      also clears any jam).
+- [ ] A round that glances off a vest or helmet goes on with a streak and can hit someone behind.
+- [ ] Aim for a long time: the gun starts to wander in the view and the spread widens; heavier rifles tire you sooner.
+- [ ] Aiming or on binoculars, the range in metres shows under the dot.
+- [ ] A killed recruit's rifle lies beside the body. Hold X on it: it is yours on the spot (its wear and the rounds in
+      it), and your own rifle goes down where you stood.
+- [ ] Strip a fallen recruit (hold X): you also take its stack tag. Unlink at your locker: the tags are paid in
+      credits.

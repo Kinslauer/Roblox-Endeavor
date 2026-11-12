@@ -29,7 +29,7 @@ Config.Tutorial = {
 	CleanupSeconds = 12,
 	KitWeapon = "Whisper",
 	Kit = { Whisper = 1, Round22 = 21 }, -- three magazines of .22: the guards carry none of it
-	Locker = { RebarBlade = 1, ScrapVest = 1, Medkit = 2, Round22 = 28, Scrap = 4 },
+	Locker = { RebarBlade = 1, ScrapVest = 1, Medkit = 2, Round22 = 28, Round22Emp = 8, Scrap = 4 },
 	Manifest = { Name = "LINE 9 MANIFEST", Text = "INBOUND: 1 . OUTBOUND: 0\nCARGO: STACK HARDWARE, 40 CRATES\nDELIVERY: FREIGHT LIFTS, CITY BAYS 01-12\nCONSIGNEE: WHOEVER SIGNS\nNOTE: NOTHING ON THIS LINE COMES BACK DOWN." },
 }
 -- Stealth (server/Stealth.lua, shared/Stealth.lua): light-level hiding, noise, guard awareness, takedowns.
@@ -396,6 +396,7 @@ Config.Gore = {
 -- The Front: the war world, a separate place in the same universe. Conduits "tap in" from a
 -- Neural Net terminal and control a recruit there. The recruit's gear is the conduit's money.
 Config.War = {
+	LooseMagazines = 1, -- loose rounds a recruit carries, in magazines' worth (thumbed in by hand: Config.Guns.PerRound)
 	PlaceId = 81481823786216, -- the Front place inside the Endeavor experience (universe 10773835758)
 	HomePlaceId = 120490278050491, -- Endeavor: where an unlinked conduit goes back to (war/server/Soldiers.lua Unlink)
 	UnlinkHold = 2.5, -- seconds holding X at the base locker to unlink
@@ -836,6 +837,32 @@ Config.Kit = {
 	ShotPop = { Velocity = 9, Extend = 0.25, Max = 14 }, -- rounds into a juggled body keep it up (their own count)
 	ComboReset = 2.5, -- the corner count clears after this long without a hit landing
 	Knock = { Seconds = 30, Revive = 3, Finish = 1.2, ReviveShare = 0.25, Again = 90, Crawl = 3 },
+}
+
+-- Guns and ammo (round 3 of docs/Reference-Picks-Plan.md; Endeavor's Combat and the Front's Guns/Soldiers)
+Config.Guns = {
+	-- magazines: the kit's spares are loaded ahead; with none loaded, the change is thumbing rounds in by hand
+	Spares = 1, -- loaded spare magazines with no rig pouches (each pouch adds one)
+	PerRound = 0.18, -- seconds to thumb one round into a magazine
+	HandBase = 0.5, -- share of the gun's ReloadSeconds a by-hand reload still takes (out, in, slide)
+	-- plate wears through: each round that meets it adds half of (1 + its Pen), the plate breaks at Hits x rating
+	-- (a sentry's helmet takes 8 rounds of .22 or 4 of 9mm; a carrier's plate 20 of .22, 10 of 9mm)
+	PlateHits = { Helmet = 4, Vest = 5, Bracers = 3, Shins = 3 },
+	-- a stopped round that met plate at a glance goes on (|direction . surface| below Dot) with Damage of its force
+	Ricochet = { Dot = 0.4, Damage = 0.35, Range = 60 },
+	-- the barrel heats per shot and cools per second; past Hot the round wanders, at 1 the gun will not fire
+	Heat = { Pistol = 0.05, Rifle = 0.03, Auto = 0.022, Cool = 0.12, Hot = 0.6, Spread = 3 },
+	-- jams: chance per shot (base, plus Heat x heat^2, plus Wear x (1 - condition)); kinds by weight; seconds to clear
+	Jam = { Base = 0.004, Heat = 0.08, Kinds = { Feed = 0.45, Stovepipe = 0.4, DoubleFeed = 0.15 },
+		Clear = { Feed = 0.8, Stovepipe = 0.5, DoubleFeed = 0.6 } },
+	-- tired arms: aiming tires the arms by the gun's weight, rest brings them back; tired arms drift the round
+	Fatigue = { Rate = 0.025, Recover = 0.25, Drift = 2.5, Sway = 0.9, Weight = { Sidearm = 1, Rifle = 3.2 } },
+	MetresPerStud = 0.28, -- range marks (the number under the reticle while aiming)
+	DropSeconds = 120, -- a gun dropped by the dead lies this long
+	TagCredits = 15, -- what the Reach's trader pays for a stack tag
+	-- the Front: a glance off plate (Guns.Shoot) keeps this share of its speed; heat spreads a Front gun by this
+	FrontRicochetSpeed = 0.5, FrontHeatSpread = 2.5,
+	RadioRadius = 140, -- a guard with a working radio calls the whole level (voice: Config.Stealth.CallRadius)
 }
 
 return Config

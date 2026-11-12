@@ -138,7 +138,7 @@ function Kit.Apply(player, char)
 	end
 	local kit = Armor.Kit(data.Armor)
 	pcall(drawKit, char, data.Armor)
-	char:SetAttribute("Vest", if kit.Plate > 0 then kit.Plate else nil) -- Combat.HitZone: the chest plate
+	char:SetAttribute("Vest", if kit.Plate > 0 and not char:GetAttribute("VestBroken") then kit.Plate else nil) -- Combat.HitZone: the chest plate (until it wears through: Combat.WearPlate)
 	char:SetAttribute("KitMags", kit.Mags)
 	char:SetAttribute("KitMeds", kit.Meds)
 	local second = data.Second
@@ -242,6 +242,70 @@ function Kit.QuickMed(player)
 		end
 	end
 	return nil
+end
+
+-- Grabbing a dropped gun (round 3): a gun the dead were carrying lies beside the body on its own. X takes it
+-- straight into the hand (the one in your hand goes to its mount, or into the pack). It lies Config.Guns.DropSeconds.
+function Kit.DropGun(cf, weaponId)
+	local def = Weapons.Defs[weaponId]
+	if not (def and Weapons.IsGun(def)) then
+		return nil
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local folder = workspace:FindFirstChild("DroppedGuns") or Instance.new("Folder")
+	folder.Name = "DroppedGuns"
+	folder.Parent = workspace
+	params.FilterDescendantsInstances = { folder }
+	local down = workspace:Raycast(cf.Position + Vector3.new(0, 2, 0), Vector3.new(0, -12, 0), params)
+	local at = if down then down.Position + Vector3.new(0, 0.15, 0) else cf.Position
+	local model = Instance.new("Model")
+	model.Name = "DroppedGun"
+	model:SetAttribute("WeaponId", weaponId)
+	local holder = Instance.new("Part")
+	holder.Name = "Holder"
+	holder.Size = Vector3.new(1.4, 0.4, 1.4)
+	holder.Transparency, holder.Anchored, holder.CanCollide, holder.CanTouch = 1, true, false, false
+	holder.CFrame = CFrame.new(at) * CFrame.Angles(0, math.random() * math.pi * 2, 0)
+	holder.Parent = model
+	model.PrimaryPart = holder
+	local id, attachments, opts = Weapons.Held(weaponId)
+	opts = table.clone(opts or {})
+	opts.Name, opts.Part, opts.C0 = "Gun", "Holder", CFrame.Angles(0, 0, math.rad(90)) -- on its side
+	pcall(HeldWeapons.Attach, model, id, attachments, opts)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "Grab"
+	prompt.ObjectText, prompt.ActionText = def.Name or weaponId, "Take"
+	prompt.KeyboardKeyCode = Enum.KeyCode.X
+	prompt.HoldDuration, prompt.MaxActivationDistance, prompt.RequiresLineOfSight = 0.2, 7, false
+	prompt.Parent = holder
+	prompt.Triggered:Connect(function(player)
+		Kit.Grab(player, model)
+	end)
+	model.Parent = folder
+	game:GetService("Debris"):AddItem(model, Config.Guns.DropSeconds)
+	return model
+end
+
+function Kit.Grab(player, model)
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local weaponId = model and model.Parent and model:GetAttribute("WeaponId")
+	local holder = model and model:FindFirstChild("Holder")
+	if not (weaponId and holder and hum and hum.Health > 0) or char:GetAttribute("Knocked") then
+		return false
+	end
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not root or (root.Position - holder.Position).Magnitude > 9 then
+		return false
+	end
+	model:Destroy() -- one hand gets it
+	local Inventory = require(script.Parent.Inventory)
+	local Gear = require(script.Parent.Gear)
+	Inventory.Add(player, weaponId, 1)
+	Gear.EquipWeapon(player, weaponId)
+	Remotes.CombatEvent:FireAllClients("Grab", char, weaponId)
+	return true
 end
 
 function Kit.Init()

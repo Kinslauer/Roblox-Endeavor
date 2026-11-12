@@ -448,7 +448,8 @@ function ViewGun.Step(dt, state)
 			end
 		end
 		gun.WasReloading = reloading
-		motion = gun.Motion:Step(dt, { BoltOpen = w ~= nil and w.BoltOpen == true, Checking = state.Checking == true and not reloading })
+		motion = gun.Motion:Step(dt, { BoltOpen = w ~= nil and w.BoltOpen == true, Checking = state.Checking == true and not reloading,
+			Tired = if state.Aiming and w then w.Fatigue else nil })
 		pos += Vector3.new(-motion.Pos.X, motion.Pos.Y, -motion.Pos.Z) -- from the gun's frame to the view's
 		rot += motion.Rot
 	end

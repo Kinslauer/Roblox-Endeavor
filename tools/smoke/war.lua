@@ -13,6 +13,7 @@ M.mockEnv.__require(RS.Shared.Config).War.World.Seed = tonumber(WAR_SEED) or 783
 M.task.spawn(function() M.loadSource(SSS.Server.Main)() end)
 local Remotes = RS.Remotes
 local Config = M.mockEnv.__require(RS.Shared.Config)
+Config.Guns.Jam.Heat = 0 -- no jams from heat at random in these checks (the round 3 block makes its own)
 Config.War.Intro.Enabled = false -- the first link (stasis tank intro) gets its own run at the end
 local function run(seconds, cond) for _ = 1, math.floor(seconds * 30) do M.step(1/30); if cond and cond() then return true end end return cond == nil end
 local function check(label, ok) print((ok and "PASS  " or "FAIL  ") .. label) end
@@ -571,6 +572,90 @@ do -- cybernetic limbs are shipped by the conduit: bought, fitted in the order, 
 	local look = {}
 	local okWear = pcall(function() Bodies.Wear(u.Character, { Cyber = kit.Cyber }) end)
 	check("cyber: the body takes the limbs without error", okWear)
+end
+do -- guns and ammo (round 3): loads, loose rounds by hand, heat, kinds of jam, ricochets, tired arms, dropped guns, tags
+	local Recruit = M.mockEnv.__require(SSS.Server.Common.Recruit)
+	local Guns = M.mockEnv.__require(SSS.Server.Guns)
+	local FA = M.mockEnv.__require(RS.Shared.Firearms)
+	local G = Config.Guns
+	local malf = FA.MalfunctionChance
+	FA.MalfunctionChance = function() return 0 end
+	local war = { Faction = "Union", Credits = 5000, Locker = {}, Deployments = 1 }
+	check("ammo: the shop sells AP and soft point ammunition", Recruit.Catalog().AmmoAP.Kind == "Ammo" and Recruit.Catalog().AmmoHP ~= nil and Recruit.Buy(war, "AmmoAP") == true and Recruit.Buy(war, "M16A1") == true)
+	check("ammo: the order names the load, keeps it, and refuses a load that is not one",
+		Recruit.Order(war, { Primary = "M16A1", Load = "AmmoAP" }) == true and Recruit.Order(war, { Primary = "M16A1" }) == true and war.Loadout.Load == "AmmoAP"
+		and Recruit.Order(war, { Primary = "M16A1", Load = "Nonsense" }) == false)
+	local kit = Recruit.Deploy(war)
+	check("ammo: the magazines carry it, with a magazine of loose rounds", kit.Load == "AmmoAP" and kit.Magazines == 3 and kit.Loose == 1 and war.Locker.AmmoAP == nil)
+	local faction = M.mockEnv.__require(SSS.Server.Factions).Of and M.mockEnv.__require(SSS.Server.Factions).Of(g) or "Union"
+	local s = Soldiers.Arm(g, kit, faction)
+	local w = s.Weapons.Primary
+	check("ammo: AP in the rifle, twenty loose", w.Load == "AmmoAP" and w.Loose == 20 and Guns.Snapshot(w).Load == "AP" and FA.LoadOf("AmmoAP").Pen > 0)
+	-- thumbing rounds in
+	w.Spare, w.Mag, w.Busy, w.Reloading = {}, 5, 0, false
+	check("mags: no magazine left, R loads the one in the gun by hand", Guns.Reload(w) == true and w.HandLoading == true)
+	run(w.Def.Reload.EjectMag + 15 * G.PerRound + w.Def.Reload.InsertMag + 0.4)
+	check("mags: fifteen rounds thumbed in", w.Mag == 20 and w.Loose == 5 and not w.Reloading)
+	-- heat
+	w.Mode, w.Chamber, w.Busy, w.Jammed = "Semi", true, 0, false
+	w.Heat, w.HeatAt, w.LastShot = 1, M.mockEnv.os.clock(), 0
+	check("heat: a cooked barrel will not fire", Guns.Trigger(w) == "hot")
+	w.Heat, w.Cooked = 0, nil
+	check("heat: cooled, it fires, and the barrel warms", Guns.Trigger(w) == "fired" and Guns.Heat(w) > 0)
+	-- kinds of jam
+	local kinds = {}
+	for _ = 1, 200 do kinds[Guns.JamKind()] = true end
+	check("jam: three kinds", kinds.Stovepipe and kinds.Feed and kinds.DoubleFeed)
+	w.Jammed, w.JamKind, w.Busy = true, "Stovepipe", 0
+	Guns.Rack(w); run(FA.JamSeconds.Stovepipe + 0.3)
+	check("jam: T racks a stovepipe out", w.Jammed == false and w.JamKind == nil)
+	w.Jammed, w.JamKind, w.Busy = true, "DoubleFeed", 0
+	Guns.Rack(w); run(0.2)
+	check("jam: a rack does not clear a double feed", w.Jammed == true)
+	Guns.Unjam(w); run(FA.JamSeconds.Feed + 0.1)
+	check("jam: a double feed takes longer to clear", w.Jammed == true)
+	run(FA.JamSeconds.DoubleFeed - FA.JamSeconds.Feed + 0.3)
+	check("jam: and then it is clear", w.Jammed == false)
+	-- a glance off plate
+	local function dummy(at, name)
+		local m = M.newInstance("Model"); m.Name = name
+		local h = M.newInstance("Humanoid"); h.Parent = m
+		local r = M.newInstance("Part"); r.Name = "HumanoidRootPart"; r.CFrame = M.CF.new(at); r.Parent = m
+		m.Parent = workspace_
+		return m
+	end
+	local gr = g.Character.HumanoidRootPart
+	gr.CFrame = M.CF.new(-5000, 4, -5000)
+	local o = gr.Position + M.V3.new(0, 1.5, 0)
+	local a, b = dummy(o + M.V3.new(0, 0, -20), "PlateA"), dummy(o + M.V3.new(0, 0, -40), "PlateB")
+	local hits = {}
+	w.Aiming, w.Steady = true, 0
+	Guns.Shoot(g, w, o, M.V3.new(0, 0, -1), function(model, zone, damage)
+		table.insert(hits, { model, damage })
+		return model == a -- the first one's plate stops it
+	end)
+	run(0.5)
+	check("plate: a round stopped at a glance goes on into the next body, weaker", #hits == 2 and hits[1][1] == a and hits[2][1] == b and hits[2][2] < hits[1][2])
+	w.Steady = nil
+	a:Destroy(); b:Destroy()
+	-- tired arms
+	s.Active, w.Aiming = "Primary", true
+	Soldiers.FatigueTick(4)
+	local tired = w.Fatigue or 0
+	w.Aiming = false
+	Soldiers.FatigueTick(10)
+	check("arms: a rifle held up tires the arms; at rest they come back", tired > 0.2 and w.Fatigue == nil)
+	-- a dropped gun
+	local ak = Guns.Make("AKM", 70)
+	local dropped = Soldiers.DropGun(ak, gr.Position)
+	check("drop: a fallen rifle lies with a prompt", dropped ~= nil and dropped.Parent ~= nil and dropped.Holder:FindFirstChild("Grab") ~= nil)
+	check("drop: X swaps it for the rifle in your hands, which goes down in its place", Soldiers.Grab(g, dropped) == true and s.Weapons.Primary == ak
+		and dropped.Parent == nil and workspace_.DroppedGuns:FindFirstChild("DroppedGun") ~= nil)
+	-- tags
+	s.Tags = 2
+	local credits = war.Credits
+	check("tags: the locker pays for tags taken off the fallen", Soldiers.PayTags(war, s) == 2 and war.Credits == credits + 2 * G.TagCredits and s.Tags == 0)
+	FA.MalfunctionChance = malf
 end
 local probe = Intro.Probe(M.V3.new(0, 1500, 5000))
 check("intro: the probe builds and clears a cell and a simulation", type(probe) == "string" and probe:find("benches 5") ~= nil and workspace_:FindFirstChild("IntroCell_0") == nil)

@@ -37,6 +37,8 @@ How to read it:
 - **Stack hardware**: what Line 9 carries: new bodies, and the tanks recruits grow in. [Claude 2026-11-10; crates]
 - **Bay**: a hideout site, seen as a Line 9 delivery point ("LINE 9 . BAY 07"). [Claude 2026-11-10]
 - **Fragment**: a recovered piece of the truth, read into the stack's ARCHIVE. [Clues]
+- **Stack tag**: what is left on a dead body of the link between a body and its stack: a conduit's remains and a
+  fallen recruit each carry one. Traders and the Front's lockers pay for them. [Claude 2026-11-12, round 3; Hinted]
 
 ## The world
 
@@ -275,6 +277,9 @@ How to read it:
    facilities). (One way down, the Sumps shaft to Barrens Hall 2, is now Canon.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: round 3, guns and ammo: guards carry radios that call the whole level (Andy: an EMP .22 kills them; on
+  plate there is no alert, on flesh the guard feels it); stack tags on the dead (Hinted, Claude's word, see the
+  glossary); the Front's AP and soft point ammunition comes by shipment like the guns.
 - 2026-11-12: Endeavor v104 / Front v39, wounds: a doctor in Verdant Reach (Hinted, Claude's addition). Scars last one
   life (wiped with the body); nothing about them is story.
 - 2026-11-12: Andy's notes on the reference pick list (docs/Reference-Picks-Plan.md): the stack keeps a data slot

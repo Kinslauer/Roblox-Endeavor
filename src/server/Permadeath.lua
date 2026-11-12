@@ -23,6 +23,7 @@ local function dropRemains(player, profile, cframe)
 	if next(bundle) == nil then
 		bundle.Cloth = 1 -- a body is always worth devouring
 	end
+	bundle.Tag = (bundle.Tag or 0) + 1 -- what is left of the stack's link on the body (the Reach's trader buys tags)
 	Loot.Spawn(cframe, bundle, { Label = player.DisplayName .. "'s remains", Devour = { Level = profile.Level }, OwnerUserId = player.UserId })
 end
 

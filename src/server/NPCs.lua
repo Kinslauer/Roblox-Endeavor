@@ -285,6 +285,16 @@ function NPCs.Spawn(typeName, position, opts)
 				spoils.Scrap = 1
 			end
 		end
+		-- a gun in the spoils falls beside the body on its own, to be grabbed into the hand (server/Kit round 3)
+		for id, n in spoils do
+			local wdef = Weapons.Defs[id]
+			if wdef and Weapons.IsGun(wdef) and n > 0 then
+				local okDrop, dropped = pcall(require(script.Parent.Kit).DropGun, root.CFrame * CFrame.new(1.6, 0, -1), id)
+				if okDrop and dropped then
+					spoils[id] = if n > 1 then n - 1 else nil
+				end
+			end
+		end
 		Loot.Spawn(root.CFrame, spoils, { Label = typeName .. " spoils", Lifetime = 300, Devour = { Npc = true } })
 		NPCs.Killed:Fire(typeName, model, killer)
 		if opts.OnDied then

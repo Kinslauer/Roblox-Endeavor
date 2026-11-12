@@ -52,6 +52,9 @@ local function root() return char().HumanoidRootPart end
 local function data() return nil end
 
 run(1)
+-- jams are rolled per shot: none at random in these tests (the guns block below makes its own)
+M.mockEnv.__require(RS.Shared.Config).Guns.Jam.Base = 0
+M.mockEnv.__require(RS.Shared.Config).Guns.Jam.Heat = 0
 
 -- ===== The arrival: the train, the station, stealth and takedowns =====
 local PlayerData_ = M.mockEnv.__require(SSS.Server.Common.PlayerData)
@@ -1782,6 +1785,128 @@ do
 	hum.Health = hum.MaxHealth
 	char:PivotTo(M.CF.new(0, 5, 0))
 	run(0.5)
+end
+
+-- guns and ammo (round 3: loads, the EMP .22, magazines, plate wear, ricochets, heat, jams, tired arms, dropped guns)
+do
+	as(player)
+	mendMe()
+	local CombatG = M.mockEnv.__require(SSS.Server.Combat)
+	local InvG = M.mockEnv.__require(SSS.Server.Inventory)
+	local KitG = M.mockEnv.__require(SSS.Server.Kit)
+	local W = M.mockEnv.__require(RS.Shared.Weapons)
+	local data = PlayerData_.Get(player)
+	local c = player.Character
+	c.HumanoidRootPart.CFrame = M.CF.new(-700, 5, -900) -- away from everyone
+	run(0.3)
+	local function events(from, kind)
+		local n = 0
+		for i = from + 1, #M.FireLog do
+			local e = M.FireLog[i]
+			if e[1] == "CombatEvent" and e[3] == kind then n += 1 end
+		end
+		return n
+	end
+	check("ammo: a load is its calibre with its own numbers", W.Round("Round22Emp").Emp == true and W.Round("Round22Emp").Pen == 0
+		and W.Round("Round9AP").Pen == 2 and W.Round("Round9HP").Flesh > 1 and W.LoadsOf("9mm")[1] == "Round9" and W.Round("Round9").Damage == 1
+		and table.find(W.Chambered("Round22Emp"), W.Defs.Whisper.Name) ~= nil)
+	InvG.Add(player, "Whisper", 1, true); InvG.Add(player, "Round22", 28, true); InvG.Add(player, "Round22Emp", 7, true)
+	Remotes.EquipItem:FireServer("Whisper"); run(1)
+	data.Load = nil
+	CombatG.ResetMags(player); run(0.1)
+	check("ammo: the standard load goes in first, with a loaded spare behind it", c:GetAttribute("AmmoItem") == "Round22" and c:GetAttribute("Load") == nil and c:GetAttribute("MagSpares") == 1)
+	Remotes.UseItem:FireServer("Round22Emp"); run(0.3)
+	check("ammo: choosing the EMP rounds changes the magazine (by hand: none of them are loaded ahead)", c:GetAttribute("Reloading") == true)
+	run(4)
+	check("ammo: the EMP load is in the gun", c:GetAttribute("AmmoItem") == "Round22Emp" and c:GetAttribute("Load") == ".22 EMP" and c:GetAttribute("Mag") == 7 and c:GetAttribute("Chambered") == true)
+	-- targets: a body with a radio and a vest, another behind it
+	local function dummy(at, name)
+		local m = M.newInstance("Model"); m.Name = name
+		local h = M.newInstance("Humanoid"); h.Parent = m
+		local r = M.newInstance("Part"); r.Name = "HumanoidRootPart"; r.Size = M.V3.new(2, 2, 1); r.CFrame = M.CF.new(at); r.Parent = m
+		local t = M.newInstance("Part"); t.Name = "UpperTorso"; t.Size = M.V3.new(2, 1.6, 1); t.CFrame = M.CF.new(at); t.Parent = m
+		m.Parent = workspace_
+		return m
+	end
+	local root = c.HumanoidRootPart
+	local look = root.CFrame.LookVector
+	local front = dummy(root.Position + look * 12 + M.V3.new(0, 1.2, 0), "Front")
+	local behind = dummy(root.Position + look * 22 + M.V3.new(0, 1.2, 0), "Behind")
+	front:SetAttribute("Radio", true); front:SetAttribute("Vest", 2)
+	local log0 = #M.FireLog
+	Remotes.Attack:FireServer(look); run(0.8)
+	check("emp: an EMP .22 off a vest kills his radio, and nothing pings to tell him", front:GetAttribute("Radio") == false and events(log0, "Emp") == 1
+		and events(log0, "Ping") == 0 and front.Humanoid.Health == 100 and (front:GetAttribute("VestWear") or 0) > 0)
+	front:SetAttribute("Radio", true); front:SetAttribute("Vest", nil)
+	Remotes.Rack:FireServer(); run(0.9)
+	log0 = #M.FireLog
+	Remotes.Attack:FireServer(look); run(0.8)
+	local empHurt = 100 - front.Humanoid.Health
+	check("emp: on flesh it kills the radio and he feels it, lighter than a full load", front:GetAttribute("Radio") == false and empHurt > 0 and events(log0, "Emp") == 1)
+	-- back to the standard load: plate stops it, wears, and a glance goes on into the next body
+	Remotes.UseItem:FireServer("Round22"); run(4)
+	check("ammo: back to the standard load", c:GetAttribute("AmmoItem") == "Round22" and c:GetAttribute("Load") == nil)
+	front.Humanoid.Health = 100
+	front:SetAttribute("Vest", 2); front:SetAttribute("VestWear", nil)
+	log0 = #M.FireLog
+	Remotes.Attack:FireServer(look); run(0.1)
+	local warm, warmAttr = CombatG.HeatOf(player, W.Defs.Whisper), c:GetAttribute("Heat") or 0
+	run(0.7)
+	check("plate: a stopped round pings, glances off and hits the body behind, weaker", events(log0, "Ping") == 1 and events(log0, "Ricochet") == 1
+		and front.Humanoid.Health == 100 and behind.Humanoid.Health < 100)
+	-- heat (that round just warmed the barrel)
+	check("heat: the barrel warms with every round", warm > 0 and warmAttr > 0)
+	check("plate: a .22 wears it a little", math.abs((front:GetAttribute("VestWear") or 0) - 0.5) < 1e-6)
+	for _ = 1, 19 do CombatG.WearPlate(front, "Vest", 2, 0.5) end
+	check("plate: it wears through: twenty rounds of .22 and the vest is gone", front:GetAttribute("Vest") == 0 and front:GetAttribute("VestBroken") == true)
+	Remotes.Rack:FireServer(); run(0.9)
+	CombatG.SetHeat(player, W.Defs.Whisper, 1)
+	local mag0 = c:GetAttribute("Mag")
+	Remotes.Attack:FireServer(look); run(0.5)
+	check("heat: too hot, it will not fire", c:GetAttribute("Mag") == mag0)
+	CombatG.SetHeat(player, W.Defs.Whisper, 0)
+	-- jams
+	CombatG.Jam(player, "Stovepipe")
+	Remotes.Attack:FireServer(look); run(0.5)
+	check("jam: a jammed gun fires nothing", c:GetAttribute("Mag") == mag0 and c:GetAttribute("Jam") == "Stovepipe")
+	Remotes.Rack:FireServer(); run(0.9)
+	check("jam: T clears a stovepipe", c:GetAttribute("Jam") == nil)
+	CombatG.Jam(player, "DoubleFeed")
+	Remotes.Rack:FireServer(); run(0.9)
+	check("jam: a double feed does not clear with T", c:GetAttribute("Jam") == "DoubleFeed")
+	Remotes.Reload:FireServer(); run(4)
+	check("jam: the magazine out (R) clears a double feed", c:GetAttribute("Jam") == nil)
+	ConfigM.Guns.Jam.Base = 1
+	Remotes.Attack:FireServer(look); run(0.5)
+	check("jam: they come in kinds", ({ Feed = true, Stovepipe = true, DoubleFeed = true })[c:GetAttribute("Jam") or ""] == true)
+	ConfigM.Guns.Jam.Base = 0
+	c:SetAttribute("Jam", nil)
+	-- magazines: a loaded spare goes in fast; R on a full one loads a spare by hand
+	InvG.Add(player, "Round22", 21, true)
+	CombatG.ResetMags(player); run(0.1)
+	local spares0 = c:GetAttribute("MagSpares")
+	Remotes.Rack:FireServer(); run(0.9)
+	Remotes.Attack:FireServer(look); run(0.8)
+	Remotes.Reload:FireServer(); run(4)
+	check("mags: the change takes a loaded spare from the pouch", spares0 == 1 and c:GetAttribute("MagSpares") == 0 and c:GetAttribute("Mag") == 7)
+	Remotes.Reload:FireServer(); run(0.2)
+	check("mags: R on a full magazine loads a spare by hand", c:GetAttribute("Reloading") == true)
+	run(4)
+	check("mags: the spare is loaded", c:GetAttribute("MagSpares") == 1)
+	-- tired arms
+	Remotes.Aim:FireServer(true); run(7)
+	local tired = c:GetAttribute("ArmFatigue") or 0
+	Remotes.Aim:FireServer(false); run(2)
+	check("arms: holding a gun up tires the arms, and they come back at rest", tired > 0.1 and (c:GetAttribute("ArmFatigue") or 0) < tired)
+	-- a dropped gun
+	local dropped = KitG.DropGun(M.CF.new(root.Position + look * 3), "DutyPistol")
+	check("drop: a gun lies on the floor with a prompt", dropped ~= nil and dropped.Parent ~= nil and dropped:FindFirstChild("Holder") ~= nil
+		and dropped.Holder:FindFirstChild("Grab") ~= nil)
+	check("drop: X takes it straight into the hand", KitG.Grab(player, dropped) == true and data.Equipped == "DutyPistol" and InvG.Count(player, "DutyPistol") >= 1 and dropped.Parent == nil)
+	-- tags
+	check("tags: a stack tag is an item the Reach's trader buys", M.mockEnv.__require(RS.Shared.Items).Defs.Tag ~= nil and ConfigM.Guns.TagCredits > 0)
+	front:Destroy(); behind:Destroy()
+	Remotes.EquipItem:FireServer("Whisper"); run(0.5)
 end
 
 -- the kit and two weapons (round 2: server/Kit.lua, server/Knock.lua, Combat's chain moves)

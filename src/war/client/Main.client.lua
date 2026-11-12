@@ -199,7 +199,7 @@ Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c, d)
 	elseif kind == "Click" then
 		Sounds.Play("DryClick")
 		ViewGun.Play("Click")
-		Hud.Flash(if a == "safe" then "SAFE" elseif a == "jam" then "JAM" else "EMPTY")
+		Hud.Flash(if a == "safe" then "SAFE" elseif a == "jam" then "JAM" elseif a == "hot" then "HOT" else "EMPTY")
 	elseif kind == "Shot" and typeof(a) == "Instance" then
 		kickPose(a)
 		-- near shots crack, far ones roll; loudness comes from the weapon's attachments (suppressors)
@@ -214,6 +214,16 @@ Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c, d)
 		Debris:AddItem(tracer, 0.06)
 		local flash = make("PointLight", { Brightness = 3, Range = 10, Color = Color3.fromRGB(255, 200, 120) }, a:FindFirstChild("Head") or a)
 		Debris:AddItem(flash, 0.05)
+	elseif kind == "Ricochet" and typeof(a) == "Vector3" and typeof(b) == "Vector3" then
+		-- a round off plate at a glance: a short streak on its new line and a whine
+		local streak = Instance.new("Part")
+		streak.Anchored, streak.CanCollide, streak.CanQuery, streak.CanTouch, streak.CastShadow = true, false, false, false, false
+		streak.Material, streak.Color = Enum.Material.Neon, Color3.fromRGB(255, 220, 160)
+		streak.Size = Vector3.new(0.05, 0.05, 6)
+		streak.CFrame = CFrame.lookAt(a + b * 3, a + b * 6)
+		streak.Parent = workspace
+		game:GetService("Debris"):AddItem(streak, 0.08)
+		Sounds.Play("HitClang", a, { Pitch = 2.6, Volume = 0.5 })
 	elseif kind == "Impact" then
 		Sounds.Play(if c then "ImpactFlesh" else "ImpactDirt", a)
 		local puff = make("Part", { Anchored = true, CanCollide = false, CanQuery = false, Size = Vector3.new(0.4, 0.4, 0.4), Position = a,
@@ -391,6 +401,14 @@ RunService.RenderStepped:Connect(function(dt)
 		Hidden = camera.CameraType == Enum.CameraType.Scriptable,
 	})
 	Hud.AimAt(ViewGun.ScreenPoint())
+	do -- range marks (round 3): the distance to what the sights or the glass are on
+		local metres
+		if (aiming or binos) and root then
+			local hit = workspace:Raycast(camera.CFrame.Position, camera.CFrame.LookVector * 1500, rayParams())
+			metres = if hit then math.floor((hit.Position - root.Position).Magnitude * Config.Guns.MetresPerStud + 0.5) else nil
+		end
+		Hud.Range(metres)
+	end
 	if hum and root then
 		Hud.Health(hum.Health / math.max(1, hum.MaxHealth))
 		-- lean: the eye moves out to the side and the view tilts; next to cover it goes out past the corner
@@ -514,6 +532,12 @@ local function renderApp()
 			table.insert(buttons, { text = if fitted then "Remove" else "Fit", fn = function()
 				local c = table.clone(lo.Cyber or {}); c[id] = if fitted then nil else true
 				Remotes.WarOrder:FireServer({ Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts, Spares = lo.Spares, Cyber = c })
+			end })
+		elseif item.Kind == "Ammo" then
+			-- the round type the next recruit's magazines carry (round 3)
+			local loaded = (lo.Load or "Ammo") == id
+			table.insert(buttons, { text = if loaded then "Loaded" else "Load", color = if loaded then Color3.fromRGB(60, 90, 60) else nil, fn = function()
+				Remotes.WarOrder:FireServer({ Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts, Spares = lo.Spares, Cyber = lo.Cyber, Load = id })
 			end })
 		elseif item.Kind == "Armor" then
 			local isHelmet = Firearms.Armor[id] and Firearms.Armor[id].Head
@@ -741,7 +765,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		if weapon and weapon.Jammed then Remotes.Unjam:FireServer() else Remotes.Rack:FireServer() end
 		if weapon and not weapon.Reloading then
 			local def = Firearms.Defs[weapon.Id]
-			ViewGun.Play("Rack", { Seconds = if weapon.Jammed then 1.2 else math.max(0.35, def and def.Reload.Rack or 0.5) })
+			ViewGun.Play("Rack", { Seconds = if weapon.Jammed then (Firearms.JamSeconds[weapon.JamKind or "Feed"] or 1.2) else math.max(0.35, def and def.Reload.Rack or 0.5) })
 		end
 	elseif key == Enum.KeyCode.B then
 		Remotes.Mode:FireServer()

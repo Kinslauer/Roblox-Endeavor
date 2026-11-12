@@ -1227,7 +1227,7 @@ function Frontier.Stock(player)
 		local def = Items.Defs[s.Id]
 		table.insert(list, { Id = s.Id, Name = def and def.Name or s.Id, Price = s.Price, Count = s.Count or 1 })
 	end
-	return { Stock = list, Credits = data and data.War.Credits or 0 }
+	return { Stock = list, Credits = data and data.War.Credits or 0, Tags = Inventory.Count(player, "Tag"), TagPrice = Config.Guns.TagCredits }
 end
 
 function Frontier.OpenMarket(player)
@@ -1242,6 +1242,19 @@ function Frontier.Buy(player, itemId)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if not root or not F.InMarket(root.Position) then
 		return false, "You are not at the market"
+	end
+	local data0 = PlayerData.Get(player)
+	if itemId == "SellTags" then
+		-- stack tags from the dead: the trader pays for each one
+		local n = Inventory.Count(player, "Tag")
+		if n <= 0 or not data0 then
+			return false, "No tags to sell"
+		end
+		Inventory.Remove(player, "Tag", n)
+		data0.War.Credits = (data0.War.Credits or 0) + n * Config.Guns.TagCredits
+		Remotes.Announce:FireClient(player, ("Sold %d tag%s for %d credits"):format(n, if n == 1 then "" else "s", n * Config.Guns.TagCredits), "Reward")
+		Remotes.World:FireClient(player, "Market", Frontier.Stock(player))
+		return true
 	end
 	local entry
 	for _, s in F.Stock do

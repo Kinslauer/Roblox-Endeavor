@@ -21,6 +21,7 @@ local WorldPhase = require(script.Parent.WorldPhase)
 local WoundService = require(script.Parent.Common.WoundService)
 
 local C, F = Config.Combat, Config.Flicker
+local G = Config.Guns -- round 3: guns and ammo
 local BUFFER = 0.08 -- input buffer: an attack may start this early before the last one ends
 
 local Combat = {}
@@ -774,7 +775,14 @@ local function pulse(char, spec, mods, seen, tracer)
 			origin += Vector3.new(0, 1.2, 0)
 		end
 		local shake = char:GetAttribute("WoundShake")
-		if type(shake) == "number" and shake > 0 then
+		shake = if type(shake) == "number" then shake else 0
+		-- a hot barrel and tired arms move the round too (round 3: Config.Guns)
+		local hot = char:GetAttribute("Heat")
+		if type(hot) == "number" and hot > G.Heat.Hot then
+			shake += (hot - G.Heat.Hot) / (1 - G.Heat.Hot) * G.Heat.Spread
+		end
+		shake += (char:GetAttribute("ArmFatigue") or 0) * G.Fatigue.Drift
+		if shake > 0 then
 			-- pain, a broken or dead arm: the muzzle drifts (common/WoundService)
 			local r = math.rad(shake)
 			look = (CFrame.lookAt(Vector3.zero, look) * CFrame.Angles((math.random() * 2 - 1) * r, (math.random() * 2 - 1) * r, 0)).LookVector
@@ -791,14 +799,49 @@ local function pulse(char, spec, mods, seen, tracer)
 			-- it dead (a ping, no wound, and whoever wears it knows he is being shot at); flesh takes it, the
 			-- head most of all
 			local w = mods.weapon
+			-- the round in the chamber: the calibre with its load (Weapons.Round); an NPC fires the standard load
 			local cal = w and w.Caliber and Weapons.Calibers[w.Caliber]
+			local round = cal and (if s.round and s.round.Caliber == w.Caliber then s.round else Weapons.Round(cal.Item))
+			s.round = nil
 			local zone, rating = Combat.HitZone(model, result.Position)
 			local isPlayer = Players:GetPlayerFromCharacter(model) ~= nil
-			if cal and rating > cal.Pen then
+			if round then
+				damage *= round.Damage
+				if round.Emp and model:GetAttribute("Radio") then
+					-- the light EMP .22 discharges into what it meets: the radio on him is dead either way
+					model:SetAttribute("Radio", false)
+					fx("Emp", model, result.Position)
+				end
+			end
+			if round and rating > round.Pen then
+				Combat.WearPlate(model, zone, rating, 0.5 * (1 + math.max(0, round.Pen)))
+				if round.Emp then
+					return -- a light round on plate: a tick he does not notice, no ping, no alert
+				end
 				fx("Ping", model, result.Position, zone)
 				Combat.Deflected:Fire(char, model, zone, result.Position)
 				if isPlayer then
 					WoundService.Bruise(model, { Amount = damage, At = result.Position }) -- plate stops it, the body still feels it
+				end
+				-- a glance off the plate goes on, weaker
+				local n = result.Normal
+				if math.abs(look:Dot(n)) < G.Ricochet.Dot then
+					local out = look - 2 * look:Dot(n) * n
+					local ray2 = RaycastParams.new()
+					ray2.FilterType = Enum.RaycastFilterType.Exclude
+					ray2.FilterDescendantsInstances = { char, model }
+					local again = workspace:Raycast(result.Position + n * 0.05, out * G.Ricochet.Range, ray2)
+					fx("Ricochet", model, result.Position, if again then again.Position else result.Position + out * G.Ricochet.Range)
+					local other = again and again.Instance:FindFirstAncestorOfClass("Model")
+					while other and not getHum(other) and other.Parent and other.Parent:IsA("Model") do
+						other = other.Parent
+					end
+					if other and getHum(other) then
+						damage *= G.Ricochet.Damage
+						opts.HitAt = again.Position
+						opts.Shot = true
+						strike(other)
+					end
 				end
 				return
 			end
@@ -807,8 +850,11 @@ local function pulse(char, spec, mods, seen, tracer)
 			elseif cal and (zone == "Limb" or zone == "Bracers" or zone == "Shins") then
 				damage *= cal.Limb
 			end
-			if cal and rating > 0 then
+			if round and rating > 0 then
 				damage *= cal.Through -- it went through plate first
+				Combat.WearPlate(model, zone, rating, 0.5 * (1 + math.max(0, round.Pen)))
+			elseif round then
+				damage *= round.Flesh -- flesh takes the load's own way of opening it
 			end
 			opts.HitAt = result.Position
 			opts.Shot = true
@@ -881,6 +927,26 @@ function Combat.HitZone(model, position)
 		return plate("Shins", "Limb")
 	end
 	return "Limb", 0
+end
+
+-- Plate wears through (round 3): every round that meets a plate adds `amount` (half of 1 + its Pen: a .22 0.5, a
+-- 7.62x51 2) to `<zone>Wear`; at
+-- Config.Guns.PlateHits[zone] x rating the plate is gone (rating 0, `<zone>Broken`), and rounds reach the body.
+function Combat.WearPlate(model, zone, rating, amount)
+	local limit = Config.Guns.PlateHits[zone]
+	if not limit or rating <= 0 then
+		return false
+	end
+	local wear = (model:GetAttribute(zone .. "Wear") or 0) + (amount or 1)
+	model:SetAttribute(zone .. "Wear", wear)
+	if wear >= limit * rating then
+		model:SetAttribute(zone, 0)
+		model:SetAttribute(zone .. "Broken", true) -- Kit.Apply leaves a broken plate broken for this body
+		local root = model:FindFirstChild("HumanoidRootPart")
+		fx("PlateBreak", model, root and root.Position, zone)
+		return true
+	end
+	return false
 end
 
 -- ===== The traced blade (shared/Swings; Mordhau-style) =====
@@ -1277,18 +1343,80 @@ local mags = setmetatable({}, { __mode = "k" }) -- player -> { [weapon name] = r
 -- Single-action guns (owner, 2026-11-12: "you need to rack it every round"): player -> { [weapon name] = true }
 -- while the chamber is empty after a shot. Combat.Rack (T) or a magazine change chambers the next round.
 local unracked = setmetatable({}, { __mode = "k" })
-local function magOf(player, weapon)
-	local Inventory = require(script.Parent.Inventory)
-	local have = Inventory.Count(player, weapon.Ammo)
-	local mine = mags[player]
+-- Round 3 (guns and ammo, docs/Reference-Picks-Plan.md): what is in each gun and how it is doing.
+--   loaded[player][weapon] = the cartridge item in the magazine (a load inside the calibre: Weapons.Loads)
+--   spares[player][weapon] = loaded spare magazines (Config.Guns.Spares + the rig's pouches); with none, R thumbs
+--     rounds in by hand; R on a full magazine loads a spare by hand
+--   heat[player][weapon] = { v, t }: the barrel (Config.Guns.Heat)
+--   char attributes: Jam (Feed | Stovepipe | DoubleFeed), Heat, ArmFatigue, MagSpares, Load (the load's name)
+local loaded = setmetatable({}, { __mode = "k" })
+local spares = setmetatable({}, { __mode = "k" })
+local heat = setmetatable({}, { __mode = "k" })
+local function bucket(t, player)
+	local mine = t[player]
 	if not mine then
 		mine = {}
-		mags[player] = mine
+		t[player] = mine
 	end
+	return mine
+end
+-- the load the next magazine takes: the one chosen for the calibre (Use a cartridge in the pack), else the
+-- standard one, else any load of the calibre in the pack
+local function wantLoad(player, weapon)
+	local Inventory = require(script.Parent.Inventory)
+	if not weapon.Caliber then
+		return weapon.Ammo
+	end
+	local data = PlayerData.Get(player)
+	local chosen = data and type(data.Load) == "table" and data.Load[weapon.Caliber]
+	if type(chosen) == "string" and Inventory.Count(player, chosen) > 0 then
+		return chosen
+	end
+	for _, id in Weapons.LoadsOf(weapon.Caliber) do
+		if Inventory.Count(player, id) > 0 then
+			return id
+		end
+	end
+	return weapon.Ammo
+end
+local function ammoOf(player, weapon)
+	local Inventory = require(script.Parent.Inventory)
+	local mine = bucket(loaded, player)
+	local id = mine[weapon.Name]
+	if not id or Inventory.Count(player, id) <= 0 then
+		id = wantLoad(player, weapon)
+		mine[weapon.Name] = id
+	end
+	return id
+end
+Combat.AmmoOf = ammoOf
+local function spareMax(player)
+	local char = player.Character
+	return G.Spares + (char and char:GetAttribute("KitMags") or 0)
+end
+local function magOf(player, weapon)
+	local Inventory = require(script.Parent.Inventory)
+	local have = Inventory.Count(player, ammoOf(player, weapon))
+	local mine = bucket(mags, player)
 	local m = mine[weapon.Name]
 	m = math.min(if m == nil then weapon.MagSize else m, have, weapon.MagSize)
 	mine[weapon.Name] = m
+	-- loaded spares are rounds in the pack too: never more of them than the rounds behind the magazine fill
+	local sp = bucket(spares, player)
+	local n = sp[weapon.Name]
+	sp[weapon.Name] = math.clamp(if n == nil then spareMax(player) else n, 0, math.min(spareMax(player), math.floor((have - m) / weapon.MagSize)))
 	return m, have
+end
+local function heatOf(player, weapon)
+	local h = bucket(heat, player)[weapon.Name]
+	if not h then
+		return 0
+	end
+	return math.max(0, h.v - (os.clock() - h.t) * G.Heat.Cool)
+end
+Combat.HeatOf = heatOf
+function Combat.SetHeat(player, weapon, v) -- tests
+	bucket(heat, player)[weapon.Name] = { v = v, t = os.clock(), locked = v >= 1 or nil }
 end
 function Combat.SyncMag(player)
 	local char, weapon = player.Character, weaponOf(player)
@@ -1299,37 +1427,102 @@ function Combat.SyncMag(player)
 		local m = magOf(player, weapon)
 		char:SetAttribute("Mag", m)
 		char:SetAttribute("MagSize", weapon.MagSize)
+		char:SetAttribute("MagSpares", spares[player][weapon.Name])
+		local round = Weapons.Round(ammoOf(player, weapon))
+		char:SetAttribute("AmmoItem", ammoOf(player, weapon))
+		char:SetAttribute("Load", round and round.ItemId ~= (Weapons.Calibers[round.Caliber] or {}).Item and round.Name or nil)
+		char:SetAttribute("Heat", math.floor(heatOf(player, weapon) * 100 + 0.5) / 100)
 		-- a hand-racked gun shows whether a round is chambered (false = rack it: T)
 		char:SetAttribute("Chambered", if weapon.Action == "Single" then not (unracked[player] and unracked[player][weapon.Name]) else nil)
 		return m
 	end
-	char:SetAttribute("Mag", nil)
-	char:SetAttribute("MagSize", nil)
-	char:SetAttribute("Chambered", nil)
+	for _, name in { "Mag", "MagSize", "MagSpares", "Load", "AmmoItem", "Heat", "Chambered", "Jam" } do
+		char:SetAttribute(name, nil)
+	end
 	return nil
 end
 -- Every magazine full again (a fresh kit).
 function Combat.ResetMags(player)
 	mags[player] = nil
 	unracked[player] = nil
+	spares[player] = nil
+	heat[player] = nil
+	if player.Character then
+		player.Character:SetAttribute("Jam", nil)
+	end
 	Combat.SyncMag(player)
 end
+-- A jam (round 3): the gun stops until it is cleared. Feed and Stovepipe clear with T; a double feed needs the
+-- magazine out (R).
+function Combat.Jam(player, kind)
+	local char = player.Character
+	if char then
+		char:SetAttribute("Jam", kind)
+		fx("Jam", char, kind)
+	end
+end
+local function rollJam(player, weapon)
+	local h = heatOf(player, weapon)
+	local data = PlayerData.Get(player)
+	local cond = data and data.Condition and data.Condition[data.Equipped]
+	local wear = if type(cond) == "number" then 1 - math.clamp(cond / 100, 0, 1) else 0
+	if math.random() >= G.Jam.Base + G.Jam.Heat * h * h + 0.03 * wear then
+		return nil
+	end
+	local total = 0
+	for _, w in G.Jam.Kinds do
+		total += w
+	end
+	local at = math.random() * total
+	for _, kind in { "Feed", "Stovepipe", "DoubleFeed" } do
+		at -= G.Jam.Kinds[kind]
+		if at <= 0 then
+			return kind
+		end
+	end
+	return "Feed"
+end
+Combat.RollJam = rollJam
 function Combat.Reload(player)
 	local char, weapon = player.Character, weaponOf(player)
 	if not (char and weapon and weapon.MagSize and weapon.Ammo) or handsFull(char) then
 		return false
 	end
 	local s = st(char)
+	local Inventory = require(script.Parent.Inventory)
 	local m, have = magOf(player, weapon)
-	if s.reloading or m >= math.min(weapon.MagSize, have) or not Combat.CanAct(char) then
+	local want = wantLoad(player, weapon)
+	local swapLoad = want ~= ammoOf(player, weapon) and Inventory.Count(player, want) > 0
+	local jam = char:GetAttribute("Jam")
+	local sp = spares[player]
+	if s.reloading or s.racking or not Combat.CanAct(char) then
 		return false
 	end
-	local seconds = (weapon.ReloadSeconds or 1.5) * (if (char:GetAttribute("KitMags") or 0) > 0 then Config.Kit.MagReload else 1) -- pouches
+	local full = m >= math.min(weapon.MagSize, have)
+	local seconds, kind
+	if full and not swapLoad and jam ~= "DoubleFeed" then
+		-- the magazine is full: thumb rounds into a spare instead (if there are rounds for one)
+		if sp[weapon.Name] >= spareMax(player) or have - m - sp[weapon.Name] * weapon.MagSize < weapon.MagSize then
+			return false
+		end
+		kind = "Spare"
+		seconds = G.PerRound * weapon.MagSize
+	elseif sp[weapon.Name] > 0 and not swapLoad then
+		kind = "Swap" -- a loaded spare from the pouch
+		seconds = (weapon.ReloadSeconds or 1.5) * (if (char:GetAttribute("KitMags") or 0) > 0 then Config.Kit.MagReload else 1)
+	else
+		kind = "Hand" -- nothing loaded ahead (or another load): the rounds go in one by one
+		local count = math.min(weapon.MagSize, Inventory.Count(player, if swapLoad then want else ammoOf(player, weapon)))
+		seconds = (weapon.ReloadSeconds or 1.5) * G.HandBase + G.PerRound * count
+	end
+	if jam == "DoubleFeed" then
+		seconds += G.Jam.Clear.DoubleFeed
+	end
 	s.reloading = true
 	s.queued = nil
 	char:SetAttribute("Reloading", true)
 	Combat.SetBusy(char, seconds)
-	fx("Reload", char, seconds)
+	fx("Reload", char, seconds, kind)
 	task.delay(seconds, function()
 		s.reloading = nil
 		if not char.Parent then
@@ -1337,35 +1530,58 @@ function Combat.Reload(player)
 		end
 		char:SetAttribute("Reloading", nil)
 		if isAlive(char) and weaponOf(player) == weapon then
-			local Inventory = require(script.Parent.Inventory)
-			mags[player][weapon.Name] = math.min(weapon.MagSize, Inventory.Count(player, weapon.Ammo))
-			if unracked[player] then
-				unracked[player][weapon.Name] = nil -- the change ends with the slide run forward on a round
+			if kind == "Spare" then
+				spares[player][weapon.Name] += 1
+			else
+				if kind == "Swap" then
+					spares[player][weapon.Name] -= 1
+				end
+				if swapLoad then
+					loaded[player][weapon.Name] = want
+				end
+				mags[player][weapon.Name] = math.min(weapon.MagSize, Inventory.Count(player, ammoOf(player, weapon)))
+				if unracked[player] then
+					unracked[player][weapon.Name] = nil -- the change ends with the slide run forward on a round
+				end
+				char:SetAttribute("Jam", nil) -- the magazine out clears any jam
 			end
 		end
 		Combat.SyncMag(player)
 	end)
 	return true
 end
--- T: work the slide by hand. Only a Single-action gun with an empty chamber and a round to feed needs it.
+-- T: work the slide by hand. A Single-action gun with an empty chamber needs it every round; any gun with a feed
+-- jam or a stovepipe is cleared by it.
 function Combat.Rack(player)
 	local char, weapon = player.Character, weaponOf(player)
-	if not (char and weapon and weapon.Action == "Single" and weapon.MagSize and weapon.Ammo) or handsFull(char) then
+	if not (char and weapon and weapon.MagSize and weapon.Ammo) or handsFull(char) then
 		return false
 	end
 	local s = st(char)
-	if s.reloading or s.racking or not (unracked[player] and unracked[player][weapon.Name]) or magOf(player, weapon) <= 0 or not Combat.CanAct(char) then
+	local jam = char:GetAttribute("Jam")
+	if s.reloading or s.racking or not Combat.CanAct(char) then
 		return false
 	end
-	local seconds = weapon.RackSeconds or 0.5
+	if jam == "DoubleFeed" then
+		Remotes.Announce:FireClient(player, "> DOUBLE FEED . . . MAGAZINE OUT (R)", "Info")
+		return false
+	end
+	local needs = weapon.Action == "Single" and unracked[player] and unracked[player][weapon.Name]
+	if not jam and not (needs and magOf(player, weapon) > 0) then
+		return false
+	end
+	local seconds = if jam then G.Jam.Clear[jam] or 0.8 else weapon.RackSeconds or 0.5
 	s.racking = true
 	s.queued = nil
 	Combat.SetBusy(char, seconds)
-	fx("Rack", char, seconds)
+	fx("Rack", char, seconds, jam)
 	task.delay(seconds, function()
 		s.racking = nil
-		if char.Parent and isAlive(char) and weaponOf(player) == weapon and unracked[player] then
-			unracked[player][weapon.Name] = nil
+		if char.Parent and isAlive(char) and weaponOf(player) == weapon then
+			char:SetAttribute("Jam", nil)
+			if unracked[player] and (needs or weapon.Action == "Single") and magOf(player, weapon) > 0 then
+				unracked[player][weapon.Name] = nil
+			end
 		end
 		if char.Parent then
 			Combat.SyncMag(player)
@@ -1374,13 +1590,35 @@ function Combat.Rack(player)
 	return true
 end
 
+-- Use a cartridge from the pack: that load goes in next (the magazine changes now if the gun in hand takes it).
+function Combat.SelectLoad(player, itemId)
+	local round = Weapons.Round(itemId)
+	local data = PlayerData.Get(player)
+	if not (round and data) then
+		return false
+	end
+	data.Load = if type(data.Load) == "table" then data.Load else {}
+	data.Load[round.Caliber] = itemId
+	Remotes.Announce:FireClient(player, "> LOAD . . . " .. string.upper(round.Name), "Info")
+	local weapon = weaponOf(player)
+	if weapon and weapon.Caliber == round.Caliber and weapon.MagSize then
+		Combat.Reload(player)
+	end
+	return true
+end
+
 local function spendAmmo(player, weapon)
 	if not weapon.Ammo then
 		return true
 	end
 	local Inventory = require(script.Parent.Inventory)
+	local char = player.Character
 	if weapon.MagSize then
 		local m, have = magOf(player, weapon)
+		if char and char:GetAttribute("Jam") then
+			fx("DryFire", char) -- jammed: nothing moves until it is cleared (T, or R for a double feed)
+			return false
+		end
 		if m <= 0 then
 			-- an empty magazine changes itself when there is another; with none the gun only clicks
 			if have > 0 then
@@ -1388,24 +1626,49 @@ local function spendAmmo(player, weapon)
 			else
 				Remotes.Announce:FireClient(player, "> " .. string.upper(weapon.Name) .. " . . . EMPTY", "Info")
 			end
-			if player.Character then
-				fx("DryFire", player.Character)
+			if char then
+				fx("DryFire", char)
 			end
 			return false
 		end
 		if weapon.Action == "Single" and unracked[player] and unracked[player][weapon.Name] then
-			if player.Character then
-				fx("DryFire", player.Character) -- nothing in the chamber: the hammer falls on air until it is racked
+			if char then
+				fx("DryFire", char) -- nothing in the chamber: the hammer falls on air until it is racked
 			end
 			return false
 		end
-		if not Inventory.Remove(player, weapon.Ammo, 1) then
+		local h = heatOf(player, weapon)
+		local hrec = heat[player] and heat[player][weapon.Name]
+		if hrec and hrec.locked and h <= G.Heat.Hot then
+			hrec.locked = nil
+		end
+		if h >= 1 or (hrec and hrec.locked) then
+			-- cooked: it will not fire again until it has cooled under Hot
+			if hrec then
+				hrec.locked = true
+			end
+			Remotes.Announce:FireClient(player, "> " .. string.upper(weapon.Name) .. " . . . TOO HOT", "Info")
+			return false
+		end
+		local id = ammoOf(player, weapon)
+		if not Inventory.Remove(player, id, 1) then
 			return false
 		end
 		mags[player][weapon.Name] = m - 1
+		local add = if weapon.Action == "Auto" then G.Heat.Auto elseif weapon.Family == "Rifle" then G.Heat.Rifle else G.Heat.Pistol
+		heat[player][weapon.Name] = { v = math.min(1, h + add), t = os.clock(), locked = h + add >= 1 or nil }
 		if weapon.Action == "Single" then
 			unracked[player] = unracked[player] or {}
 			unracked[player][weapon.Name] = true
+		end
+		local jam = rollJam(player, weapon)
+		if jam then
+			Combat.Jam(player, jam) -- the round is lost, the action is fouled
+			Combat.SyncMag(player)
+			return false
+		end
+		if char then
+			st(char).round = Weapons.Round(id)
 		end
 		Combat.SyncMag(player)
 		return true
@@ -1416,6 +1679,34 @@ local function spendAmmo(player, weapon)
 	end
 	return Inventory.Remove(player, weapon.Ammo, 1)
 end
+
+-- Tired arms (round 3): every Config.Guns tick, aiming a gun tires the arms by its weight, rest brings them back.
+local tiredness = setmetatable({}, { __mode = "k" }) -- player -> 0..1 (the attribute is rounded)
+local function fatigueTick(dt)
+	for _, player in Players:GetPlayers() do
+		local char = player.Character
+		if char then
+			local f = tiredness[player] or 0
+			local weapon = weaponOf(player)
+			if char:GetAttribute("Aiming") and weapon and Weapons.IsGun(weapon) then
+				local weight = weapon.Weight or G.Fatigue.Weight[weapon.Family] or 1
+				f = math.min(1, f + dt * G.Fatigue.Rate * weight)
+			else
+				f = math.max(0, f - dt * G.Fatigue.Recover)
+			end
+			tiredness[player] = f
+			local shown = math.floor(f * 100 + 0.5) / 100
+			if shown ~= (char:GetAttribute("ArmFatigue") or 0) then
+				char:SetAttribute("ArmFatigue", if shown > 0 then shown else nil)
+			end
+			if weapon and weapon.MagSize and char:GetAttribute("Heat") and char:GetAttribute("Heat") > 0 then
+				local h = math.floor(heatOf(player, weapon) * 100 + 0.5) / 100
+				char:SetAttribute("Heat", h)
+			end
+		end
+	end
+end
+Combat.FatigueTick = fatigueTick
 
 -- Input queue (Config.Combat.InputQueue, ported from combat-feel): an attack or heavy pressed while your last
 -- swing is still finishing is held and plays the moment you're free instead of being thrown away, so a
@@ -1708,6 +1999,7 @@ function Combat.Init()
 		local step = accumulator
 		accumulator = 0
 		local t = os.clock()
+		fatigueTick(step)
 		for char, s in state do
 			if char.Parent and isAlive(char) then
 				local d = Gear.OfChar(char)

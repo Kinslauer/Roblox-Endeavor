@@ -187,11 +187,62 @@ for _, def in Weapons.Defs do
 	end
 end
 
+-- Loads inside a calibre (round 3 of docs/Reference-Picks-Plan.md, after Tarkov's round types): each is its own
+-- cartridge item. Pen adds to the calibre's Pen, Damage and Flesh scale what it does, Emp = the Whisper's light EMP
+-- round (Andy, 2026-11-12: it discharges into what it hits and kills a guard's radio; on plate no alert, on flesh he
+-- feels it; loaded lighter, so it hurts less). The calibre's own Item is the standard load.
+Weapons.Loads = {
+	Round22Emp = { Caliber = ".22", Name = ".22 EMP", Pen = 0, Damage = 0.45, Emp = true },
+	Round9AP = { Caliber = "9mm", Name = "9mm AP", Pen = 1, Damage = 0.85, Flesh = 0.9 },
+	Round9HP = { Caliber = "9mm", Name = "9mm HP", Pen = -1, Damage = 1, Flesh = 1.35 },
+	Round556AP = { Caliber = "5.56", Name = "5.56 AP", Pen = 1, Damage = 0.9, Flesh = 0.9 },
+	Round762x39AP = { Caliber = "7.62x39", Name = "7.62x39 AP", Pen = 1, Damage = 0.9, Flesh = 0.9 },
+}
+-- What a cartridge item does: the calibre's numbers with its load applied (nil if it is not a cartridge).
+function Weapons.Round(itemId)
+	local load = Weapons.Loads[itemId]
+	local calName = load and load.Caliber
+	if not calName then
+		for name, c in Weapons.Calibers do
+			if c.Item == itemId then
+				calName = name
+			end
+		end
+	end
+	local cal = calName and Weapons.Calibers[calName]
+	if not cal then
+		return nil
+	end
+	local r = table.clone(cal)
+	r.Caliber, r.ItemId = calName, itemId
+	if load then
+		r.Name, r.Pen = load.Name, cal.Pen + load.Pen
+		r.Damage, r.Flesh, r.Emp = load.Damage, load.Flesh, load.Emp
+	end
+	r.Damage, r.Flesh = r.Damage or 1, r.Flesh or 1
+	return r
+end
+-- Every cartridge item of a calibre, the standard load first.
+function Weapons.LoadsOf(calName)
+	local cal = Weapons.Calibers[calName]
+	local out = { cal and cal.Item }
+	for id, load in Weapons.Loads do
+		if load.Caliber == calName then
+			table.insert(out, id)
+		end
+	end
+	table.sort(out, function(a, b)
+		return (a == (cal and cal.Item)) or (b ~= (cal and cal.Item) and a < b)
+	end)
+	return out
+end
+
 -- Which weapons a cartridge fits (tooltips).
 function Weapons.Chambered(itemId)
 	local out = {}
+	local round = Weapons.Round(itemId)
 	for _, def in Weapons.Defs do
-		if def.Ammo == itemId and def.Caliber then
+		if def.Caliber and round and def.Caliber == round.Caliber then
 			table.insert(out, def.Name)
 		end
 	end

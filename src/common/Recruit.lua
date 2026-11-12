@@ -28,6 +28,11 @@ function Recruit.Catalog()
 		out[id] = { Kind = "Cyber", Name = def.Name, Price = def.Price }
 	end
 	out.Ammo = { Kind = "Ammo", Name = "Ammunition (3 magazines)", Price = 60 }
+	for id, load in Firearms.Loads do
+		if load.Price then
+			out[id] = { Kind = "Ammo", Name = load.Name .. " ammunition (3 magazines)", Price = load.Price }
+		end
+	end
 	out.Grenade = { Kind = "Grenade", Name = "Frag grenade", Price = 90 }
 	out.Medkit = { Kind = "Medkit", Name = "Field dressing", Price = 50 }
 	out.Sandbags = { Kind = "Sandbags", Name = "Sandbags (3 low sections)", Price = 40 }
@@ -172,6 +177,12 @@ function Recruit.Order(war, loadout)
 			end
 		end
 	end
+	-- the load the magazines carry (a locker ammunition unit); an order that does not name one keeps the last
+	local load = if loadout.Load ~= nil then loadout.Load else (war.Loadout and war.Loadout.Load)
+	if load ~= nil and (type(load) ~= "string" or not Firearms.Loads[load]) then
+		return false
+	end
+	order.Load = load
 	war.Loadout = order
 	return true
 end
@@ -216,8 +227,12 @@ function Recruit.Deploy(war)
 		end
 	end
 	-- consumables: take what is there, up to a carry limit (one Ammo unit = one magazine)
-	local mags = math.min(3, (war.Locker.Ammo or { count = 0 }).count)
-	kit.Magazines = if mags > 0 and Recruit.LockerTake(war, "Ammo", mags) then mags else 0
+	local load = if order.Load and (war.Locker[order.Load] or { count = 0 }).count > 0 then order.Load else "Ammo"
+	local mags = math.min(3, (war.Locker[load] or { count = 0 }).count)
+	kit.Magazines = if mags > 0 and Recruit.LockerTake(war, load, mags) then mags else 0
+	kit.Load = if kit.Magazines > 0 then load else nil
+	-- and a magazine's worth of loose rounds in a bandolier, to thumb into empties (round 3)
+	kit.Loose = if kit.Magazines > 0 then Config.War.LooseMagazines else 0
 	for _ = 1, 2 do
 		if Recruit.LockerTake(war, "Grenade", 1) then
 			kit.Grenades += 1

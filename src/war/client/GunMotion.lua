@@ -84,7 +84,7 @@ end
 
 local ZERO = Vector3.zero
 
--- state: { BoltOpen, Checking }
+-- state: { BoltOpen, Checking, Tired (0..1) }
 -- returns { Parts = { name = Vector3 move }, Left = Vector3 or nil (nil: the rest point), LeftWeight (0..1 toward
 -- Left), Pos (the whole gun, studs, in the gun's own frame), Rot (degrees: pitch up, yaw left, roll),
 -- Brass = true once per shot }
@@ -143,6 +143,14 @@ function GunMotion:Step(dt, state)
 		if u >= 1 then
 			self.Seq.Selector = nil
 		end
+	end
+
+	-- tired arms (round 3, the server's w.Fatigue while aiming): the gun wanders in a slow figure, more as they tire
+	local tired = state.Tired or 0
+	if tired > 0.02 then
+		local amp = (K.Sway or 1.2) * tired
+		rot += Vector3.new(math.sin(now * 1.3) * amp * 0.6, math.sin(now * 0.9 + 1) * amp, 0)
+		pos += Vector3.new(0, math.sin(now * 2.1) * 0.006 * tired, 0)
 	end
 
 	-- checking the weapon: turned to show its side while the key is held

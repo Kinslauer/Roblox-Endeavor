@@ -650,7 +650,41 @@ Client tab screenshot, because Andy cannot read logs another way.
   reach (Joints.Pose), Prone_Idle/Prone_Crawl while knocked. Tests: "kit:", "knock:" in scenario.lua, "style:" in
   client.lua. Not done: a drawn knocked pose on other players' screens, magazines and meds shown in the pouches,
   NPCs that lock on.
+- Guns and ammo (round 3 of docs/Reference-Picks-Plan.md; Andy: "a whisper emp round that discharges if it hits
+  the target, no immediate alert if it hits a plate, and aggro if it hits flesh"; the rest of the round from his
+  ticked rows, ideas from Tarkov and Metal Gear, nothing copied). Tuning: `Config.Guns`. Endeavor: `Weapons.Loads`
+  (Round22Emp, Round9AP, Round9HP, Round556AP, Round762x39AP: Pen added, Damage, Flesh, Emp), `Weapons.Round(item)`,
+  `LoadsOf(cal)`. Combat: `loaded/spares/heat` per player and weapon; `ammoOf` (the load in the magazine) replaced
+  weapon.Ammo in magOf/Reload/spendAmmo; `Combat.SelectLoad` (Inventory.Use of a cartridge; profile data.Load[cal]);
+  Reload kinds Swap (a loaded spare: Config.Guns.Spares + KitMags), Hand (HandBase x ReloadSeconds + PerRound per
+  round; also a load change), Spare (R on a full magazine); char attrs AmmoItem, Load, MagSpares, Heat, Jam,
+  ArmFatigue. Ranged pulse: st(char).round from spendAmmo; EMP sets the target's `Radio` false (fx "Emp"), on plate it
+  returns before Ping/Deflected; `Combat.WearPlate(model, zone, rating, 0.5 x (1 + Pen))` -> `<zone>Wear`, at
+  PlateHits x rating `<zone>` 0 + `<zone>Broken` (Kit.Apply keeps VestBroken); a stopped round with |look . normal| <
+  Ricochet.Dot reflects into a second raycast (fx "Ricochet"). Heat per shot (Pistol/Rifle/Auto), a cooked gun is
+  refused until under Hot; drift from heat and ArmFatigue joins WoundShake. Jams `Combat.Jam(player, kind)`
+  (rollJam: Base + Heat x h^2 + wear), Rack (T) clears Feed/Stovepipe, Reload clears DoubleFeed. `fatigueTick` in
+  the Combat Heartbeat. Stealth guards carry attr `Radio` (callOthers reaches Config.Guns.RadioRadius while it
+  works). `Kit.DropGun(cf, id)` / `Kit.Grab` (NPC spoils drop their gun beside the body; X takes it into the hand).
+  Permadeath remains carry a `Tag`; `Frontier.Buy("SellTags")`. Client: Main's round counter (load name, spare bars,
+  red on a jam), Load button on cartridges, fx Emp/Ricochet/PlateBreak/Jam; `Style.Gun` (RangeMark under the dot
+  while aiming, sway from ArmFatigue, HeatSmoke on the held gun). Front: `Firearms.Loads` (Ammo, AmmoAP, AmmoHP: locker
+  units), `LoadOf`, `JamKinds`, `JamSeconds`; Recruit.Order `Load` (kept when an order omits it), Deploy `kit.Load`,
+  `kit.Loose` (Config.War.LooseMagazines). Guns: w.Load/Loose/Heat/HeatAt/JamKind/Cooked, `Guns.Heat`, `HandLoad`
+  (no spare: thumb loose rounds in), Rack clears a Stovepipe, Unjam by kind, a reload clears any jam, Trigger "hot",
+  Shoot: load Pen/Damage, heat spread, a glance off plate (onHit returns true when Soldiers.Damage's stopped share >=
+  0.6) continues once on the mirror line (Weapon "Ricochet"). Snapshot adds Load, Loose, Heat, JamKind, Fatigue.
+  Soldiers: `FatigueTick` (0.5 s loop; Def.Weight), `DropGun`/`Grab` (a dead recruit's primary lies whole; X swaps),
+  tags (`s.Tags`, taken by stripping, `PayTags` at standDown). Clients: Hud.Range + el.Load, jam kind text, HOT;
+  GunMotion state `Tired` sway. Tests: "ammo:", "emp:", "plate:", "heat:", "jam:", "mags:", "arms:", "drop:",
+  "tags:" in scenario.lua and war.lua. Not done: NPCs who pick up guns, radios that call outside a stealth level,
+  tags with the dead conduit's name, the Front's other players' views of a hot barrel.
 ## State (2026-11-12)
+- Endeavor v107 + Front v41 (2026-11-12): guns and ammo, round 3 of the reference picks (round types and the EMP
+  .22 that kills guards' radios, magazines loaded by hand, plate that wears through, glances off plate, hot barrels,
+  three kinds of jam, tired arms, range marks, dropped guns grabbed into the hand, stack tags). Real servers:
+  Endeavor start 7.0-8.4s, Front 4.3s, 0 warnings; dropped Duty Pistol, Carbine and AK-47 lie flat on the floor
+  (0.16-0.23 studs high). Awaits Andy: docs/TESTING.md "Endeavor and Front: guns and ammo". Next: round 4 (stealth).
 - Endeavor v106 (2026-11-12): the kit and two weapons, round 2 of the reference picks (rig and belt, weapons
   carried at their mounts, key 1 swap mid-combo, key 2 quick dressing, lock-on with lunge and rising cut, delayed
   and out-of-a-roll attacks, the corner combo count, shots that keep a juggle up, knocked down not dead). Awaits Andy:

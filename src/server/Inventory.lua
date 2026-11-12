@@ -461,6 +461,11 @@ function Inventory.Use(player, itemId, direction)
 	local def = type(itemId) == "string" and Items.Defs[itemId]
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if def and def.Type == "Ammo" and def.Caliber and hum and hum.Health > 0 and Inventory.Count(player, itemId) > 0 then
+		-- a cartridge: that load goes in next (server/Combat round 3)
+		require(script.Parent.Combat).SelectLoad(player, itemId)
+		return
+	end
 	if not (def and def.Type == "Consumable" and hum and hum.Health > 0) then
 		return
 	end
