@@ -62,7 +62,7 @@ Replay the ride: F2 → "Train intro" → Replay.
 - [x] (replaced in round 2) The rider's poncho is a dark waxed cloth with a deep hood, no flat boxes; nothing pokes through it.
 - [x] (replaced in round 2) The pistol is the new one (black slide with grooves, suppressor) in the hand at the end of the ride.
 
-## Endeavor: the way down to the barrens (2026-11-12, Endeavor v93)
+## Endeavor: the way down to the barrens (2026-11-12, Endeavor v94)
 Fastest way there: F2 → "Shaft" (next to Armory and Gate). The real way: the Sumps, south-east of the city, the
 middle island (the plaza with the water tower). Nothing marks it.
 - [ ] By the shaft on the Sumps plaza: a concrete collar with a rusted grate, a winch with a red lamp, a plate

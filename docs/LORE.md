@@ -107,7 +107,7 @@ How to read it:
   or the story. [Andy 2026-11-12] Limit from the canon: the way down is not Line 9 (it runs up only, and nothing
   goes back down on it).
 
-**Canon (Endeavor v93, Claude's build of the way down; Andy chose "story and incentive")**
+**Canon (Endeavor v94, Claude's build of the way down; Andy chose "story and incentive")**
 - A service shaft on the Sumps plaza ("SERVICE . S4 . NO ENTRY", a winch, a red lamp, a hum through the grate)
   drops to Barrens Hall 2 in Shelter 4: a pipe gallery, the hall, and the overseers' office. [Barrens]
 - In the hall the brain slaves stand at stations in rows: pale figures working cranks, each wired from the head into
@@ -235,7 +235,7 @@ How to read it:
    facilities). (One way down, the Sumps shaft to Barrens Hall 2, is now Canon.) Limit: not by Line 9.
 
 ## Change log
-- 2026-11-12: Endeavor v93, the way down: the Sumps shaft, Barrens Hall 2, unhooking, fragments "Shift Card" and
+- 2026-11-12: Endeavor v94, the way down: the Sumps shaft, Barrens Hall 2, unhooking, fragments "Shift Card" and
   "Hands", three contact lines. Question 8 narrowed.
 - 2026-11-12: Andy: the conduits supply the Front; each can link into and supply as many recruits as it can afford.
 - 2026-11-12: Andy's answers to 7 and 8: the world seems to run on the brain slaves' power; conduits and slaves are

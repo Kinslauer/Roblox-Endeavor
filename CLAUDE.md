@@ -444,7 +444,7 @@ Client tab screenshot, because Andy cannot read logs another way.
   The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
 
 ## State (2026-11-12)
-- Endeavor v93 (2026-11-12): the way down to the barrens (Sumps shaft, Barrens Hall 2, unhooking, the trail). Andy's
+- Endeavor v94 (2026-11-12; real server: start 7.8s, 0 warnings, 18 skinned figures on their plinths, 4 overseers, 3 stores, the shaft head on the plaza island): the way down to the barrens (Sumps shaft, Barrens Hall 2, unhooking, the trail). Andy's
   lore answers are all in docs/LORE.md. Unseen in game: the hall's look, the statues' height at the cranks, the
   overseers' routes. Awaits Andy: docs/TESTING.md "Endeavor: the way down to the barrens".
 - Endeavor v92 (2026-11-12): station fixes after Andy's play of v86 ("handles INCREDIBLY well"): guards path-find,
