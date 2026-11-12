@@ -194,6 +194,8 @@ How to read it:
   parts: a locker order can fit a different barrel, muzzle device or sight to the same receiver. A few later arms
   (the Glock 17) are there too, and the Garands there are chambered in 7.62x51; like everything else they arrived by shipment, and neither side makes them.
   [Andy 2026-11-12: "All the cold war era weapons ... should be remade in game, like the glock, ak47, m1 garand"]
+- Modern weapons do reach the Front, by shipment like everything else. The world itself (places, structures, kit
+  outside the guns) stays as it has been since the 1970s. [Andy 2026-11-12, choosing "Modern guns shipped to Front"]
 - The conduits supply the Front. Each conduit can link into, and supply, as many recruits as it can afford.
   [Andy 2026-11-12; fits the recruit locker, where a conduit orders recruits and kit with its own credits]
 
@@ -234,8 +236,8 @@ How to read it:
    Front is now Truth.) Limit: nobody in the city can name them yet.
 3. Where "up" goes, and what the departed rich became. Limit: no one who left is ever met.
 4. How shipments reach the Front, and why it was left in the 1970s. (That it is forgotten by progress, supplied
-   only by shipment, and that the conduits supply it, is now Truth.) Limit: the two worlds must stay visibly different eras; nothing modern reaches
-   the Front.
+   only by shipment, and that the conduits supply it, is now Truth.) Limit: the two worlds must stay visibly different eras in their places;
+   only shipped goods such as weapons may be modern on the Front.
 5. What the green pockets really are, and whether Andy's guess (the connection to the old earth is strongest there)
    is right. Limit: they stay rare, small and quiet; no text confirms the guess.
 6. What stops conduits from getting far enough, and what lies beyond. (That they try and always fail is now Truth.)
@@ -246,6 +248,7 @@ How to read it:
    facilities). (One way down, the Sumps shaft to Barrens Hall 2, is now Canon.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: Andy: modern guns reach the Front by shipment; the Front's places stay 1970s.
 - 2026-11-12: Andy: realistic ammunition. Calibres (.22, 9mm, 5.56) shared between guns; the Whisper is a .22; the
   sentries carry 9mm or 5.56 and their helmets stop a .22.
 - 2026-11-12: Endeavor v94, the way down: the Sumps shaft, Barrens Hall 2, unhooking, fragments "Shift Card" and
