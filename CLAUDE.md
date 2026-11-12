@@ -642,7 +642,7 @@ Client tab screenshot, because Andy cannot read logs another way.
   takedown alignment). Awaits Andy's play-through: docs/TESTING.md "Endeavor: Metal Gear handling". Andy reported
   "the right click broke" on v79; no fault was found beyond first person not turning the body (fixed); asked what failed.
 - Front v38 (2026-11-12): the gun floats in the view and kicks on springs, the round follows the bore, the arms
-  reach for the gun, muzzle flash, both-eyes-open scopes. Real server (the module run there against all 8 guns on the real soldier): sights on the eye line, hands 1.3 to 2.1 from the shoulders (arm 2.26). Unseen in game: all of it (the arms and the
+  reach for the gun, muzzle flash, both-eyes-open scopes. Real server (the module run there against all 8 guns on the real soldier): sights on the eye line, hands 1.3 to 2.1 from the shoulders (arm 2.26); start 3.3s, 0 warnings. Unseen in game: all of it (the arms and the
   position of the gun most of all). Awaits Andy: docs/TESTING.md "Front: the gun floats and kicks".
 - Front v37 (2026-11-12; real server 0 warnings): the three actions named and shown; M16A1 semi only; the Mosin's selector reads SINGLE.
 - Front v36 (2026-11-12): AK-74, M4A1, M1A; the M16A1's own receiver; rifles shrunk to body scale (0.55).
