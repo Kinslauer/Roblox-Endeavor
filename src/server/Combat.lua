@@ -1214,6 +1214,9 @@ end
 -- a shot takes one from both), so nothing about the inventory changes; the character's `Mag` attribute is what
 -- the screen shows, and spare = pack count - Mag.
 local mags = setmetatable({}, { __mode = "k" }) -- player -> { [weapon name] = rounds in the magazine }
+-- Single-action guns (owner, 2026-11-12: "you need to rack it every round"): player -> { [weapon name] = true }
+-- while the chamber is empty after a shot. Combat.Rack (T) or a magazine change chambers the next round.
+local unracked = setmetatable({}, { __mode = "k" })
 local function magOf(player, weapon)
 	local Inventory = require(script.Parent.Inventory)
 	local have = Inventory.Count(player, weapon.Ammo)
@@ -1236,15 +1239,19 @@ function Combat.SyncMag(player)
 		local m = magOf(player, weapon)
 		char:SetAttribute("Mag", m)
 		char:SetAttribute("MagSize", weapon.MagSize)
+		-- a hand-racked gun shows whether a round is chambered (false = rack it: T)
+		char:SetAttribute("Chambered", if weapon.Action == "Single" then not (unracked[player] and unracked[player][weapon.Name]) else nil)
 		return m
 	end
 	char:SetAttribute("Mag", nil)
 	char:SetAttribute("MagSize", nil)
+	char:SetAttribute("Chambered", nil)
 	return nil
 end
 -- Every magazine full again (a fresh kit).
 function Combat.ResetMags(player)
 	mags[player] = nil
+	unracked[player] = nil
 	Combat.SyncMag(player)
 end
 function Combat.Reload(player)
@@ -1272,8 +1279,37 @@ function Combat.Reload(player)
 		if isAlive(char) and weaponOf(player) == weapon then
 			local Inventory = require(script.Parent.Inventory)
 			mags[player][weapon.Name] = math.min(weapon.MagSize, Inventory.Count(player, weapon.Ammo))
+			if unracked[player] then
+				unracked[player][weapon.Name] = nil -- the change ends with the slide run forward on a round
+			end
 		end
 		Combat.SyncMag(player)
+	end)
+	return true
+end
+-- T: work the slide by hand. Only a Single-action gun with an empty chamber and a round to feed needs it.
+function Combat.Rack(player)
+	local char, weapon = player.Character, weaponOf(player)
+	if not (char and weapon and weapon.Action == "Single" and weapon.MagSize and weapon.Ammo) or handsFull(char) then
+		return false
+	end
+	local s = st(char)
+	if s.reloading or s.racking or not (unracked[player] and unracked[player][weapon.Name]) or magOf(player, weapon) <= 0 or not Combat.CanAct(char) then
+		return false
+	end
+	local seconds = weapon.RackSeconds or 0.5
+	s.racking = true
+	s.queued = nil
+	Combat.SetBusy(char, seconds)
+	fx("Rack", char, seconds)
+	task.delay(seconds, function()
+		s.racking = nil
+		if char.Parent and isAlive(char) and weaponOf(player) == weapon and unracked[player] then
+			unracked[player][weapon.Name] = nil
+		end
+		if char.Parent then
+			Combat.SyncMag(player)
+		end
 	end)
 	return true
 end
@@ -1297,10 +1333,20 @@ local function spendAmmo(player, weapon)
 			end
 			return false
 		end
+		if weapon.Action == "Single" and unracked[player] and unracked[player][weapon.Name] then
+			if player.Character then
+				fx("DryFire", player.Character) -- nothing in the chamber: the hammer falls on air until it is racked
+			end
+			return false
+		end
 		if not Inventory.Remove(player, weapon.Ammo, 1) then
 			return false
 		end
 		mags[player][weapon.Name] = m - 1
+		if weapon.Action == "Single" then
+			unracked[player] = unracked[player] or {}
+			unracked[player][weapon.Name] = true
+		end
 		Combat.SyncMag(player)
 		return true
 	end
@@ -1534,6 +1580,7 @@ function Combat.Init()
 	Net.On("Attack", { rate = 8, burst = 12, args = { "vector?" } }, Combat.Attack)
 	Net.On("Heavy", { rate = 4, burst = 6, args = { "vector?" } }, Combat.Heavy)
 	Net.On("Reload", { rate = 2, burst = 3 }, Combat.Reload)
+	Net.On("Rack", { rate = 4, burst = 5 }, Combat.Rack)
 	Net.On("Feint", { rate = 6, burst = 8 }, Combat.Feint)
 	Net.On("Flicker", { rate = 8, burst = 12 }, Combat.Flicker)
 	Net.On("Block", { rate = 4, burst = 8, args = { "boolean" } }, Combat.SetBlock)

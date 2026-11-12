@@ -104,7 +104,7 @@ Weapons.Defs = {
 	-- stops it. Made for putting lights out and for the one clean shot.
 	Whisper = {
 		Name = "Whisper", Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.25, ChargeBonus = 1, Caliber = ".22", Noise = 7,
-		MagSize = 7, ReloadSeconds = 1.5,
+		MagSize = 7, ReloadSeconds = 1.5, Action = "Single", RackSeconds = 0.55, -- the slide is locked for quiet: racked by hand (T) after every round
 		Attacks = {
 			frames(12, 4, 6, 3, 19, 120, { Ranged = true, Stamina = 4 }),
 		},
@@ -121,18 +121,18 @@ Weapons.Defs = {
 	},
 	-- Long guns (owner, 2026-11-12: "a carbine firing 5.56 based off the exploded ar-15 model is next, then the ak-47
 	-- firing 7.62x39. And the garand fires .308 or 7.62x51"). Family "Rifle" = held in two hands (client/Handling:
-	-- Rifle_Ready, Aim_Rifle, Reload_Rifle). Auto = holding the trigger keeps firing. Model = how common/HeldWeapons
+	-- Rifle_Ready, Aim_Rifle, Reload_Rifle). Action: see Weapons.ActionOf below. Model = how common/HeldWeapons
 	-- builds it from the gun components (shared/GunParts): the gun there, its barrel, the size in the hands (the
 	-- parts are modelled 0.19 studs to the inch, twice a body's scale) and the grip the two-handed animations expect.
 	Carbine = {
 		Name = "Carbine", Family = "Rifle", ComboReset = 0.3, ComboCooldown = 0, ChargeBonus = 1, Caliber = "5.56", Noise = 120,
-		MagSize = 30, ReloadSeconds = 2.4, Auto = true, Model = { Gun = "M4A1", Scale = 0.5, Grip = "Shoulder" },
+		MagSize = 30, ReloadSeconds = 2.4, Model = { Gun = "M4A1", Scale = 0.5, Grip = "Shoulder" },
 		Attacks = { frames(30, 8, 3, 2, 4, 260, { Ranged = true, Stamina = 2 }) },
 		Heavy = frames(30, 8, 3, 2, 4, 260, { Ranged = true, Stamina = 2 }),
 	},
 	AK47 = {
 		Name = "AK-47", Family = "Rifle", ComboReset = 0.3, ComboCooldown = 0, ChargeBonus = 1, Caliber = "7.62x39", Noise = 135,
-		MagSize = 30, ReloadSeconds = 2.7, Auto = true, Model = { Gun = "AK47", Scale = 0.5, Grip = "Shoulder" },
+		MagSize = 30, ReloadSeconds = 2.7, Action = "Auto", Model = { Gun = "AK47", Scale = 0.5, Grip = "Shoulder" },
 		Attacks = { frames(38, 12, 3, 2, 6, 240, { Ranged = true, Stamina = 3 }) },
 		Heavy = frames(38, 12, 3, 2, 6, 240, { Ranged = true, Stamina = 3 }),
 	},
@@ -144,6 +144,13 @@ Weapons.Defs = {
 		Heavy = frames(64, 20, 4, 2, 14, 380, { Ranged = true, Stamina = 5 }),
 	},
 }
+
+-- Actions (owner, 2026-11-12): "Single" = one round per action, racked by hand before the next (the Whisper);
+-- "Semi" = one round per pull of the trigger, the gun loads the next itself (the default: the Garand, the Carbine,
+-- the Duty Pistol); "Auto" = rounds keep leaving while the trigger is held (the AK-47).
+function Weapons.ActionOf(def)
+	return def and def.Caliber and (def.Action or "Semi") or nil
+end
 
 -- A gun is aimed, not swung: RMB aims, R reloads, the body faces the camera (client/Handling, server/Stealth).
 function Weapons.IsGun(def)

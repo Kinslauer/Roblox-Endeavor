@@ -341,7 +341,7 @@ function Handling.Trigger(fire)
 	trigger += 1
 	local mine = trigger
 	local gun, def = Handling.GunOut()
-	if not (gun and def.Auto) then
+	if not (gun and def.Action == "Auto") then
 		return
 	end
 	local every = math.max(0.08, (def.Attacks[1].End or 0.15) + (def.ComboCooldown or 0) + 0.02)
@@ -368,6 +368,12 @@ function Handling.Began(input, key)
 		if gun and not busyHands(char) then
 			setAim(true)
 			return true -- with a gun out the right button aims; the heavy attack is a melee thing
+		end
+		return false
+	elseif key == Enum.KeyCode.T then
+		if gun and not busyHands(char) then
+			Remotes.Rack:FireServer() -- a hand-racked gun: the next round
+			return true
 		end
 		return false
 	elseif key == Enum.KeyCode.C then
@@ -506,6 +512,13 @@ function Handling.Init(options)
 			task.delay(seconds * 0.66, function()
 				if root and root.Parent then
 					Sounds.Play("Rack", root, { Volume = 0.7 })
+				end
+			end)
+		elseif kind == "Rack" then
+			Anims.Play(char, "Intro_Rack", { fade = 0.05, speed = 1.3 / (if type(seconds) == "number" and seconds > 0.1 then seconds else 0.55) })
+			task.delay(0.2, function()
+				if root and root.Parent then
+					Sounds.Play("Rack", root, { Volume = 0.45 })
 				end
 			end)
 		elseif kind == "DryFire" then

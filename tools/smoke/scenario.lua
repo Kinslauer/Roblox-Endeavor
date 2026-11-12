@@ -192,10 +192,22 @@ do
 	end
 	check("gun: a shot is a shot (a round leaves, nobody swings)", bolted and not swung)
 	check("gun: a shot comes out of the magazine and the pack", char():GetAttribute("Mag") == 6 and Inventory0.Count(player, "Round22") == have0 - 1)
+	-- single shot: the Whisper is racked by hand after every round
+	check("action: after a round the Whisper's chamber is empty", char():GetAttribute("Chambered") == false)
+	Remotes.Attack:FireServer(root().CFrame.LookVector); run(0.8)
+	check("action: pulling again without racking fires nothing", char():GetAttribute("Mag") == 6 and Inventory0.Count(player, "Round22") == have0 - 1)
+	Remotes.Rack:FireServer(); run(0.9)
+	check("action: T racks the next round in", char():GetAttribute("Chambered") == true and char():GetAttribute("Mag") == 6)
+	Remotes.Attack:FireServer(root().CFrame.LookVector); run(0.8)
+	check("action: racked, it fires again", char():GetAttribute("Mag") == 5 and char():GetAttribute("Chambered") == false)
+	Remotes.Rack:FireServer(); run(0.9)
+	Inventory0.Add(player, "Round22", 1, true); Combat.ResetMags(player); run(0.1)
+	Remotes.Attack:FireServer(root().CFrame.LookVector); run(0.8)
 	Remotes.Reload:FireServer(); run(0.3)
 	check("gun: R starts the change (busy, flagged)", char():GetAttribute("Reloading") == true and char():GetAttribute("Mag") == 6)
 	run(1.6)
 	check("gun: the new magazine is full", char():GetAttribute("Reloading") == nil and char():GetAttribute("Mag") == 7)
+	check("action: a magazine change leaves a round chambered", char():GetAttribute("Chambered") == true)
 	Stealth.Reset(station); run(0.2) -- that shot may have found a guard: everyone back to their rounds
 	-- calibres and plate
 	do
@@ -709,13 +721,15 @@ do
 	local _, option = GP.Barrel(gunId, atts)
 	check("rifle: the carbine is the flat-top AR parts with the 16 inch barrel, sized for the hands", gunId == "M4A1" and option == "Standard" and opts.Scale < 1 and opts.Grip == "Shoulder"
 		and GP.Pieces(gunId, atts)[2].Asset == GP.Guns.M16A1.Barrels.Carbine.Asset and W.Held("PipeClub") == "PipeClub")
+	check("action: the Whisper is single shot, the Carbine and the Garand semi-automatic, the AK-47 automatic", W.ActionOf(W.Defs.Whisper) == "Single"
+		and W.ActionOf(W.Defs.Carbine) == "Semi" and W.ActionOf(W.Defs.M1Garand) == "Semi" and W.ActionOf(W.Defs.DutyPistol) == "Semi" and W.ActionOf(W.Defs.AK47) == "Auto" and W.ActionOf(W.Defs.PipeClub) == nil)
 	check("rifle: the AK-47 and the Garand have their parts", GP.Guns[(W.Held("AK47"))] ~= nil and GP.Guns[(W.Held("M1Garand"))] ~= nil)
 	check("rifle: 7.62x51 goes through what stops a 5.56, and a .22 through nothing", W.Calibers["7.62x51"].Pen > W.Calibers["5.56"].Pen and W.Calibers["7.62x39"].Pen >= 2 and W.Calibers[".22"].Pen == 0)
 	Inventory.Add(player, "Carbine", 1); Inventory.Add(player, "Round556", 40, true)
 	Remotes.EquipItem:FireServer("Carbine"); run(1.5)
 	local pcR = player.Character
 	local held = pcR:FindFirstChild("HeldWeapon")
-	check("rifle: the carbine is in the hands, thirty in the magazine", pcR:GetAttribute("Weapon") == "Carbine" and pcR:GetAttribute("MagSize") == 30 and pcR:GetAttribute("Mag") == 30
+	check("rifle: the carbine is in the hands, thirty in the magazine", pcR:GetAttribute("Weapon") == "Carbine" and pcR:GetAttribute("MagSize") == 30 and pcR:GetAttribute("Mag") == 30 and pcR:GetAttribute("Chambered") == nil
 		and (held == nil or held:GetAttribute("WeaponId") == "M4A1"))
 	local rootR = pcR.HumanoidRootPart
 	local stood = rootR.CFrame

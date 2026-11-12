@@ -463,7 +463,8 @@ local function describe(item)
 	end
 	local wdef = def.Type == "Weapon" and Weapons.Defs[item.Id]
 	if wdef and wdef.Caliber then
-		line ..= ("\ncalibre %s  magazine %d"):format(wdef.Caliber, wdef.MagSize or 1)
+		line ..= ("\ncalibre %s  magazine %d\n%s"):format(wdef.Caliber, wdef.MagSize or 1,
+			({ Single = "single shot: rack after each round", Semi = "semi-automatic", Auto = "automatic" })[Weapons.ActionOf(wdef)])
 	end
 	if wdef then
 		-- frame data: the combo's first strike and the heavy (Weapons.frames)
@@ -799,12 +800,13 @@ do
 			else
 				rounds.Text, spare.Text = tostring(have), ""
 			end
-			rounds.TextColor3 = if (if type(mag) == "number" then mag else have) <= 0 then UI.Harm else UI.Text
+			rounds.TextColor3 = if (if type(mag) == "number" then mag else have) <= 0 or char:GetAttribute("Chambered") == false then UI.Harm else UI.Text -- red: empty, or nothing chambered (T)
 		end
 	end
 	local function bind(char)
 		char:GetAttributeChangedSignal("Weapon"):Connect(refresh)
 		char:GetAttributeChangedSignal("Mag"):Connect(refresh)
+		char:GetAttributeChangedSignal("Chambered"):Connect(refresh)
 		refresh()
 	end
 	player.CharacterAdded:Connect(bind)

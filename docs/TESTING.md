@@ -114,17 +114,28 @@ middle island (the plaza with the water tower). Nothing marks it.
       fragment can turn up in the hall. The Broker, the Fixer and the Dealer each have one new line about the
       Sumps.
 
+## Endeavor: single shot, semi-automatic, automatic (2026-11-12, Endeavor v103)
+- [ ] The Whisper is single shot. Fire one round, then press LMB again: only a dry click, and the round counter is
+      red. Press T: the left hand works the slide, the counter turns white, and the next press of LMB fires.
+- [ ] R on the Whisper changes the magazine and leaves a round chambered: no T is needed after a reload.
+- [ ] The Carbine, the M1 Garand and the Duty Pistol are semi-automatic: one round for each press of LMB, no T.
+      Holding LMB fires one round only.
+- [ ] The AK-47 is automatic: it keeps firing while LMB is held.
+- [ ] Hover a gun in the pack (Tab): the card's last line says "single shot: rack after each round",
+      "semi-automatic" or "automatic".
+
 ## Endeavor: rifles (2026-11-12, Endeavor v102)
 Fastest way to all three: F2 → "Armory", then "Weapons Rack" (every weapon) and "Supplies" (60 of every cartridge).
 In the station, about one sentry in eight carries a Carbine with his 5.56 (search him: tap X on the body).
 - [ ] Equip the Carbine (Tab, Equip). It sits in both hands: right hand on the grip, left hand under the handguard,
       muzzle down and a little left. It is about as long as from your shoulder to your knee.
 - [ ] Hold RMB: the rifle comes up to the right shoulder and points where the reticle is, level. V goes to the sights.
-- [ ] Hold LMB: it keeps firing, about six rounds a second, with a rifle's boom, and the counter runs down from 30.
+- [ ] Each press of LMB fires one round with a rifle's boom, and the counter runs down from 30. (It was automatic
+      in v101 and v102; it is semi-automatic since the fire-action round above.)
       The pack loses one 5.56 per round. Every sentry on the floor hears it.
 - [ ] R reloads: the left hand takes the magazine out, goes to the chest and brings a new one up. About 2.4 seconds.
 - [ ] 5.56 goes through a sentry's helmet and his chest plate (he is hurt less through the plate).
-- [ ] The AK-47 takes 7.62x39 only, 30 rounds, automatic, a little slower and harder hitting than the Carbine.
+- [ ] The AK-47 takes 7.62x39 only, 30 rounds, automatic (hold LMB), harder hitting than the Carbine.
 - [ ] The M1 Garand takes 7.62x51 only, 8 rounds, one round for each press of LMB. One round to the chest drops a
       sentry. Its kick on the camera is the strongest.
 - [ ] Hover each cartridge in the pack: the card names its calibre and the gun it fits. No gun takes another's rounds.

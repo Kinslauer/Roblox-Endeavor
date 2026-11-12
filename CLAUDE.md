@@ -114,7 +114,7 @@ Client tab screenshot, because Andy cannot read logs another way.
 - Entrenching: foxholes and low sandbags only, on open ground.
 - Controls are the Cursed Gear layout: E flicker, F block/parry, Q dodge, X interact, M devour/app, R/Y/V skills,
   Z feint, G grab/throw, H drop, Shift sprint, C crouch (hold: prone; sprinting: dive), Space up a stance, B whistle, Tab inventory,
-  L loadout, J attributes, O hideout, N recruit app, P helmetcam. With a gun out (owner, 2026-11-11): RMB aim, V sights, R reload,
+  L loadout, J attributes, O hideout, N recruit app, P helmetcam. With a gun out (owner, 2026-11-11): RMB aim, V sights, R reload, T rack (single-shot guns),
   Q the wall (prone: roll); X close quarters (tap: takedown, throw or search a body; hold: neck grab or carry a body). Front: LMB fire, RMB aim, R reload (hold: keep the magazine), T rack/unjam, B selector, 1/2 switch,
   G frag, H dressing, Q/E lean (prone: roll), C crouch (hold: prone; sprinting: dive), Space up a stance / mantle,
   Z binoculars, Y check weapon (held: 1-4 change the part in a slot), K artillery, F dig, V sandbags, M app, U unlink.
@@ -348,6 +348,15 @@ Client tab screenshot, because Andy cannot read logs another way.
   5%), Rival 7.62x51 (Garand 8%); the armory's Supplies gives 60 of every cartridge. Not done: sentries do not hold
   or fire rifles, no rifle pose behind a wall (Cover_Idle is the pistol's), no slung second weapon, the tracer starts
   at a guess of the muzzle. Tests: "rifle:" in scenario.lua.
+- Fire actions (owner, 2026-11-12: "single shot would be one round fired per action, like the whisper, you need to
+  rack it every round ... semi automatic ... That would be the garand or m16a1, and the automatic happens when
+  multiple rounds leave the barrel while the trigger is held. That is the ak"). Weapons `Action` = "Single" (Whisper,
+  `RackSeconds`), "Auto" (AK47), default "Semi" (Carbine, M1Garand, DutyPistol); `Weapons.ActionOf(def)`. This
+  replaced `def.Auto`: `Handling.Trigger` repeats only for Action "Auto". Combat: `unracked[player][weapon name]`
+  set by a Single gun's shot, cleared by `Combat.Rack` (Remote "Rack", key T in Handling; busy RackSeconds, fx
+  "Rack" -> Intro_Rack animation + sound) or by a finished reload; an unracked pull is a "DryFire"; character
+  attribute `Chambered` (false = red round counter). The Carbine as semi-automatic is Claude's reading (Andy named
+  the M16A1 semi and only the AK automatic). Tests: "action:" in scenario.lua.
 - The arrival (owner, 2026-11-10: "UI and Intro sequence overhauled ... riding a train ... revealing the weapons under
   a cloak ... racking the slide ... pans behind ... zooms into the fpv ... a tutorial stealth level ... subway ...
   based off splinter cell chaos theory and batman arkham involving environmental takedowns and light level hiding";
@@ -553,6 +562,9 @@ Client tab screenshot, because Andy cannot read logs another way.
   pistols (M9A3, M1911, M45, Five-seveN, Glock 17/18C/19X, USP, PL-15, Desert Eagle), revolvers, bolt actions.
 
 ## State (2026-11-12)
+- Endeavor v103 (2026-11-12): fire actions. The Whisper is racked by hand (T) after every round, the Carbine,
+  Garand and Duty Pistol are semi-automatic, the AK-47 automatic. Real server: start 7.8s, 0 warnings. Unseen in game: the rack animation
+  on the standing body. Awaits Andy: docs/TESTING.md "Endeavor: single shot, semi-automatic, automatic".
 - Endeavor v102 (2026-11-12): rifles. The 5.56 Carbine (AR parts), the AK-47 (7.62x39) and the M1 Garand (7.62x51)
   with a two-handed hold, automatic fire on the first two. Real server: start 10.7s, 0 warnings; all three assemble
   (3.3, 3.4 and 4.1 studs long) and the aim pose lines the bore up dead ahead on the real body. Unseen in game: the
