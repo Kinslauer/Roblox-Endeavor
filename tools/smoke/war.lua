@@ -101,6 +101,11 @@ w = weaponState(u)
 check("fired the magazine dry (bolt open)", w.Mag == 0 and w.BoltOpen == true and w.Chamber == false)
 check("bullets hit the enemy through the ballistics path", pc.Humanoid.Health < hpBefore)
 check("armor-less enemy took real damage", pc.Humanoid.Health < hpBefore - 20)
+do
+	local hurt = false
+	for _, part in { "Head", "Chest", "Stomach", "ArmL", "ArmR", "LegL", "LegR" } do if (pc:GetAttribute("W_" .. part) or 1) < 1 then hurt = true end end
+	check("wound: rounds land on body parts, not only the pool", hurt)
+end
 Remotes.Reload:FireServer(); run(2.5)
 Firearms.MalfunctionChance = malfunction
 w = weaponState(u)
@@ -177,6 +182,23 @@ check("grenade thrown", nade ~= nil)
 if nade then nade.CFrame = M.CF.new(p2.HumanoidRootPart.Position + M.V3.new(2, 0, 0)); nade.AssemblyLinearVelocity = M.V3.zero end
 run(4)
 check("frag grenade hurt the enemy", p2.Humanoid.Health < hpN)
+do -- wounds on the Front (common/WoundService): the blast concusses and wounds; the dressing (H) goes on a bleed first
+	local SoldiersW = M.mockEnv.__require(SSS.Server.Soldiers)
+	local WoundService = M.mockEnv.__require(SSS.Server.Common.WoundService)
+	check("wound: the frag concussed and wounded the recruit", p2:GetAttribute("Concussed") == true and (p2:GetAttribute("W_Chest") or 1) < 1)
+	local st = WoundService.Get(p2)
+	if st then
+		for part in st.Bleed do st.Bleed[part] = nil end
+		st.Bleed.LegL = "Heavy"; WoundService.Push(p2)
+	end
+	local sp = SoldiersW.State(p)
+	if sp then sp.Medkits = 1 end
+	as(p); Remotes.Heal:FireServer(); run(0.2); as(u)
+	check("wound: the dressing stops a heavy bleed and is spent", p2:GetAttribute("Bleed_LegL") == "" and sp ~= nil and sp.Medkits == 0)
+	if st then st.Broken.LegR = true; WoundService.Push(p2) end
+	check("wound: a broken leg sets the walking pace down", (p2:GetAttribute("WoundSpeed") or 1) < 1 and p2:GetAttribute("WoundNoSprint") == true)
+	WoundService.Mend(p2)
+end
 
 
 -- entrenching: dig a foxhole in the open; a hit interrupts; sandbags need stock

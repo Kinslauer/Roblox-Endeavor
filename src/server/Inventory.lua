@@ -474,6 +474,21 @@ function Inventory.Use(player, itemId, direction)
 		end
 		return
 	end
+	if Inventory.Count(player, itemId) <= 0 then
+		return
+	end
+	-- treatments and food go through the wounds (Medicine); a pure treatment with nothing to treat is kept
+	local treated = false
+	if def.Treat or def.Food then
+		local okMed, Medicine = pcall(require, script.Parent.Medicine)
+		if okMed then
+			treated = Medicine.Use(player, def)
+		end
+		if not treated and not (def.Heal or def.Stamina) then
+			Remotes.Announce:FireClient(player, "Nothing to treat.", "Info")
+			return
+		end
+	end
 	if not Inventory.Remove(player, itemId, 1) then
 		return
 	end

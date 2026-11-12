@@ -40,6 +40,13 @@ local function run(seconds, cond)
 	return cond == nil
 end
 local function check(label, ok) print((ok and "PASS  " or "FAIL  ") .. label) end
+-- wounds bleed on between checks; a section that needs a steady body starts from a mended one
+local function mendMe(who)
+	local c = (who or player).Character
+	if c then
+		M.mockEnv.__require(SSS.Server.Common.WoundService).Mend(c)
+	end
+end
 local function char() return player.Character end
 local function root() return char().HumanoidRootPart end
 local function data() return nil end
@@ -614,6 +621,9 @@ Remotes.Throw:FireServer(pc.HumanoidRootPart.CFrame.LookVector, 1); run(0.1)
 -- the mock has no physics: move the chunk along its velocity by hand
 for _ = 1, 20 do chunkFound.CFrame = M.CF.new(chunkFound.Position + chunkFound.AssemblyLinearVelocity * (1/30)); run(1/30) end
 check("thrown pipe hit the rival through the combat path", rc.Humanoid.Health < rivalHp and pc:GetAttribute("Holding") == nil)
+local WoundService = M.mockEnv.__require(SSS.Server.Common.WoundService)
+local Wounds = M.mockEnv.__require(RS.Shared.Wounds)
+WoundService.Mend(rc) -- a bleed would keep moving the rival's health under the next checks
 
 -- parry deflect: rival blocks right before a second throw lands
 local plank
@@ -698,6 +708,52 @@ nade.CFrame = M.CF.new(pc.HumanoidRootPart.Position + M.V3.new(0, 0, 3)); nade.A
 run(3)
 check("pipe grenade exploded and hurt the rival", rc.Humanoid.Health < hpBeforeNade)
 check("your own grenade hurts you too", pc.Humanoid.Health < myHpBefore and pc.Humanoid.Health > 0)
+do -- wounds (shared/Wounds, common/WoundService, server/Medicine)
+	local hurt = false
+	for _, part in Wounds.Parts do if (pc:GetAttribute("W_" .. part) or 1) < 1 then hurt = true end end
+	check("wound: the blast left wounds on the body's parts", hurt and pc:GetAttribute("Concussed") == true)
+	WoundService.Mend(pc); WoundService.Mend(rc); run(0.1)
+	check("wound: a full mend clears every part", pc:GetAttribute("W_Chest") == 1 and pc:GetAttribute("Bleed_LegL") == "" and pc.Humanoid.Health == pc.Humanoid.MaxHealth)
+	local st = WoundService.Get(pc)
+	local always = { NextNumber = function() return 0 end, NextInteger = function(_, a) return a end }
+	local ev = Wounds.Hit(st, "ArmL", st.Max.ArmL * 0.6, "Cut", always, {})
+	WoundService.Push(pc)
+	check("wound: a deep cut opens a heavy bleed on that arm", ev.Bled == "Heavy" and pc:GetAttribute("Bleed_ArmL") == "Heavy")
+	local hp = pc.Humanoid.Health
+	run(4)
+	check("wound: a heavy bleed drains health", pc.Humanoid.Health < hp - 2)
+	Inventory.Add(player, "Bandage", 1)
+	Remotes.UseItem:FireServer("Bandage"); run(0.6) -- UseItem is rate limited
+	check("wound: a bandage does nothing to a heavy bleed and is kept", Inventory.Count(player, "Bandage") == 1 and pc:GetAttribute("Bleed_ArmL") == "Heavy")
+	Inventory.Add(player, "Tourniquet", 1)
+	Remotes.UseItem:FireServer("Tourniquet"); run(0.6) -- UseItem is rate limited
+	check("wound: a tourniquet stops it and is spent", Inventory.Count(player, "Tourniquet") == 0 and pc:GetAttribute("Bleed_ArmL") == "")
+	st.Broken.LegR = true; WoundService.Push(pc); run(0.2)
+	check("wound: a broken leg slows the walk and stops the jump", (pc:GetAttribute("WoundSpeed") or 1) < 1 and pc:GetAttribute("WoundNoJump") == true and pc.Humanoid.JumpHeight == 0)
+	Inventory.Add(player, "Splint", 1)
+	Remotes.UseItem:FireServer("Splint"); run(0.6) -- UseItem is rate limited
+	check("wound: a splint sets the leg", pc:GetAttribute("Broken_LegR") == false and pc:GetAttribute("WoundSpeed") == 1)
+	st.Hp.LegL = 0; WoundService.Push(pc)
+	Inventory.Add(player, "SurgeryKit", 1)
+	Remotes.UseItem:FireServer("SurgeryKit"); run(0.6) -- UseItem is rate limited
+	check("wound: surgery brings a dead leg back at a lower maximum", st.Hp.LegL > 0 and st.Max.LegL < st.Base * ConfigM.Wounds.Parts.LegL * ConfigM.Wounds.PartScale)
+	-- a scar from a deep cut that lands on the body, kept in the profile for this life
+	local pdW = PlayerData_.Get(player)
+	local scarsBefore = #(pdW.Scars or {})
+	WoundService.Hit(pc, { Amount = 20, At = pc.RightUpperArm and pc.RightUpperArm.Position or pc.HumanoidRootPart.Position, Kind = "Cut" })
+	check("wound: a deep cut leaves a scar", #(pdW.Scars or {}) == scarsBefore + 1)
+	-- hunger falls; a ration feeds it
+	WoundService.Feed(pc, -60); run(0.1)
+	local hungry = pc:GetAttribute("Hunger")
+	Inventory.Add(player, "Ration", 1)
+	Remotes.UseItem:FireServer("Ration"); run(0.6) -- UseItem is rate limited
+	check("wound: hunger shows and a ration feeds it", type(hungry) == "number" and hungry <= 41 and pc:GetAttribute("Hunger") > hungry)
+	-- the head at zero kills
+	local fresh = Wounds.New(100)
+	check("wound: the head at zero kills, an arm at zero does not", Wounds.Hit(fresh, "Head", fresh.Max.Head + 1, "Bullet", always).Killed == true
+		and not Wounds.Hit(Wounds.New(100), "ArmL", 100, "Blunt", always).Killed)
+	WoundService.Mend(pc); run(0.1)
+end
 run(1)
 
 -- arc pistol is cell-fed
@@ -1059,6 +1115,7 @@ end
 -- spacing (Config.City.AI.Spacing): a rival reads your swing, presses your recovery, circles your guard
 do
 	as(player)
+	mendMe()
 	local NPCsS = M.mockEnv.__require(SSS.Server.NPCs)
 	local CombatS = M.mockEnv.__require(SSS.Server.Combat)
 	local Cfg = M.mockEnv.__require(RS.Shared.Config)
@@ -1109,6 +1166,7 @@ end
 
 -- taking turns: three raiders next to the player, but only one winds up at a time
 as(player)
+mendMe()
 local NPCs_ = M.mockEnv.__require(SSS.Server.NPCs)
 local pr = player.Character.HumanoidRootPart
 local pack = {}
@@ -1236,6 +1294,7 @@ do
 	player.Character:PivotTo(M.CF.new(FS.Reach.Center + M.V3.new(0, 3, 0)))
 	run(1.6)
 	check("frontier: the market is a safe zone", player:GetAttribute("Safe") == true and pd.Frontier.Reached == true)
+	M.mockEnv.__require(SSS.Server.Common.WoundService).Mend(player.Character) -- the site's guards may have opened a bleed
 	local victim = makePlayer("Shopper", 124)
 	Players.PlayerAdded:Fire(victim); run(0.3)
 	victim.Character:PivotTo(M.CF.new(FS.Reach.Center + M.V3.new(4, 3, 0)))

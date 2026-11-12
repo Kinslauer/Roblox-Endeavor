@@ -749,4 +749,42 @@ Config.Megacity = {
 	AirBlend = 2.5, -- seconds to blend from one air to the next
 }
 
+-- Wounds (both places; shared/Wounds rules, common/WoundService state). Ideas from Tarkov's health system; our own
+-- numbers. Parts share the body's max health; head or chest at zero kills; a limb at zero is "out" (blacked).
+Config.Wounds = {
+	Parts = { Head = 0.12, Chest = 0.26, Stomach = 0.18, ArmL = 0.11, ArmR = 0.11, LegL = 0.11, LegR = 0.11 },
+	-- each part holds its share x PartScale of max health, so the shares add to more than the whole: the body's pool
+	-- (the Humanoid) still ends a life spread over many hits; a part at zero is a concentrated wound
+	PartScale = 2,
+	HeadBlow = 0.4, -- the share of a non-bullet hit that the head part takes (the body's pool still takes all of it)
+	SpreadPerShake = 0.12, -- Front: a gun's spread grows this much per degree of shake (pain, a bad arm)
+	-- chance of a bleed from one hit, by kind; Heavy when the hit takes at least HeavyShare of the part's max
+	Bleed = { Cut = 0.55, Bullet = 0.45, Blast = 0.35, Blunt = 0.06, Arc = 0 },
+	HeavyShare = 0.45,
+	BleedPerSecond = { Light = 0.25, Heavy = 0.8 }, -- health lost per second, from the bleeding part
+	-- broken bones: blunt and blast on arms and legs, more likely the harder the hit; a limb knocked out by a blow
+	-- breaks; a hard landing breaks a leg
+	Fracture = { Blunt = 0.35, Blast = 0.45, Bullet = 0.12, Cut = 0.04 },
+	FractureMinShare = 0.25,
+	FallSpeed = 95, -- landing faster than this (studs/s) can break a leg
+	-- how a body moves and aims with its wounds
+	LegOutSpeed = 0.72, -- per leg out or broken (two: multiplied)
+	ArmShake = 1.6, -- degrees of aim drift per arm out or broken
+	ArmMelee = 0.8, -- melee damage per arm out or broken
+	PainShake = 1.2, -- degrees of drift at full pain
+	PainDecay = 0.04, -- pain lost per second
+	PainPerShare = 0.9, -- pain from a hit, per share of the part's max it took
+	Bruise = 0.18, -- share of a round stopped by plate that still lands as a blunt bruise on that part
+	BruisePain = 0.25,
+	Concussion = { Seconds = 9, Radius = 1.6 }, -- blast radius multiple that still concusses
+	Painkiller = 150, -- seconds pain does not show and broken legs carry you at walking pace
+	Surgery = { Floor = 1, MaxShare = 0.6 }, -- a dead limb back at 1 hp, its max cut to 60% for this life
+	Lost = { Blast = 0.5, Cut = 0.15 }, -- chance a limb already out is lost to one more such hit (Endeavor only)
+	ScarMin = 14, -- a cut this big leaves a scar for the life
+	MaxScars = 10,
+	Hunger = { Start = 100, PerMinute = 2.2, Low = 20, StaminaRegenLow = 0.6, StarveDamage = 0.25 },
+	Doctor = { Price = 120, Seconds = 4 }, -- Verdant Reach: everything mended, lost limbs too, for war credits
+	HomeHeal = { PartPerSecond = 0.02, MendSeconds = 90 }, -- in your own compound with a medbay: parts heal, breaks mend
+}
+
 return Config

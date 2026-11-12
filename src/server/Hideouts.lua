@@ -751,6 +751,9 @@ local function medbayTick(site, dt)
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
 		if root and hum and hum.Health > 0 and isMember(site, p) and Hideouts.Inside(site, root.Position) then
 			hum.Health = math.min(hum.MaxHealth, hum.Health + HC.MedbayHealPerSecond * dt)
+			if Hideouts.HomeHeal then
+				Hideouts.HomeHeal(char, dt) -- parts heal and broken bones mend at home (server/Medicine)
+			end
 		end
 	end
 end

@@ -829,6 +829,38 @@ say what looks wrong, a screenshot of the first-person view helps most.
 - [ ] Things to tell me about: arms that bend the wrong way or do not reach the gun, the gun too close or too far,
       the view sitting too low on the body (it may look out from the chest instead of the helmet).
 
+### Endeavor and Front: wounds (2026-11-12, Endeavor v104, Front v39)
+Round 1 of the reference picks. Every body now takes its hits part by part: head, chest, stomach, both arms, both
+legs. Health still ends a life, and a head or chest that reaches zero ends it too. Nothing here was seen in game
+before publishing.
+- [ ] Take a few hits. A small body outline fades in at the lower left. The hit parts turn from pale to red; a part
+      at zero goes dark. When you are whole again the outline fades away.
+- [ ] A cut or a round sometimes starts a bleed: that part pulses red and your health slowly drops.
+- [ ] Use a Bandage from the inventory (Tab) on a light bleed: the pulse stops. On a heavy bleed the bandage does
+      nothing and stays in your pack. A Tourniquet stops a heavy bleed on an arm or leg; a Hemostatic Pack stops
+      any bleed. A Medkit heals and also closes a light bleed.
+- [ ] A hard fall or a heavy blunt hit can break a leg: a white bar crosses it, you walk slower, cannot sprint or
+      jump. A Splint sets it. A broken or dead arm shakes your aim and weakens your swings.
+- [ ] A leg or arm at zero (dark) stays dead until a Surgery Kit brings it back, weaker than before.
+- [ ] Pain blurs the edges of the view; Painkillers clear it for a while (and let you limp faster on a bad leg).
+- [ ] Stand near an explosion: the view greys and swims for a few seconds (concussion).
+- [ ] A round that a guard's plate would stop, landing on you, still hurts a little (a bruise) and adds pain.
+- [ ] A deep cut leaves a dark scar on that limb. Respawn after a reboot: the scars of this life are still there.
+      Die for good: they are gone with the body.
+- [ ] Hunger: after a long time a thin amber line appears under the body outline; when it pulses, stamina comes back
+      slower, and at empty you slowly starve. A Ration Pack fills it.
+- [ ] At home with a medbay, parts heal over time and a broken bone mends after about a minute and a half.
+- [ ] In Verdant Reach, beside the trader, a cot with a lamp: hold X for the doctor (120 credits). After a few
+      seconds everything is mended, dead limbs too.
+- [ ] Fit a cybernetic arm or leg where a limb is dead: the loss ends.
+- [ ] The Reach's trader sells the new items; the bench crafts Bandages, a Tourniquet and a Splint.
+- [ ] Front: rounds and shrapnel wound recruits the same way. The dressing (H) goes on the worst thing first (a
+      bleed, then a break); with nothing to dress it heals as before. A broken leg slows the walk and stops the
+      sprint; pain or a bad arm widens the spread.
+- [ ] Front: plate that stops a round still leaves a bruise and pain, until the plate is worn through.
+- [ ] Things to tell me about: the outline in the way of something, bleeds too fast or too slow, heads or chests
+      that end fights too soon.
+
 ## The story joined up (2026-11-10, new this round: Endeavor v80, Front v25)
 Play these on the published places (Studio's Play button cannot teleport between places).
 - [ ] At the bottom of the station, copying the manifest at the console also puts a "Line 9 Manifest" in your pack (Tab).

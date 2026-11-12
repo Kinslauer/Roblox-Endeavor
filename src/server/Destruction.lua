@@ -414,6 +414,9 @@ function Destruction.Explode(origin, spec, attacker)
 		local root = model:FindFirstChild("HumanoidRootPart")
 		if root and getHum(model) then
 			local dist = (root.Position - origin).Magnitude
+			if Players:GetPlayerFromCharacter(model) and dist <= spec.Radius * Config.Wounds.Concussion.Radius and Destruction.Concuss then
+				Destruction.Concuss(model) -- close enough to ring the head, even behind cover
+			end
 			if dist <= spec.Radius and visible(root.Position, { model }) then
 				local falloff = 1 - (dist / spec.Radius) ^ 1.5
 				-- SelfHarm: your own grenade hurts you too (armor and posture still apply)

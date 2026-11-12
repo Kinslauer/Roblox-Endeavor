@@ -91,6 +91,11 @@ local ok, err = pcall(function()
 	require(Server.IntroKit).Init()
 	Autonet.Init()
 	ImplantLibrary.Init()
+	-- wounds on every player body (isolated: a fault here must not stop the city)
+	local medOk, medErr = pcall(require(Server.Medicine).Init)
+	if not medOk then
+		warn("[Medicine] failed:", medErr)
+	end
 end)
 if not ok then
 	warn(("=============================\nENDEAVOR STARTUP FAILED: %s\n============================="):format(tostring(err)))

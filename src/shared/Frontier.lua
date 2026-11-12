@@ -31,6 +31,12 @@ Frontier.GridX0, Frontier.GridZ0 = -900, 700
 Frontier.Stock = {
 	{ Id = "Medkit", Price = 30 },
 	{ Id = "Ration", Price = 12 },
+	{ Id = "Bandage", Price = 8 },
+	{ Id = "Tourniquet", Price = 20 },
+	{ Id = "Hemostat", Price = 55 },
+	{ Id = "Splint", Price = 25 },
+	{ Id = "Painkillers", Price = 35 },
+	{ Id = "SurgeryKit", Price = 240 },
 	{ Id = "ArcCell", Price = 3, Count = 5 },
 	{ Id = "PipeGrenade", Price = 45 },
 	{ Id = "BreachingCharge", Price = 120 },

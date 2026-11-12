@@ -23,6 +23,7 @@ local Swings = require(Shared:WaitForChild("Swings"))
 local Anims = require(Shared:WaitForChild("Anims")) -- the game's own keyframed animations (tools/anims)
 local Movement = require(script.Parent:WaitForChild("Movement"))
 require(Shared:WaitForChild("Skin")).Start() -- one-piece bodies follow their limbs (shared/Skin.lua)
+task.spawn(require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("WoundFx")).Start) -- the wounds seen from inside (shared/WoundFx.lua)
 Movement.Start()
 require(script.Parent:WaitForChild("Air")).Start() -- smog, clean air in the green pockets, the toxic tint
 -- Sounds for combat events, played at the character they happened to.

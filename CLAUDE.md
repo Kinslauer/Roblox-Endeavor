@@ -585,7 +585,38 @@ Client tab screenshot, because Andy cannot read logs another way.
   Not done (next steps, in order): the camera and lighting pass, layered gun sound, hand-made reload animation;
   Endeavor. Tests: "view gun:" in warclient.lua.
 
+- Wounds (owner, 2026-11-12: ticked every row of the reference pick page; the build plan is
+  docs/Reference-Picks-Plan.md, 7 rounds, this is round 1; ideas from Tarkov's health system, nothing copied).
+  `src/shared/Wounds.lua` = pure rules: parts Head/Chest/Stomach/ArmL/ArmR/LegL/LegR, each `Config.Wounds.Parts`
+  share x `PartScale` (2) of max health (the Humanoid stays the pool that ends a life; a head or chest at zero
+  kills too; non-bullet hits take only `HeadBlow` 0.4 on the head), `Hit` -> {Killed, Bled Light/Heavy, Broke,
+  Out, Lost}, `BleedTick` (never empties a vital part on its own), `Heal` (spread over hurt parts not at zero, x
+  PartScale), `Effects` (Speed, NoSprint, NoJump, Shake, Melee), `Treatments` (Bandage, Tourniquet, Hemostat,
+  Splint, Painkillers, SurgeryKit), `Mend`, `Attributes`. `src/common/WoundService.lua` keeps each character's
+  state in both places and sets the attributes W_<part>, Bleed_<part>, Broken_<part>, Lost_<part>, Pain,
+  Concussed, WoundSpeed, WoundNoSprint, WoundNoJump, WoundShake, Hunger; `Hit`, `Bruise` (plate-stopped round),
+  `Concuss`, `Treat`, `Dress` (Front H), `Feed`, `Mend`, `Replace` (cyber limb ends a loss), `HomeHeal`, `Push`; a
+  full Humanoid pool restores every part but a dead limb; hard landings break legs. Endeavor: `src/server/Medicine.lua`
+  (Init from Main in a pcall) wires it: Combat.applyDamage -> Hit for player victims (WoundKind from weapon family:
+  Blade/Spear Cut, guns Bullet, Explosive Blast), melee x Effects.Melee, shot drift from WoundShake, plate-stopped
+  rounds on players -> Bruise, Destruction.Concuss, Stats (WalkSpeed x WoundSpeed, no sprint, no jump),
+  Inventory.Use (`def.Treat` / `def.Food`; a pure treatment with nothing to treat is kept), Hideouts medbay ->
+  HomeHeal, Frontier's doctor cot in the Reach (`Medicine.Doctor`, Config.Wounds.Doctor), Autonet.Fitted -> Replace,
+  scars (profile.Scars, Cut >= ScarMin, parts welded on the limb, wiped with the body), hunger (Ration Food 45;
+  stamina regen x StaminaRegenLow under Low; starving at 0). Front: Soldiers.Spawn attaches, `Soldiers.Damage(...,
+  at)` bruises under plate and wounds (zone -> part when no point), Explode concusses within Concussion.Radius,
+  the dressing (H) = `WoundService.Dress` first, spread x (1 + WoundShake x SpreadPerShake); the client paces
+  WalkSpeed by WoundSpeed/WoundNoSprint. `src/shared/WoundFx.lua` (both clients) = the body outline lower left
+  (shows only while something is wrong), pain blur, concussion grey and sway, hunger line. Not done: a lost limb has
+  no look yet, wounds do not survive a rejoin, Endeavor players still have no plate zones of their own. Tests:
+  "wound:" in scenario.lua and war.lua, "woundfx:" in client.lua.
+
 ## State (2026-11-12)
+- Endeavor v104 + Front v39 (2026-11-12): wounds, round 1 of the reference picks (body parts, bleeds, breaks,
+  pain, concussion, bruising under plate, six treatment items, surgery, medbay healing, the Reach's doctor, scars,
+  hunger, the body outline). Real servers: Endeavor start 9.4s, Front 3.9s, 0 warnings; on the real Conduit body
+  every limb maps to its wound part. Awaits Andy: docs/TESTING.md "Endeavor and Front: wounds". Next: round 2 (the
+  kit and two weapons). Asked Andy what "120t weights and use 80b" means (the humanoid drone row).
 - Endeavor v103 (2026-11-12): fire actions. The Whisper is racked by hand (T) after every round, the Carbine,
   Garand and Duty Pistol are semi-automatic, the AK-47 automatic. Real server: start 7.8s, 0 warnings. Unseen in game: the rack animation
   on the standing body. Awaits Andy: docs/TESTING.md "Endeavor: single shot, semi-automatic, automatic".

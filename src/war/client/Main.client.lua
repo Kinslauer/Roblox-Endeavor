@@ -115,6 +115,7 @@ RunService.RenderStepped:Connect(function()
 end)
 -- one-piece bodies follow their limbs (shared/Skin.lua)
 require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Skin")).Start()
+task.spawn(require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("WoundFx")).Start) -- the wounds seen from inside (shared/WoundFx.lua)
 
 -- ===== HUD (war/client/Hud.lua): rounds, mode, spares; health, stance, three items; one thin bar =====
 local Hud = require(script.Parent:WaitForChild("Hud"))
@@ -580,10 +581,14 @@ RunService.Heartbeat:Connect(function()
 	end
 	-- the server freezes a recruit (WalkSpeed 0: digging, the tank); anything else is ours to pace
 	if hum.WalkSpeed > 0.5 then
+		-- wounds (common/WoundService attributes): a leg out or broken slows the walk and stops the sprint
+		local charNow = hum.Parent
+		local woundSpeed = charNow and charNow:GetAttribute("WoundSpeed") or 1
 		local running = sprinting and stance == "Stand" and not aiming and not binos and hum.MoveDirection.Magnitude > 0.1
-		local speed = if running then MV.SprintSpeed else MV.Stance[stance].Speed
+			and not (charNow and charNow:GetAttribute("WoundNoSprint"))
+		local speed = (if running then MV.SprintSpeed else MV.Stance[stance].Speed) * woundSpeed
 		if aiming or binos then
-			speed = math.min(speed, MV.Stance.Crouch.Speed) -- sights up: a slow, level walk
+			speed = math.min(speed, MV.Stance.Crouch.Speed * woundSpeed) -- sights up: a slow, level walk
 		end
 		hum.WalkSpeed = speed
 		local fov = if running then 78 elseif aiming or binos then nil else 70

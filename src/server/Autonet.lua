@@ -132,6 +132,9 @@ function Autonet.Rip(player, action, arg, side)
 		local wasMachine = Gear.Get(player).Conversion >= 1
 		if action == "In" then
 			Gear.EquipGear(player, itemId, slot)
+			if Autonet.Fitted then
+				Autonet.Fitted(player, char, slot) -- metal where a limb was lost ends the loss (server/Medicine)
+			end
 			announce(player, ("Ripped in: %s (%s)."):format(Cybernetics.Pieces[itemId].Name, Cybernetics.Label[slot]))
 		else
 			local was = data.Cyber[slot]

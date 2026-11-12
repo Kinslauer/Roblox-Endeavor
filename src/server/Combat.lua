@@ -18,6 +18,7 @@ local Stats = require(script.Parent.Stats)
 local Net = require(script.Parent.Common.Net)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local WorldPhase = require(script.Parent.WorldPhase)
+local WoundService = require(script.Parent.Common.WoundService)
 
 local C, F = Config.Combat, Config.Flicker
 local BUFFER = 0.08 -- input buffer: an attack may start this early before the last one ends
@@ -578,6 +579,14 @@ local function applyDamage(attacker, victim, amount, opts)
 
 	vhum:TakeDamage(amount)
 	victim:SetAttribute("LastHitType", opts.Type or "Physical")
+	if vp and amount > 0 then
+		-- where it landed and what that did to the body (common/WoundService): bleeds, breaks, a part knocked out
+		if not WoundService.Get(victim) then
+			WoundService.Attach(victim)
+		end
+		WoundService.Hit(victim, { Amount = amount, At = opts.HitAt or opts.ContactPoint, CanLose = true,
+			Kind = opts.WoundKind or WoundService.KindOf(nil, opts.Type, false) })
+	end
 	if ap and amount > 0 then
 		-- the attacker's own feedback: a floating number (its colour says blocked / normal / arc)
 		Remotes.CombatEvent:FireClient(ap, "Damage", victim, { amount, result, opts.Type or "Physical" })
@@ -648,6 +657,10 @@ local function pulse(char, spec, mods, seen, tracer)
 	end
 	local opts = { Posture = posture, Type = if mods.hitType and spec.Type ~= "Arc" then mods.hitType else spec.Type, Knockback = spec.Knockback, Stun = spec.Stun, Unblockable = mods.unblockable, GuardBreak = mods.guardBreak,
 		Mass = mods.weapon and mods.weapon.Mass, Launches = mods.label == "Heavy" and not spec.Ranged and not spec.NoLaunch, StartedAt = mods.startedAt }
+	opts.WoundKind = WoundService.KindOf(mods.weapon and mods.weapon.Family, opts.Type, spec.Ranged)
+	if not spec.Ranged and Players:GetPlayerFromCharacter(char) then
+		damage *= WoundService.Effects(char).Melee -- an arm out or broken swings weaker
+	end
 
 	local function strike(model, contact)
 		seen[model] = true
@@ -724,6 +737,12 @@ local function pulse(char, spec, mods, seen, tracer)
 			look = s.aim
 			origin += Vector3.new(0, 1.2, 0)
 		end
+		local shake = char:GetAttribute("WoundShake")
+		if type(shake) == "number" and shake > 0 then
+			-- pain, a broken or dead arm: the muzzle drifts (common/WoundService)
+			local r = math.rad(shake)
+			look = (CFrame.lookAt(Vector3.zero, look) * CFrame.Angles((math.random() * 2 - 1) * r, (math.random() * 2 - 1) * r, 0)).LookVector
+		end
 		local result = workspace:Raycast(origin, look * spec.Range, ray)
 		fx("Bolt", char, if result then result.Position else origin + look * spec.Range, mods.weapon and mods.weapon.Noise)
 		Combat.Shot:Fire(char, result and result.Instance, if result then result.Position else origin + look * spec.Range, mods.weapon)
@@ -742,6 +761,9 @@ local function pulse(char, spec, mods, seen, tracer)
 			if cal and rating > cal.Pen then
 				fx("Ping", model, result.Position, zone)
 				Combat.Deflected:Fire(char, model, zone, result.Position)
+				if isPlayer then
+					WoundService.Bruise(model, { Amount = damage, At = result.Position }) -- plate stops it, the body still feels it
+				end
 				return
 			end
 			if zone == "Head" or zone == "Helmet" then
@@ -752,6 +774,7 @@ local function pulse(char, spec, mods, seen, tracer)
 			if cal and rating > 0 then
 				damage *= cal.Through -- it went through plate first
 			end
+			opts.HitAt = result.Position
 			strike(model)
 		elseif result and Combat.World then
 			Combat.World.Bolt(char, result.Instance, damage, mods.weapon)
@@ -1620,7 +1643,9 @@ function Combat.Init()
 						end
 					end
 				elseif maxStamina and not s.block and t - s.lastSpend > C.StaminaRegenDelay then
-					Combat.AddStamina(char, C.StaminaRegenPerSecond * step)
+					local hunger = char:GetAttribute("Hunger")
+					local fed = if type(hunger) == "number" and hunger < Config.Wounds.Hunger.Low then Config.Wounds.Hunger.StaminaRegenLow else 1
+					Combat.AddStamina(char, C.StaminaRegenPerSecond * step * fed)
 				end
 				if (char:GetAttribute("Posture") or 0) > 0 and t - s.lastPostureHit > C.PostureRegenDelay then
 					Combat.AddPosture(char, -d.PostureRegen * step)

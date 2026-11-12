@@ -239,6 +239,10 @@ How to read it:
 - Rival conduit crews work the same contracts out in the valley. [Frontier]
 - The Gatekeeper guards the Scarp Overlook and has died there countless times. [Frontier, fragment]
 
+**Hinted (Claude's addition, 2026-11-12; Andy may revise)**
+- A doctor works a cot beside the trader in Verdant Reach and mends anything, lost limbs too, for war credits.
+  Nothing is said about who he is. [wounds round]
+
 ## Power in the body
 
 **Canon**
@@ -271,6 +275,8 @@ How to read it:
    facilities). (One way down, the Sumps shaft to Barrens Hall 2, is now Canon.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: Endeavor v104 / Front v39, wounds: a doctor in Verdant Reach (Hinted, Claude's addition). Scars last one
+  life (wiped with the body); nothing about them is story.
 - 2026-11-12: Andy's notes on the reference pick list (docs/Reference-Picks-Plan.md): the stack keeps a data slot
   through death; finds are kept only by extracting; the hour changes the time of day in any order; conduits can use
   brain-slave tech to trap enemies (release, reprogram for the Front, or they escape and invade); humanoid drones.

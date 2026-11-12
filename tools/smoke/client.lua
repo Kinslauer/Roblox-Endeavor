@@ -228,5 +228,18 @@ do
 		and not Anims.Track(char, "Aim_Pistol").IsPlaying)
 	char:SetAttribute("Weapon", "Fists"); wait(0.2)
 end
+do -- the wounds seen from inside (shared/WoundFx): the body outline shows only while something is wrong
+	local WoundFx = M.mockEnv.__require(RS.Shared.WoundFx)
+	local el = WoundFx.Elements()
+	local c = player.Character
+	local function steps(n) for _ = 1, n do WoundFx.Step(c, os.clock(), 1 / 30) end end
+	steps(40)
+	check("woundfx: a whole body shows no outline", el.Body ~= nil and el.Body.Visible == false)
+	c:SetAttribute("W_ArmL", 0.2); c:SetAttribute("Bleed_ArmL", "Heavy"); c:SetAttribute("Broken_LegR", true); c:SetAttribute("Pain", 0.6)
+	steps(40)
+	check("woundfx: a wound shows the outline, the hurt arm red, the break marked, pain blurs", el.Body.Visible == true
+		and el.Boxes.ArmL.BackgroundColor3 ~= el.Boxes.Chest.BackgroundColor3 and el.Boxes.LegR.Break.Visible == true and el.Blur.Size > 1)
+	for _, k in { "W_ArmL", "Bleed_ArmL", "Broken_LegR", "Pain" } do c:SetAttribute(k, nil) end
+end
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

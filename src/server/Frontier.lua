@@ -725,6 +725,23 @@ local function buildReach()
 		Frontier.OpenMarket(player)
 	end)
 	counter:SetAttribute("Trader", true)
+	-- the doctor's cot beside the counter: everything mended, lost limbs too, for war credits (server/Medicine)
+	local cot = part({ Name = "DoctorCot", Size = Vector3.new(3, 1.6, 7), Position = Vector3.new(c.X - 15, y + 0.8, c.Z + 6), Color = Color3.fromRGB(200, 205, 196), Material = Enum.Material.Fabric })
+	part({ Name = "DoctorLamp", Size = Vector3.new(0.4, 6, 0.4), Position = Vector3.new(c.X - 17, y + 3, c.Z + 3), Color = PAL.Frame, Material = Enum.Material.Metal })
+	glow(part({ Name = "DoctorLight", Size = Vector3.new(1.4, 0.4, 1.4), Position = Vector3.new(c.X - 16.3, y + 6, c.Z + 4), Color = Color3.fromRGB(235, 245, 230), Material = Enum.Material.Neon, CanCollide = false }), Color3.fromRGB(235, 245, 230), 14, 0.8)
+	local cure = Instance.new("ProximityPrompt")
+	cure.ObjectText = "Doctor"
+	cure.ActionText = ("Mend (%d cr)"):format(Config.Wounds.Doctor.Price)
+	cure.HoldDuration = 1
+	cure.MaxActivationDistance = 9
+	cure.RequiresLineOfSight = false
+	cure.KeyboardKeyCode = Enum.KeyCode.X
+	cure.Parent = cot
+	cure.Triggered:Connect(function(player)
+		if Frontier.Doctor then
+			Frontier.Doctor(player)
+		end
+	end)
 	Landmarks.Register("Reach", Vector3.new(c.X, y + 16, c.Z), "Verdant Reach", PAL.Ring)
 	Landmarks.Register("Scarp", F.Scarp.Overlook + Vector3.new(0, 10, 0), "City limits: the Scarp", PAL.Hazard)
 end

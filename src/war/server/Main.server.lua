@@ -21,6 +21,7 @@ local ok, err = pcall(function()
 	Hill.Init()
 	Intro.Init() -- before Soldiers.Init: the first deployment of a new recruit is the stasis tank intro
 	Soldiers.Init()
+	require(Server.Common.WoundService).Start() -- bleeding, pain fading, hard landings (shared/Wounds)
 end)
 if not ok then
 	warn(("=============================\nFRONT STARTUP FAILED: %s\n============================="):format(tostring(err)))

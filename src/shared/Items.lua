@@ -8,8 +8,15 @@ Items.Defs = {
 	Scrap = { Name = "Scrap Metal", Type = "Material" },
 	Wire = { Name = "Copper Wire", Type = "Material" },
 	Cloth = { Name = "Torn Cloth", Type = "Material" },
-	Medkit = { Name = "Medkit", Type = "Consumable", Heal = 45 },
-	Ration = { Name = "Ration Pack", Type = "Consumable", Heal = 15, Stamina = 50 },
+	Medkit = { Name = "Medkit", Type = "Consumable", Heal = 45, Treat = "Bandage" },
+	Ration = { Name = "Ration Pack", Type = "Consumable", Heal = 15, Stamina = 50, Food = 45 },
+	-- treatments for the wounds (shared/Wounds.Treatments): kept when there is nothing to treat
+	Bandage = { Name = "Bandage", Type = "Consumable", Treat = "Bandage" },
+	Tourniquet = { Name = "Tourniquet", Type = "Consumable", Treat = "Tourniquet" },
+	Hemostat = { Name = "Hemostatic Pack", Type = "Consumable", Treat = "Hemostat" },
+	Splint = { Name = "Splint", Type = "Consumable", Treat = "Splint" },
+	Painkillers = { Name = "Painkillers", Type = "Consumable", Treat = "Painkillers" },
+	SurgeryKit = { Name = "Surgery Kit", Type = "Consumable", Treat = "SurgeryKit" },
 	-- salvage materials (from broken props)
 	Glass = { Name = "Glass", Type = "Material" },
 	SheetMetal = { Name = "Sheet Metal", Type = "Material" },
@@ -63,6 +70,12 @@ local SHAPES = {
 	M1Garand = { Size = { 5, 2 }, Weight = 4.3 },
 	Medkit = { Size = { 1, 1 }, Weight = 0.6, Stack = 5 },
 	Ration = { Size = { 1, 1 }, Weight = 0.4, Stack = 5 },
+	Bandage = { Size = { 1, 1 }, Weight = 0.1, Stack = 5 },
+	Tourniquet = { Size = { 1, 1 }, Weight = 0.15, Stack = 3 },
+	Hemostat = { Size = { 1, 1 }, Weight = 0.2, Stack = 3 },
+	Splint = { Size = { 1, 2 }, Weight = 0.4, Stack = 2 },
+	Painkillers = { Size = { 1, 1 }, Weight = 0.1, Stack = 4 },
+	SurgeryKit = { Size = { 2, 1 }, Weight = 1.2, Stack = 1 },
 	PipeGrenade = { Size = { 1, 1 }, Weight = 0.8, Stack = 5 },
 	BreachingCharge = { Size = { 2, 1 }, Weight = 2.0, Stack = 3 },
 	PipeClub = { Size = { 1, 3 }, Weight = 3 },
@@ -133,6 +146,9 @@ end
 
 Items.Recipes = {
 	Medkit = { Output = "Medkit", Count = 1, Inputs = { Cloth = 2, Scrap = 1 } },
+	Bandage = { Output = "Bandage", Count = 2, Inputs = { Cloth = 1 } },
+	Tourniquet = { Output = "Tourniquet", Count = 1, Inputs = { Cloth = 1, Wire = 1 } },
+	Splint = { Output = "Splint", Count = 1, Inputs = { Cloth = 1, Pipe = 1 } },
 	Satchel = { Output = "Satchel", Count = 1, Inputs = { Cloth = 4, Scrap = 1 } },
 	Rucksack = { Output = "Rucksack", Count = 1, Inputs = { Cloth = 8, Scrap = 4, Wire = 2 } },
 	FramePack = { Output = "FramePack", Count = 1, Inputs = { Cloth = 10, SheetMetal = 2, Wire = 4, Pipe = 2 } },
@@ -166,7 +182,8 @@ Items.Recipes = {
 Items.LootTables = {
 	Supply = {
 		{ "Scrap", 1, 3, 7 }, { "Wire", 0.7, 1, 4 }, { "Cloth", 0.7, 1, 3 }, { "ArcCell", 0.5, 4, 10 }, { "Powder", 0.25, 1, 2 }, { "PipeGrenade", 0.15, 1, 2 },
-		{ "Medkit", 0.5, 1, 2 }, { "Ration", 0.6, 1, 2 },
+		{ "Medkit", 0.5, 1, 2 }, { "Ration", 0.6, 1, 2 }, { "Bandage", 0.5, 1, 2 }, { "Tourniquet", 0.2, 1, 1 }, { "Splint", 0.15, 1, 1 },
+		{ "Painkillers", 0.2, 1, 2 }, { "Hemostat", 0.1, 1, 1 },
 		{ "RebarBlade", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 }, { "ScrapSpear", 0.12, 1, 1 }, { "Sledge", 0.06, 1, 1 }, { "ArcPistol", 0.05, 1, 1 },
 		{ "PlatedHelm", 0.1, 1, 1 }, { "RiotPlate", 0.06, 1, 1 }, { "ArcHood", 0.08, 1, 1 }, { "ConduitHarness", 0.04, 1, 1 }, { "ServoGreaves", 0.07, 1, 1 },
 		{ "ReflexOptic", 0.06, 1, 1 }, { "TargetingLens", 0.05, 1, 1 }, { "ServoArm", 0.05, 1, 1 }, { "ArcGauntlet", 0.04, 1, 1 }, { "NeuralCore", 0.04, 1, 1 }, { "OverclockCore", 0.02, 1, 1 },
@@ -175,6 +192,7 @@ Items.LootTables = {
 	Vault = {
 		{ "Scrap", 1, 6, 12 }, { "Wire", 1, 3, 6 }, { "Battery", 0.8, 1, 3 }, { "Powder", 0.7, 2, 4 }, { "ArcCell", 0.8, 6, 12 },
 		{ "Medkit", 0.8, 1, 3 }, { "BreachingCharge", 0.5, 1, 1 }, { "PipeGrenade", 0.5, 1, 3 },
+		{ "Hemostat", 0.4, 1, 2 }, { "SurgeryKit", 0.2, 1, 1 }, { "Painkillers", 0.4, 1, 2 },
 		{ "Sledge", 0.2, 1, 1 }, { "ArcPistol", 0.2, 1, 1 }, { "RiotPlate", 0.15, 1, 1 }, { "ConduitHarness", 0.12, 1, 1 },
 		{ "ReflexOptic", 0.12, 1, 1 }, { "ServoArm", 0.12, 1, 1 }, { "NeuralCore", 0.1, 1, 1 }, { "OverclockCore", 0.05, 1, 1 },
 		{ "EchoArray", 0.08, 1, 1 }, { "BloodTracer", 0.08, 1, 1 }, { "PistonLeg", 0.08, 1, 1 }, { "PlatedCore", 0.08, 1, 1 },
@@ -182,6 +200,7 @@ Items.LootTables = {
 	-- the frontier's relic sites: the only place some gear turns up reliably (server/Frontier.lua)
 	Relic = {
 		{ "ArcCell", 1, 10, 20 }, { "Medkit", 1, 2, 3 }, { "BreachingCharge", 0.6, 1, 2 }, { "PipeGrenade", 0.6, 2, 3 },
+		{ "SurgeryKit", 0.35, 1, 1 }, { "Hemostat", 0.5, 1, 2 },
 		{ "ArcPistol", 0.5, 1, 1 }, { "Sledge", 0.3, 1, 1 }, { "RiotPlate", 0.35, 1, 1 }, { "ConduitHarness", 0.4, 1, 1 }, { "PlatedHelm", 0.35, 1, 1 },
 		{ "NeuralCore", 0.4, 1, 1 }, { "OverclockCore", 0.3, 1, 1 }, { "PistonLeg", 0.4, 1, 1 }, { "PlatedCore", 0.4, 1, 1 }, { "EchoArray", 0.3, 1, 1 },
 		{ "BloodTracer", 0.3, 1, 1 }, { "TargetingLens", 0.35, 1, 1 }, { "ArcGauntlet", 0.35, 1, 1 }, { "FramePack", 0.15, 1, 1 },
@@ -210,11 +229,12 @@ Items.LootTables = {
 			{ Weight = 0.35, Items = { { "Round556", 1, 15, 30 }, { "Carbine", 0.35, 1, 1 } } },
 		} },
 		{ "Scrap", 0.8, 1, 2 }, { "Ration", 0.45, 1, 1 }, { "Cloth", 0.4, 1, 2 }, { "Wire", 0.3, 1, 2 },
-		{ "Medkit", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 },
+		{ "Medkit", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 }, { "Bandage", 0.35, 1, 2 }, { "Tourniquet", 0.12, 1, 1 },
 	},
 	-- the barrens under the Sumps (server/Barrens.lua): the stores of the hall, rich in implants and cells
 	Barrens = {
 		{ "ArcCell", 1, 10, 20 }, { "Battery", 0.9, 2, 4 }, { "Wire", 0.8, 3, 6 }, { "Medkit", 0.6, 1, 2 },
+		{ "SurgeryKit", 0.25, 1, 1 }, { "Hemostat", 0.4, 1, 1 }, { "Splint", 0.3, 1, 1 },
 		{ "ReflexOptic", 0.3, 1, 1 }, { "TargetingLens", 0.3, 1, 1 }, { "AudioPickup", 0.3, 1, 1 }, { "ChemSniffer", 0.3, 1, 1 },
 		{ "ServoArm", 0.3, 1, 1 }, { "ArcGauntlet", 0.25, 1, 1 }, { "NeuralCore", 0.3, 1, 1 }, { "OverclockCore", 0.2, 1, 1 },
 		{ "PlatedCore", 0.2, 1, 1 }, { "StriderLeg", 0.25, 1, 1 }, { "PistonLeg", 0.2, 1, 1 }, { "EchoArray", 0.2, 1, 1 }, { "BloodTracer", 0.2, 1, 1 },
@@ -225,7 +245,7 @@ Items.LootTables = {
 		{ "ShockBaton", 0.12, 1, 1 }, { "ReflexOptic", 0.06, 1, 1 }, { "NeuralCore", 0.05, 1, 1 },
 	},
 	Raider = {
-		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 },
+		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 }, { "Bandage", 0.3, 1, 1 },
 		{ "PipeClub", 0.1, 1, 1 }, { "ScavHelm", 0.08, 1, 1 }, { "ScrapVest", 0.08, 1, 1 }, { "ScrapGreaves", 0.08, 1, 1 },
 		{ "ChemSniffer", 0.03, 1, 1 },
 		{ "Round762x39", 0.3, 6, 18 }, { "AK47", 0.05, 1, 1 }, -- the gun every scavenger can keep running

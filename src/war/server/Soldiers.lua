@@ -16,6 +16,8 @@ local ModelAssets = require(script.Parent.Common.ModelAssets)
 local Assets = require(Shared.Assets)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local Recruit = require(script.Parent.Common.Recruit)
+local WoundService = require(script.Parent.Common.WoundService)
+local Wounds = require(Shared.Wounds)
 local Battlefield = require(script.Parent.Battlefield)
 local Bodies = require(script.Parent.Bodies)
 local Factions = require(script.Parent.Factions)
@@ -240,6 +242,7 @@ function Soldiers.Spawn(player)
 	char:SetAttribute("Faction", faction)
 	Bodies.Dress(char, faction)
 	hum.MaxHealth, hum.Health = 100, 100
+	WoundService.Attach(char) -- each recruit's body takes its hits part by part (shared/Wounds)
 	Soldiers.Arm(player, kit, faction)
 	Soldiers.Place(player)
 	Soldiers.WatchDeath(player, char)
@@ -273,7 +276,18 @@ local function armorAbsorb(s, zone, damage, pen)
 	return damage - absorbed
 end
 
-function Soldiers.Damage(victimModel, amount, attacker, zone, pen, kind)
+-- The zone a round found, as a wound part when there is no point to read (Torso = the chest, a limb at random).
+local LIMBS = { "ArmL", "ArmR", "LegL", "LegR" }
+local function woundPart(zone)
+	if zone == "Head" then
+		return "Head"
+	elseif zone == "Limb" then
+		return LIMBS[math.random(1, #LIMBS)]
+	end
+	return if math.random() < 0.6 then "Chest" else "Stomach"
+end
+
+function Soldiers.Damage(victimModel, amount, attacker, zone, pen, kind, at)
 	local victim = Players:GetPlayerFromCharacter(victimModel)
 	local hum = victimModel:FindFirstChildOfClass("Humanoid")
 	if not hum or hum.Health <= 0 then
@@ -286,8 +300,13 @@ function Soldiers.Damage(victimModel, amount, attacker, zone, pen, kind)
 	if attacker and attacker ~= victim and s and Factions.Of(attacker) == s.Faction then
 		amount *= 0.25 -- friendly fire hurts, but not as much
 	end
+	local bruise = 0
 	if s then
+		local before = amount
 		amount = armorAbsorb(s, zone or "Torso", amount, pen or 0)
+		if zone ~= "Limb" then
+			bruise = before - amount -- what the plate took, the body still feels until the plate is gone
+		end
 		s.LastHit = { by = attacker, t = os.clock(), kind = kind }
 		-- in the simulation nothing kills: a fatal blow desyncs the recruit back to the drill's start
 		if s.Intro and hum.Health - amount <= 1 and Soldiers.Intro then
@@ -302,6 +321,20 @@ function Soldiers.Damage(victimModel, amount, attacker, zone, pen, kind)
 		end
 	end
 	hum:TakeDamage(amount)
+	-- where it landed and what that did (common/WoundService): bleeds, breaks, a limb out, the bruise under plate
+	if s and not s.Intro and (WoundService.Get(victimModel) or WoundService.Attach(victimModel)) then
+		if bruise > 0.01 then
+			WoundService.Bruise(victimModel, { Amount = bruise, Part = if zone == "Head" then "Head" else "Chest" })
+		end
+		if amount > 0 and hum.Health > 0 then
+			if kind == "Explosive" then
+				WoundService.Hit(victimModel, { Amount = amount, Kind = "Blast", CanLose = true })
+			else
+				local part = at and Wounds.PartAt(victimModel, at) or woundPart(zone)
+				WoundService.Hit(victimModel, { Amount = amount, Part = part, Kind = "Bullet" })
+			end
+		end
+	end
 	if victim then
 		Remotes.Soldier:FireClient(victim, "Hurt", amount, zone)
 	end
@@ -667,6 +700,11 @@ function Soldiers.Explode(origin, radius, damage, attacker)
 					Soldiers.Damage(char, damage * (1 - (dist / radius) ^ 1.5), attacker, "Torso", 0.3, "Explosive")
 				end
 			end
+			-- the blast wave reaches further than the shrapnel: ringing ears, a swimming view
+			local st = soldiers[p]
+			if dist <= radius * Config.Wounds.Concussion.Radius and st and not st.Intro then
+				WoundService.Concuss(char)
+			end
 		end
 	end
 	-- the simulation takes its own blasts (blocks, targets, hostiles) and leaves the battlefield alone
@@ -921,12 +959,13 @@ local function onFire(player, dir)
 		local muzzle = eye + dir.Unit * 2
 		local stance = MV.Stance[s.Stance or "Stand"]
 		w.Steady = stance.Spread * Firearms.CyberEffect(s.Cyber).Spread
+			* (1 + (player.Character:GetAttribute("WoundShake") or 0) * Config.Wounds.SpreadPerShake) -- pain, a bad arm
 		local wall = workspace:Raycast(eye, muzzle - eye, ray)
 		if wall then
 			muzzle = wall.Position - dir.Unit * 0.3 -- muzzle against a wall: the round starts on your side of it
 		end
 		Guns.Shoot(player, w, muzzle, dir.Unit, function(model, zone, damage, pen, at)
-			local dealt = Soldiers.Damage(model, damage, player, zone, pen, "Bullet")
+			local dealt = Soldiers.Damage(model, damage, player, zone, pen, "Bullet", at)
 			Remotes.Weapon:FireAllClients("Impact", at, Vector3.yAxis, dealt > 0)
 		end)
 		Remotes.Weapon:FireClient(player, "Recoil", w.Def.Recoil[1] * Firearms.RecoilMult(w.Parts) * MV.Stance[s.Stance or "Stand"].Recoil * Guns.AttMult(w, "Recoil"), w.Def.Recoil[2] * MV.Stance[s.Stance or "Stand"].Recoil)
@@ -1110,7 +1149,14 @@ function Soldiers.Init()
 	Net.On("Heal", { rate = 1, burst = 2 }, function(player)
 		local s = active(player)
 		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-		if s and hum and s.Medkits > 0 and hum.Health < hum.MaxHealth then
+		if not (s and hum and s.Medkits > 0) then
+			return
+		end
+		-- a dressing goes on the worst thing first: a bleed, then a break; else it patches health
+		if not s.Intro and WoundService.Dress(player.Character) then
+			s.Medkits -= 1
+			pushWeapon(player)
+		elseif hum.Health < hum.MaxHealth then
 			s.Medkits -= 1
 			hum.Health = math.min(hum.MaxHealth, hum.Health + 50)
 			pushWeapon(player)

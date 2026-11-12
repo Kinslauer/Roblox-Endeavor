@@ -37,7 +37,12 @@ function Stats.Apply(player, fill)
 	local crouchMult = if stance == "Prone" then SC.Stance.ProneSpeedMult elseif char:GetAttribute("Crouched") then SC.CrouchSpeedMult else 1
 	local handsMult = if char:GetAttribute("NeckHold") then SC.Cqc.Hold.SpeedMult elseif char:GetAttribute("Carrying") then SC.Cqc.Carry.SpeedMult
 		elseif char:GetAttribute("Aiming") then SC.Aim.SpeedMult else 1
-	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult * sprintMult * weightMult * crouchMult * handsMult
+	-- wounds (common/WoundService): a leg out or broken slows you and stops the sprint
+	local woundMult = char:GetAttribute("WoundSpeed") or 1
+	if char:GetAttribute("WoundNoSprint") then
+		sprintMult = 1
+	end
+	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult * sprintMult * weightMult * crouchMult * handsMult * woundMult
 
 	char:SetAttribute("Weapon", PlayerData.Get(player).Equipped)
 	HeldWeapons.Attach(char, Weapons.Held(PlayerData.Get(player).Equipped))
@@ -49,7 +54,7 @@ function Stats.Apply(player, fill)
 	WornGear.Apply(char, worn) -- armor only: implants are drawn client-side from the Cyber_<slot> attributes
 	hum.UseJumpPower = false
 	-- no jumping while low or with your hands on someone (Space brings you up a stance instead)
-	local grounded = char:GetAttribute("Crouched") or char:GetAttribute("NeckHold") or char:GetAttribute("Carrying")
+	local grounded = char:GetAttribute("Crouched") or char:GetAttribute("NeckHold") or char:GetAttribute("Carrying") or char:GetAttribute("WoundNoJump")
 	hum.JumpHeight = if grounded then 0 else Config.Movement.JumpHeight * (d.JumpMult or 1)
 	for _, slot in Cybernetics.Slots do
 		char:SetAttribute("Cyber_" .. slot, PlayerData.Get(player).Cyber[slot])
