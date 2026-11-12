@@ -21,7 +21,8 @@ commit, the smoke tests, a real-server start check, a publish, and lines in docs
   accepts data and valuable chips or information. Never materials."
 - A free run as someone else: "Conduits can develop a humanoid drone, they can send this out on a raid in its stead.
   Only difference is these bots have less health, so they REQUIRE armor and are far less skilled in melee, they
-  thrive in ranged combat as they have 120t weights and use 80b for combat." (The last clause is unclear: asked.)
+  thrive in ranged combat as they have 120t weights and use 80b for combat." Andy, asked what the last clause meant:
+  "they carry alot of weight and use guns primarily" (a high carry limit; built for guns, not melee).
 - Party: "Correct." (names up close only, no markers through walls)
 - Party runs: "Brainstorm 5 original tasks" (below).
 - Player market: "Yes only items you found in raid."
