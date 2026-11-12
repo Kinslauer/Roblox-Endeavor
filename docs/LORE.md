@@ -52,6 +52,12 @@ How to read it:
 - The world is wrecked but inhabited: raiders, Brutes, Shockers, Wardens, rival conduit crews. [NPCs]
 - Most people with money uploaded their stacks and left. The conduits are the ones still here. [Andy 2026-10-31]
 
+**Truth**
+- Conduits try to leave, and fail. The only routes out they have ever found drop them into the Front. Every
+  expedition beyond the city ends in a reset: they can never get far enough before they need to extract.
+  [Andy 2026-11-12] (Read with the game as it stands: the valley north of the wall is as far as anyone gets; the
+  border peaks are where expeditions turn back or end. Nothing in the game may show a conduit getting further.)
+
 **Hinted**
 - The rich who "left" did not go anywhere physical. Fragment "The Departed": a receipt for one stack, one upload,
   one exit, signed by a name on a city tower that nobody living has.
@@ -115,8 +121,14 @@ How to read it:
   [Claude 2026-11-10]
 
 **Truth**
+- In the green pockets grass grows, trees and flowers bloom, and the hour's effects are nullified, for reasons
+  nobody knows. [Andy 2026-11-12]
+
+**Truth**
 - There is some kind of glitch or disconnection between reality and what the conduits experience. Little more is
   known, and more is to be uncovered as the game goes on. [Andy 2026-11-12]
+- The green pockets are where the hour does not reach (see above). Andy's guess, not settled: the connection to the
+  old earth may be strongest there. [Andy 2026-11-12]
 
 **Hinted**
 - The world is not what it looks like. It may be a held, repeating record. Fragments: "Hour Zero" ("RESET HOLDS.
@@ -142,6 +154,10 @@ How to read it:
 - What the Front gives back is credits, spent in the city (the Reach's trader, the hideout computer's HOUSE and
   MARKET). [Recruit, Terminal]
 - One glade on the Front is the last green there. [Andy 2026-11-10; Front world]
+
+**Truth**
+- The Front has been forgotten by progress. It has looked the way it does now since the 1970s. Nothing is made
+  there: everything on the Front (weapons, kit, tanks, recruits) arrived by shipment. [Andy 2026-11-12]
 
 **Hinted**
 - The war is managed, not fought to be won. Fragment "Front Dispatch", stamped by both factions: "Ticket scales reset
@@ -179,15 +195,22 @@ How to read it:
 2. Which corporations, by name, and who signs as the withheld consignee. (That corporations run Line 9 and fund the
    Front is now Truth.) Limit: nobody in the city can name them yet.
 3. Where "up" goes, and what the departed rich became. Limit: no one who left is ever met.
-4. Why the Front looks Cold War while the city is cyberpunk. Limit: do not explain it; the two must stay visibly
-   different eras.
-5. What the green pockets are, and why the hour passes them by. Limit: they stay rare, small and quiet.
-6. Whether a conduit can ever leave. Limit: no exit exists in the game yet.
+4. Who ships to the Front, how, and why it was left in the 1970s. (That it is forgotten by progress and supplied
+   only by shipment is now Truth.) Limit: the two worlds must stay visibly different eras; nothing modern reaches
+   the Front.
+5. What the green pockets really are, and whether Andy's guess (the connection to the old earth is strongest there)
+   is right. Limit: they stay rare, small and quiet; no text confirms the guess.
+6. What stops conduits from getting far enough, and what lies beyond. (That they try and always fail is now Truth.)
+   Limit: no exit exists in the game; a conduit never gets further than the valley.
 7. Whether conduits have anything to do with the brain slaves in the barrens (are they connected, are they the same,
    does a conduit's experience run on that power?). Limit: do not suggest an answer until Andy decides.
 8. Whether a player can ever reach the shelters or the barrens. Limit: no way down exists in the game yet.
 
 ## Change log
+- 2026-11-12: Andy's answers to 4, 5 and 6: the Front was forgotten by progress, looks as it has since the 1970s and
+  gets everything by shipment; pockets grow and bloom and nullify the hour (maybe the old earth's connection is
+  strongest there); conduits try to leave, find only routes into the Front, and every expedition beyond the city
+  ends in a reset. Questions 4, 5 and 6 narrowed to what is still unknown.
 - 2026-11-12: Andy's answers: the hour is a glitch or disconnection between reality and what conduits experience;
   corporations own Line 9 and fund both sides of the Front; corporations, cloning facilities and the barrens of
   brain slaves are in underground bomb shelters. New open questions 7 and 8.
