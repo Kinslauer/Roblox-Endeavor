@@ -36,7 +36,7 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (408 checks), `war` = Front (149), `warclient` = the Front client plays the first link's stages, the screen, the controls, the gun in the view and its code-made animation (56), `stress` = budgets under load (5), `client` = the
+  `scenario` = Endeavor end to end (441 checks), `war` = Front (149), `warclient` = the Front client plays the first link's stages, the screen, the controls, the gun in the view and its code-made animation (56), `stress` = budgets under load (5), `client` = the
   Endeavor client boots + movement, dodge, animation, guard, air and handling checks (52). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
@@ -114,7 +114,7 @@ Client tab screenshot, because Andy cannot read logs another way.
 - Entrenching: foxholes and low sandbags only, on open ground.
 - Controls are the Cursed Gear layout: E flicker, F block/parry, Q dodge, X interact, M devour/app, R/Y/V skills,
   Z feint, G grab/throw, H drop, Shift sprint, C crouch (hold: prone; sprinting: dive), Space up a stance, B whistle, Tab inventory,
-  L loadout, J attributes, O hideout, N recruit app, P helmetcam. With a gun out (owner, 2026-11-11): RMB aim, V sights, R reload, T rack (single-shot guns),
+  L loadout, J attributes, O hideout, N recruit app, P helmetcam, K the core implant's active. With a gun out (owner, 2026-11-11): RMB aim, V sights, R reload, T rack (single-shot guns),
   Q the wall (prone: roll); X close quarters (tap: takedown, throw or search a body; hold: neck grab or carry a body). Front: LMB fire, RMB aim, R the magazine's next step (out, then in; hold: the one coming out is kept), T the action (rack, release, unjam), B selector, 1/2 switch,
   G frag, H dressing, Q/E lean (prone: roll), C crouch (hold: prone; sprinting: dive), Space up a stance / mantle,
   Z binoculars, Y check weapon (held: 1-4 change the part in a slot), K artillery, F dig, V sandbags, M app, U unlink.
@@ -716,7 +716,46 @@ Client tab screenshot, because Andy cannot read logs another way.
   Tests: "reflex:", "adapt:", "hide:", "dart:", "bolt:", "clothes:", "question:", "shift:" in scenario.lua,
   "stealth4:" in client.lua. Not done: darts on players, a disguise that a guard can see through by behaviour,
   crawl spaces, the hour's time of day (round 6).
+- Builds (round 5 of docs/Reference-Picks-Plan.md; ideas from Cursed Gear and Tarkov, nothing copied). Rules in
+  `src/shared/Builds.lua` (pure), tuning `Config.Builds`, server `src/server/Builds.lua` (Init from Main in a pcall),
+  client `src/client/Build.lua` (rows at the end of Main's renderLoadout, K, the open book readout, stone glow).
+  Lineage: Gear compute rolls `data.Lineage` once per life (`RollLineage`: Empty 1%, Rare 6% = two stats, Good 25%
+  = +2, else +1; `LineageStats`, `BatchName` "LINE 9 . BATCH nnnn"). Empty body: d.Empty (char attr `Empty`):
+  Combat.Flicker refuses, SkillRunner refuses, autoSlot skips, ChargeGain 0, Health/Damage/Posture/ParryBonus up,
+  applyDamage stretches the first stun on a victim per FirstWindow (`vs.emptyHit`). Implant load: `Builds.Load` walks
+  Cybernetics.Slots in order against Base 7 + the core's `LoadCap` (Neural 4, Plated 3, Overclock 1); pieces past it
+  are skipped in Gear compute (d.Load, d.LoadMax, d.Overloaded). Actives: piece `Active` (NeuralCore Quicken: cooldowns
+  x0.5 for 10 s; OverclockCore Spike: next skill x2 within 15 s), Remote "Active" (K), `Builds.CooldownMult`,
+  `TakeSpike` in SkillRunner.Use. Chips: items Type "Chip" (Data = true), `Rules.Chips[id].Skill`, `data.Chips[skillId]`,
+  `Builds.Fit/Unfit` only at `Hideouts.AtBench` (Use from the pack fits); SkillRunner: Focus (cone, FocusReach), Hook
+  (`SkillRunner.Hook`: pull + stun), Trail (`SkillRunner.Trail`: a "PhaseTrail" strip that hurts once per body), Breath
+  (clears light bleeds, pain x0.5), Mirror (`Combat.State(char).mirrorUntil` -> applyDamage adds posture to the
+  striker), Arc (`arcJumpUntil` -> a charged hit in pulse's strike jumps once). Vows: `data.Vow` (OpenBook: char attr
+  `Vow` -> client stamina line for others, stamina + posture of whoever you face; LightHand: damage x0.75, xp x1.5;
+  ThinSkin: health x0.7, charge x1.5), Terminal actions "Vow"/"Break". Grades: `Knowledge.Grade` (4 .. 0 = SPECIAL,
+  survives with an uploaded stack); Terminal.BuildBoard sets def.Grade (Raid and High 3, Severe and bounties 2) and
+  adds Trial_3 (a Medium site), Trial_2 (the raid), Trial_1 (a bounty), Trial_0 (a Severe site); State rows carry
+  Lock/Trial; a passed trial sets the grade; `Builds.OnDeath` (Permadeath.Handle) drops trials in hand; the Blackout
+  gate (Raids join) needs `Builds.CanRaid`. Carried pay: every Endeavor xp/credit source calls `Builds.Earn` (NPC
+  kills, devour, player kills, quests, raids, contract credits): `data.Carried`, banked by `Builds.Bank` when
+  `Hideouts.AtBay` (own built bay, or any free bay's lift with no bay; checked every second); the death screen shows
+  what was lost; StatsChanged carries CarriedXp ("+n" on the level line). Practice: `data.Practice` (Endurance per
+  second sprinting -> MaxStamina; Reload per reload -> Combat.Reload seconds x ReloadMult; Search per item revealed ->
+  Loot reveal wait x SearchMult). The stack slot: `Knowledge.Stack` ({Id, Count}, Config.Builds.Stack.Slots 3) takes
+  only `Items.Defs[id].Data`; Remote "Build"(Fit/Unfit/Store/Unstore). DataShard used at home = Stats.AddXp now.
+  Respec: `StillBasin` in the Rootwork (pocket centre + (34, 0, -30)): stones touched in RAIN, ROOT, VINE, SEED
+  (`Builds.Touch`) raise the basin for Respec.Window; `Builds.Respec` once a life (data.Respecced). Tests set
+  Config.Builds.Lineage to zeros at the top of scenario.lua and stress.lua (a random batch would move the stats).
+  Tests: "batch:", "empty body:", "load:", "active:", "chips:", "carried:", "vow:", "grade:", "practice:", "stack:",
+  "respec:" in scenario.lua, "builds:" in client.lua. Not done: chip and shard icons, a drawn look for the empty body,
+  Hook/Trail/Mirror/Arc have no sound of their own, NPCs have no Stamina attribute (the open book reads full).
 ## State (2026-11-12)
+- Endeavor v109 (2026-11-12): builds, round 5 of the reference picks (Line 9 batches and the rare empty body, implant
+  load and K actives, skill chips at the bench, vows at the computer, the Broker's grade trials, xp and credits
+  carried until home, practice, the stack slot kept through a reboot, the riddle basin in the Rootwork). Real server:
+  start 8.7s, 0 warnings; the basin and its 4 stones stand on the Rootwork's moss, the basin hidden under it; 4
+  trials on the board; 2000 rolls gave 20 empty, 113 rare, 507 good. Awaits Andy: docs/TESTING.md "Endeavor:
+  builds". Next: round 6 (world and money).
 - Endeavor v108 (2026-11-12): stealth, round 4 of the reference picks (the second before a guard shouts, guards who
   adapt after alarms, lockers, sleeping darts, thrown bolts, soot poncho and sentry uniform, questioning a held
   guard, overseers asleep on shift). Real server: start 8.1s, 0 warnings; 4 lockers below the Sumps stand on the
