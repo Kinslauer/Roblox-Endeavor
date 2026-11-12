@@ -471,7 +471,7 @@ Client tab screenshot, because Andy cannot read logs another way.
   `HeldWeapons.Assemble(weaponId, attachments)` clones the pieces to their anchors; `HeldWeapons.Attach(char, id,
   attachments)` uses it when GunParts has the gun (attribute `Build` = the key; one-piece `Assets.Weapons` model if a
   component fails). Firearms: slot "Barrel" with `BarrelShort` / `BarrelLong` (Velocity, Spread, Recoil, Loudness
-  multipliers; `Guns.AttMult`), new Defs AK47, M1Garand (8 rounds, semi), Glock17, Revolver (6, semi; the pistols use
+  multipliers; `Guns.AttMult`), new Defs AK47 (7.62x39), M1Garand (8 rounds, semi, 7.62x51: Andy 2026-11-12 "the garand fires .308 or 7.62x51"), Glock17, Revolver (6, semi; the pistols use
   whole GunKit models: Front attachments only fit the primary). The app's attachment button reads "Remove" when
   mounted. Still one-piece old models: SKS, Mosin, Makarov. Not done: the tracer still starts at the eye
   (`GunParts.MuzzleEnd` is there for it); Endeavor still uses whole guns (add a `Weapons.Calibers` row when
@@ -515,8 +515,8 @@ Client tab screenshot, because Andy cannot read logs another way.
   carrying bodies, the wall); v85 the same day: playtest fixes (pistol every ride, third person, quiet screen, cloak,
   takedown alignment). Awaits Andy's play-through: docs/TESTING.md "Endeavor: Metal Gear handling". Andy reported
   "the right click broke" on v79; no fault was found beyond first person not turning the body (fixed); asked what failed.
-- Front vNEXT (2026-11-12): guns built from components (AK, AR, Garand/M14 with three barrel lengths, muzzle devices,
-  scopes, foregrip), new AK-47, M1 Garand, Glock 17, service revolver. REALCHECK. Unseen in game: the grip of the new
+- Front v31 (2026-11-12): guns built from components (AK, AR, Garand/M14 with three barrel lengths, muzzle devices,
+  scopes, foregrip), new AK-47, M1 Garand, Glock 17, service revolver. Real server: start 3.0s, 0 warnings, all 5 rifles assemble in every barrel with suppressor, scope and foregrip. Unseen in game: the grip of the new
   models in the hands and in first person. Awaits Andy: docs/TESTING.md "Front: guns built from parts".
 - Front v26 (2026-11-11): clean screen, crouch/prone/dive/roll, lean and peek, quick and careful reload, binoculars
   with marking. Awaits Andy's play-through: docs/TESTING.md "Front: clean screen, stances, Metal Gear handling".

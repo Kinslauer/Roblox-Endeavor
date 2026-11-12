@@ -17,7 +17,6 @@ Firearms.Ammo = {
 	["9x18"] = { Velocity = 315 * 3.3, Damage = 26, Range = 60, Falloff = 0.5, Pen = 0.2, Mass = 6 },
 	[".45ACP"] = { Velocity = 260 * 3.3, Damage = 34, Range = 60, Falloff = 0.5, Pen = 0.2, Mass = 15 },
 	["7.62x51"] = { Velocity = 840 * 3.3, Damage = 62, Range = 600, Falloff = 0.7, Pen = 0.7, Mass = 10 },
-	[".30-06"] = { Velocity = 850 * 3.3, Damage = 66, Range = 650, Falloff = 0.72, Pen = 0.72, Mass = 10 },
 	["9x19"] = { Velocity = 375 * 3.3, Damage = 28, Range = 70, Falloff = 0.5, Pen = 0.25, Mass = 8 },
 	[".38"] = { Velocity = 260 * 3.3, Damage = 27, Range = 50, Falloff = 0.5, Pen = 0.15, Mass = 10 },
 	["7.62x54R"] = { Velocity = 830 * 3.3, Damage = 70, Range = 800, Falloff = 0.75, Pen = 0.75, Mass = 10 },
@@ -42,7 +41,7 @@ Firearms.Defs = {
 		Recoil = { 2.6, 1.1 }, Spread = 1.7, AdsSpread = 0.3, Ergonomics = 0.5, Weight = 4.1, Faction = "Union", Price = 1200,
 		Reload = { EjectMag = 0.6, InsertMag = 0.9, Rack = 0.5 }, Slots = { "Optic", "Muzzle", "Barrel" } },
 	-- eight rounds on an en-bloc clip: the whole clip goes in from the top
-	M1Garand = { Name = "M1 Garand", Class = "Battle Rifle", Ammo = ".30-06", MagSize = 8, Modes = { "Safe", "Semi" }, RPM = 350,
+	M1Garand = { Name = "M1 Garand", Class = "Battle Rifle", Ammo = "7.62x51", MagSize = 8, Modes = { "Safe", "Semi" }, RPM = 350,
 		Recoil = { 2.8, 1.0 }, Spread = 1.5, AdsSpread = 0.25, Ergonomics = 0.5, Weight = 4.3, Faction = "Union", Price = 800,
 		Reload = { EjectMag = 0.2, InsertMag = 1.1, Rack = 0.3 }, Slots = { "Optic", "Muzzle", "Barrel" } },
 	Mosin = { Name = "Mosin-Nagant", Class = "Bolt Action", Ammo = "7.62x54R", MagSize = 5, Modes = { "Safe", "Semi" }, RPM = 40, BoltAction = true,

@@ -703,13 +703,13 @@ Controls and gunplay:
 - [ ] Hold Z: binoculars. Hold an enemy (or a simulation hostile) in the centre for a moment: a red diamond marks it
       for about nine seconds, for your whole side, also through walls. LMB does nothing while Z is held.
 
-### Front: guns built from parts (2026-11-12, Front v29)
+### Front: guns built from parts (2026-11-12, Front v31)
 Open the recruit app (M at the base, or the locker) and look at the weapons list.
 - [ ] New guns are in the list: AK-47 (Pact), M1 Garand (Union), Glock 17 and Service Revolver (both sides).
 - [ ] Deploy with an AKM, AK-47, M16A1, M14 or M1 Garand: the rifle in your hands is the new detailed model (separate
       receiver, barrel and muzzle device), it sits in the hands the right way round and the hands are on the grip.
 - [ ] The AK-47 has wood furniture and a plain muzzle nut; the AKM has the slanted muzzle brake.
-- [ ] The M1 Garand holds 8 rounds, fires one shot per pull and has no magazine under it; the M14 has a box magazine.
+- [ ] The M1 Garand holds 8 rounds of 7.62x51 (the M14's round), fires one shot per pull and has no magazine under it; the M14 has a box magazine.
 - [ ] On one of those five rifles, buy "Short barrel", deploy: the barrel is visibly shorter, the muzzle device sits
       at its new end, shots spread and kick a little more and are louder.
 - [ ] Buy "Long barrel" instead: visibly longer, shots group tighter.

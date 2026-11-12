@@ -189,7 +189,7 @@ How to read it:
   there: everything on the Front (weapons, kit, tanks, recruits) arrived by shipment. [Andy 2026-11-12]
 - The Front's guns are real Cold War patterns (AK, AR, Garand and M14, 1911, service revolver), and they come as
   parts: a locker order can fit a different barrel, muzzle device or sight to the same receiver. A few later arms
-  (the Glock 17) are there too; like everything else they arrived by shipment, and neither side makes them.
+  (the Glock 17) are there too, and the Garands there are chambered in 7.62x51; like everything else they arrived by shipment, and neither side makes them.
   [Andy 2026-11-12: "All the cold war era weapons ... should be remade in game, like the glock, ak47, m1 garand"]
 - The conduits supply the Front. Each conduit can link into, and supply, as many recruits as it can afford.
   [Andy 2026-11-12; fits the recruit locker, where a conduit orders recruits and kit with its own credits]
