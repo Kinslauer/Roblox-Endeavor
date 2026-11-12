@@ -120,6 +120,12 @@ require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Skin")).Start()
 local Hud = require(script.Parent:WaitForChild("Hud"))
 Hud.Init(gui)
 local IntroFx = require(script.Parent:WaitForChild("IntroFx"))
+-- the gun in the view: it floats, kicks on springs and says where the bore points (war/client/ViewGun.lua)
+local ViewGun = require(script.Parent:WaitForChild("ViewGun"))
+ViewGun.Init({ Player = player, Camera = camera, Config = Config.WarMovement.ViewGun, GunParts = require(Shared:WaitForChild("GunParts")) })
+local function boreDirection()
+	return ViewGun.Direction() or camera.CFrame.LookVector
+end
 IntroFx.Init({ Hud = gui }) -- the first link: stasis tank, barracks, simulation (war/server/Intro.lua)
 
 local linkLost = false -- true between a recruit's death and the next one: U unlinks from anywhere
@@ -186,6 +192,8 @@ Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c, d)
 	elseif kind == "Recoil" then
 		recoilPitch += a * (if aiming then 0.7 else 1)
 		recoilYaw += (math.random() - 0.5) * 2 * b
+		ViewGun.Kick(a, b, aiming)
+		ViewGun.Flash()
 	elseif kind == "Click" then
 		Sounds.Play("DryClick")
 		Hud.Flash(if a == "safe" then "SAFE" elseif a == "jam" then "JAM" else "EMPTY")
@@ -195,6 +203,9 @@ Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c, d)
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		local far = root and (root.Position - b).Magnitude > 180
 		Sounds.Play(if far then "ShotDistant" else "ShotRifle", b, { Volume = (if far then 0.6 else 1) * (tonumber(d) or 1) })
+		if a == player.Character and ViewGun.Muzzle() then
+			b = ViewGun.Muzzle() -- the own round leaves the barrel in the view
+		end
 		local tracer = make("Part", { Anchored = true, CanCollide = false, CanQuery = false, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 230, 150),
 			Size = Vector3.new(0.08, 0.08, 6), CFrame = CFrame.lookAt(b, b + c) * CFrame.new(0, 0, -6) }, workspace)
 		Debris:AddItem(tracer, 0.06)
@@ -364,7 +375,19 @@ RunService.RenderStepped:Connect(function(dt)
 		if math.abs(recoilPitch) < 0.01 then recoilPitch = 0 end
 		if math.abs(recoilYaw) < 0.01 then recoilYaw = 0 end
 	end
+	do -- the punch of a shot: it comes back by itself, the climb above does not
+		local punch = ViewGun.CameraStep(dt)
+		if punch.Magnitude > 1e-4 then
+			camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(punch.X), math.rad(punch.Y), math.rad(punch.Z))
+		end
+	end
 	local _, root, hum = myParts()
+	ViewGun.Step(dt, {
+		Aiming = aiming, Sprinting = sprinting and not aiming and hum ~= nil and hum.MoveDirection.Magnitude > 0.1,
+		Busy = weapon ~= nil and weapon.Reloading == true, Lowered = binos or mantling, Stance = stance,
+		Hidden = camera.CameraType == Enum.CameraType.Scriptable,
+	})
+	Hud.AimAt(ViewGun.ScreenPoint())
 	if hum and root then
 		Hud.Health(hum.Health / math.max(1, hum.MaxHealth))
 		-- lean: the eye moves out to the side and the view tilts; next to cover it goes out past the corner
@@ -698,7 +721,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		end
 		firing = true
 		sprinting = false -- the rifle comes up: no shooting at a run
-		Remotes.Fire:FireServer(camera.CFrame.LookVector)
+		Remotes.Fire:FireServer(boreDirection())
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 		sprinting = false
 		setAim(true)
@@ -807,7 +830,7 @@ RunService.Heartbeat:Connect(function()
 		local rpm = (Firearms.Defs[weapon.Id] and Firearms.Defs[weapon.Id].RPM) or 600
 		if os.clock() - lastAuto >= 60 / rpm then
 			lastAuto = os.clock()
-			Remotes.Fire:FireServer(camera.CFrame.LookVector)
+			Remotes.Fire:FireServer(boreDirection())
 		end
 	end
 end)

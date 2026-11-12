@@ -274,11 +274,21 @@ function Hud.Stance(stance)
 end
 
 -- ===== centre =====
+local crossAt = Vector2.zero
+local function placeCross()
+	local half = if el.Aiming then 1 else 2
+	el.Cross.Position = UDim2.new(0.5, crossAt.X - half, 0.5, crossAt.Y - half)
+end
 function Hud.Aim(on)
 	el.Cross.Size = if on then UDim2.fromOffset(2, 2) else UDim2.fromOffset(4, 4)
-	el.Cross.Position = if on then UDim2.new(0.5, -1, 0.5, -1) else UDim2.new(0.5, -2, 0.5, -2)
 	el.Cross.BackgroundTransparency = if on then 0 else 0.25
 	el.Aiming = on
+	placeCross()
+end
+-- The dot marks where the bore points, in pixels from the middle of the screen (the gun floats in the view).
+function Hud.AimAt(x, y)
+	crossAt = Vector2.new(x or 0, y or 0)
+	placeCross()
 end
 
 function Hud.Flash(word)

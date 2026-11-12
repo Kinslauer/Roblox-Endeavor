@@ -806,6 +806,29 @@ Open the recruit app (M at the base, or the locker) and look at the weapons list
       button fires once. The M16A1 no longer has an automatic setting.
 - [ ] Automatic (AKM, AK-47, AK-74, also M4A1 and M14): with B on AUTO, rounds keep leaving while LMB is held.
 
+
+### Front: the gun floats and kicks (2026-11-12, Front v38)
+First step toward the feel of the helmet-camera shooter Andy named. Nothing here was seen in game before publishing:
+say what looks wrong, a screenshot of the first-person view helps most.
+- [ ] Deploy with a rifle. The gun shows in front of you, low and to the right, with both hands on it: right hand on
+      the grip, left hand under the handguard.
+- [ ] Turn quickly. The gun trails the view for a moment and then catches up. It also drifts a little with your
+      breath and bobs as you walk.
+- [ ] The small dot on the screen follows the gun, not the middle of the screen. A shot goes to the dot.
+- [ ] Hold right mouse. The gun comes up so that its sights (or the middle of a scope) sit in front of your eye,
+      and it trails much less.
+- [ ] Fire. The gun jumps back and up, twists a little, overshoots and settles. The view punches and comes back.
+      The slow climb of the view stays: you pull down against it yourself.
+- [ ] Fire automatic (AKM). The dot wanders with each kick, so long bursts spread.
+- [ ] A flash lights the muzzle and the ground near you for an instant, and the tracer starts at the barrel.
+- [ ] With a scope fitted, hold right mouse: the scope's body turns see-through (both eyes open).
+- [ ] Sprint (Shift): the gun drops across your body. Raise the binoculars (Z): the same.
+- [ ] Reload (R): the gun tips over and the left hand goes to the magazine.
+- [ ] Crouch and go prone: the gun is steadier each time.
+- [ ] Pistol: held out at arm's length with both hands.
+- [ ] Things to tell me about: arms that bend the wrong way or do not reach the gun, the gun too close or too far,
+      the view sitting too low on the body (it may look out from the chest instead of the helmet).
+
 ## The story joined up (2026-11-10, new this round: Endeavor v80, Front v25)
 Play these on the published places (Studio's Play button cannot teleport between places).
 - [ ] At the bottom of the station, copying the manifest at the console also puts a "Line 9 Manifest" in your pack (Tab).

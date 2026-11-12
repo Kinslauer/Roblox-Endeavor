@@ -36,7 +36,7 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (321 checks), `war` = Front (123), `warclient` = the Front client plays the first link's stages, the screen and the controls (29), `stress` = budgets under load (5), `client` = the
+  `scenario` = Endeavor end to end (321 checks), `war` = Front (123), `warclient` = the Front client plays the first link's stages, the screen, the controls and the gun in the view (41), `stress` = budgets under load (5), `client` = the
   Endeavor client boots + movement, dodge, animation, guard, air and handling checks (44). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
@@ -560,6 +560,30 @@ Client tab screenshot, because Andy cannot read logs another way.
   component guns (the Endeavor thread's finding; Endeavor uses 0.5). The site is reachable with plain curl (WebFetch
   cannot resolve it); its list has 172 guns: AK and AR variants, SCAR, G36, AUG, MDR, SA58, SKS, SVT, RPD, PKM, M60,
   pistols (M9A3, M1911, M45, Five-seveN, Glock 17/18C/19X, USP, PL-15, Desert Eagle), revolvers, bolt actions.
+- The gun in the view (owner, 2026-11-12: "Can you read the page about ttk testing? It has insane gunplay and
+  visuals ... This is exactly what i want for our front world and the visual aesthetic can persist for both worlds.
+  The realistic gun handling, recoil, and visuals are the primary goals for weapons in the game"; the game is the
+  Roblox shooter TTK Testing by Sable Digital: helmet camera, floaty aim, high lethality; ideas only, its pages say
+  nothing on technique and most hosts about it are blocked here). Step 1, `src/war/client/ViewGun.lua` (tuning
+  Config.WarMovement.ViewGun): the owner's HeldWeapon is hidden (LocalTransparencyModifier 1) and a local anchored
+  copy under the camera is flown each render step. The gun's authored frame is `primary.CFrame * Grip.C1:Inverse()`
+  (HeldWeapons' C1 is the primary part in that frame; the weld point is near the top of the receiver, not the
+  pistol grip), barrel +Z; the whole pistols are authored barrel +Y (PISTOL_TURN); whole models are shrunk to
+  GunScale in the copy; in the view the frame is turned half round. Everything is measured from the copy's parts
+  (bounds lo/hi in the gun's frame): the line of sight (the top of the gun, or the middle of parts with attribute
+  Component "Optic") runs through the eye when aimed, the firing hand sits `Rifle.Grip` / `Pistol.Grip` ahead of
+  it (a rifle's grip is `Pull` ahead of the butt), `Hip` is the
+  move from there. Springs (`Spring`/`StepSpring`): `Lag` (the gun trails a turn, clamped), `Recoil` (rotation and
+  position kick from Weapon "Recoil"), `Camera` (a punch applied as per-frame changes that sum to zero; the old
+  permanent climb in Main stays). `ViewGun.Direction()` goes to the server with Fire (the server already takes a
+  direction and only checks it against the body's facing), `ScreenPoint()` moves the HUD dot (`Hud.AimAt`),
+  `Muzzle()` starts the own tracer, `Flash()` is a neon ball with a shadow-casting PointLight. Arms: two IKControls
+  on the own Humanoid (right hand Transform to a hand frame built on the grip: wrist back and down, palm to the
+  gun; left hand Position to the barrel's Under point, at most Reach ahead; poles on the root), targets are Attachments on the copy. Scope housings fade at the eye (`OpticFade`). Measured on the
+  real soldier: shoulders (+-0.9, 1.56, 0) from the root, arm 2.26 long, and the camera's eye (root + 1.5) is at
+  shoulder height while the head is at 2.29: the view may look out from the chest (not changed; ask Andy).
+  Not done (next steps, in order): the camera and lighting pass, layered gun sound, hand-made reload animation;
+  Endeavor. Tests: "view gun:" in warclient.lua.
 
 ## State (2026-11-12)
 - Endeavor v103 (2026-11-12): fire actions. The Whisper is racked by hand (T) after every round, the Carbine,
@@ -617,6 +641,9 @@ Client tab screenshot, because Andy cannot read logs another way.
   carrying bodies, the wall); v85 the same day: playtest fixes (pistol every ride, third person, quiet screen, cloak,
   takedown alignment). Awaits Andy's play-through: docs/TESTING.md "Endeavor: Metal Gear handling". Andy reported
   "the right click broke" on v79; no fault was found beyond first person not turning the body (fixed); asked what failed.
+- Front v38 (2026-11-12): the gun floats in the view and kicks on springs, the round follows the bore, the arms
+  reach for the gun, muzzle flash, both-eyes-open scopes. Real server (the module run there against all 8 guns on the real soldier): sights on the eye line, hands 1.3 to 2.1 from the shoulders (arm 2.26). Unseen in game: all of it (the arms and the
+  position of the gun most of all). Awaits Andy: docs/TESTING.md "Front: the gun floats and kicks".
 - Front v37 (2026-11-12; real server 0 warnings): the three actions named and shown; M16A1 semi only; the Mosin's selector reads SINGLE.
 - Front v36 (2026-11-12): AK-74, M4A1, M1A; the M16A1's own receiver; rifles shrunk to body scale (0.55).
   Real server: start 4.4s, 0 warnings, all four assemble (M4A1 3.6 studs in the hand, M1A 4.6). Unseen in game: the new size in the hands. Awaits Andy: docs/TESTING.md "Front: one more gun in each family".

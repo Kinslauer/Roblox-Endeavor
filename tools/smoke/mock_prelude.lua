@@ -83,9 +83,11 @@ end
 CF.__add = function(a, b) return mkcf(a.Position + b, a.r) end
 CF.__sub = function(a, b) return mkcf(a.Position - b, a.r) end
 CF.identity = mkcf(V3.new(0, 0, 0))
-function CF.Inverse(a) return a end
-function CF.ToObjectSpace(a, b) return b end
 local function rotT(r, v) return V3.new(r[1]*v.X + r[4]*v.Y + r[7]*v.Z, r[2]*v.X + r[5]*v.Y + r[8]*v.Z, r[3]*v.X + r[6]*v.Y + r[9]*v.Z) end
+local function transpose(r) return {r[1],r[4],r[7], r[2],r[5],r[8], r[3],r[6],r[9]} end
+function CF.Inverse(a) return mkcf(rotT(a.r, V3.new(0, 0, 0) - a.Position), transpose(a.r)) end
+function CF.ToObjectSpace(a, b) return CF.Inverse(a) * b end
+function CF.fromMatrix(p, x, y, z) z = z or x:Cross(y); return mkcf(p, {x.X,y.X,z.X, x.Y,y.Y,z.Y, x.Z,y.Z,z.Z}) end
 function CF.VectorToObjectSpace(a, v) return rotT(a.r, v) end
 function CF.Lerp(a, b, t) return b end
 function CF.VectorToWorldSpace(a, v) return rot(a.r, v) end

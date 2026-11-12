@@ -522,6 +522,36 @@ Config.WarMovement = {
 	PeekReach = 3.5,
 	LeanRoll = 9, -- degrees the view tilts
 	SightSeconds = { Pistol = 0.08, Default = 0.12 }, -- the snap to the sights
+	-- The gun in the first-person view (war/client/ViewGun.lua; owner, 2026-11-12: "The realistic gun handling,
+	-- recoil, and visuals are the primary goals for weapons"). Positions are studs from the eye in the camera's
+	-- frame (right, up, back); angles are degrees (pitch up, yaw left, roll).
+	ViewGun = {
+		Enabled = true,
+		GunScale = 0.55, -- the size of a parts-built rifle in the hand (same as Config.War.GunScale)
+		LongGun = 1.6, -- a gun longer than this is a rifle: butt in the shoulder, the off hand forward
+		Reach = 0.75, -- the farthest ahead of the firing hand the off hand goes (the arm is 2.26 long; real server: 2.1 at the hip)
+		-- Grip = the firing hand this far ahead of the eye when aimed; Hip = the move from there when not aiming;
+		-- Pull = butt to grip on a parts-built rifle (PullShare of the length on a whole model); GripDrop = the
+		-- grip below the bore (pistol: share of the height below the top); Wrist = how far the wrist leans back
+		-- from straight down (degrees); Palm = the hand's centre out from the middle of the gun
+		Rifle = { Grip = 0.85, Hip = Vector3.new(0.26, -0.34, 0), Pull = 1.38, PullShare = 0.33, GripDrop = 0.36, BoreDrop = 0.25, Wrist = 35, Palm = 0.1 },
+		Pistol = { Grip = 1.7, Hip = Vector3.new(0.2, -0.3, 0.35), PullShare = 0.22, GripDrop = 0.62, BoreDrop = 0.12, Wrist = 12, Palm = 0.08 },
+		HipRoll = -5,
+		Carry = { Offset = Vector3.new(-0.16, -0.22, 0.12), Rotation = Vector3.new(-28, 38, 12) }, -- sprinting, binoculars: lowered across the body
+		Busy = { Position = Vector3.new(-0.06, -0.08, 0.05), Rotation = Vector3.new(14, 10, 26), Rate = 5, Pull = 0.35 }, -- reloading
+		AimRate = 14, PoseRate = 9,
+		Elbow = Vector3.new(1.6, -2.2, 0.4), -- where the elbows point, from the root (the left one mirrored)
+		-- the gun trails a turn: Gain = share of the turn it is left behind by, Hip / Aim = the most it may trail
+		Lag = { Frequency = 3.2, Damping = 0.62, Gain = 0.55, Hip = 5, Aim = 1.1 },
+		Sway = { Rate = 1.5, Degrees = 0.32, Aim = 0.4 }, -- the breath; Aim = its share at the sights
+		Steady = { Stand = 1, Crouch = 0.65, Prone = 0.3 },
+		Bob = { Rate = 0.55, Side = 0.035, Drop = 0.045 },
+		-- a shot: the server's recoil (degrees) becomes speed on the gun's spring, which overshoots and settles
+		Recoil = { Frequency = 5.5, Damping = 0.5, Rise = 90, Twist = 40, Roll = 30, Back = 5, Hop = 1.2, Shift = 0.6, AimShare = 0.75 },
+		Camera = { Frequency = 6, Damping = 0.6, Rise = 18, Twist = 14, Roll = 10 }, -- the punch that comes back
+		OpticFade = 0.72, -- a scope's housing at the eye (both eyes open)
+		Flash = { Size = 0.45, Seconds = 0.045, Brightness = 4, Range = 18, Color = Color3.fromRGB(255, 214, 150) },
+	},
 	CarefulReloadHold = 0.32, -- hold R this long: the half-used magazine goes back in the pouch
 	QuickReload = 0.8, -- time multipliers on the magazine change
 	CarefulReload = 1.35,

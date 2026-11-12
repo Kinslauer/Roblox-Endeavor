@@ -13,7 +13,7 @@ for name in src:gmatch('"(%a+)"') do if name ~= "Remotes" and name ~= "Folder" a
 local player = M.newInstance("Player"); player.Name, player.DisplayName, player.UserId = "Tester", "Tester", 1
 local pg = M.newInstance("PlayerGui"); pg.Name = "PlayerGui"; pg.Parent = player
 player.Parent = Players; Players.LocalPlayer = player
-local cam = M.newInstance("Camera"); cam.Name = "CurrentCamera"; cam.CFrame = M.CF.new(0, 5, 0); cam.FieldOfView = 70; cam.Parent = workspace_
+local cam = M.newInstance("Camera"); cam.ViewportSize = { X = 1280, Y = 720 }; cam.Name = "CurrentCamera"; cam.CFrame = M.CF.new(0, 5, 0); cam.FieldOfView = 70; cam.Parent = workspace_
 Lighting.ClockTime, Lighting.Brightness, Lighting.FogEnd = 7.5, 1.5, 900
 M.mkTree({ Client = { class = "Folder", children = TREE_WAR_CLIENT } }, game_:GetService("StarterPlayer"))
 local client = game_:GetService("StarterPlayer").Client.Main
@@ -136,6 +136,64 @@ do
 	up("Y") run(0.1)
 	down("Two") up("Two") run(0.1)
 	check("parts: without Y, 2 still switches weapon", count("Switch") == before + 1 and el.Fit.Visible == false)
+end
+-- the gun in the view (2026-11-12): it floats, kicks on springs, and the round follows the bore
+do
+	local ViewGun = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.ViewGun)
+	local UIS = game_:GetService("UserInputService")
+	local held = M.newInstance("Model"); held.Name = "HeldWeapon"
+	held:SetAttribute("WeaponId", "AKM"); held:SetAttribute("Build", "Standard|||")
+	local hand = M.newInstance("Part"); hand.Name = "RightHand"; hand.Parent = char
+	local left = M.newInstance("Part"); left.Name = "LeftHand"; left.Parent = char
+	local body = M.newInstance("Part"); body.Name = "Receiver"; body.Size = M.V3.new(0.2, 0.4, 2.2); body.CFrame = M.CF.new(0, 1500, 1.1); body.Parent = held
+	local scope = M.newInstance("Part"); scope.Name = "Scope"; scope.Size = M.V3.new(0.2, 0.2, 0.6); scope.CFrame = M.CF.new(0, 1500.4, 0.3); scope:SetAttribute("Component", "Optic"); scope.Parent = held
+	local grip = M.newInstance("Weld"); grip.Name = "Grip"; grip.C0 = M.CF.new(0, -0.1, -0.3); grip.C1 = M.CF.new(0, 0, 1.1); grip.Part0, grip.Part1 = hand, body; grip.Parent = body
+	held.PrimaryPart = body
+	held.Parent = char
+	local sentDir
+	RS.Remotes.Fire.OnServerEvent:Connect(function(_, d) sentDir = d end)
+	cam.CameraType = M.mockEnv.Enum.CameraType.Custom
+	run(0.5)
+	local st = ViewGun.State()
+	check("view gun: a copy of the held gun flies in front of the camera", ViewGun.Shown() and st.Gun ~= nil and st.Gun.Model.Parent == cam and st.Gun.Model ~= held)
+	check("view gun: the one in the fist is hidden from its owner", body.LocalTransparencyModifier == 1)
+	local dir = ViewGun.Direction()
+	check("view gun: at rest the bore looks where the camera looks", dir ~= nil and dir:Dot(cam.CFrame.LookVector) > 0.99)
+	-- a shot kicks the gun and the camera, and both come back
+	RS.Remotes.Weapon.OnClientEvent:Fire("Recoil", 2, 1); run(1 / 30)
+	st = ViewGun.State()
+	local kicked = st.Kick.Magnitude > 0.5 and st.Punch.Magnitude > 0.1
+	run(3)
+	st = ViewGun.State()
+	check("view gun: a shot kicks the gun and the camera on springs", kicked)
+	check("view gun: the kick settles by itself", st.Kick.Magnitude < 0.05 and st.Punch.Magnitude < 0.05)
+	-- turning leaves the gun behind for a moment, and the round goes where the gun points
+	cam.CFrame = M.CF.new(0, 5, 0) * M.CF.Angles(0, math.rad(30), 0); run(1 / 30)
+	st = ViewGun.State()
+	local trailed = st.Lag.Magnitude > 0.5 and st.Lag.Magnitude <= Config.WarMovement.ViewGun.Lag.Hip + 0.01
+	local offBore = ViewGun.Direction():Dot(cam.CFrame.LookVector) < 0.9999
+	UIS.InputBegan:Fire({ UserInputType = M.mockEnv.Enum.UserInputType.MouseButton1, KeyCode = M.mockEnv.Enum.KeyCode.Unknown }, false)
+	UIS.InputEnded:Fire({ UserInputType = M.mockEnv.Enum.UserInputType.MouseButton1, KeyCode = M.mockEnv.Enum.KeyCode.Unknown }, false)
+	run(1 / 30)
+	check("view gun: the gun trails a turn, inside its limit", trailed and offBore)
+	check("view gun: the round is sent along the bore, not the camera", sentDir ~= nil and sentDir:Dot(cam.CFrame.LookVector) < 0.9999 and sentDir:Dot(cam.CFrame.LookVector) > 0.98)
+	run(2)
+	check("view gun: it catches up with the view", ViewGun.State().Lag.Magnitude < 0.05)
+	-- at the sights the scope's housing fades (both eyes open)
+	local copyScope
+	for _, d in ViewGun.State().Gun.Model:GetDescendants() do if d.Name == "Scope" then copyScope = d end end
+	UIS.InputBegan:Fire({ UserInputType = M.mockEnv.Enum.UserInputType.MouseButton2, KeyCode = M.mockEnv.Enum.KeyCode.Unknown }, false); run(1)
+	local sg = ViewGun.State()
+	local frame = sg.View * M.CF.Angles(0, math.pi, 0)
+	local sightAt = cam.CFrame:PointToObjectSpace(frame:PointToWorldSpace(sg.Gun.Sight))
+	local gripAt = cam.CFrame:PointToObjectSpace(frame:PointToWorldSpace(sg.Gun.GripAt))
+	check("view gun: at the sights the scope fades and its line runs through the eye", copyScope ~= nil and copyScope.Transparency > 0.5 and sg.Aim > 0.95
+		and math.abs(sightAt.X) < 0.03 and math.abs(sightAt.Y) < 0.03)
+	check("view gun: aimed, the firing hand is an arm's bend ahead of the eye and below the sights", math.abs(gripAt.Z + Config.WarMovement.ViewGun.Rifle.Grip) < 0.05 and gripAt.Y < -0.2)
+	UIS.InputEnded:Fire({ UserInputType = M.mockEnv.Enum.UserInputType.MouseButton2, KeyCode = M.mockEnv.Enum.KeyCode.Unknown }, false); run(1)
+	check("view gun: lowered again the scope is solid", copyScope.Transparency < 0.05)
+	held:Destroy(); run(0.2)
+	check("view gun: no gun in the hand, none in the view", ViewGun.Shown() == false and ViewGun.Direction() == nil)
 end
 check("no client errors", #M.errors == 0)
 for _, e in M.errors do print(e) end
