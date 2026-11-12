@@ -127,6 +127,26 @@ local function drawKit(char, worn)
 			end
 		end
 	end
+	local cloak = worn and worn.Cloak
+	if torso and cloak then
+		-- round 4: the poncho hangs to the knees in soot grey; the uniform is the sentries' slate tunic and armband
+		local t = torso.Size / 2
+		if cloak == "SootPoncho" then
+			local ash = Color3.fromRGB(48, 46, 44)
+			piece(folder, torso, "PonchoFront", Vector3.new(t.X * 2.3, t.Y * 3.2, 0.08), CFrame.new(0, -t.Y * 0.9, -t.Z - 0.36), ash)
+			piece(folder, torso, "PonchoBack", Vector3.new(t.X * 2.3, t.Y * 3.3, 0.08), CFrame.new(0, -t.Y * 0.9, t.Z + 0.36), ash)
+			piece(folder, torso, "PonchoHood", Vector3.new(t.X * 1.3, 0.5, t.Z * 1.6), CFrame.new(0, t.Y + 0.18, t.Z * 0.5), ash)
+		else
+			local slate = Color3.fromRGB(58, 66, 74)
+			piece(folder, torso, "TunicFront", Vector3.new(t.X * 2.05, t.Y * 2.1, 0.06), CFrame.new(0, -t.Y * 0.3, -t.Z - 0.33), slate)
+			piece(folder, torso, "TunicBack", Vector3.new(t.X * 2.05, t.Y * 2.1, 0.06), CFrame.new(0, -t.Y * 0.3, t.Z + 0.33), slate)
+			local arm = char:FindFirstChild("LeftUpperArm")
+			if arm then
+				local a = arm.Size / 2
+				piece(folder, arm, "Armband", Vector3.new(a.X * 2.2, 0.22, a.Z * 2.2), CFrame.new(0, a.Y * 0.3, 0), Color3.fromRGB(214, 172, 46))
+			end
+		end
+	end
 	folder.Parent = char
 end
 
@@ -141,6 +161,8 @@ function Kit.Apply(player, char)
 	char:SetAttribute("Vest", if kit.Plate > 0 and not char:GetAttribute("VestBroken") then kit.Plate else nil) -- Combat.HitZone: the chest plate (until it wears through: Combat.WearPlate)
 	char:SetAttribute("KitMags", kit.Mags)
 	char:SetAttribute("KitMeds", kit.Meds)
+	char:SetAttribute("Conceal", if kit.Conceal > 0 then kit.Conceal else nil) -- server/Stealth: less of you shows in the light
+	char:SetAttribute("Disguise", if kit.Disguise then true else nil) -- server/Stealth: passes for one of theirs at a distance
 	local second = data.Second
 	if second and second ~= "" and ((data.Inventory[second] or 0) <= 0 or second == data.Equipped or not Kit.MountFor(data, second)) then
 		data.Second = nil -- lost, now in hand, or the kit that carried it came off: it goes back in the pack

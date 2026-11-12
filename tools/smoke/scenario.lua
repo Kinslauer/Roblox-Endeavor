@@ -1787,6 +1787,131 @@ do
 	run(0.5)
 end
 
+-- stealth (round 4: the second before he shouts, guards who adapt, lockers, darts, bolts, clothes, questions, shifts)
+do
+	as(player)
+	mendMe()
+	local SS = Stealth
+	local Cfg = M.mockEnv.__require(RS.Shared.Config).Stealth
+	local CombatS = M.mockEnv.__require(SSS.Server.Combat)
+	local InvS = M.mockEnv.__require(SSS.Server.Inventory)
+	local LootS = M.mockEnv.__require(SSS.Server.Loot)
+	local RulesS = M.mockEnv.__require(RS.Shared.Stealth)
+	local lvl = M.newInstance("Model"); lvl.Name = "Round4Level"; lvl:SetAttribute("Ambient", 0.9); lvl.Parent = workspace_
+	local base = M.V3.new(-1500, 3, 1500)
+	local function post(at, toward)
+		local m = SS.SpawnGuard(at, { Level = lvl, Post = M.CF.lookAt(at, toward) })
+		local _, b = SS.StateOf(m)
+		return m, b
+	end
+	local function world(from, kind)
+		for i = from + 1, #M.FireLog do
+			local e = M.FireLog[i]
+			if e[1] == "World" and e[3] == kind then return e end
+		end
+	end
+	SS.Enter(player, lvl)
+	-- the second before he shouts
+	local g1 = post(base, base + M.V3.new(0, 0, -10))
+	root().CFrame = M.CF.lookAt(base + M.V3.new(0, 0, -12), base); run(0.1)
+	local log0 = #M.FireLog
+	run(4, function() return SS.StateOf(g1) ~= "Patrol" and SS.StateOf(g1) ~= "Suspicious" end)
+	check("reflex: the guard who makes you freezes a second before he shouts", SS.StateOf(g1) == "Spotted" and world(log0, "Reflex") ~= nil and lvl:GetAttribute("Alarms") == nil)
+	run(Cfg.Reflex + 0.3)
+	check("reflex: then the alarm goes up, and the level remembers it", SS.StateOf(g1) == "Alert" and lvl:GetAttribute("Alarms") == 1)
+	SS.Reset(lvl); run(0.2)
+	check("adapt: a fresh start forgets the alarms", lvl:GetAttribute("Alarms") == nil and SS.StateOf(g1) == "Patrol")
+	root().CFrame = M.CF.lookAt(base + M.V3.new(0, 0, -12), base); run(0.1)
+	run(4, function() return SS.StateOf(g1) == "Spotted" end)
+	root().CFrame = M.CF.lookAt(base + M.V3.new(0, 0, -2.5), base); run(0.05)
+	Remotes.Cqc:FireServer("Throw", g1); run(0.2)
+	check("reflex: put down inside that second, nobody hears", char():GetAttribute("Takedown") == "Throw")
+	run(1.5)
+	check("reflex: thrown, he never raised it", SS.StateOf(g1) == "Down" and lvl:GetAttribute("Alarms") == nil)
+	-- lockers
+	local spotAt = base + M.V3.new(40, -3, 0)
+	local spot = SS.HidingSpot(M.CF.lookAt(spotAt, spotAt + M.V3.new(0, 0, -1)), lvl)
+	check("hide: a locker stands with an X prompt", CS:HasTag(spot, "HidingSpot") and spot:FindFirstChild("HidePrompt") ~= nil)
+	root().CFrame = M.CF.lookAt(spotAt + M.V3.new(0, 3, -2.6), spotAt + M.V3.new(0, 3, -8)); run(0.1)
+	spot.HidePrompt.Triggered:Fire(player); run(0.3)
+	check("hide: inside, you are held still, unlit and cannot fight", char():GetAttribute("Hidden") == true and root().Anchored == true
+		and char():GetAttribute("Exposure") == 0 and CombatS.CanAct(char()) == false and SS.Hidden(player) == spot)
+	local g2, b2 = post(spotAt + M.V3.new(0, 3, -3), spotAt + M.V3.new(0, 3, 0))
+	run(1)
+	check("hide: a guard standing at the door does not see you", SS.StateOf(g2) == "Patrol" and (b2.aware[player] or 0) == 0)
+	SS.Noise(g2.HumanoidRootPart.Position, 6, "Glass"); run(1)
+	check("hide: searching beside it in a calm level, he does not look inside", SS.StateOf(g2) == "Search" and char():GetAttribute("Hidden") == true)
+	lvl:SetAttribute("Alarms", 1); run(0.5)
+	check("adapt: after an alarm a searching guard opens the locker on you", char():GetAttribute("Hidden") == nil and root().Anchored == false
+		and SS.StateOf(g2) == "Alert" and spot:GetAttribute("Occupant") == nil)
+	SS.Reset(lvl); run(0.2)
+	-- sleeping darts
+	local g3, b3 = post(base + M.V3.new(-40, 0, 0), base + M.V3.new(-40, 0, -10))
+	local g4 = post(base + M.V3.new(-60, 0, 0), base + M.V3.new(-60, 0, -10))
+	root().CFrame = M.CF.lookAt(base + M.V3.new(-30, 0, 30), base + M.V3.new(-30, 0, 40)); run(0.1)
+	CombatS.Slept:Fire(char(), g3, "Torso"); run(0.3)
+	check("dart: in the body he feels it, goes looking, and is still up", SS.StateOf(g3) == "Search" and g3:GetAttribute("Downed") == nil)
+	run(Cfg.Sleep.Delay + 0.3)
+	check("dart: a few seconds later he goes down asleep", SS.StateOf(g3) == "Down" and g3:GetAttribute("Asleep") == true and b3.wakeAt ~= nil
+		and lvl:GetAttribute("Alarms") == nil)
+	CombatS.Slept:Fire(char(), g4, "Head"); run(0.1)
+	check("dart: in the face he drops at once", SS.StateOf(g4) == "Down" and g4:GetAttribute("Asleep") == true)
+	b3.wakeAt = 0; run(0.2)
+	check("dart: he wakes when it wears off, up and searching", SS.StateOf(g3) == "Search" and g3:GetAttribute("Asleep") == nil and g3:GetAttribute("Downed") == nil)
+	SS.Reset(lvl); run(0.2)
+	-- the dart from the gun
+	local W = M.mockEnv.__require(RS.Shared.Weapons)
+	check("dart: a .22 dart is a load of the Whisper's calibre", W.Round("Round22Sleep").Sleep == true and table.find(W.LoadsOf(".22"), "Round22Sleep") ~= nil)
+	-- a thrown bolt
+	local g5 = post(base + M.V3.new(0, 0, 80), base + M.V3.new(0, 0, 100))
+	root().CFrame = M.CF.lookAt(base + M.V3.new(0, 0, 60), base + M.V3.new(0, 0, 80)); run(0.1)
+	InvS.Add(player, "Bolt", 2, true)
+	log0 = #M.FireLog
+	Remotes.UseItem:FireServer("Bolt", (g5.HumanoidRootPart.Position - (root().Position + M.V3.new(0, 1.5, 0))).Unit); run(0.3)
+	check("bolt: thrown, it clatters where it lands and is spent", world(log0, "Clatter") ~= nil and InvS.Count(player, "Bolt") == 1)
+	check("bolt: the guard who hears it goes to look", SS.StateOf(g5) == "Search")
+	SS.Reset(lvl); run(0.2)
+	-- clothes
+	local ArmorS = M.mockEnv.__require(RS.Shared.Armor)
+	local kit = ArmorS.Kit({ Cloak = "SootPoncho" })
+	check("clothes: the poncho hides a share of you, the uniform passes", kit.Conceal == 0.3 and ArmorS.Kit({ Cloak = "SentryUniform" }).Disguise == true)
+	InvS.Add(player, "SootPoncho", 1, true)
+	Remotes.EquipItem:FireServer("SootPoncho"); run(0.5)
+	check("clothes: worn, the poncho cuts how lit you are", char():GetAttribute("Conceal") == 0.3 and (char():GetAttribute("Exposure") or 1) <= 0.9 * 0.7 + 0.05)
+	-- questions
+	local g6 = post(base + M.V3.new(80, 0, 0), base + M.V3.new(80, 0, -10))
+	local crate = LootS.Spawn(M.CF.new(base + M.V3.new(90, -2, 0)), { Scrap = 1 }, { Label = "Store" })
+	if crate then crate.Parent = lvl end
+	root().CFrame = M.CF.lookAt(base + M.V3.new(80, 0, 1.5), base + M.V3.new(80, 0, -10)); run(0.1)
+	Remotes.Cqc:FireServer("Grab", g6); run(0.2)
+	log0 = #M.FireLog
+	Remotes.Cqc:FireServer("Question", g6); run(0.2)
+	local q = world(log0, "Question")
+	local standing = 0
+	for _, m in SS.Guards(lvl) do if m ~= g6 and SS.StateOf(m) ~= "Down" then standing += 1 end end
+	check("question: held, he gives up how many are on shift and where the stores are", q ~= nil and q.player == player and #q[6] == standing and q[7] == crate)
+	log0 = #M.FireLog
+	Remotes.Cqc:FireServer("Question", g6); run(0.2)
+	check("question: only once", world(log0, "Question") == nil)
+	SS.Release(player, "Choke"); run(2.5)
+	-- shifts
+	local n = SS.Shift(lvl, 1)
+	local asleepOne
+	for _, m in SS.Guards(lvl) do if SS.StateOf(m) == "Asleep" then asleepOne = m end end
+	check("shift: a new shift can find guards asleep at their posts", n >= 1 and asleepOne ~= nil)
+	local kind = RulesS.TakedownKind(M.CF.lookAt(asleepOne.HumanoidRootPart.Position + asleepOne.HumanoidRootPart.CFrame.LookVector * 2, asleepOne.HumanoidRootPart.Position), asleepOne.HumanoidRootPart.CFrame, "Asleep", {})
+	check("shift: asleep, he can be taken from any side", kind == "Rear")
+	SS.Noise(asleepOne.HumanoidRootPart.Position, 30, "Glass"); run(0.3)
+	check("shift: a loud noise close by wakes him", SS.StateOf(asleepOne) == "Search")
+	-- tidy up
+	Remotes.Unequip:FireServer("Cloak"); run(0.2)
+	SS.Leave(player)
+	for _, m in SS.Guards(lvl) do m:Destroy() end
+	lvl:Destroy()
+	char():PivotTo(M.CF.new(0, 5, 0))
+	run(0.5)
+end
+
 -- guns and ammo (round 3: loads, the EMP .22, magazines, plate wear, ricochets, heat, jams, tired arms, dropped guns)
 do
 	as(player)

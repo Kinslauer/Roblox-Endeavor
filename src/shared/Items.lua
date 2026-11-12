@@ -37,6 +37,9 @@ Items.Defs = {
 	Round9HP = { Name = "9mm HP", Type = "Ammo", Caliber = "9mm" },
 	Round556AP = { Name = "5.56 AP", Type = "Ammo", Caliber = "5.56" },
 	Round762x39AP = { Name = "7.62x39 AP", Type = "Ammo", Caliber = "7.62x39" },
+	Round22Sleep = { Name = ".22 Dart", Type = "Ammo", Caliber = ".22" }, -- round 4: puts a guard to sleep
+	-- round 4 (stealth): key 3 throws one; where it lands it clatters and the guards who hear go to look
+	Bolt = { Name = "Bolt", Type = "Consumable", Throwable = "Bolt" },
 	-- tags from the dead (round 3): what is left of a conduit's stack link on the body
 	Tag = { Name = "Stack Tag", Type = "Material" },
 	DutyPistol = { Name = "Duty Pistol", Type = "Weapon" },
@@ -75,6 +78,10 @@ local SHAPES = {
 	Round556AP = { Size = { 1, 1 }, Weight = 0.12, Stack = 30 },
 	Round762x39AP = { Size = { 1, 1 }, Weight = 0.16, Stack = 30 },
 	Tag = { Size = { 1, 1 }, Weight = 0.02, Stack = 20 },
+	Round22Sleep = { Size = { 1, 1 }, Weight = 0.04, Stack = 50 },
+	Bolt = { Size = { 1, 1 }, Weight = 0.15, Stack = 10 },
+	SootPoncho = { Size = { 2, 2 }, Weight = 0.8 },
+	SentryUniform = { Size = { 2, 2 }, Weight = 1.2 },
 	Round556 = { Size = { 1, 1 }, Weight = 0.12, Stack = 30 },
 	Round762x39 = { Size = { 1, 1 }, Weight = 0.16, Stack = 30 },
 	Round762x51 = { Size = { 1, 1 }, Weight = 0.25, Stack = 24 },
@@ -190,6 +197,9 @@ Items.Recipes = {
 	Round9 = { Output = "Round9", Count = 6, Inputs = { Powder = 1, Scrap = 1 } },
 	Round22Emp = { Output = "Round22Emp", Count = 6, Inputs = { Powder = 1, Battery = 1 } },
 	Round9HP = { Output = "Round9HP", Count = 6, Inputs = { Powder = 1, Scrap = 1, Wire = 1 } },
+	Round22Sleep = { Output = "Round22Sleep", Count = 4, Inputs = { Powder = 1, Glass = 1 } },
+	Bolt = { Output = "Bolt", Count = 3, Inputs = { Scrap = 1 } },
+	SootPoncho = { Output = "SootPoncho", Count = 1, Inputs = { Cloth = 4, Powder = 1 } },
 	Round556 = { Output = "Round556", Count = 4, Inputs = { Powder = 1, Scrap = 1 } },
 	Round762x39 = { Output = "Round762x39", Count = 4, Inputs = { Powder = 1, Scrap = 1 } },
 	Round762x51 = { Output = "Round762x51", Count = 3, Inputs = { Powder = 1, Scrap = 1 } },
@@ -254,6 +264,7 @@ Items.LootTables = {
 		{ "Scrap", 0.8, 1, 2 }, { "Ration", 0.45, 1, 1 }, { "Cloth", 0.4, 1, 2 }, { "Wire", 0.3, 1, 2 },
 		{ "Medkit", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 }, { "Bandage", 0.35, 1, 2 }, { "Tourniquet", 0.12, 1, 1 },
 		{ "PlateCarrier", 0.06, 1, 1 }, { "DutyBelt", 0.12, 1, 1 }, -- security's own kit
+		{ "SentryUniform", 0.1, 1, 1 }, { "Bolt", 0.3, 1, 3 },
 	},
 	-- the barrens under the Sumps (server/Barrens.lua): the stores of the hall, rich in implants and cells
 	Barrens = {
@@ -267,6 +278,7 @@ Items.LootTables = {
 	Overseer = {
 		{ "Round9", 0.8, 4, 10 }, { "Round9AP", 0.2, 3, 8 }, { "ArcCell", 0.7, 3, 8 }, { "Battery", 0.5, 1, 2 }, { "Medkit", 0.35, 1, 1 }, { "Ration", 0.4, 1, 1 },
 		{ "ShockBaton", 0.12, 1, 1 }, { "ReflexOptic", 0.06, 1, 1 }, { "NeuralCore", 0.05, 1, 1 },
+		{ "Round22Sleep", 0.25, 3, 6 }, { "SentryUniform", 0.08, 1, 1 },
 	},
 	Raider = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 }, { "Bandage", 0.3, 1, 1 },

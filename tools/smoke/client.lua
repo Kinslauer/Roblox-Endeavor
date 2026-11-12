@@ -261,5 +261,27 @@ do -- client/Style: the quiet combo count, the lunge, the swap and quick-med key
 	for _, k in { "Aiming", "Mag", "ArmFatigue", "Heat" } do c:SetAttribute(k, nil) end
 	Style.Gun(1 / 30)
 end
+-- round 4: the second before he shouts, a bolt, a locker, what a held guard says
+do
+	local StealthC = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.Stealth)
+	local c = player.Character
+	local guard = M.newInstance("Model"); guard.Name = "G"
+	local gr = M.newInstance("Part"); gr.Name = "HumanoidRootPart"; gr.Parent = guard
+	guard.Parent = workspace_
+	local ok, err = pcall(function()
+		assert(StealthC.World("Reflex", guard, 1) == true)
+		assert(StealthC.World("Clatter", M.V3.new(0, 1, 10), M.V3.new(0, 2, 0), 0.3) == true)
+		assert(StealthC.World("Hide", c, gr, true) == true)
+		assert(StealthC.World("Hide", c, gr, false, true) == true)
+		assert(StealthC.World("Question", guard, "Two more on shift.", { guard }, gr, 5) == true)
+	end)
+	if not ok then print("stealth4 error:", err) end
+	check("stealth4: the spotted flash, the clatter, the locker and the answer draw without error", ok)
+	local okKey2, three = pcall(function()
+		return M.mockEnv.__require(game_:GetService("StarterPlayer").Client.Style).Began({ UserInputType = "UserInputType.Keyboard" }, "KeyCode.Three")
+	end)
+	check("stealth4: 3 throws a bolt", okKey2 and three == true)
+	for _ = 1, 30 do M.step(1 / 30) end
+end
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

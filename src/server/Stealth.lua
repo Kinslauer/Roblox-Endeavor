@@ -10,6 +10,13 @@
 --     Lose it for a while and it searches, then goes back to its round. A guard that sees a downed one raises the rest.
 --   * Takedowns (Remote "Takedown", X): from behind, dropped on from above, or with the room (a TakedownSpot beside
 --     the guard: fuse box, live rail, ledge). Rules in shared/Stealth.TakedownKind. A downed guard stays down.
+-- Round 4 of docs/Reference-Picks-Plan.md (ideas from Metal Gear, nothing copied):
+--   * The second before he shouts: a guard who makes you freezes "Spotted" for Config.Stealth.Reflex seconds; put
+--     him down in it and nobody hears. Every real alarm in a level (attr Alarms) makes its guards see further and
+--     sooner (Adapt); past CheckHiding they open lockers near where they search.
+--   * Sleeping darts (.22 dart: Combat.Slept), a thrown bolt (ThrowBolt), lockers to hide in (HidingSpot/Hide),
+--     clothes (character attrs Conceal, Disguise from server/Kit), questioning a guard in a neck hold (Question),
+--     guards asleep at their posts (Shift / SetAsleep, state "Asleep").
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -26,6 +33,7 @@ local NPCs = require(script.Parent.NPCs)
 local Loot = require(script.Parent.Loot)
 local Items = require(Shared.Items)
 local Net = require(script.Parent.Common.Net)
+local Joints = require(Shared.Joints)
 
 local S = Config.Stealth
 local T = S.Takedown
@@ -41,6 +49,7 @@ local lastWhistle = {}
 local noiseNow = {} -- player -> radius of the noise they are making this tick
 local holds = {} -- player -> the guard held by the neck
 local carries = {} -- player -> the downed guard on the shoulder
+local hiding = {} -- player -> the locker they are in
 local Q = S.Cqc
 
 -- ===== lights =====
@@ -148,6 +157,9 @@ function Stealth.Leave(player)
 	levels[player] = nil
 	noiseNow[player] = nil
 	player:SetAttribute("Stealth", nil)
+	if hiding[player] then
+		Stealth.Unhide(player)
+	end
 	if holds[player] then
 		Stealth.Release(player, "Break")
 	end
@@ -178,9 +190,37 @@ local function setState(g, state)
 	if g.state == state then
 		return
 	end
+	if g.state == "Asleep" then
+		pcall(Joints.Pose, g.model, "Neck", CFrame.new(), 0.4) -- his head comes up
+	elseif state == "Asleep" then
+		pcall(Joints.Pose, g.model, "Neck", CFrame.Angles(math.rad(-38), 0, math.rad(8)), 1.2)
+	end
+	if state == "Patrol" then
+		g.reflexDone = nil -- back on his round: the next time he makes someone he freezes first again
+	end
 	g.state = state
 	g.model:SetAttribute("StealthState", state)
 	g.stateAt = os.clock()
+end
+
+-- How many times this level has gone to a real alarm (Config.Stealth.Adapt.Max at most).
+local function alarms(level)
+	return (level and level:GetAttribute("Alarms")) or 0
+end
+Stealth.Alarms = alarms
+
+-- The nearest locker to `position` in `level` (within `reach`), nil if none.
+local function lockerNear(level, position, reach)
+	local best, bestD = nil, reach
+	for _, spot in CollectionService:GetTagged("HidingSpot") do
+		if spot.Parent and (not level or spot:IsDescendantOf(level)) then
+			local d = (spot.Position - position).Magnitude
+			if d < bestD then
+				best, bestD = spot, d
+			end
+		end
+	end
+	return best
 end
 
 local function face(g, position, alpha)
@@ -269,12 +309,14 @@ local function routeLength(g, goal)
 end
 
 local function investigate(g, position, seconds)
-	if g.state == "Alert" or g.state == "Down" then
+	if g.state == "Alert" or g.state == "Down" or g.state == "Spotted" then
 		return
 	end
 	g.spot = position
 	g.searchUntil = os.clock() + (seconds or S.SearchSeconds)
 	g.lookAt = nil
+	-- a level that has been on alarm before: he opens the locker near where he is looking
+	g.checkSpot = if alarms(g.level) >= S.Adapt.CheckHiding then lockerNear(g.level, position, 16) else nil
 	setState(g, "Search")
 end
 
@@ -282,27 +324,46 @@ local function callOthers(g, position)
 	-- by voice to the guards near, by radio to every guard in the level (Config.Guns.RadioRadius) while it works
 	local reach = if g.model:GetAttribute("Radio") then math.max(S.CallRadius, Config.Guns.RadioRadius) else S.CallRadius
 	for _, other in guards do
-		if other ~= g and other.level == g.level and other.state ~= "Down" and other.state ~= "Alert"
+		if other ~= g and other.level == g.level and other.state ~= "Down" and other.state ~= "Alert" and other.state ~= "Spotted"
 			and (other.root.Position - g.root.Position).Magnitude <= reach then
 			investigate(other, position)
 		end
 	end
 end
 
-local function alert(g, player)
+-- `instant`: he felt it (a wound, a round on his plate, a blow, breaking a hold, a locker opened on you): no
+-- second to freeze in. Otherwise the first time he makes you he stops dead for Config.Stealth.Reflex seconds
+-- ("Spotted"; the intruder's screen gets World "Reflex"); think() raises the alarm when it runs out.
+local function alert(g, player, instant)
 	if g.state == "Down" then
 		return
+	end
+	if not instant and S.Reflex > 0 and g.state ~= "Alert" and g.state ~= "Spotted" and not g.reflexDone then
+		g.target = player
+		g.reflexUntil = os.clock() + S.Reflex
+		g.aware[player] = 1
+		halt(g)
+		setState(g, "Spotted")
+		Remotes.World:FireClient(player, "Reflex", g.model, S.Reflex)
+		return
+	end
+	if g.state == "Spotted" and not instant then
+		return -- think() ends the second
 	end
 	local first = g.state ~= "Alert"
 	g.target = player
 	g.lastSeenAt = os.clock()
 	g.hum.WalkSpeed = g.speed
+	g.reflexDone = true
 	setState(g, "Alert")
 	if first then
 		NPCs.Bark(g.model, "Alert")
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		if root then
 			callOthers(g, root.Position)
+		end
+		if g.level then
+			g.level:SetAttribute("Alarms", math.min(S.Adapt.Max, alarms(g.level) + 1)) -- the level learns
 		end
 		Stealth.Alerted:Fire(player, g.model)
 	end
@@ -316,13 +377,23 @@ function Stealth.Noise(position, radius, kind, player)
 	end
 	local level = player and levels[player]
 	for _, g in guards do
-		if g.state ~= "Down" and g.state ~= "Alert" and (not level or g.level == level) then
+		if g.state ~= "Down" and g.state ~= "Alert" and g.state ~= "Spotted" and (not level or g.level == level) then
 			local d = (g.root.Position - position).Magnitude
 			local reach = radius
+			if g.state == "Asleep" then
+				reach *= S.Shift.WakeNoise -- asleep at his post: only a loud thing close by wakes him
+				if kind == "Step" then
+					reach = 0
+				end
+			end
 			if d <= reach and not clearLine(position + Vector3.new(0, 1, 0), g.root.Position + Vector3.new(0, 1, 0), { g.model, player and player.Character }) then
 				reach *= 0.55 -- walls muffle it
 			end
-			if d <= reach then
+			if d <= reach and reach > 0 then
+				if g.state == "Asleep" then
+					g.wary = true -- he comes round with a start
+					setState(g, "Patrol")
+				end
 				if kind == "Step" and player then
 					g.aware[player] = math.min(0.95, (g.aware[player] or 0) + S.StepNoiseAwareness * S.Tick)
 					g.seen[player] = position
@@ -340,6 +411,15 @@ local function sees(g, char, exposure, crouched, prone)
 	if not root or not hum or hum.Health <= 0 then
 		return false, 0
 	end
+	local player = Players:GetPlayerFromCharacter(char)
+	local spot = player and hiding[player]
+	if spot then
+		-- in a locker: only a guard who is searching, in a level that has learned to look, and comes right up to it
+		if g.state == "Search" and alarms(g.level) >= S.Adapt.CheckHiding and (spot.Position - g.root.Position).Magnitude <= S.Hide.Find then
+			return true, 1, spot
+		end
+		return false, 0
+	end
 	local eyes = g.root.Position + Vector3.new(0, 2, 0)
 	-- what he would see of you: the chest standing, lower crouched, a shape on the floor prone (the root itself
 	-- stays at standing height), so low cover really hides a low body
@@ -348,6 +428,9 @@ local function sees(g, char, exposure, crouched, prone)
 	local d = offset.Magnitude
 	if d < S.Bump then
 		return true, 1
+	end
+	if g.state == "Asleep" then
+		return false, 0
 	end
 	local searching = g.state == "Search" or g.state == "Alert"
 	local fov = if searching then S.SearchFOV else S.SightFOV
@@ -361,7 +444,7 @@ local function sees(g, char, exposure, crouched, prone)
 			exposure = math.max(exposure, S.FlashlightExposure)
 		end
 	end
-	local range = Rules.SightRange(exposure, crouched, searching, prone)
+	local range = Rules.SightRange(exposure, crouched, searching, prone) * (1 + S.Adapt.Sight * alarms(g.level))
 	if d > range then
 		return false, 0
 	end
@@ -435,7 +518,13 @@ local function patrol(g, now)
 	end
 end
 
+local fallAsleep -- below
+
 local function think(g, now, dt)
+	if g.sleepAt and now >= g.sleepAt and g.state ~= "Down" and not g.busy and g.model.Parent and g.hum.Health > 0 then
+		fallAsleep(g, now)
+		return
+	end
 	if g.state == "Down" or g.busy or not g.model.Parent or g.hum.Health <= 0 then
 		return
 	end
@@ -447,10 +536,23 @@ local function think(g, now, dt)
 	for player, level in levels do
 		local char = player.Character
 		if level == g.level and char then
-			local visible, clarity = sees(g, char, char:GetAttribute("Exposure") or 1, char:GetAttribute("Crouched") == true, char:GetAttribute("Stance") == "Prone")
+			local visible, clarity, found = sees(g, char, char:GetAttribute("Exposure") or 1, char:GetAttribute("Crouched") == true, char:GetAttribute("Stance") == "Prone")
+			if found then
+				-- he opens the locker on you
+				Stealth.Unhide(player, true)
+				g.aware[player] = 1
+				g.seen[player] = found.Position
+				alert(g, player, true)
+				return
+			end
 			local a = g.aware[player] or 0
 			if visible then
-				local rate = S.FillRate * clarity * (if g.state == "Search" or g.wary then S.SearchFill else 1)
+				local rate = S.FillRate * clarity * (if g.state == "Search" or g.wary then S.SearchFill else 1) * (1 + S.Adapt.Fill * alarms(g.level))
+				-- in their colours: from beyond Disguise.Close he takes you for one of his own, until he is on his toes
+				if char:GetAttribute("Disguise") and g.state ~= "Search" and not g.wary
+					and (char.HumanoidRootPart.Position - g.root.Position).Magnitude > S.Disguise.Close then
+					rate *= S.Disguise.Fill
+				end
 				a = math.min(1, a + rate * dt)
 				g.seen[player] = char.HumanoidRootPart.Position
 				if g.state == "Alert" and g.target == player then
@@ -463,6 +565,35 @@ local function think(g, now, dt)
 			if a > bestA then
 				best, bestA = player, a
 			end
+		end
+	end
+
+	-- The second before he shouts: he stares at you; when it runs out the alarm goes up.
+	if g.state == "Spotted" then
+		local target = g.target
+		local troot = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+		local thum = target and target.Character and target.Character:FindFirstChildOfClass("Humanoid")
+		if not (troot and thum and thum.Health > 0 and levels[target] == g.level) then
+			g.target = nil
+			setState(g, "Patrol")
+			return
+		end
+		halt(g)
+		face(g, troot.Position, 0.5)
+		if now >= (g.reflexUntil or 0) then
+			g.reflexDone = true
+			alert(g, target, true)
+		end
+		return
+	end
+	-- Asleep at his post: he sees only what bumps into him; that wakes him, wary.
+	if g.state == "Asleep" then
+		halt(g)
+		if best and bestA >= S.SuspectAt then
+			g.wary = true
+			setState(g, "Patrol")
+		else
+			return
 		end
 	end
 
@@ -538,6 +669,17 @@ local function think(g, now, dt)
 
 	if g.state == "Search" then
 		local flat = (g.spot - g.root.Position) * Vector3.new(1, 0, 1)
+		if flat.Magnitude <= 3 and g.checkSpot then
+			-- then the locker beside it
+			local locker = g.checkSpot
+			g.checkSpot = nil
+			if locker.Parent then
+				g.spot = (locker.CFrame * CFrame.new(0, 0, -2.4)).Position
+				g.stateAt = now
+				g.searchUntil = math.max(g.searchUntil, now + 6)
+				flat = (g.spot - g.root.Position) * Vector3.new(1, 0, 1)
+			end
+		end
 		if flat.Magnitude > 3 and now - g.stateAt < (if g.fix then S.Path.FixSeconds - S.FixDelay - 2 else 10) then
 			walk(g, g.spot, S.SearchSpeed)
 		else
@@ -587,7 +729,7 @@ function Stealth.SpawnGuard(position, opts)
 	local model = NPCs.Spawn(opts.Type or "Sentry", position, {
 		Parent = opts.Parent or opts.Level,
 		Filter = function(player)
-			return g.state == "Alert" and g.target == player
+			return g.state == "Alert" and g.target == player and not hiding[player]
 		end,
 		Idle = function()
 			return true -- this module walks the body while it is not fighting
@@ -635,7 +777,7 @@ function Stealth.SpawnGuard(position, opts)
 			local _, by = Combat.GetKiller(model)
 			if by and levels[by] == g.level then
 				g.aware[by] = 1
-				alert(g, by)
+				alert(g, by, true)
 			end
 		end
 	end)
@@ -663,9 +805,18 @@ end
 
 -- Guards that are still up go back to their rounds and forget what they saw (a checkpoint restart).
 function Stealth.Reset(level)
+	if level then
+		level:SetAttribute("Alarms", nil) -- a fresh start forgets the alarms too
+	end
+	for player, spot in hiding do
+		if not level or levels[player] == level or spot:IsDescendantOf(level) then
+			Stealth.Unhide(player)
+		end
+	end
 	for _, g in guards do
 		if g.level == level and g.state ~= "Down" then
 			g.aware, g.seen, g.target, g.wary, g.fix = {}, {}, nil, false, nil
+			g.sleepAt, g.reflexDone, g.checkSpot = nil, nil, nil
 			g.hum.Health = g.hum.MaxHealth
 			setState(g, "Patrol")
 			local home = (g.patrol and g.patrol[1]) or (g.post and g.post.Position)
@@ -740,6 +891,7 @@ local function standUp(g)
 	g.hum.WalkSpeed = S.SearchSpeed
 	g.wakeAt, g.found, g.busy = nil, false, false
 	model:SetAttribute("Downed", nil)
+	model:SetAttribute("Asleep", nil)
 	CollectionService:RemoveTag(model, "DownedGuard")
 	CollectionService:AddTag(model, "NPC")
 	g.aware = {}
@@ -775,7 +927,7 @@ function Stealth.Takedown(player, model, forced)
 	if forced then
 		kind = "Rear"
 	else
-		if g.busy or not Combat.CanAct(char) or char:GetAttribute("NeckHold") or char:GetAttribute("Carrying") or (g.aware[player] or 0) >= 1 then
+		if g.busy or not Combat.CanAct(char) or char:GetAttribute("NeckHold") or char:GetAttribute("Carrying") or ((g.aware[player] or 0) >= 1 and g.state ~= "Spotted") then
 			return false
 		end
 		kind, spot = Rules.TakedownKind(root.CFrame, g.root.CFrame, g.state)
@@ -1014,7 +1166,7 @@ function Stealth.Release(player, how)
 	end
 	if not done then
 		g.root.Anchored = false
-		alert(g, player)
+		alert(g, player, true)
 	end
 	return true
 end
@@ -1129,6 +1281,279 @@ local function followHands(now)
 			standUp(g)
 		end
 	end
+end
+
+-- ===== round 4: sleep, lockers, a thrown bolt, questions, shifts =====
+-- A sleeping dart has worked: he goes down where he stands and sleeps Config.Stealth.Sleep.Seconds, then gets up
+-- and searches like a thrown guard.
+fallAsleep = function(g, now)
+	g.sleepAt = nil
+	g.target = nil
+	halt(g)
+	setState(g, "Down")
+	local look = g.root.CFrame.LookVector
+	layDown(g, g.root.Position + Vector3.new(look.X, 0, look.Z) * 1.2, yawOf(Vector3.new(look.X, 0, look.Z)))
+	g.wakeAt = now + S.Sleep.Seconds
+	g.model:SetAttribute("Asleep", true)
+	Stealth.Noise(g.root.Position, 8, "Takedown")
+end
+
+-- Combat.Slept: a dart in him. In the face he drops at once; elsewhere he feels the sting, goes to look where it
+-- came from and drops after Sleep.Delay seconds.
+function Stealth.Dart(char, model, zone)
+	local g = guards[model]
+	if not g or g.state == "Down" or g.sleepAt then
+		return false
+	end
+	local now = os.clock()
+	if zone == "Head" then
+		if g.busy then
+			g.sleepAt = now
+		else
+			fallAsleep(g, now)
+		end
+		return true
+	end
+	g.sleepAt = now + S.Sleep.Delay
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if root and g.state ~= "Alert" and g.state ~= "Spotted" then
+		g.wary = true
+		investigate(g, root.Position, S.Sleep.Delay + 2)
+	end
+	return true
+end
+
+-- A locker (or anything with this shape): a body you can stand inside with its door facing cf.LookVector.
+-- `cf` sits on the floor. Returns the body part (tag "HidingSpot").
+function Stealth.HidingSpot(cf, parent, name)
+	local model = Instance.new("Model")
+	model.Name = name or "Locker"
+	local steel, dark = Color3.fromRGB(78, 84, 88), Color3.fromRGB(24, 26, 28)
+	local body = Instance.new("Part")
+	body.Name = "Body"
+	body.Size = Vector3.new(2.8, 7.2, 2.4)
+	body.CFrame = cf * CFrame.new(0, 3.6, 0)
+	body.Anchored, body.CanCollide = true, false -- you stand inside it; the walls below keep others out
+	body.Transparency = 1
+	body.Parent = model
+	local function slab(nm, size, at, color)
+		local p = Instance.new("Part")
+		p.Name = nm
+		p.Size = size
+		p.CFrame = body.CFrame * at
+		p.Anchored = true
+		p.Material = Enum.Material.DiamondPlate
+		p.Color = color or steel
+		p.Parent = model
+		return p
+	end
+	slab("Back", Vector3.new(2.8, 7.2, 0.15), CFrame.new(0, 0, 1.13))
+	slab("SideL", Vector3.new(0.15, 7.2, 2.4), CFrame.new(-1.33, 0, 0))
+	slab("SideR", Vector3.new(0.15, 7.2, 2.4), CFrame.new(1.33, 0, 0))
+	slab("Top", Vector3.new(2.8, 0.15, 2.4), CFrame.new(0, 3.53, 0))
+	local door = slab("Door", Vector3.new(2.5, 6.9, 0.1), CFrame.new(0, 0, -1.15), steel:Lerp(Color3.new(1, 1, 1), 0.06))
+	door.Material = Enum.Material.Metal
+	for i = 1, 5 do -- the slats you look out through
+		local slat = slab("Slat", Vector3.new(1.6, 0.12, 0.05), CFrame.new(0, 2.6 - i * 0.22, -1.22), dark)
+		slat.CanCollide = false
+	end
+	CollectionService:AddTag(body, "HidingSpot")
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "HidePrompt"
+	prompt.ActionText, prompt.ObjectText = "Hide", ""
+	prompt.KeyboardKeyCode = Enum.KeyCode.X
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = S.Hide.Reach
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = body
+	prompt.Triggered:Connect(function(player)
+		if hiding[player] == body then
+			Stealth.Unhide(player)
+		else
+			Stealth.Hide(player, body)
+		end
+	end)
+	model.PrimaryPart = body
+	model.Parent = parent or workspace
+	return body
+end
+
+function Stealth.Hide(player, spot)
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (root and hum and hum.Health > 0 and spot and spot.Parent) or hiding[player] or spot:GetAttribute("Occupant")
+		or not handsFree(char) or not Combat.CanAct(char) or (spot.Position - root.Position).Magnitude > S.Hide.Reach + 2 then
+		return false
+	end
+	hiding[player] = spot
+	spot:SetAttribute("Occupant", player.UserId)
+	if char:GetAttribute("Stance") and char:GetAttribute("Stance") ~= "Stand" then
+		Stealth.SetStance(player, "Stand")
+	end
+	if char:GetAttribute("Sprinting") then
+		Combat.SetSprint(player, false)
+	end
+	if char:GetAttribute("Aiming") then
+		Stealth.SetAim(player, false)
+	end
+	local floor = spot.Position.Y - spot.Size.Y / 2
+	local at = Vector3.new(spot.Position.X, floor + hum.HipHeight + root.Size.Y / 2, spot.Position.Z)
+	root.Anchored = true
+	char:PivotTo(CFrame.lookAt(at, at + spot.CFrame.LookVector))
+	char:SetAttribute("Hidden", true)
+	char:SetAttribute("Exposure", 0)
+	local prompt = spot:FindFirstChild("HidePrompt")
+	if prompt then
+		prompt.ActionText = "Leave"
+	end
+	Remotes.World:FireAllClients("Hide", char, spot, true)
+	return true
+end
+
+-- Out of the locker, onto the floor in front of its door. `found` = a guard pulled the door open.
+function Stealth.Unhide(player, found)
+	local spot = hiding[player]
+	if not spot then
+		return false
+	end
+	hiding[player] = nil
+	spot:SetAttribute("Occupant", nil)
+	local prompt = spot:FindFirstChild("HidePrompt")
+	if prompt then
+		prompt.ActionText = "Hide"
+	end
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if char and root and char.Parent then
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		local floor = spot.Position.Y - spot.Size.Y / 2
+		local out = (spot.CFrame * CFrame.new(0, 0, -2.6)).Position
+		local at = Vector3.new(out.X, floor + (if hum then hum.HipHeight else 2) + root.Size.Y / 2, out.Z)
+		char:PivotTo(CFrame.lookAt(at, at + spot.CFrame.LookVector))
+		root.Anchored = false
+		char:SetAttribute("Hidden", nil)
+		Remotes.World:FireAllClients("Hide", char, spot, false, found == true)
+	end
+	return true
+end
+
+function Stealth.Hidden(player)
+	return hiding[player]
+end
+
+-- Key 3 (Inventory.Use of a "Bolt"): thrown along `dir`; where it comes down it clatters and every guard who
+-- hears it goes to look. The arc is flown by raycasts, so it stops on what it meets.
+function Stealth.ThrowBolt(player, dir)
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (root and hum and hum.Health > 0) or hiding[player] or not handsFree(char) or not Combat.CanAct(char) then
+		return false
+	end
+	if typeof(dir) ~= "Vector3" or dir.Magnitude < 0.1 or dir.Magnitude ~= dir.Magnitude then
+		dir = root.CFrame.LookVector
+	end
+	dir = dir.Unit
+	local pos = root.Position + Vector3.new(0, 1.5, 0) + dir * 1.2
+	local vel = (dir + Vector3.new(0, 0.3, 0)).Unit * S.Bolt.Speed
+	local gravity = Vector3.new(0, -workspace.Gravity, 0)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { char }
+	local step, t, landing = 1 / 30, 0, nil
+	while t < S.Bolt.Seconds do
+		local nextVel = vel + gravity * step
+		local move = (vel + nextVel) / 2 * step
+		local hit = workspace:Raycast(pos, move, params)
+		if hit then
+			landing = hit.Position + hit.Normal * 0.15
+			break
+		end
+		pos += move
+		vel = nextVel
+		t += step
+	end
+	landing = landing or pos
+	local bolt = Instance.new("Part")
+	bolt.Name = "ThrownBolt"
+	bolt.Size = Vector3.new(0.25, 0.25, 0.6)
+	bolt.Material = Enum.Material.Metal
+	bolt.Color = Color3.fromRGB(96, 92, 86)
+	bolt.Anchored, bolt.CanCollide, bolt.CanQuery = true, false, false
+	bolt.CFrame = CFrame.new(landing) * CFrame.Angles(0, math.random() * 6.28, math.pi / 2)
+	bolt.Parent = workspace
+	game:GetService("Debris"):AddItem(bolt, S.Bolt.Lifetime)
+	Remotes.World:FireAllClients("Clatter", landing, root.Position + Vector3.new(0, 1.5, 0), math.min(t, S.Bolt.Seconds))
+	Stealth.Noise(landing, S.Bolt.Noise, "Clatter", player)
+	return true, landing
+end
+
+-- E with a guard in a neck hold: he talks, once. How many of his crew are still on their feet here (their
+-- outlines show for Question.Seconds on the asker's screen) and where the nearest stores are.
+local COUNT = { [0] = "Nobody else. Just me.", "One more on shift.", "Two more on shift.", "Three more on shift.", "Four more on shift." }
+function Stealth.Question(player)
+	local g = holds[player]
+	if not g or g.questioned then
+		return false
+	end
+	g.questioned = true
+	g.grabUntil += 1.5 -- he takes his time
+	local crew = {}
+	for model, other in guards do
+		if other ~= g and other.level == g.level and other.state ~= "Down" and other.state ~= "Dead" and other.hum.Health > 0 then
+			table.insert(crew, model)
+		end
+	end
+	local crate, best = nil, S.Question.Reach
+	if g.level then
+		for _, d in g.level:GetDescendants() do
+			if d:IsA("BasePart") and d:GetAttribute("ContainerKey") and not d:GetAttribute("Looted") and d.Name ~= "HumanoidRootPart" then
+				local dist = (d.Position - g.root.Position).Magnitude
+				if dist < best then
+					crate, best = d, dist
+				end
+			end
+		end
+	end
+	local line = COUNT[#crew] or (#crew .. " more on shift.")
+	if crate then
+		line ..= " The stores are that way."
+	end
+	Remotes.World:FireClient(player, "Question", g.model, line, crew, crate, S.Question.Seconds)
+	return true, #crew, crate
+end
+
+-- A guard nodding off at his post (or woken). Only one standing about: not a body, not mid-fight.
+function Stealth.SetAsleep(model, on)
+	local g = guards[model]
+	if not g or g.busy or g.state == "Down" or g.state == "Alert" or g.state == "Spotted" then
+		return false
+	end
+	if on then
+		halt(g)
+		setState(g, "Asleep")
+	elseif g.state == "Asleep" then
+		setState(g, "Patrol")
+	end
+	return true
+end
+
+-- A new shift in `level`: each guard on his round is asleep with chance `share` (default Shift.SleepShare).
+function Stealth.Shift(level, share, rng)
+	rng = rng or Random.new()
+	share = share or S.Shift.SleepShare
+	local asleep = 0
+	for model, g in guards do
+		if g.level == level and (g.state == "Patrol" or g.state == "Asleep") then
+			local on = rng:NextNumber() < share
+			Stealth.SetAsleep(model, on)
+			if on then
+				asleep += 1
+			end
+		end
+	end
+	return asleep
 end
 
 -- ===== stance, aim, whistle =====
@@ -1267,6 +1692,8 @@ function Stealth.Init()
 			Stealth.Carry(player, model)
 		elseif what == "Drop" then
 			Stealth.DropBody(player)
+		elseif what == "Question" then
+			Stealth.Question(player)
 		end
 	end)
 	Net.On("Whistle", { rate = 1, burst = 2 }, Stealth.Whistle)
@@ -1278,8 +1705,13 @@ function Stealth.Init()
 		if g and player and g.state ~= "Down" and not g.busy and levels[player] == g.level then
 			g.aware[player] = 1
 			g.seen[player] = char:GetPivot().Position
-			alert(g, player)
+			alert(g, player, true)
 		end
+	end)
+
+	-- a sleeping dart in a guard
+	Combat.Slept.Event:Connect(function(char, model, zone)
+		Stealth.Dart(char, model, zone)
 	end)
 
 	-- shots: heard, and they put lights out
@@ -1307,7 +1739,7 @@ function Stealth.Init()
 			-- hit a guard that had not made you: it has now
 			local g = guards[victim]
 			if g and g.state ~= "Down" then
-				alert(g, player)
+				alert(g, player, true)
 			end
 		end
 	end)
@@ -1315,6 +1747,20 @@ function Stealth.Init()
 	local acc, expAcc = 0, 0
 	RunService.Heartbeat:Connect(function(dt)
 		followHands(os.clock())
+		for player, spot in hiding do
+			local char = player.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if not (char and char.Parent and hum and hum.Health > 0 and char:GetAttribute("Hidden")) or not spot.Parent then
+				hiding[player] = nil -- a new body, a death, a locker gone
+				if spot.Parent then
+					spot:SetAttribute("Occupant", nil)
+					local prompt = spot:FindFirstChild("HidePrompt")
+					if prompt then
+						prompt.ActionText = "Hide"
+					end
+				end
+			end
+		end
 		acc += dt
 		expAcc += dt
 		if expAcc >= S.ExposureTick then
@@ -1324,6 +1770,10 @@ function Stealth.Init()
 				local root = char and char:FindFirstChild("HumanoidRootPart")
 				if root then
 					local e = Stealth.ExposureAt(level, root.Position + Vector3.new(0, 0.8, 0), { char })
+					e *= 1 - math.clamp(char:GetAttribute("Conceal") or 0, 0, 0.9) -- the soot poncho
+					if hiding[player] then
+						e = 0
+					end
 					char:SetAttribute("Exposure", math.floor(e * 25 + 0.5) / 25)
 				end
 			end

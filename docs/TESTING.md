@@ -937,6 +937,33 @@ Play these on the published places (Studio's Play button cannot teleport between
 - Collapsed building stumps may collide as solid hulls (MeshPart collision can't be set from scripts).
 - Studio's Play button cannot teleport between places.
 
+### Endeavor: stealth (2026-11-12, Endeavor v108)
+Round 4 of the reference picks. Nothing here was seen in game before publishing. Try it in the station (the ride
+in) or below the Sumps (the shaft on the Sumps plaza).
+- [ ] Let a guard see you clearly. The screen drains of colour for a second, his outline flashes red, a heartbeat
+      sounds. In that second he only stares. Reach him and tap X (the throw) before it ends: he goes down and nobody
+      else comes. Let the second pass: he shouts and the fight starts.
+- [ ] After an alarm, the same place is harder: guards see you from further and sooner. Each alarm adds a little,
+      up to three. A checkpoint restart (or the hour, below the Sumps) resets it.
+- [ ] Lockers: two in the station (the ticket hall by the way in, the lower hall), four below the Sumps. X by one:
+      you step in, the view goes first person, the light gem goes dark. X again: you step out.
+- [ ] Before any alarm, a guard searching right in front of the locker does not look in. After an alarm, a guard
+      who comes to search nearby walks to the locker and pulls you out with a bang.
+- [ ] Sleeping darts (.22 Dart: craft 4 from powder and glass; overseers carry some). Load them like any round
+      (Tab, Load). A dart in the body: he feels it, goes to look where it came from, and drops asleep a few seconds
+      later. A dart in the face: he drops at once. He sleeps about 75 seconds, then gets up and searches.
+- [ ] Bolts (craft 3 from one scrap; sentries carry some). Press 3: a bolt flies where you look and clatters where it
+      lands. Guards who hear it go to look there.
+- [ ] Soot Poncho (craft from cloth and powder; it goes in a new Cloak slot): a grey poncho over the body, and the
+      light gem reads about a third darker.
+- [ ] Sentry Uniform (sometimes in a sentry's or overseer's pockets): a slate tunic and a yellow armband. From more
+      than about 9 studs away, a calm guard is slow to make you. Up close, or once he is wary, it does not help.
+- [ ] Grab a guard from behind (hold X). The prompt now also shows E TALK. Press E: he says how many of his crew are
+      still on shift, and the stores if there are any near. Those guards and the crate get an outline for 20 seconds,
+      only where you can see them (not through walls). He talks once.
+- [ ] Below the Sumps, after each hour, about a third of the overseers are asleep at their posts, heads down. You can
+      take one down from any side. A loud noise close by (a shot, glass, a bolt next to him) wakes him.
+
 ### Endeavor and Front: guns and ammo (2026-11-12, Endeavor v107 + Front v41)
 Round 3 of the reference picks. Nothing here was seen in game before publishing.
 Endeavor:

@@ -193,6 +193,8 @@ end
 -- feels it; loaded lighter, so it hurts less). The calibre's own Item is the standard load.
 Weapons.Loads = {
 	Round22Emp = { Caliber = ".22", Name = ".22 EMP", Pen = 0, Damage = 0.45, Emp = true },
+	-- round 4 (stealth): a dart in a .22 case. On a body it puts him to sleep (server/Stealth), on plate nothing
+	Round22Sleep = { Caliber = ".22", Name = ".22 dart", Pen = 0, Damage = 0.05, Sleep = true },
 	Round9AP = { Caliber = "9mm", Name = "9mm AP", Pen = 1, Damage = 0.85, Flesh = 0.9 },
 	Round9HP = { Caliber = "9mm", Name = "9mm HP", Pen = -1, Damage = 1, Flesh = 1.35 },
 	Round556AP = { Caliber = "5.56", Name = "5.56 AP", Pen = 1, Damage = 0.9, Flesh = 0.9 },
@@ -217,7 +219,7 @@ function Weapons.Round(itemId)
 	r.Caliber, r.ItemId = calName, itemId
 	if load then
 		r.Name, r.Pen = load.Name, cal.Pen + load.Pen
-		r.Damage, r.Flesh, r.Emp = load.Damage, load.Flesh, load.Emp
+		r.Damage, r.Flesh, r.Emp, r.Sleep = load.Damage, load.Flesh, load.Emp, load.Sleep
 	end
 	r.Damage, r.Flesh = r.Damage or 1, r.Flesh or 1
 	return r

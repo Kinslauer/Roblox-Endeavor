@@ -1559,6 +1559,19 @@ local function setHelmetcam(on)
 		end
 	end
 end
+-- inside a locker (round 4): first person through the slats, back to whatever view you had when you step out
+do
+	local before
+	Stealth.Locker = function(on)
+		if on then
+			before = helmetcam
+			setHelmetcam(true)
+		else
+			setHelmetcam(before == true)
+			before = nil
+		end
+	end
+end
 -- Roblox hides the whole body in first person; only the forearms, hands and what they hold come back, so the view
 -- stays clear (the full body used to fill it).
 RunService.RenderStepped:Connect(function()

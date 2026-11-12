@@ -2,7 +2,7 @@
 -- bonuses and TAGS; skills unlock and scale off the stats + tags you are actually wearing.
 local Armor = {}
 
-Armor.Slots = { "Head", "Chest", "Legs", "Rig", "Belt" }
+Armor.Slots = { "Head", "Chest", "Legs", "Rig", "Belt", "Cloak" }
 Armor.WeightScore = { Light = 0, Medium = 1, Heavy = 2 } -- heavier = more stamina cost, slower, sturdier block
 
 -- Resist: 0-1 damage reduction per damage type. Posture: extra max posture.
@@ -29,11 +29,16 @@ Armor.Pieces = {
 	TacticalVest = { Name = "Tactical Vest", Slot = "Rig", Weight = "Light", Holster = "Chest", Mags = 4, Meds = 2, Tags = { "Scav" } },
 	DutyBelt = { Name = "Duty Belt", Slot = "Belt", Weight = "Light", Holster = "Hip", Mags = 1, Meds = 1 },
 	DropLegRig = { Name = "Drop-Leg Rig", Slot = "Belt", Weight = "Light", Holster = "Thigh", Mags = 2 },
+
+	-- clothes for the dark (round 4, stealth): worn over the rig. Conceal takes that share off how lit you are
+	-- (server/Stealth); a Disguise passes a guard's look from beyond Config.Stealth.Disguise.Close until he is wary
+	SootPoncho = { Name = "Soot Poncho", Slot = "Cloak", Weight = "Light", Conceal = 0.3, Tags = { "Scav" } },
+	SentryUniform = { Name = "Sentry Uniform", Slot = "Cloak", Weight = "Light", Disguise = true },
 }
 
 -- What a worn kit holds: { Holster = { mount = true }, Mags, Meds, Plate } (profile.Armor = { slot = id })
 function Armor.Kit(worn)
-	local kit = { Holster = {}, Mags = 0, Meds = 0, Plate = 0 }
+	local kit = { Holster = {}, Mags = 0, Meds = 0, Plate = 0, Conceal = 0, Disguise = false }
 	for _, id in worn or {} do
 		local p = Armor.Pieces[id]
 		if p then
@@ -43,6 +48,8 @@ function Armor.Kit(worn)
 			kit.Mags += p.Mags or 0
 			kit.Meds += p.Meds or 0
 			kit.Plate = math.max(kit.Plate, p.Plate or 0)
+			kit.Conceal = math.max(kit.Conceal, p.Conceal or 0)
+			kit.Disguise = kit.Disguise or p.Disguise == true
 		end
 	end
 	return kit

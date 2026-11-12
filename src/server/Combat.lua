@@ -25,6 +25,7 @@ local G = Config.Guns -- round 3: guns and ammo
 local BUFFER = 0.08 -- input buffer: an attack may start this early before the last one ends
 
 local Combat = {}
+Combat.Slept = Instance.new("BindableEvent") -- (shooter char, model, zone, position): a sleeping dart in flesh (server/Stealth)
 Combat.Deflected = Instance.new("BindableEvent") -- (shooter char, model, zone, position): a round stopped by plate
 Combat.Shot = Instance.new("BindableEvent") -- (char, instanceHit?, position, weaponDef): every ranged shot (server/Stealth listens)
 Combat.World = nil -- set by Destruction: { Swing, Bolt, ImprovisedHit, Hit }
@@ -74,7 +75,7 @@ Combat.FX = fx
 function Combat.CanAct(char)
 	local s = st(char)
 	local t = os.clock()
-	return isAlive(char) and t >= s.stunned and t >= s.busyUntil - BUFFER and not char:GetAttribute("Knocked")
+	return isAlive(char) and t >= s.stunned and t >= s.busyUntil - BUFFER and not char:GetAttribute("Knocked") and not char:GetAttribute("Hidden")
 end
 
 -- Two weapons (server/Kit): a swap may come mid-chain, between swings; never while stunned, knocked or reloading.
@@ -815,7 +816,7 @@ local function pulse(char, spec, mods, seen, tracer)
 			end
 			if round and rating > round.Pen then
 				Combat.WearPlate(model, zone, rating, 0.5 * (1 + math.max(0, round.Pen)))
-				if round.Emp then
+				if round.Emp or round.Sleep then
 					return -- a light round on plate: a tick he does not notice, no ping, no alert
 				end
 				fx("Ping", model, result.Position, zone)
@@ -843,6 +844,12 @@ local function pulse(char, spec, mods, seen, tracer)
 						strike(other)
 					end
 				end
+				return
+			end
+			if round and round.Sleep and not isPlayer then
+				-- a dart in him: no wound to speak of; he sleeps (server/Stealth), at once if it went in the face
+				fx("Dart", model, result.Position)
+				Combat.Slept:Fire(char, model, zone, result.Position)
 				return
 			end
 			if zone == "Head" or zone == "Helmet" then

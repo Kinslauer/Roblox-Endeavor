@@ -380,6 +380,17 @@ function Subway.Build(origin)
 	lp.Parent = lift
 	level.Lift, level.LiftPrompt, level.LiftGlow = lift, lp, liftGlow
 
+	-- lockers to stand in (round 4): one in the ticket hall by the way in, one in the lower hall
+	level.Lockers = {}
+	local okStealth, Stealth = pcall(require, script.Parent.Stealth)
+	if okStealth then
+		for _, spot in { { at(50, 0, 1.2), Vector3.new(0, 0, 1) }, { at(101.2, -8, -60), Vector3.new(1, 0, 0) } } do
+			local ok, body = pcall(Stealth.HidingSpot, CFrame.lookAt(spot[1], spot[1] + spot[2]), model)
+			if ok then
+				table.insert(level.Lockers, body)
+			end
+		end
+	end
 	-- ===== who is stationed here =====
 	level.Guards = {
 		-- his back to the train: the first thing you learn

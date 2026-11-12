@@ -311,6 +311,14 @@ local function build()
 		{ At = at(212, 3, 0), Post = CFrame.lookAt(at(212, 3, 0), at(198, 3, 0)) },
 	}
 	L.Fragments = { at(96, 0, -44), at(186, 0, 44), at(200, 0, -12), at(40, 0, -3) }
+	-- lockers to stand in (round 4): the overseers' coats hang in them
+	L.Lockers = {}
+	for _, spot in { { at(40, 0, 4.6), Vector3.new(0, 0, -1) }, { at(93.4, 0, -40), Vector3.new(1, 0, 0) }, { at(93.4, 0, 40), Vector3.new(1, 0, 0) }, { at(196, 0, 12.6), Vector3.new(0, 0, -1) } } do
+		local ok, body = pcall(Stealth.HidingSpot, CFrame.lookAt(spot[1], spot[1] + spot[2]), model)
+		if ok then
+			table.insert(L.Lockers, body)
+		end
+	end
 	model.Parent = workspace
 	return L
 end
@@ -388,6 +396,7 @@ function Barrens.Reset()
 	end
 	level.Breaker:SetAttribute("Cut", nil)
 	spawnGuards()
+	pcall(Stealth.Shift, level.Model) -- this shift: some of them have nodded off at their posts
 	fillStores()
 	readout()
 end

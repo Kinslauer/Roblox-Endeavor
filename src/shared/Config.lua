@@ -28,7 +28,7 @@ Config.Tutorial = {
 	CheckpointRadius = 12,
 	CleanupSeconds = 12,
 	KitWeapon = "Whisper",
-	Kit = { Whisper = 1, Round22 = 21 }, -- three magazines of .22: the guards carry none of it
+	Kit = { Whisper = 1, Round22 = 21 }, -- three magazines of .22: the guards carry none of it (darts and bolts: crafted, or off the guards)
 	Locker = { RebarBlade = 1, ScrapVest = 1, Medkit = 2, Round22 = 28, Round22Emp = 8, Scrap = 4 },
 	Manifest = { Name = "LINE 9 MANIFEST", Text = "INBOUND: 1 . OUTBOUND: 0\nCARGO: STACK HARDWARE, 40 CRATES\nDELIVERY: FREIGHT LIFTS, CITY BAYS 01-12\nCONSIGNEE: WHOEVER SIGNS\nNOTE: NOTHING ON THIS LINE COMES BACK DOWN." },
 }
@@ -115,6 +115,27 @@ Config.Stealth = {
 	},
 	-- The wall (Q with a gun out): back to it; hold RMB at its end to lean out and aim.
 	Cover = { Reach = 3.2, Stand = 1.05, Step = 1.9, SpeedMult = 0.5, EdgeProbe = 2.2 },
+	-- Round 4 of docs/Reference-Picks-Plan.md (stealth):
+	-- the moment a guard makes you he freezes for Reflex seconds before he shouts (take him now and nobody hears)
+	Reflex = 1.0,
+	-- a sleeping dart (.22 Sleep): he staggers, looks for you, and goes down after Delay (at once in the head);
+	-- he sleeps Seconds, then wakes and searches
+	Sleep = { Delay = 3.5, Seconds = 75 },
+	-- a thrown bolt (key 3): where it lands it clatters, and the guards who hear it go to look
+	Bolt = { Speed = 70, Seconds = 2.5, Noise = 26, Lifetime = 20 },
+	-- lockers and crawl spaces (X): inside, a guard only finds you if he comes right up to it while searching and
+	-- the level is on its toes (Adapt.CheckHiding)
+	Hide = { Reach = 6, Find = 4 },
+	-- clothes: Conceal takes a share off your exposure; a Disguise passes at a distance (awareness fills at Fill
+	-- beyond Close studs, until he is on alert)
+	Disguise = { Close = 9, Fill = 0.15 },
+	-- guards who adapt: every alarm in a level adds to its Alarms count (to Max); each one sharpens sight and the
+	-- fill, and from CheckHiding on, searching guards open the lockers
+	Adapt = { Sight = 0.12, Fill = 0.15, Max = 3, CheckHiding = 1 },
+	-- questioning a held guard (E during the neck hold): what he gives up shows for Seconds
+	Question = { Seconds = 20, Reach = 160 },
+	-- shifts: at the hour, this share of the posted guards below the city are asleep at their posts; noise wakes them
+	Shift = { SleepShare = 0.35, WakeNoise = 0.5 },
 }
 Config.EmergenceCinematic = 6 -- seconds between the announcement and the teleport
 Config.PlotOrigin = Vector3.new(0, 2000, 0)

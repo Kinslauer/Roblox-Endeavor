@@ -167,6 +167,11 @@ function Style.Began(input, key)
 	elseif key == Enum.KeyCode.Two then
 		Remotes.QuickMed:FireServer()
 		return true
+	elseif key == Enum.KeyCode.Three then
+		-- round 4: a bolt thrown where you look (the server checks the pack)
+		local cam = workspace.CurrentCamera
+		Remotes.UseItem:FireServer("Bolt", if cam then cam.CFrame.LookVector else nil)
+		return true
 	end
 	return false
 end

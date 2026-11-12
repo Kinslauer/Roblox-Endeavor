@@ -37,6 +37,8 @@ local wedges = {}
 local offer -- { guard, kind }
 local prompt, promptWord
 local crouched = false
+local asked = {} -- guard model -> true once he has talked (weak keys)
+setmetatable(asked, { __mode = "k" })
 local cinematic = false -- the camera is ours for a takedown
 
 local function myRoot()
@@ -181,7 +183,7 @@ local function findOffer()
 		return nil
 	end
 	if char:GetAttribute("NeckHold") then
-		return { mode = "Hold" }
+		return { mode = "Hold", asked = asked[Stealth.HeldGuard or false] == true }
 	elseif char:GetAttribute("Carrying") then
 		return { mode = "Carry" }
 	end
@@ -225,7 +227,7 @@ local function drawOffer()
 	local _, char = myRoot()
 	if offer.mode then
 		prompt.Adornee = char and (char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart"))
-		promptWord.Text = if offer.mode == "Hold" then "CHOKE  .  G THROW" else "PUT DOWN"
+		promptWord.Text = if offer.mode == "Hold" then (if offer.asked then "CHOKE  .  G THROW" else "CHOKE  .  G THROW  .  E TALK") else "PUT DOWN"
 	else
 		prompt.Adornee = offer.guard:FindFirstChild("UpperTorso") or offer.guard:FindFirstChild("HumanoidRootPart")
 		local tap = offer.tap and (WORDS[offer.tap] or "TAKEDOWN")
@@ -379,6 +381,68 @@ local function watchDowned(model)
 	hands()
 end
 
+-- The second before he shouts (round 4): the colour drains to his outline, the world holds its breath.
+local reflexFx
+function Stealth.Reflex(guard, seconds)
+	seconds = seconds or S.Reflex
+	local Lighting = game:GetService("Lighting")
+	if not reflexFx then
+		reflexFx = Instance.new("ColorCorrectionEffect")
+		reflexFx.Name = "ReflexGrade"
+		reflexFx.Parent = Lighting
+	end
+	reflexFx.Saturation, reflexFx.Contrast, reflexFx.TintColor = -0.75, 0.25, Color3.fromRGB(255, 226, 214)
+	Kit.tween(reflexFx, seconds, { Saturation = 0, Contrast = 0, TintColor = Color3.new(1, 1, 1) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	local cam = workspace.CurrentCamera
+	if cam then
+		local fov = cam.FieldOfView
+		cam.FieldOfView = fov - 6
+		Kit.tween(cam, seconds * 0.8, { FieldOfView = fov }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	end
+	if typeof(guard) == "Instance" then
+		local h = Instance.new("Highlight")
+		h.DepthMode = Enum.HighlightDepthMode.Occluded
+		h.FillTransparency, h.OutlineColor, h.FillColor = 0.85, Color3.fromRGB(255, 90, 70), Color3.fromRGB(255, 90, 70)
+		h.Adornee = guard
+		h.Parent = guard
+		Debris:AddItem(h, seconds)
+		Sounds.Play("Heartbeat", guard:FindFirstChild("HumanoidRootPart"), { Volume = 0.6 })
+	end
+end
+
+-- He talks (round 4, E in a neck hold): his words under the screen; his crew and the stores show where you can
+-- see them (never through walls) for a while.
+function Stealth.Answer(guard, line, crew, crate, seconds)
+	if typeof(guard) == "Instance" then
+		asked[guard] = true
+	end
+	seconds = seconds or S.Question.Seconds
+	local text = Kit.label({ Name = "Answer", Text = "\"" .. tostring(line or "") .. "\"", Font = UI.Body, TextSize = 18, TextColor3 = UI.Text,
+		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0.86, 0), Size = UDim2.fromOffset(560, 28), Parent = gui, TextTransparency = 1 })
+	Kit.tween(text, 0.3, { TextTransparency = 0 })
+	task.delay(5, function()
+		if text.Parent then
+			Kit.tween(text, 0.6, { TextTransparency = 1 })
+			Debris:AddItem(text, 0.7)
+		end
+	end)
+	local function outline(model, color)
+		if typeof(model) ~= "Instance" or not model.Parent then
+			return
+		end
+		local h = Instance.new("Highlight")
+		h.DepthMode = Enum.HighlightDepthMode.Occluded
+		h.FillTransparency, h.OutlineTransparency, h.OutlineColor = 1, 0.2, color
+		h.Adornee = model
+		h.Parent = gui
+		Debris:AddItem(h, seconds)
+	end
+	for _, m in crew or {} do
+		outline(m, Color3.fromRGB(255, 170, 90))
+	end
+	outline(crate, Color3.fromRGB(140, 220, 255))
+end
+
 -- World events the main script forwards here. Returns true when it was one of ours.
 function Stealth.World(kind, a, b, c, d, e)
 	if kind == "Takedown" then
@@ -392,6 +456,9 @@ function Stealth.World(kind, a, b, c, d, e)
 				-- square behind him as the hold starts (the server stands you there too)
 				local behind = groot.CFrame * CFrame.new(0, 0, Q.Hold.Gap)
 				root.CFrame = CFrame.new(behind.Position.X, root.Position.Y, behind.Position.Z) * groot.CFrame.Rotation
+			end
+			if a == mine then
+				Stealth.HeldGuard = if c then b else nil
 			end
 			if c then
 				Anims.Stop(b, "HandsUp", 0.1)
@@ -413,6 +480,26 @@ function Stealth.World(kind, a, b, c, d, e)
 		burst(a, Color3.fromRGB(150, 210, 255), 40, 26)
 	elseif kind == "Whistle" then
 		Sounds.Play("Whistle", a, { Volume = 0.7 })
+	elseif kind == "Reflex" then
+		Stealth.Reflex(a, b)
+	elseif kind == "Clatter" then
+		-- (landing, from, seconds): the bolt arcs out of your hand and rings where it lands
+		local landing, seconds = a, c or 0.4
+		task.delay(math.clamp(seconds, 0, 2.5), function()
+			Sounds.Play("BreakMetal", landing, { Volume = 0.45, Pitch = 1.6 })
+			burst(landing, Color3.fromRGB(255, 214, 150), 6, 8)
+		end)
+	elseif kind == "Hide" then
+		-- (char, locker, on, found)
+		local _, mine = myRoot()
+		if typeof(b) == "Instance" then
+			Sounds.Play(if d then "BreakMetal" else "Takedown", b, { Volume = if d then 0.7 else 0.25, Pitch = if d then 0.8 else 1.4 })
+		end
+		if a == mine and Stealth.Locker then
+			Stealth.Locker(c == true)
+		end
+	elseif kind == "Question" then
+		Stealth.Answer(a, b, c, d, e)
 	else
 		return false
 	end
@@ -460,6 +547,9 @@ function Stealth.Key(key)
 		return true
 	elseif key == Enum.KeyCode.G and offer and offer.mode then
 		Remotes.Cqc:FireServer(if offer.mode == "Hold" then "Throw" else "Drop")
+		return true
+	elseif key == Enum.KeyCode.E and offer and offer.mode == "Hold" and not offer.asked then
+		Remotes.Cqc:FireServer("Question") -- he talks (once)
 		return true
 	end
 	return false

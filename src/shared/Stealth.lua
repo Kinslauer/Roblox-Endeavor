@@ -42,7 +42,8 @@ function Stealth.TakedownKind(playerCF, guardCF, state, spots)
 	if best then
 		return best:GetAttribute("Takedown") or "Panel", best
 	end
-	if flat.Magnitude > 0.05 and guardCF.LookVector:Dot(flat.Unit) < T.BehindDot then
+	-- asleep at his post: from any side
+	if flat.Magnitude > 0.05 and (state == "Asleep" or guardCF.LookVector:Dot(flat.Unit) < T.BehindDot) then
 		return "Rear", nil
 	end
 	return nil

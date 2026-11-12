@@ -470,10 +470,17 @@ function Inventory.Use(player, itemId, direction)
 		return
 	end
 	if def.Throwable or def.Plantable then
-		if Inventory.Count(player, itemId) <= 0 or not Inventory.Thrower then
+		if Inventory.Count(player, itemId) <= 0 or (not Inventory.Thrower and def.Throwable ~= "Bolt") then
 			return
 		end
-		local used = if def.Throwable then Inventory.Thrower.Grenade(player, direction) else Inventory.Thrower.Charge(player)
+		local used
+		if def.Throwable == "Bolt" then
+			used = require(script.Parent.Stealth).ThrowBolt(player, direction) -- round 4: a noise somewhere else
+		elseif def.Throwable then
+			used = Inventory.Thrower.Grenade(player, direction)
+		else
+			used = Inventory.Thrower.Charge(player)
+		end
 		if used then
 			Inventory.Remove(player, itemId, 1)
 		end

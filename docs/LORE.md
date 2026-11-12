@@ -277,6 +277,9 @@ How to read it:
    facilities). (One way down, the Sumps shaft to Barrens Hall 2, is now Canon.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: round 4, stealth (Endeavor v108): the station's sentries and the barrens' overseers work shifts and
+  some sleep on them (Canon, Claude's addition); a held guard will say how many of his crew are on shift; sleeping
+  darts in a .22 case; a soot poncho; the sentries' own slate uniform. Nothing here touches an open question.
 - 2026-11-12: round 3, guns and ammo: guards carry radios that call the whole level (Andy: an EMP .22 kills them; on
   plate there is no alert, on flesh the guard feels it); stack tags on the dead (Hinted, Claude's word, see the
   glossary); the Front's AP and soft point ammunition comes by shipment like the guns.

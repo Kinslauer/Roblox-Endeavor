@@ -36,8 +36,8 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (321 checks), `war` = Front (123), `warclient` = the Front client plays the first link's stages, the screen, the controls, the gun in the view and its code-made animation (52), `stress` = budgets under load (5), `client` = the
-  Endeavor client boots + movement, dodge, animation, guard, air and handling checks (44). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
+  `scenario` = Endeavor end to end (408 checks), `war` = Front (145), `warclient` = the Front client plays the first link's stages, the screen, the controls, the gun in the view and its code-made animation (52), `stress` = budgets under load (5), `client` = the
+  Endeavor client boots + movement, dodge, animation, guard, air and handling checks (52). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
   `python3 tools/realserver/run_luau.py <placeId> script.lua` (POST `.../luau-execution-session-tasks`, poll, print
@@ -679,7 +679,34 @@ Client tab screenshot, because Andy cannot read logs another way.
   GunMotion state `Tired` sway. Tests: "ammo:", "emp:", "plate:", "heat:", "jam:", "mags:", "arms:", "drop:",
   "tags:" in scenario.lua and war.lua. Not done: NPCs who pick up guns, radios that call outside a stealth level,
   tags with the dead conduit's name, the Front's other players' views of a hot barrel.
+- Stealth (round 4 of docs/Reference-Picks-Plan.md; ideas from Metal Gear, nothing copied). All in
+  `src/server/Stealth.lua` + Config.Stealth (Reflex, Sleep, Bolt, Hide, Disguise, Adapt, Question, Shift). `alert(g,
+  player, instant)`: the first sighting puts the guard in state "Spotted" for Reflex seconds (halted, staring; World
+  "Reflex" to that player; a throw or takedown still works in it) before the real alert; wounds, plate hits, blows,
+  a broken hold and an opened locker are `instant`. A real alert adds to the level's attribute `Alarms` (to
+  Adapt.Max): sight range x (1 + Sight x alarms), fill x (1 + Fill x alarms); from CheckHiding on `investigate` picks
+  a locker near the spot (`g.checkSpot`) and the guard walks to its door. Lockers: `Stealth.HidingSpot(cf, parent)`
+  (tag "HidingSpot", X prompt), `Hide`/`Unhide`/`Hidden`; hidden = char attr `Hidden`, root anchored, Exposure 0,
+  Combat.CanAct false, the NPC fight filter skips you; client `Stealth.Locker` (Main) = helmetcam on/off. Placed in
+  Barrens (4) and Subway (2). Sleeping dart: load `Round22Sleep` (Weapons.Loads `Sleep`), Combat fires
+  `Combat.Slept` on flesh (no damage), `Stealth.Dart` -> `g.sleepAt` (head: at once) -> `fallAsleep` = Down + attr
+  `Asleep`, wakeAt Sleep.Seconds. Bolt: item `Bolt` (Throwable "Bolt") -> Inventory.Use -> `Stealth.ThrowBolt` (arc
+  by raycasts, World "Clatter", Noise "Clatter"); key 3 in client/Style. Clothes: Armor slot `Cloak` (SootPoncho
+  Conceal 0.3, SentryUniform Disguise), Armor.Kit -> Kit.Apply char attrs `Conceal` (Exposure x (1 - Conceal)) and
+  `Disguise` (fill x Disguise.Fill beyond Close unless Search/wary); drawn in drawKit. Question: Cqc "Question" ->
+  `Stealth.Question` (once per guard): World "Question"(guard, line, crew, crate, seconds) -> client
+  `Stealth.Answer` (subtitle + Highlights, DepthMode Occluded); prompt "E TALK". Shifts: state "Asleep"
+  (`SetAsleep`, neck droop by Joints.Pose; sees only within Bump; non-step Noise within reach x WakeNoise wakes him;
+  Rules.TakedownKind gives Rear from any side), `Stealth.Shift(level, share)` from Barrens.Reset (each hour).
+  Tests: "reflex:", "adapt:", "hide:", "dart:", "bolt:", "clothes:", "question:", "shift:" in scenario.lua,
+  "stealth4:" in client.lua. Not done: darts on players, a disguise that a guard can see through by behaviour,
+  crawl spaces, the hour's time of day (round 6).
 ## State (2026-11-12)
+- Endeavor v108 (2026-11-12): stealth, round 4 of the reference picks (the second before a guard shouts, guards who
+  adapt after alarms, lockers, sleeping darts, thrown bolts, soot poncho and sentry uniform, questioning a held
+  guard, overseers asleep on shift). Real server: start 8.1s, 0 warnings; 4 lockers below the Sumps stand on the
+  floor, 1 of 4 overseers asleep on the first shift. Awaits Andy: docs/TESTING.md "Endeavor: stealth". Next: round 5
+  (builds).
 - Endeavor v107 + Front v41 (2026-11-12): guns and ammo, round 3 of the reference picks (round types and the EMP
   .22 that kills guards' radios, magazines loaded by hand, plate that wears through, glances off plate, hot barrels,
   three kinds of jam, tired arms, range marks, dropped guns grabbed into the hand, stack tags). Real servers:
