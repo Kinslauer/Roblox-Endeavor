@@ -936,6 +936,53 @@ Config.Guns = {
 	RadioRadius = 140, -- a guard with a working radio calls the whole level (voice: Config.Stealth.CallRadius)
 }
 
+-- The Front's gun handling on Endeavor's guns, in every hand near the camera (client/GunFeel.lua; the timelines and
+-- jolts are Config.WarMovement.GunMotion, shared with the Front)
+Config.GunFeel = {
+	Enabled = true,
+	Range = 90, -- bodies this near the camera have their guns worked piece by piece
+	ScanEvery = 0.4,
+	HearMech = 45, -- the metal of the hands (magazine, slide, cases landing) is heard this near
+	WholeShare = 0.35, -- how much of the Front's whole-gun moves the gun makes in a third-person hand
+	JoltShare = 0.5, -- and of every contact's jolt
+	Spring = { Frequency = 6, Damping = 0.45 }, -- the gun's jolt in the hand
+	-- a shot's jolt (degrees a second: muzzle up, twist, roll; studs a second: up, back)
+	Kick = { Pistol = { Rise = 520, Twist = 90, Roll = 120, Hop = 1.2, Back = 3 }, Rifle = { Rise = 260, Twist = 60, Roll = 80, Hop = 0.6, Back = 2.5 } },
+	-- the reload as shares of the server's time: magazine out, a beat, magazine in, then the action if it was empty
+	Reload = { Out = 0.34, Gap = 0.06, In = 0.36, Rack = 0.2 },
+	Brass = { Speed = 7, Up = 6, Back = 2, Seconds = 6, Max = 24, PistolSize = 1.6, RifleSize = 1.3 },
+	Flash = { Size = 0.55, Seconds = 0.05, Brightness = 5, Range = 20, ShadowWithin = 60, Color = Color3.fromRGB(255, 206, 140) },
+	Smoke = { Count = 3, Size = 1.1, Seconds = 1.4, Speed = 2.5, Rise = 1.2, Transparency = 0.72, Color = Color3.fromRGB(200, 196, 188) },
+	FarSound = 180, -- a shot further than this is heard as the distant report
+	Tail = { Volume = 0.55, MinNoise = 21 }, -- the city answering a loud shot
+}
+
+-- Jointed fingers on every body (client/Hands.lua; the finger rules are Config.WarMovement.Fingers)
+Config.Hands = {
+	Enabled = true,
+	Range = 70, Max = 14, -- the nearest Max bodies within Range get them
+	Far = 28, -- beyond this the hands are placed every second frame
+	ScanEvery = 0.5, HoldEvery = 0.12, -- seconds between choosing bodies, and between choosing each hand's hold
+	Rate = 16, -- how fast a finger goes to its hold
+	Reference = Vector2.new(0.2867, 0.564), -- the soldier's hand part (X wide, Y long) the pieces were made for
+	-- a hold = a handle of this radius in the palm (Tilt degrees from straight across the hand); Trigger = a gun grip
+	Holds = {
+		Grip = { Radius = 0.07, Tilt = 18 }, -- a blade's or a baton's grip
+		Haft = { Radius = 0.085, Tilt = 14 }, -- a hammer's or a spear's
+		Fist = { Radius = 0.026, Tilt = 10 },
+		Pistol = { Radius = 0.08, Tilt = 16, Trigger = true },
+		Rifle = { Radius = 0.075, Tilt = 16, Trigger = true },
+		Support = { Radius = 0.1, Tilt = 4 },
+		Cup = { Radius = 0.12, Tilt = 0 },
+		Mag = { Radius = 0.06, Tilt = 0 },
+		Pinch = { Radius = 0.035, Tilt = 30 },
+		Grab = { Radius = 0.16, Tilt = 0 },
+	},
+	Families = { Blade = "Grip", Baton = "Grip", Blunt = "Haft", Hammer = "Haft", Spear = "Haft" },
+	TriggerCaps = { 34, 58, 30 }, -- the first finger on the trigger bends no further than this
+	OffHandReach = 0.42, OffHandAlong = 2.2, -- the off hand closes on the haft when its palm is this near the weapon's line
+}
+
 -- Builds (round 5 of docs/Reference-Picks-Plan.md; shared/Builds.lua, server/Builds.lua)
 Config.Builds = {
 	-- each body's Line 9 batch: Empty first, then Rare, then Good; the rest roll Bonus

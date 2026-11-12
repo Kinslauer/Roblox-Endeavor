@@ -26,6 +26,10 @@ local ST, AIM, COVER = S.Stance, S.Aim, S.Cover
 local player = Players.LocalPlayer
 
 local Handling = {}
+-- the gun worked piece by piece in every hand and the fingers on every body (the Front's work, client/GunFeel.lua and
+-- client/Hands.lua); started from Handling.Init, reached by the main script through these fields
+Handling.GunFeel = require(script.Parent:WaitForChild("GunFeel"))
+Handling.Hands = require(script.Parent:WaitForChild("Hands"))
 Handling.Changed = nil -- set by the main script: called with "Stance" | "Aim" | "Cover" when the camera should be re-placed
 
 local opts = {}
@@ -442,6 +446,19 @@ end
 
 function Handling.Init(options)
 	opts = options or {}
+	local camera = workspace.CurrentCamera
+	local okFeel, errFeel = pcall(function()
+		Handling.GunFeel.Init({ GunMotion = require(Shared:WaitForChild("GunMotion")), Weapons = Weapons, Sounds = Sounds,
+			GunParts = require(Shared:WaitForChild("GunParts")), Config = Config.GunFeel, Motion = Config.WarMovement.GunMotion, Camera = camera })
+		Handling.Hands.Init({ Camera = camera, Config = Config.Hands, Fingers = Config.WarMovement.Fingers, FingersModule = require(Shared:WaitForChild("Fingers")),
+			HandParts = require(Shared:WaitForChild("HandParts")), Weapons = Weapons, GunFeel = Handling.GunFeel,
+			Find = function()
+				return ReplicatedStorage:FindFirstChild("ViewHands")
+			end })
+	end)
+	if not okFeel then
+		warn("Handling: gun feel / hands did not start: " .. tostring(errFeel))
+	end
 	RunService.Heartbeat:Connect(function(dt)
 		-- C held: prone
 		if cHeld and not cHeld.done and os.clock() - cHeld.at >= ST.ProneHold then
@@ -500,6 +517,7 @@ function Handling.Init(options)
 			return
 		end
 		local root = char:FindFirstChild("HumanoidRootPart")
+		local feel = Handling.GunFeel
 		if kind == "Reload" then
 			seconds = if type(seconds) == "number" and seconds > 0.1 then seconds else 1.5
 			local def = Weapons.Defs[char:GetAttribute("Weapon") or ""]
@@ -508,21 +526,31 @@ function Handling.Init(options)
 			else
 				Anims.Play(char, "Reload_Pistol", { fade = 0.1, speed = 1.5 / seconds })
 			end
-			Sounds.Play("DryClick", root, { Volume = 0.5, Pitch = 0.8 })
-			task.delay(seconds * 0.66, function()
-				if root and root.Parent then
-					Sounds.Play("Rack", root, { Volume = 0.7 })
-				end
-			end)
+			-- the gun's own pieces and the off hand do the change (their sounds go with each step); if this gun is
+			-- not followed here, the old two sounds
+			local ok, shown = pcall(feel.Reload, char, seconds)
+			if not (ok and shown) then
+				Sounds.Play("DryClick", root, { Volume = 0.5, Pitch = 0.8 })
+				task.delay(seconds * 0.66, function()
+					if root and root.Parent then
+						Sounds.Play("Rack", root, { Volume = 0.7 })
+					end
+				end)
+			end
 		elseif kind == "Rack" then
-			Anims.Play(char, "Intro_Rack", { fade = 0.05, speed = 1.3 / (if type(seconds) == "number" and seconds > 0.1 then seconds else 0.55) })
-			task.delay(0.2, function()
-				if root and root.Parent then
-					Sounds.Play("Rack", root, { Volume = 0.45 })
-				end
-			end)
+			local rackSeconds = if type(seconds) == "number" and seconds > 0.1 then seconds else 0.55
+			Anims.Play(char, "Intro_Rack", { fade = 0.05, speed = 1.3 / rackSeconds })
+			local ok, shown = pcall(feel.Rack, char, rackSeconds)
+			if not (ok and shown) then
+				task.delay(0.2, function()
+					if root and root.Parent then
+						Sounds.Play("Rack", root, { Volume = 0.45 })
+					end
+				end)
+			end
 		elseif kind == "DryFire" then
 			Sounds.Play("DryClick", root)
+			pcall(feel.Click, char)
 		end
 	end)
 	_ = UserInputService

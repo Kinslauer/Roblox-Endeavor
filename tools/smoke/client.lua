@@ -355,5 +355,116 @@ do
 	for _ = 1, 5 do M.step(1 / 30) end
 	check("bay: the clock goes when the order closes", BayC.Elements and BayC.Elements.Clock.Visible == false and #M.errors == 0)
 end
+-- the Front's gun handling on Endeavor's guns (client/GunFeel.lua) and jointed fingers on every body (client/Hands.lua)
+do
+	local Hd = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.Handling)
+	local GF, HandsC = Hd.GunFeel, Hd.Hands
+	local Config = M.mockEnv.__require(RS.Shared.Config)
+	local HP = M.mockEnv.__require(RS.Shared.HandParts)
+	local Combat = RS.Remotes.CombatEvent
+	char = player.Character
+	char:SetAttribute("Weapon", "DutyPistol"); char:SetAttribute("Mag", 15); char:SetAttribute("MagSize", 15)
+	local hand = char:FindFirstChild("RightHand") or M.newInstance("Part"); hand.Name = "RightHand"; hand.Size = M.V3.new(0.28, 0.56, 0.35); hand.Parent = char
+	local lhand = char:FindFirstChild("LeftHand") or M.newInstance("Part"); lhand.Name = "LeftHand"; lhand.Size = M.V3.new(0.28, 0.56, 0.35); lhand.CFrame = M.CF.new(-1, 3, 0); lhand.Parent = char
+	for _, n in { "LeftUpperArm", "RightUpperArm" } do
+		if not char:FindFirstChild(n) then local p = M.newInstance("Part"); p.Name = n; p.Parent = char end
+	end
+	while char:FindFirstChild("HeldWeapon") do char.HeldWeapon:Destroy() end -- an earlier check's gun
+	-- a whole pistol as HeldWeapons leaves it: authored barrel +Y, grip down -Z, every part welded to the first
+	local held = M.newInstance("Model"); held.Name = "HeldWeapon"; held:SetAttribute("WeaponId", "DutyPistol"); held:SetAttribute("Build", "")
+	local frame = M.newInstance("Part"); frame.Name = "Frame_Polymer"; frame.Size = M.V3.new(0.25, 1.4, 0.9); frame.CFrame = M.CF.new(); frame.Parent = held
+	local grip = M.newInstance("Weld"); grip.Name = "Grip"; grip.Part0, grip.Part1 = hand, frame; grip.C0 = M.CF.new(0, -0.1, 0) * M.CF.Angles(-math.pi / 2, 0, 0); grip.C1 = M.CF.new(); grip.Parent = frame
+	local welds = {}
+	for name, v in { Slide_Gunmetal = { M.V3.new(0.24, 1.5, 0.25), M.V3.new(0, 0.2, 0.35) }, Magazine_Polymer = { M.V3.new(0.18, 0.2, 0.8), M.V3.new(0, -0.3, -0.5) },
+		Trigger_Polymer = { M.V3.new(0.05, 0.08, 0.12), M.V3.new(0, 0.1, -0.1) } } do
+		local p = M.newInstance("Part"); p.Name = name; p.Size = v[1]; p.CFrame = M.CF.new(v[2].X, v[2].Y, v[2].Z); p.Parent = held
+		local w = M.newInstance("Weld"); w.Part0, w.Part1 = frame, p; w.C0 = p.CFrame; w.Parent = p
+		welds[string.split(name, "_")[1]] = w
+	end
+	held.PrimaryPart = frame
+	held.Parent = char
+	for _ = 1, 20 do M.step(1 / 30) end
+	local st = GF.State()
+	local g = st.Guns[char]
+
+	check("gunfeel: the gun in the hand is measured: its slide, magazine and trigger move on their own", g ~= nil and g.Shape.Action == "Slide" and g.Moving.Magazine ~= nil and g.Moving.Trigger ~= nil)
+	local base = welds.Slide.C0
+	local muzzle = GF.Shot(char)
+	M.step(1 / 60); M.step(1 / 60)
+	local cycled = (welds.Slide.C0.Position - base.Position).Magnitude > 0.05
+	for _ = 1, 30 do M.step(1 / 30) end
+	check("gunfeel: a shot cycles the slide, flashes at the muzzle and throws a case", muzzle ~= nil and cycled and #st.Casings >= 1)
+	check("gunfeel: the slide comes home", (welds.Slide.C0.Position - base.Position).Magnitude < 1e-3)
+	local magBase = welds.Magazine.C0
+	local shown = GF.Reload(char, 1.8)
+	for _ = 1, 9 do M.step(1 / 30) end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	local ik = hum and hum:FindFirstChild("GunFeelLeft")
+	check("gunfeel: a reload strips the magazine out with the off hand on it", shown == true and (welds.Magazine.C0.Position - magBase.Position).Magnitude > 0.05 and ik ~= nil and ik.Enabled == true)
+	for _ = 1, 80 do M.step(1 / 30) end
+	check("gunfeel: the magazine is driven home and the hand lets go", (welds.Magazine.C0.Position - magBase.Position).Magnitude < 1e-3 and ik.Enabled == false and #M.errors == 0)
+	char:SetAttribute("Mag", 0)
+	GF.Shot(char)
+	for _ = 1, 20 do M.step(1 / 30) end
+	check("gunfeel: on the last round the slide stays back", (welds.Slide.C0.Position - base.Position).Magnitude > 0.05)
+	char:SetAttribute("Mag", 15)
+	-- a hand-racked gun: the shot leaves its case in, the rack throws it
+	char:SetAttribute("Weapon", "Whisper"); held:SetAttribute("WeaponId", "Whisper")
+	for _ = 1, 20 do M.step(1 / 30) end
+	g = st.Guns[char]
+	local before = st.Casings[#st.Casings]
+	GF.Shot(char)
+	for _ = 1, 10 do M.step(1 / 30) end
+	local kept = st.Casings[#st.Casings] == before
+	Combat.OnClientEvent:Fire("Rack", char, 0.55)
+	for _ = 1, 25 do M.step(1 / 30) end
+	check("gunfeel: the Whisper keeps its case until it is racked, then throws it", g ~= nil and g.Shape.Manual == true and kept and st.Casings[#st.Casings] ~= before)
+	-- the fingers: the pieces the server leaves, the body's mitten hands hidden, a jointed hand on each wrist
+	local viewHands = M.newInstance("Folder"); viewHands.Name = "ViewHands"
+	for piece in HP.Centres do
+		for _, mat in { "Flesh", "HideLeather", "PlateSteel" } do
+			local p = M.newInstance("Part"); p.Name = piece .. "_" .. mat; p.Size = M.V3.new(0.05, 0.1, 0.05); p.Parent = viewHands
+		end
+	end
+	viewHands.Parent = RS
+	local skin = M.newInstance("Model"); skin.Name = "Skin"
+	local mitts = M.newInstance("Part"); mitts.Name = "Hands_HideLeather"; mitts.Transparency = 0; mitts.Color = M.mockEnv.Color3.fromRGB(158, 148, 140); mitts.Parent = skin
+	skin.Parent = char
+	for _ = 1, 30 do M.step(1 / 30) end
+	local hs = HandsC.State()
+	local b = hs.Bodies[char]
+	local count = 0
+	if b and b.Sides.Right then for _ in b.Sides.Right.Parts do count += 1 end end
+	check("hands: the body's mittens are hidden and a jointed hand is on each wrist", b ~= nil and b.Sides.Right ~= nil and b.Sides.Left ~= nil and count == 17 and mitts.LocalTransparencyModifier == 1
+		and b.Sides.Right.Model.Parent == cam)
+	check("hands: the pieces are the body's own material and colour", b ~= nil and b.Sides.Right.Parts.Palm.Name == "Palm_HideLeather" and b.Sides.Right.Parts.Palm.Color == mitts.Color)
+	local function curl(p, name) return p[name][2] + p[name][3] + p[name][4] end
+	local relax, fist, grip = HandsC.Hold("Open", 1), HandsC.Hold("Fist", 1), HandsC.Hold("Grip", 1)
+	local wide = HandsC.Hold("Haft", 1)
+	check("hands: a fist closes tighter than a sword grip, and a haft is wider still", curl(fist, "Middle") > curl(grip, "Middle") and curl(grip, "Middle") > curl(wide, "Middle") and curl(wide, "Middle") > curl(relax, "Middle"))
+	local off, on = HandsC.Hold("Pistol", 1, false), HandsC.Hold("Pistol", 1, true)
+	check("hands: the firing finger lies along the frame until the gun is aimed", curl(on, "Index") > curl(off, "Index") + 20 and curl(off, "Middle") > 60)
+	char:SetAttribute("Aiming", true)
+	for _ = 1, 10 do M.step(1 / 30) end
+	check("hands: aiming puts the right hand's finger on the trigger", b.Sides.Right.Goal == on)
+	char:SetAttribute("Aiming", nil)
+	-- a melee weapon: the right hand round its grip
+	held:Destroy()
+	char:SetAttribute("Weapon", "RebarBlade")
+	local blade = M.newInstance("Model"); blade.Name = "HeldWeapon"; blade:SetAttribute("WeaponId", "RebarBlade")
+	local bp = M.newInstance("Part"); bp.Name = "Blade_Steel"; bp.Parent = blade
+	local bg = M.newInstance("Weld"); bg.Name = "Grip"; bg.Part0, bg.Part1 = hand, bp; bg.C1 = M.CF.new(); bg.Parent = bp
+	blade.PrimaryPart = bp
+	blade.Parent = char
+	for _ = 1, 10 do M.step(1 / 30) end
+	check("hands: a blade in the hand is gripped, the empty off hand hangs open", b.Sides.Right.Goal == grip and b.Sides.Left.Goal == HandsC.Hold("Open", -1) and #M.errors == 0)
+	blade:Destroy()
+	char:SetAttribute("Weapon", "Fists")
+	for _ = 1, 10 do M.step(1 / 30) end
+	check("hands: fists are closed", b.Sides.Right.Goal == fist and b.Sides.Left.Goal == HandsC.Hold("Fist", -1))
+	skin:Destroy()
+	for _ = 1, 30 do M.step(1 / 30) end
+	check("hands: a body that loses its skin loses the jointed hands", HandsC.State().Bodies[char] == nil and #M.errors == 0)
+end
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

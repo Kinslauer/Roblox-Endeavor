@@ -1153,3 +1153,25 @@ companions are plain parts for now.
       needs 4 Sheet Metal, 6 Wire and 2 Batteries before the next link.
 - [ ] Front: with thralls sent there, deploy a recruit. Up to two of them stand up at your base in your side's kit,
       walk toward the hill and shoot the other side. One that falls is gone for good ("> UNIT nnnn . LOST").
+
+### Endeavor: the gun in the hand and fingers on every body (2026-11-12, Endeavor vNEXT)
+The Front's gun handling carried over to Endeavor, seen over the shoulder on your own gun and everyone else's.
+Nothing here was seen in game before publishing.
+- [ ] Fire the Duty Pistol, the Carbine or the AK-47: the slide (or the bolt carrier) snaps back and forward on every
+      shot, a brass case flies out to the right and rings when it lands, the flash lights the walls round you, a breath
+      of smoke leaves the muzzle, and the tracer starts at the end of the barrel.
+- [ ] Empty the Duty Pistol: its slide stays back. Reload (R): the off hand goes to the magazine, pulls it out, takes
+      it away, brings one back, stops it short, drives it home and tugs it; then the slide runs forward. Each step has
+      its own click or clack.
+- [ ] The Whisper: a shot leaves the slide shut (no case comes out). Rack it (T): the hand draws the slide back and the
+      case flies out then.
+- [ ] Watch a guard or another player reload or rack: the same moves play on their gun.
+- [ ] Loud shots have an echo after them; a shot far away (180+ studs) is heard as a dull distant report.
+- [ ] Fingers: your hands and every nearby body's hands have jointed fingers. Holding a blade, baton, spear, hammer
+      or sledge, the fingers close round the grip; with Fists equipped both hands are fists; with nothing held the
+      hands hang half open.
+- [ ] In a guard or a two-handed swing, when your off hand comes to the weapon, its fingers close on the haft too.
+- [ ] With a gun: the trigger finger lies straight along the gun until you aim (RMB), then it goes to the trigger. A
+      rifle's off hand closes round the handguard; during a reload it closes on the magazine.
+- [ ] Look for: fingers that sit in the wrong place on a big body (Brute, Warden), hands that look too big or too
+      small for the sleeve, a gun that twists too far in the hand when it kicks, frame rate in a crowd.

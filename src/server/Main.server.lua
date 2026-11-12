@@ -88,6 +88,27 @@ local ok, err = pcall(function()
 	Cycle.Init()
 	DevTools.Init()
 	IconLibrary.Init()
+	-- the jointed hands every body wears on this place's clients (client/Hands.lua): the Front's pieces, loaded in
+	-- the background so the start does not wait for them
+	task.spawn(function()
+		local Assets = require(game:GetService("ReplicatedStorage").Shared.Assets)
+		local ok, hands = pcall(require(Server.Common.ModelAssets).Template, Assets.FrontBodies.Hands)
+		if not (ok and hands) then
+			warn("[Hands] the jointed hands did not load; bodies keep their own")
+			return
+		end
+		local folder = Instance.new("Folder")
+		folder.Name = "ViewHands"
+		for _, p in hands:GetDescendants() do
+			if p:IsA("MeshPart") then
+				local c = p:Clone()
+				c.Anchored, c.CanCollide, c.CanTouch = true, false, false
+				c.Parent = folder
+			end
+		end
+		Assets.Dress(folder)
+		folder.Parent = game:GetService("ReplicatedStorage")
+	end)
 	require(Server.IntroKit).Init()
 	Autonet.Init()
 	ImplantLibrary.Init()

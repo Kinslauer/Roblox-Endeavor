@@ -1605,7 +1605,8 @@ RunService.RenderStepped:Connect(function()
 			-- the one-piece body: its forearm and hand pieces are separate meshes for exactly this
 			for _, m in p:GetChildren() do
 				if m:IsA("BasePart") then
-					m.LocalTransparencyModifier = if m.Name:find("LowerArm") or m.Name:find("Hand") then 0 else 1
+					-- (a hand mesh swapped for jointed fingers stays hidden: client/Hands draws those)
+					m.LocalTransparencyModifier = if m:GetAttribute("JointedHands") then 1 elseif m.Name:find("LowerArm") or m.Name:find("Hand") then 0 else 1
 				end
 			end
 		end
@@ -2546,9 +2547,17 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 			local quiet = type(c) == "number"
 			local muzzle = from.Position + Vector3.new(0, if quiet then 1.2 else 0, 0)
 			local held = quiet and a:FindFirstChild("HeldWeapon")
-			if held and held:IsA("Model") then
+			-- the gun in the hand works its action, throws its case and flashes at its real muzzle (client/GunFeel)
+			local okFeel, real = false, nil
+			if quiet then
+				okFeel, real = pcall(Handling.GunFeel.Shot, a)
+			end
+			if okFeel and typeof(real) == "Vector3" then
+				muzzle = real
+			elseif held and held:IsA("Model") then
 				muzzle = held:GetPivot().Position + from.CFrame.LookVector * (if c >= 100 then 2.2 else 1.1) + Vector3.new(0, 0.15, 0) -- a long gun's muzzle is further out
 			end
+			local shown = okFeel and typeof(real) == "Vector3"
 			local length = (b - muzzle).Magnitude
 			local beam = make("Part", {
 				Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false, Material = Enum.Material.Neon,
@@ -2558,13 +2567,22 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 			if quiet then
 				TweenService:Create(beam, TweenInfo.new(0.16), { Transparency = 1, Size = Vector3.new(0.02, 0.02, length) }):Play()
 				Debris:AddItem(beam, 0.18)
-				local flash = make("Part", { Shape = Enum.PartType.Ball, Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
-					Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 214, 150), Transparency = 0.2, Size = Vector3.new(0.5, 0.5, 0.5), CFrame = CFrame.new(muzzle) }, workspace)
-				make("PointLight", { Range = 9, Brightness = 2.2, Color = Color3.fromRGB(255, 210, 150) }, flash)
-				TweenService:Create(flash, TweenInfo.new(0.07), { Transparency = 1, Size = Vector3.new(0.9, 0.9, 0.9) }):Play()
-				Debris:AddItem(flash, 0.08)
+				if not shown then
+					local flash = make("Part", { Shape = Enum.PartType.Ball, Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+						Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 214, 150), Transparency = 0.2, Size = Vector3.new(0.5, 0.5, 0.5), CFrame = CFrame.new(muzzle) }, workspace)
+					make("PointLight", { Range = 9, Brightness = 2.2, Color = Color3.fromRGB(255, 210, 150) }, flash)
+					TweenService:Create(flash, TweenInfo.new(0.07), { Transparency = 1, Size = Vector3.new(0.9, 0.9, 0.9) }):Play()
+					Debris:AddItem(flash, 0.08)
+				end
 				sparks(b, { Count = 7, Color = Color3.fromRGB(255, 220, 170), Size = 0.2, Speed = 10, Life = 0.25 })
-				Sounds.Play(if c <= 20 then "ShotQuiet" elseif c >= 100 then "ShotRifle" else "ShotPistol", from) -- a suppressed .22 coughs, a pistol cracks, a rifle booms
+				-- a suppressed .22 coughs, a pistol cracks, a rifle booms; far off only the distant report carries, and a
+				-- loud shot has the city's answer after it
+				local GF = Config.GunFeel
+				local far = (workspace.CurrentCamera.CFrame.Position - from.Position).Magnitude > GF.FarSound
+				Sounds.Play(if c <= 20 then "ShotQuiet" elseif far then "ShotDistant" elseif c >= 100 then "ShotRifle" else "ShotPistol", from)
+				if c >= GF.Tail.MinNoise then
+					Sounds.Play("ShotTail", from, { Volume = GF.Tail.Volume * (if c >= 100 then 1 else 0.7), Pitch = 0.9 + math.random() * 0.2 })
+				end
 				-- the hand kicks: the gun arm jumps and settles (on top of whatever the arm animation holds)
 				pose(a, "RightShoulder", CFrame.Angles(math.rad(9), 0, 0), 0.03)
 				pose(a, "RightElbow", CFrame.Angles(math.rad(7), 0, 0), 0.03)

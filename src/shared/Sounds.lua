@@ -65,6 +65,15 @@ Sounds.Ids = {
 	Sparks = 128265196389380,
 	Whistle = 105846441055127,
 	ShotQuiet = 70881608271855,
+	-- the gun in the hand (tools/sounds/gunfeel.py; client/GunFeel.lua)
+	BrassTink = 136349132125049,
+	MagOut = 112040217370332,
+	MagIn = 128718996346743,
+	SlideBack = 137939227861369,
+	SlideHome = 80633487520252,
+	ActionCycle = 119088797314767,
+	MagDrop = 78583750656351,
+	ShotTail = 109974518335465,
 }
 
 -- Per-sound defaults: Volume, Range (RollOffMaxDistance), Pitch jitter
@@ -101,6 +110,14 @@ Sounds.Defaults = {
 	Sparks = { Volume = 0.9, Range = 70, Jitter = 0.08 },
 	Whistle = { Volume = 0.7, Range = 60, Jitter = 0.04 },
 	ShotQuiet = { Volume = 0.55, Range = 28, Jitter = 0.06 },
+	BrassTink = { Volume = 0.45, Range = 30, Jitter = 0.15 },
+	MagOut = { Volume = 0.6, Range = 30, Jitter = 0.05 },
+	MagIn = { Volume = 0.75, Range = 35, Jitter = 0.05 },
+	SlideBack = { Volume = 0.6, Range = 35, Jitter = 0.05 },
+	SlideHome = { Volume = 0.7, Range = 40, Jitter = 0.05 },
+	ActionCycle = { Volume = 0.35, Range = 25, Jitter = 0.08 },
+	MagDrop = { Volume = 0.7, Range = 35, Jitter = 0.1 },
+	ShotTail = { Volume = 0.55, Range = 600, Jitter = 0.1 },
 	BarkBruteAlert = { Volume = 0.9, Range = 90, Jitter = 0.08 },
 	BarkBruteAttack = { Volume = 0.9, Range = 90, Jitter = 0.08 },
 	BarkBruteDeath = { Volume = 0.9, Range = 90, Jitter = 0.08 },
