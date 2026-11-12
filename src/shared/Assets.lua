@@ -195,6 +195,7 @@ Assets.Weapons = {
 	ScrapSpear = { Id = 103214457247078 },
 	Sledge = { Id = 140412858794705 },
 	ArcPistol = { Id = 137041276570028, Grip = "Pistol" },
+	DutyPistol = { Id = 72220435844363, Grip = "Pistol" }, -- Assets.GunKit.Striker17
 	Whisper = { Id = 113109859891091, Grip = "Pistol" }, -- Assets.GunKit.Whisper; the part named Slide moves when it is racked
 	-- the Front's firearms (tools/models/firearms.py): grip at the origin, barrel along Roblox +Z
 	AKM = { Id = 92592283500275, Grip = "Rifle" },

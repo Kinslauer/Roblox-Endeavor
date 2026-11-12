@@ -90,6 +90,20 @@ middle island (the plaza with the water tower). Nothing marks it.
       fragment can turn up in the hall. The Broker, the Fixer and the Dealer each have one new line about the
       Sumps.
 
+## Endeavor: calibres and plate (2026-11-12, Endeavor v95)
+Try it in the station (F2 → "Train intro" → Replay).
+- [ ] You start with the Whisper and 21 rounds of .22 LR (7 in the magazine, 14 spare). Hover the rounds in the
+      pack (Tab): the card says "calibre .22" and "fits Whisper". Hover the Whisper: "calibre .22  magazine 7".
+- [ ] Shoot an unaware sentry in the face or neck, under the helmet brim: he drops with one round.
+- [ ] Shoot a sentry in the top or back of the helmet: a high ping, sparks, no wound, and he turns on you at once
+      (red diamond). Shoot his chest plate, forearm guard or shin guard: a dull knock, no wound, and the same alert.
+- [ ] Shoot a sentry in the thigh, upper arm or belly: he is hurt, not dead, and he comes for you.
+- [ ] Search a downed sentry (tap X): he carries 9mm or 5.56, never both and never .22. About one in five has a
+      Duty Pistol as well. The Whisper cannot fire either calibre: its count does not go up.
+- [ ] Equip a Duty Pistol (Tab, Equip): it takes the 9mm you looted, 15 to a magazine, and it is loud: every sentry
+      near comes to look. It goes through a helmet. The chest plate stops it.
+- [ ] A character saved before this round keeps its old Whisper rounds as .22 LR.
+
 ## Endeavor: station fixes (2026-11-12, Endeavor v92)
 Try it in the station (F2 → "Train intro" → Replay).
 - [ ] Left click with the Whisper: a pale tracer leaves the muzzle, the muzzle flashes, the hand kicks, dust jumps

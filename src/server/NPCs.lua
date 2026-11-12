@@ -41,6 +41,7 @@ NPCs.Types = {
 	Raider = { Health = 70, Speed = 13, Damage = 9, Posture = 10, Range = 6, Cooldown = 1.4, Telegraph = 0.45, Active = 12, Recovery = 18, Aggro = 90, Xp = 35, Loot = "Raider",
 		Color = Color3.fromRGB(110, 40, 40), Size = Vector3.new(2, 5, 1), Weapon = "PipeClub" },
 	Brute = { Health = 220, Speed = 10, Damage = 22, Posture = 30, Range = 7, Cooldown = 2.4, Telegraph = 0.8, Active = 14, Recovery = 30, Aggro = 80, Xp = 90, Loot = "Raider",
+		Armor = { HelmetCover = 0.8, Helmet = 1, Vest = 2, Bracers = 1 }, -- slit helmet, scrap plate over the chest and arms
 		Color = Color3.fromRGB(90, 60, 30), Size = Vector3.new(3, 6.5, 1.6), Knockback = 40, Hyperarmor = true, Weapon = "Sledge" },
 	Shocker = { Health = 90, Speed = 15, Damage = 12, Posture = 8, Range = 9, Cooldown = 1.6, Telegraph = 0.5, Active = 10, Recovery = 16, Aggro = 110, Xp = 60, Loot = "Raider",
 		Color = Color3.fromRGB(40, 90, 140), Size = Vector3.new(2, 5, 1), Type = "Arc", Stun = 0.6, Weapon = "ShockBaton" },
@@ -49,8 +50,10 @@ NPCs.Types = {
 		Color = Color3.fromRGB(70, 60, 90), Size = Vector3.new(2, 5, 1), Weapon = "RebarBlade" },
 	-- station security (server/Stealth.SpawnGuard): it only fights once it has made you
 	Sentry = { Health = 85, Speed = 14, Damage = 11, Posture = 10, Range = 6.5, Cooldown = 1.4, Telegraph = 0.45, Active = 12, Recovery = 18, Aggro = 120, Xp = 45, Loot = "Sentry",
+		Armor = { HelmetCover = 0.45, Helmet = 1, Vest = 2, Bracers = 1, Shins = 1 }, -- brimmed steel helmet, plate vest, bracers, shin guards
 		Color = Color3.fromRGB(52, 60, 74), Size = Vector3.new(2, 5, 1), Type = "Arc", Stun = 0.4, Weapon = "ShockBaton" },
 	Warden = { Health = 900, Speed = 11, Damage = 26, Posture = 35, Range = 8, Cooldown = 2.0, Telegraph = 0.7, Active = 14, Recovery = 26, Aggro = 140, Xp = 600, Loot = "Supply",
+		Armor = { HelmetCover = 0.95, Helmet = 2, Vest = 2 },
 		Color = Color3.fromRGB(150, 30, 60), Size = Vector3.new(3.5, 8, 2), Knockback = 45, Hyperarmor = true, Boss = true, Weapon = "RebarBlade",
 		Moves = {
 			{ Name = "Slam", Chance = 0.35, Telegraph = 1.1, Damage = 40, Posture = 60, Radius = 14, Knockback = 70, Unblockable = true, Stun = 1.0 },
@@ -243,6 +246,9 @@ function NPCs.Spawn(typeName, position, opts)
 	hum.MaxHealth = def.Health * scale
 	hum.Health = hum.MaxHealth
 	model:SetAttribute("NPC", typeName)
+	for zone, rating in def.Armor or {} do
+		model:SetAttribute(zone, rating) -- where plate is, for rounds (Combat hit zones; Weapons.Calibers)
+	end
 	CollectionService:AddTag(model, "NPC")
 	if def.Boss then
 		model:SetAttribute("Boss", true)

@@ -28,8 +28,8 @@ Config.Tutorial = {
 	CheckpointRadius = 12,
 	CleanupSeconds = 12,
 	KitWeapon = "Whisper",
-	Kit = { Whisper = 1, Subsonic = 9 },
-	Locker = { RebarBlade = 1, ScrapVest = 1, Medkit = 2, Subsonic = 12, Scrap = 4 },
+	Kit = { Whisper = 1, Round22 = 21 }, -- three magazines of .22: the guards carry none of it
+	Locker = { RebarBlade = 1, ScrapVest = 1, Medkit = 2, Round22 = 28, Scrap = 4 },
 	Manifest = { Name = "LINE 9 MANIFEST", Text = "INBOUND: 1 . OUTBOUND: 0\nCARGO: STACK HARDWARE, 40 CRATES\nDELIVERY: FREIGHT LIFTS, CITY BAYS 01-12\nCONSIGNEE: WHOEVER SIGNS\nNOTE: NOTHING ON THIS LINE COMES BACK DOWN." },
 }
 -- Stealth (server/Stealth.lua, shared/Stealth.lua): light-level hiding, noise, guard awareness, takedowns.

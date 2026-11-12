@@ -623,6 +623,19 @@ function Stealth.SpawnGuard(position, opts)
 	model.Destroying:Connect(function()
 		guards[model] = nil
 	end)
+	-- a wound he survives tells him exactly what is going on
+	local lastHealth = g.hum.Health
+	g.hum.HealthChanged:Connect(function(health)
+		local hurt = health < lastHealth - 0.5
+		lastHealth = health
+		if hurt and health > 0 and g.state ~= "Down" and g.state ~= "Alert" and not g.busy then
+			local _, by = Combat.GetKiller(model)
+			if by and levels[by] == g.level then
+				g.aware[by] = 1
+				alert(g, by)
+			end
+		end
+	end)
 	g.hum.Died:Connect(function()
 		g.state = "Dead"
 		guards[model] = nil
@@ -1254,6 +1267,17 @@ function Stealth.Init()
 		end
 	end)
 	Net.On("Whistle", { rate = 1, burst = 2 }, Stealth.Whistle)
+
+	-- a round that rings off his helmet or thuds into his plate: he is unhurt, and he knows he is being shot at
+	Combat.Deflected.Event:Connect(function(char, model)
+		local g = guards[model]
+		local player = Players:GetPlayerFromCharacter(char)
+		if g and player and g.state ~= "Down" and not g.busy and levels[player] == g.level then
+			g.aware[player] = 1
+			g.seen[player] = char:GetPivot().Position
+			alert(g, player)
+		end
+	end)
 
 	-- shots: heard, and they put lights out
 	Combat.Shot.Event:Connect(function(char, inst, position, weapon)

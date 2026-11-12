@@ -118,7 +118,7 @@ function Tutorial.Consign(player)
 	end
 	data.Consigned = true
 	if Inventory.Count(player, "Manifest") == 0 then
-		Inventory.Add(player, "Manifest", 1, true)
+		Inventory.Add(player, "Manifest", 1) -- a full pack: it lands at your feet, never lost
 		Inventory.Push(player)
 	end
 	return true

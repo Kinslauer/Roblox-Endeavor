@@ -456,7 +456,15 @@ local function describe(item)
 	if def.Type == "Pack" and def.Grid then
 		line ..= ("\ngrid %dx%d, carry %d"):format(def.Grid[1], def.Grid[2], def.Carry or 0)
 	end
+	if def.Caliber then
+		-- a cartridge: what it is and what takes it
+		local fits = Weapons.Chambered(item.Id)
+		line ..= "\ncalibre " .. def.Caliber .. (if #fits > 0 then "\nfits  " .. table.concat(fits, ", ") else "")
+	end
 	local wdef = def.Type == "Weapon" and Weapons.Defs[item.Id]
+	if wdef and wdef.Caliber then
+		line ..= ("\ncalibre %s  magazine %d"):format(wdef.Caliber, wdef.MagSize or 1)
+	end
 	if wdef then
 		-- frame data: the combo's first strike and the heavy (Weapons.frames)
 		if wdef.Attacks and wdef.Attacks[1] then
@@ -2480,7 +2488,7 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 				TweenService:Create(flash, TweenInfo.new(0.07), { Transparency = 1, Size = Vector3.new(0.9, 0.9, 0.9) }):Play()
 				Debris:AddItem(flash, 0.08)
 				sparks(b, { Count = 7, Color = Color3.fromRGB(255, 220, 170), Size = 0.2, Speed = 10, Life = 0.25 })
-				Sounds.Play("ShotQuiet", from)
+				Sounds.Play(if c <= 20 then "ShotQuiet" else "ShotPistol", from) -- a suppressed .22 coughs; anything else cracks
 				-- the hand kicks: the gun arm jumps and settles (on top of whatever the arm animation holds)
 				pose(a, "RightShoulder", CFrame.Angles(math.rad(9), 0, 0), 0.03)
 				pose(a, "RightElbow", CFrame.Angles(math.rad(7), 0, 0), 0.03)
@@ -2497,6 +2505,11 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 				Debris:AddItem(beam, 0.1)
 			end
 		end
+	elseif kind == "Ping" and typeof(b) == "Vector3" then
+		-- a round stopped by plate: a bright ring off a helmet, a dull knock on a vest or a guard
+		local helmet = c == "Helmet"
+		sparks(b, { Count = if helmet then 12 else 6, Color = Color3.fromRGB(255, 236, 190), Size = 0.2, Speed = if helmet then 20 else 9, Life = 0.25 })
+		Sounds.Play("HitClang", b, { Pitch = if helmet then 2.1 else 0.8, Volume = if helmet then 1 else 0.6 })
 	elseif kind == "Damage" and typeof(a) == "Instance" and type(b) == "table" then
 		-- our hit landed: float the number off the victim and nudge the camera
 		local root = a:FindFirstChild("Head") or a:FindFirstChild("HumanoidRootPart")

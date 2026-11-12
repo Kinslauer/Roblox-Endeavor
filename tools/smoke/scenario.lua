@@ -60,14 +60,14 @@ check("arrival: the station is built for a new conduit", station ~= nil)
 local lvl = Tutorial_.Level(player)
 local function sawIntro(what) for _, e in M.FireLog do if e[1] == "Intro" and e[3] == what then return true end end return false end
 check("arrival: the ride plays (seated, held, doors shut)", sawIntro("Play") and char():GetAttribute("Cutscene") == true and root().Anchored == true and lvl.Doors[1].CanCollide == true)
-check("arrival: the kit is the silenced pistol", PlayerData_.Get(player).Equipped == "Whisper" and Inventory0.Count(player, "Subsonic") == 9)
+check("arrival: the kit is the silenced pistol", PlayerData_.Get(player).Equipped == "Whisper" and Inventory0.Count(player, "Round22") == 21)
 check("arrival: nobody notices a rider", player:GetAttribute("Stealth") == nil)
--- a ride with the pistol gone and rounds spent (a replay): it is back in hand with a full nine, never more
+-- a ride with the pistol gone and rounds spent (a replay): it is back in hand with three magazines, never more
 do
 	local prof = PlayerData_.Get(player)
-	Inventory0.Remove(player, "Subsonic", 6); Inventory0.Remove(player, "Whisper", 1); prof.Equipped = "Fists"
+	Inventory0.Remove(player, "Round22", 6); Inventory0.Remove(player, "Whisper", 1); prof.Equipped = "Fists"
 	Tutorial_.Start(player); run(0.2)
-	check("arrival: every ride ends armed (pistol back, nine rounds, no more)", prof.Equipped == "Whisper" and Inventory0.Count(player, "Whisper") == 1 and Inventory0.Count(player, "Subsonic") == 9)
+	check("arrival: every ride ends armed (pistol back, three magazines, no more)", prof.Equipped == "Whisper" and Inventory0.Count(player, "Whisper") == 1 and Inventory0.Count(player, "Round22") == 21)
 end
 Remotes.Intro:FireServer("Done"); run(0.5)
 check("arrival: the ride ends: free, doors open, the station is live", char():GetAttribute("Cutscene") == nil and root().Anchored == false and lvl.Doors[1].CanCollide == false and player:GetAttribute("Stealth") == true)
@@ -178,9 +178,9 @@ do
 	Remotes.Stance:FireServer("Stand"); run(0.2)
 	check("stance: standing again you can jump", char():GetAttribute("Stance") == "Stand" and char():GetAttribute("Crouched") == false and hum.JumpHeight > 1 and math.abs(hum.WalkSpeed - walk) < 0.01)
 	-- the magazine
-	Inventory0.Add(player, "Subsonic", 12, true)
+	Inventory0.Add(player, "Round22", 12, true)
 	Combat.ResetMags(player); run(0.1)
-	local have0 = Inventory0.Count(player, "Subsonic")
+	local have0 = Inventory0.Count(player, "Round22")
 	check("gun: a full magazine of seven", char():GetAttribute("Mag") == 7 and char():GetAttribute("MagSize") == 7)
 	local log0 = #M.FireLog
 	Remotes.Attack:FireServer(root().CFrame.LookVector); run(1)
@@ -191,12 +191,39 @@ do
 		if e[1] == "CombatEvent" and e[3] == "Bolt" then bolted = true end
 	end
 	check("gun: a shot is a shot (a round leaves, nobody swings)", bolted and not swung)
-	check("gun: a shot comes out of the magazine and the pack", char():GetAttribute("Mag") == 6 and Inventory0.Count(player, "Subsonic") == have0 - 1)
+	check("gun: a shot comes out of the magazine and the pack", char():GetAttribute("Mag") == 6 and Inventory0.Count(player, "Round22") == have0 - 1)
 	Remotes.Reload:FireServer(); run(0.3)
 	check("gun: R starts the change (busy, flagged)", char():GetAttribute("Reloading") == true and char():GetAttribute("Mag") == 6)
 	run(1.6)
 	check("gun: the new magazine is full", char():GetAttribute("Reloading") == nil and char():GetAttribute("Mag") == 7)
 	Stealth.Reset(station); run(0.2) -- that shot may have found a guard: everyone back to their rounds
+	-- calibres and plate
+	do
+		local WeaponsS = M.mockEnv.__require(RS.Shared.Weapons)
+		check("calibre: the Whisper is a .22 and the duty pistol a 9mm, each fed by its cartridge", WeaponsS.Defs.Whisper.Ammo == "Round22" and WeaponsS.Defs.DutyPistol.Ammo == "Round9"
+			and WeaponsS.Chambered("Round9")[1] == "Duty Pistol")
+		local sentry
+		for _, g in Stealth.Guards(station) do if Stealth.StateOf(g) ~= "Down" then sentry = g break end end
+		-- the mock's rigs are a root and a head: give this one a chest and a thigh where they would be
+		local head = sentry.Head
+		local base = sentry.HumanoidRootPart.Position
+		local function limb(name, offset, size)
+			local p = M.newInstance("Part"); p.Name = name; p.Size = size; p.CFrame = M.CF.new(base + offset); p.Parent = sentry
+			return p
+		end
+		head.Size = M.V3.new(1, 1, 1); head.CFrame = M.CF.new(base + M.V3.new(0, 2.2, 0))
+		local chest, thigh = limb("UpperTorso", M.V3.new(0, 0.8, 0), M.V3.new(2, 1.6, 1)), limb("RightUpperLeg", M.V3.new(0.5, -1.5, 0), M.V3.new(0.9, 1.4, 0.9))
+		local zTop, rTop = Combat.HitZone(sentry, head.Position + head.CFrame.UpVector * head.Size.Y * 0.4)
+		local zFace, rFace = Combat.HitZone(sentry, head.Position - head.CFrame.UpVector * head.Size.Y * 0.3)
+		local zChest, rChest = Combat.HitZone(sentry, chest.Position)
+		local zLeg, rLeg = Combat.HitZone(sentry, thigh.Position)
+		check("plate: helmet over the top of the head, flesh under the brim", zTop == "Helmet" and rTop >= 1 and zFace == "Head" and rFace == 0)
+		check("plate: a vest on the chest, flesh on the thigh", zChest == "Vest" and rChest >= 2 and zLeg == "Limb" and rLeg == 0)
+		check("plate: a .22 is stopped by every plate, a 9mm by the vest only", WeaponsS.Calibers[".22"].Pen < rTop and WeaponsS.Calibers["9mm"].Pen >= rTop and WeaponsS.Calibers["9mm"].Pen < rChest)
+		Combat.Deflected:Fire(char(), sentry, "Helmet", head.Position); run(0.3)
+		check("plate: a round off his helmet and he is on alert", Stealth.StateOf(sentry) == "Alert")
+		Stealth.Reset(station); run(0.2)
+	end
 	-- the hold-up: a gun on his back, up close
 	local up = {}
 	for _, g in Stealth.Guards(station) do if Stealth.StateOf(g) ~= "Down" then table.insert(up, g) end end
@@ -233,15 +260,17 @@ do
 		and ((ga.HumanoidRootPart.Position - root().Position) * M.V3.new(1, 0, 1)).Magnitude < 2.5 and math.abs(ga.HumanoidRootPart.CFrame.UpVector.Y) < 0.2)
 	-- his pockets: every guard can be searched, in the station too
 	local LootS = M.mockEnv.__require(SSS.Server.Loot)
-	local subs0 = Inventory0.Count(player, "Subsonic")
+	local nine0, five0 = Inventory0.Count(player, "Round9"), Inventory0.Count(player, "Round556")
 	Remotes.Cqc:FireServer("Search", ga); run(0.2)
 	local pocketKey = ga.HumanoidRootPart:GetAttribute("ContainerKey")
 	local carried = LootS.Contents(ga.HumanoidRootPart)
-	check("loot: a downed guard has pockets, with rounds in them", pocketKey ~= nil and (carried.Subsonic or 0) >= 2)
+	check("loot: a downed guard carries 9mm or 5.56, one of them, and no .22", pocketKey ~= nil and carried.Round22 == nil
+		and ((carried.Round9 or 0) >= 8) ~= ((carried.Round556 or 0) >= 10))
 	LootS.RevealAll(ga.HumanoidRootPart, player)
 	Remotes.ContainerTake:FireServer(pocketKey, 0); run(0.2)
-	check("loot: emptied into the pack, the body stays", Inventory0.Count(player, "Subsonic") == subs0 + carried.Subsonic and ga.Parent ~= nil
+	check("loot: emptied into the pack, the body stays", Inventory0.Count(player, "Round9") == nine0 + (carried.Round9 or 0) and Inventory0.Count(player, "Round556") == five0 + (carried.Round556 or 0) and ga.Parent ~= nil
 		and ga.HumanoidRootPart:GetAttribute("Looted") == true and Stealth.StateOf(ga) == "Down")
+	for id, n in carried do Inventory0.Remove(player, id, n) end -- the rest of the run wants the pack as it was
 	root().CFrame = M.CF.new(O + M.V3.new(-2, 3, 40)); run(0.1)
 	local woke = run(StealthCfg.Cqc.Throw.Down + 3, function() return Stealth.StateOf(ga) ~= "Down" end)
 	check("cqc: he comes round, on his feet and looking", woke and ga:GetAttribute("Downed") == nil and ga.HumanoidRootPart.CFrame.UpVector.Y > 0.9 and ga.HumanoidRootPart.Anchored == false)

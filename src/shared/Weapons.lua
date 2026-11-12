@@ -99,16 +99,57 @@ Weapons.Defs = {
 		},
 		Heavy = frames(22, 10, 30, 3, 39, 110, { Type = "Arc", Ranged = true, Stamina = 22, Knockback = 20 }),
 	},
-	-- a suppressed slug pistol: weak, but a guard two rooms off does not hear it (Noise = the radius it carries,
-	-- server/Stealth; anything without one is loud). Made for putting lights out.
+	-- a suppressed .22 pistol: a small round that a guard two rooms off does not hear (Noise = the radius it
+	-- carries, server/Stealth; anything without one is loud) and that only hurts where it finds flesh: any plate
+	-- stops it. Made for putting lights out and for the one clean shot.
 	Whisper = {
-		Name = "Whisper", Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.25, ChargeBonus = 1, Ammo = "Subsonic", Noise = 7,
-		MagSize = 7, ReloadSeconds = 1.5, Headshot = 8, -- one quiet round in the head drops a sentry
+		Name = "Whisper", Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.25, ChargeBonus = 1, Caliber = ".22", Noise = 7,
+		MagSize = 7, ReloadSeconds = 1.5,
 		Attacks = {
 			frames(12, 4, 6, 3, 19, 120, { Ranged = true, Stamina = 4 }),
 		},
 		Heavy = frames(12, 4, 6, 3, 19, 120, { Ranged = true, Stamina = 4 }),
 	},
+	-- station security's sidearm: 9mm, fifteen in the magazine, and everyone on the floor hears it
+	DutyPistol = {
+		Name = "Duty Pistol", Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.2, ChargeBonus = 1, Caliber = "9mm", Noise = 75,
+		MagSize = 15, ReloadSeconds = 1.8,
+		Attacks = {
+			frames(24, 8, 5, 3, 13, 150, { Ranged = true, Stamina = 5 }),
+		},
+		Heavy = frames(24, 8, 5, 3, 13, 150, { Ranged = true, Stamina = 5 }),
+	},
 }
+
+-- Calibres (owner, 2026-11-12: "a realistic ammunition system ... different weapons could be compatible with the
+-- same caliber"). A gun names its Caliber; the cartridge is an item any gun of that calibre feeds on.
+--   Item = the cartridge in the pack. Pen = the armour rating it defeats (a plate rated above it stops the round
+--   dead: no damage, a ping). Head / Limb = damage multipliers where it finds flesh. Through = the share of damage
+--   left after it has gone through armour it defeats.
+-- Armour ratings are character attributes (server/NPCs sets them from NPCs.Types[t].Armor): HelmetCover (share of
+-- the head's height the helmet covers, from the top), Helmet, Vest (upper torso), Bracers (lower arms), Shins.
+Weapons.Calibers = {
+	[".22"] = { Item = "Round22", Name = ".22 LR", Pen = 0, Head = 9, Limb = 0.6, Through = 1 },
+	["9mm"] = { Item = "Round9", Name = "9mm", Pen = 1, Head = 5, Limb = 0.7, Through = 0.6 },
+	["5.56"] = { Item = "Round556", Name = "5.56", Pen = 2, Head = 6, Limb = 0.8, Through = 0.75 },
+}
+for _, def in Weapons.Defs do
+	local cal = def.Caliber and Weapons.Calibers[def.Caliber]
+	if cal then
+		def.Ammo = cal.Item -- everything that counts or spends rounds reads Ammo
+	end
+end
+
+-- Which weapons a cartridge fits (tooltips).
+function Weapons.Chambered(itemId)
+	local out = {}
+	for _, def in Weapons.Defs do
+		if def.Ammo == itemId and def.Caliber then
+			table.insert(out, def.Name)
+		end
+	end
+	table.sort(out)
+	return out
+end
 
 return Weapons

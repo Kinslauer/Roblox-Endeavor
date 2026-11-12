@@ -23,6 +23,7 @@ local C, F = Config.Combat, Config.Flicker
 local BUFFER = 0.08 -- input buffer: an attack may start this early before the last one ends
 
 local Combat = {}
+Combat.Deflected = Instance.new("BindableEvent") -- (shooter char, model, zone, position): a round stopped by plate
 Combat.Shot = Instance.new("BindableEvent") -- (char, instanceHit?, position, weaponDef): every ranged shot (server/Stealth listens)
 Combat.World = nil -- set by Destruction: { Swing, Bolt, ImprovisedHit, Hit }
 Combat.Clashed = Instance.new("BindableEvent") -- (charA, charB, point): two blades met
@@ -731,11 +732,25 @@ local function pulse(char, spec, mods, seen, tracer)
 			model = model.Parent -- a piece of a one-piece body (the Skin model inside the character)
 		end
 		if model and getHum(model) then
-			-- a round in the head: the weapon's Headshot multiplier on bodies the game runs, a smaller one on players
-			local head = model:FindFirstChild("Head")
-			if head and result.Position.Y >= head.Position.Y - head.Size.Y / 2 - 0.15 then
-				local w = mods.weapon
-				damage *= if Players:GetPlayerFromCharacter(model) then C.HeadshotPlayers else (w and w.Headshot) or C.Headshot
+			-- where the round landed decides what it does (Weapons.Calibers): plate rated above the calibre stops
+			-- it dead (a ping, no wound, and whoever wears it knows he is being shot at); flesh takes it, the
+			-- head most of all
+			local w = mods.weapon
+			local cal = w and w.Caliber and Weapons.Calibers[w.Caliber]
+			local zone, rating = Combat.HitZone(model, result.Position)
+			local isPlayer = Players:GetPlayerFromCharacter(model) ~= nil
+			if cal and rating > cal.Pen then
+				fx("Ping", model, result.Position, zone)
+				Combat.Deflected:Fire(char, model, zone, result.Position)
+				return
+			end
+			if zone == "Head" or zone == "Helmet" then
+				damage *= if isPlayer then C.HeadshotPlayers elseif cal then cal.Head else C.Headshot
+			elseif cal and (zone == "Limb" or zone == "Bracers" or zone == "Shins") then
+				damage *= cal.Limb
+			end
+			if cal and rating > 0 then
+				damage *= cal.Through -- it went through plate first
 			end
 			strike(model)
 		elseif result and Combat.World then
@@ -761,6 +776,51 @@ local function pulse(char, spec, mods, seen, tracer)
 	if Combat.World then
 		Combat.World.Swing(char, origin, look, spec, damage, mods.weapon, mods.label == "Heavy", seen)
 	end
+end
+
+-- Where on a body a point is, and how much plate is there: zone "Helmet" | "Head" | "Vest" | "Body" | "Bracers" |
+-- "Shins" | "Limb", rating 0 for flesh. The limb is the one whose box the point is nearest to; the plate comes
+-- from the body's armour attributes (HelmetCover, Helmet, Vest, Bracers, Shins).
+function Combat.HitZone(model, position)
+	local best, bestD
+	for _, part in model:GetChildren() do
+		if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+			local p = part.CFrame:PointToObjectSpace(position)
+			local h = part.Size / 2
+			local d = (p - Vector3.new(math.clamp(p.X, -h.X, h.X), math.clamp(p.Y, -h.Y, h.Y), math.clamp(p.Z, -h.Z, h.Z))).Magnitude
+			if not bestD or d < bestD then
+				best, bestD = part, d
+			end
+		end
+	end
+	if not best then
+		return "Body", 0
+	end
+	local name = best.Name
+	local function plate(zone, flesh)
+		local rating = model:GetAttribute(zone)
+		if type(rating) == "number" and rating > 0 then
+			return zone, rating
+		end
+		return flesh, 0
+	end
+	if name == "Head" then
+		local cover = model:GetAttribute("HelmetCover")
+		local y = best.CFrame:PointToObjectSpace(position).Y
+		if type(cover) == "number" and y > best.Size.Y * (0.5 - cover) then
+			return plate("Helmet", "Head")
+		end
+		return "Head", 0
+	elseif name == "UpperTorso" then
+		return plate("Vest", "Body")
+	elseif name == "LowerTorso" then
+		return "Body", 0
+	elseif name:find("LowerArm") then
+		return plate("Bracers", "Limb")
+	elseif name:find("LowerLeg") then
+		return plate("Shins", "Limb")
+	end
+	return "Limb", 0
 end
 
 -- ===== The traced blade (shared/Swings; Mordhau-style) =====

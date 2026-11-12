@@ -314,6 +314,21 @@ Client tab screenshot, because Andy cannot read logs another way.
   `Kit.Board(billboard)` grows a built BillboardGui once). Anything that turns real pixels into offsets inside the
   HUD divides by Kit.Scale() (panel chrome `follow`, `cellAt`, drag ghost, tooltip, hearing ring). Station signs
   are 72 pixels per stud.
+- Calibres and plate (owner, 2026-11-12: "The weapons should operate on a realistic ammunition system ... different
+  weapons could be compatible with the same caliber ... the whisper should shoot .22 ... can only kill if it hits
+  flesh. Impacting the guard helmets would result in a ping that alerts the guard ... The guards should carry 9mm
+  or 5.56"). `Weapons.Calibers[name] = { Item, Name, Pen, Head, Limb, Through }` (.22 Pen 0, 9mm 1, 5.56 2); a gun
+  names `Caliber` and its `Ammo` is derived (the cartridge item: Round22, Round9, Round556; Items defs carry
+  `Caliber`), so any new gun only needs `Caliber = "9mm"`; `Weapons.Chambered(itemId)` for tooltips. Plate is
+  character attributes set by NPCs.Spawn from `NPCs.Types[t].Armor` (HelmetCover = share of the head from the top,
+  Helmet, Vest = upper torso, Bracers = lower arms, Shins = lower legs; Sentry 1/2/1/1, Brute, Warden).
+  `Combat.HitZone(model, position)` -> zone, rating (nearest limb box). In the Ranged branch of `pulse`: rating >
+  Pen = stopped (fx "Ping"(model, position, zone), `Combat.Deflected`, no damage); flesh takes Head / Limb
+  multipliers, defeated plate leaves `Through`. Stealth: Deflected and any wound he survives (HealthChanged) put
+  the guard on Alert at once. Loot: Items.LootTables entries may be `{ Pick = { { Weight, Items = {...} }, ... } }`
+  (exactly one bundle); Sentry = 9mm (30% with a DutyPistol) or 5.56. DutyPistol = Assets.GunKit.Striker17, 9mm, 15
+  rounds, Noise 75. No gun takes 5.56 in Endeavor yet. PlayerData.Load renames saved "Subsonic" to Round22.
+  Players have no plate zones yet (only the head multiplier). Tests: "calibre:", "plate:", "loot:" in scenario.lua.
 - The arrival (owner, 2026-11-10: "UI and Intro sequence overhauled ... riding a train ... revealing the weapons under
   a cloak ... racking the slide ... pans behind ... zooms into the fpv ... a tutorial stealth level ... subway ...
   based off splinter cell chaos theory and batman arkham involving environmental takedowns and light level hiding";
@@ -333,7 +348,7 @@ Client tab screenshot, because Andy cannot read logs another way.
   Takedown/Crouch/Whistle/Stealth; `Combat.Shot` breaks lamps and makes noise by weapon `Noise`), `src/client/
   Stealth.lua` (light meter, awareness diamonds and wedges, the X prompt, takedown camera and anims). Takedown spots
   are parts tagged `TakedownSpot` with attr Takedown = Panel/Rail/Ledge. Tuning: Config.Stealth. The Whisper
-  (Weapons, Ammo Subsonic, Noise 7) is the starting kit; Attack/Heavy remotes carry the camera direction for shots.
+  (Weapons, Caliber .22, Noise 7) is the starting kit; Attack/Heavy remotes carry the camera direction for shots.
   Any place can use the system: tag lamps, call Stealth.Enter(player, levelModel), spawn guards with opts.Level.
 - UI kit (same directive, replaces the 2026-11-04 theme block): `src/client/UI.lua` (`Kit.Theme`, `plate` = flat dark
   plate with a hairline edge and cyan corner ticks, `ticks`, `gauge`, `tween`, `spaced`, `keyHint`, `label`, `make`).
@@ -444,6 +459,14 @@ Client tab screenshot, because Andy cannot read logs another way.
   The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
 
 ## State (2026-11-12)
+- Endeavor v95 (2026-11-12): calibres and plate. The Whisper is a .22 (stopped by any plate, one round through
+  the face), sentries wear helmet / vest / bracers / shin guards and carry 9mm or 5.56, the Duty Pistol (9mm) can
+  be looted. Real server: start 12.1s, 0 warnings; hit zones read right on the real Sentry body (crown and back of
+  the head = helmet, face = flesh, chest = vest, belly and thigh = flesh); 200 loot rolls gave 132 9mm, 68 5.56,
+  44 pistols, never both calibres. Unseen in game: where the helmet line sits against the model, the ping sound.
+  Awaits Andy: docs/TESTING.md "Endeavor: calibres and plate". Open: no 5.56 gun in Endeavor yet; players have no
+  plate zones. The thread "Build Front stasis tank intro" is rebuilding the Front's guns from components: new guns
+  should name a `Caliber` from Weapons.Calibers.
 - Endeavor v94 (2026-11-12; real server: start 7.8s, 0 warnings, 18 skinned figures on their plinths, 4 overseers, 3 stores, the shaft head on the plaza island): the way down to the barrens (Sumps shaft, Barrens Hall 2, unhooking, the trail). Andy's
   lore answers are all in docs/LORE.md. Unseen in game: the hall's look, the statues' height at the cranks, the
   overseers' routes. Awaits Andy: docs/TESTING.md "Endeavor: the way down to the barrens".

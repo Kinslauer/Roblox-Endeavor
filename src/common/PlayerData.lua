@@ -116,6 +116,31 @@ function PlayerData.Load(player)
 			end
 		end
 	end
+	-- saves from before calibres (2026-11-12): the Whisper's "Subsonic" rounds are .22 now. Counts and grid stacks
+	-- alike, wherever they are kept (pack, vault).
+	do
+		local RENAMED = { Subsonic = "Round22" }
+		local function walk(t, depth)
+			if depth > 6 then
+				return
+			end
+			for old, new in RENAMED do
+				if type(t[old]) == "number" then
+					t[new] = (type(t[new]) == "number" and t[new] or 0) + t[old]
+					t[old] = nil
+				end
+				if t.Id == old then
+					t.Id = new
+				end
+			end
+			for _, v in t do
+				if type(v) == "table" then
+					walk(v, depth + 1)
+				end
+			end
+		end
+		walk(profile.Data, 0)
+	end
 	profile:ListenToRelease(function()
 		profiles[player] = nil
 		player:Kick("Your character was loaded in another session.")

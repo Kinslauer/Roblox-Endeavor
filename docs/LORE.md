@@ -86,6 +86,10 @@ How to read it:
   hideout site. Unclaimed bays hold crates stencilled STACK HARDWARE. [freight lifts]
 - Signing the manifest at a bay claims it; its crates become the conduit's computer. [freight lifts]
 - Line 9 runs one way: up. Nothing goes back down. [manifest]
+- Guns take real calibres, and a cartridge fits every gun chambered for it. The conduit arrives with a suppressed
+  .22 pistol (the Whisper): a small, very quiet round that only kills through flesh. The station's sentries wear
+  steel helmets and plate, and carry 9mm or 5.56, the common pistol and rifle calibres; none of them carries .22.
+  [Andy 2026-11-12]
 
 **Hinted**
 - New conduits are themselves the stack hardware Line 9 delivers. (The manifest counts one inbound passenger among
@@ -235,6 +239,8 @@ How to read it:
    facilities). (One way down, the Sumps shaft to Barrens Hall 2, is now Canon.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: Andy: realistic ammunition. Calibres (.22, 9mm, 5.56) shared between guns; the Whisper is a .22; the
+  sentries carry 9mm or 5.56 and their helmets stop a .22.
 - 2026-11-12: Endeavor v94, the way down: the Sumps shaft, Barrens Hall 2, unhooking, fragments "Shift Card" and
   "Hands", three contact lines. Question 8 narrowed.
 - 2026-11-12: Andy: the conduits supply the Front; each can link into and supply as many recruits as it can afford.
