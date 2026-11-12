@@ -114,7 +114,7 @@ middle island (the plaza with the water tower). Nothing marks it.
       fragment can turn up in the hall. The Broker, the Fixer and the Dealer each have one new line about the
       Sumps.
 
-## Endeavor: rifles (2026-11-12, Endeavor v100)
+## Endeavor: rifles (2026-11-12, Endeavor v101)
 Fastest way to all three: F2 → "Armory", then "Weapons Rack" (every weapon) and "Supplies" (60 of every cartridge).
 In the station, about one sentry in eight carries a Carbine with his 5.56 (search him: tap X on the body).
 - [ ] Equip the Carbine (Tab, Equip). It sits in both hands: right hand on the grip, left hand under the handguard,

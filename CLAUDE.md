@@ -538,8 +538,8 @@ Client tab screenshot, because Andy cannot read logs another way.
   "spares:", "field:", "barracks:" in war.lua, "parts:" in warclient.lua.
 
 ## State (2026-11-12)
-- Endeavor v100 (2026-11-12): rifles. The 5.56 Carbine (AR parts), the AK-47 (7.62x39) and the M1 Garand (7.62x51)
-  with a two-handed hold, automatic fire on the first two. Real server: start 7.5s, 0 warnings; all three assemble
+- Endeavor v101 (2026-11-12): rifles. The 5.56 Carbine (AR parts), the AK-47 (7.62x39) and the M1 Garand (7.62x51)
+  with a two-handed hold, automatic fire on the first two. Real server: start 8.6s, 0 warnings; all three assemble
   (3.3, 3.4 and 4.1 studs long) and the aim pose lines the bore up dead ahead on the real body. Unseen in game: the
   hold and the reload in motion, the rifle behind a wall, the feel of automatic fire. Awaits Andy: docs/TESTING.md
   "Endeavor: rifles".
