@@ -7,13 +7,15 @@ changed to fit".
 How to read it:
 - **Canon** is true and is already in the game (a place, an object, a line of machine text, a fragment).
 - **Hinted** is in the game only as a hint. Keep it a hint. Never state it in text.
+- **Truth** is decided by Andy but not yet shown in the game. It is what new work builds toward. Like everything
+  else, it reaches the player only through places, objects and hints, never stated in text.
 - **Open** has no answer yet. Andy decides. Until then, new work must not answer it, and must not contradict the
   limits written under it.
 - The source of each fact is in brackets: who decided it and where it shows in the game.
 
 ## The rules for new work (read before adding anything)
 1. Read this file before you add a place, a character, an item, a line of text or a system with a story reason.
-2. Check the addition against every **Canon** and **Hinted** line. If it contradicts one, change the addition to fit,
+2. Check the addition against every **Canon**, **Truth** and **Hinted** line. If it contradicts one, change the addition to fit,
    or drop it. Do not quietly change the canon to fit the addition.
 3. If an addition needs a new fact, write the fact here in the same commit, marked **Canon** (if the game now shows
    it) or **Hinted**, with its source. If the fact answers an **Open** question, stop and ask Andy first.
@@ -83,6 +85,25 @@ How to read it:
 - New conduits are themselves the stack hardware Line 9 delivers. (The manifest counts one inbound passenger among
   the cargo; the Broker: "Forty crates. Never forty-one.")
 
+## The corporations and the underground (Andy, 2026-11-12)
+
+**Truth**
+- Corporations own Line 9, as they own everything. [Andy 2026-11-12]
+- The corporations fund the Front's endless war, on both sides. [Andy 2026-11-12]
+- Most corporations operate out of bomb shelters deep underground. [Andy 2026-11-12]
+- The cloning facilities are in those shelters: the recruits' tanks, and the stack hardware that Line 9 carries up,
+  come from there. [Andy 2026-11-12; fits Line 9 and the tank plates]
+- The shelters also hold the barrens: halls where the corporations keep cybernetic brain slaves, wired to screens,
+  making power with their own hands. [Andy 2026-11-12]
+
+**Canon (already in the game, now explained by the Truth above)**
+- Line 9 comes up from below the city (the station is at SUBLEVEL 3), and nothing goes back down. [the arrival]
+- The manifest's consignee is withheld, and the Front Dispatch is stamped by both factions at once. [Config, Clues]
+
+**Hinted (how this may reach the player)**
+- Corporate marks on Line 9 hardware, the tanks and the Front's supply crates, never with a company explained.
+- The barrens only through traces: power lines running down, a fragment, a contact who will not talk about it.
+
 ## The hour (the cycle)
 
 **Canon**
@@ -92,6 +113,10 @@ How to read it:
 - It shows itself: debris flickers, colour drains, a second of white. No countdown, no explanation. [Andy 2026-10-31]
 - The green pockets stand outside the hour: colour does not drain there, and what lies there is not cleared.
   [Claude 2026-11-10]
+
+**Truth**
+- There is some kind of glitch or disconnection between reality and what the conduits experience. Little more is
+  known, and more is to be uncovered as the game goes on. [Andy 2026-11-12]
 
 **Hinted**
 - The world is not what it looks like. It may be a held, repeating record. Fragments: "Hour Zero" ("RESET HOLDS.
@@ -148,14 +173,22 @@ How to read it:
   to recruits on the Front.
 
 ## Open questions (Andy decides; new work must not answer these)
-1. What the hour really is: a simulation, an archive, a recording, a punishment? Limit: never confirm it in text.
-   Fragments may only add evidence.
-2. Who runs Line 9 and the Front, and who the consignee "withheld" was. Limit: nobody in the city knows.
+1. What the glitch behind the hour is, beyond "a disconnection between reality and what conduits experience"
+   (Andy, 2026-11-12: "more can be uncovered as we go"). Limit: never confirm it in text. Fragments may only add
+   evidence, one piece at a time.
+2. Which corporations, by name, and who signs as the withheld consignee. (That corporations run Line 9 and fund the
+   Front is now Truth.) Limit: nobody in the city can name them yet.
 3. Where "up" goes, and what the departed rich became. Limit: no one who left is ever met.
 4. Why the Front looks Cold War while the city is cyberpunk. Limit: do not explain it; the two must stay visibly
    different eras.
 5. What the green pockets are, and why the hour passes them by. Limit: they stay rare, small and quiet.
 6. Whether a conduit can ever leave. Limit: no exit exists in the game yet.
+7. Whether conduits have anything to do with the brain slaves in the barrens (are they connected, are they the same,
+   does a conduit's experience run on that power?). Limit: do not suggest an answer until Andy decides.
+8. Whether a player can ever reach the shelters or the barrens. Limit: no way down exists in the game yet.
 
 ## Change log
+- 2026-11-12: Andy's answers: the hour is a glitch or disconnection between reality and what conduits experience;
+  corporations own Line 9 and fund both sides of the Front; corporations, cloning facilities and the barrens of
+  brain slaves are in underground bomb shelters. New open questions 7 and 8.
 - 2026-11-12: written from the game as of Endeavor v90 / Front v26 and docs/DESIGN.md "The stack" (Andy's request).
