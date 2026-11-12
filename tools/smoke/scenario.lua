@@ -1784,6 +1784,87 @@ do
 	run(0.5)
 end
 
+-- the kit and two weapons (round 2: server/Kit.lua, server/Knock.lua, Combat's chain moves)
+do
+	as(player)
+	mendMe()
+	local KitS = M.mockEnv.__require(SSS.Server.Kit)
+	local CombatK = M.mockEnv.__require(SSS.Server.Combat)
+	local InvK = M.mockEnv.__require(SSS.Server.Inventory)
+	local data = PlayerData_.Get(player)
+	local c = player.Character
+	c.HumanoidRootPart.CFrame = M.CF.new(-900, 5, -900) -- away from everyone
+	run(0.5)
+	for _, id in { "Carbine", "Whisper", "DutyBelt", "PlateCarrier", "RebarBlade", "PipeClub", "Bandage" } do InvK.Add(player, id, 1, true) end
+	InvK.Add(player, "Round556", 30, true)
+	check("kit: with no belt a short weapon has nowhere to ride", KitS.MountFor(data, "Whisper") == nil and KitS.MountFor(data, "Carbine") == "Back")
+	Remotes.EquipItem:FireServer("DutyBelt"); run(0.3)
+	check("kit: a belt gives a hip holster", KitS.MountFor(data, "Whisper") == "Hip" and c:FindFirstChild("KitWorn") ~= nil)
+	Remotes.EquipItem:FireServer("Carbine"); run(0.3)
+	Remotes.EquipItem:FireServer("Whisper"); run(0.3)
+	local stowed = c:FindFirstChild("StowedWeapon")
+	check("kit: equipping a second weapon slings the first across the back", data.Equipped == "Whisper" and data.Second == "Carbine"
+		and c:GetAttribute("Second") == "Carbine" and (stowed == nil or stowed:GetAttribute("Mount") == "Back"))
+	run(1)
+	Remotes.Swap:FireServer(); run(0.6)
+	check("kit: 1 swaps the carried weapon into the hand", data.Equipped == "Carbine" and data.Second == "Whisper")
+	Remotes.EquipItem:FireServer("PlateCarrier"); run(0.3)
+	check("kit: a plate carrier puts a plate over the chest and pouches on the body", c:GetAttribute("Vest") == 2 and (c:GetAttribute("KitMags") or 0) >= 4
+		and (c:GetAttribute("KitMeds") or 0) >= 2)
+	-- a quick dressing from the pouches
+	local st = M.mockEnv.__require(SSS.Server.Common.WoundService).Get(c)
+	st.Bleed.ArmR = "Light"; M.mockEnv.__require(SSS.Server.Common.WoundService).Push(c)
+	local bandages = InvK.Count(player, "Bandage")
+	Remotes.QuickMed:FireServer(); run(0.8)
+	check("kit: 2 dresses the worst wound from the pouches", c:GetAttribute("Bleed_ArmR") == "" and InvK.Count(player, "Bandage") == bandages - 1)
+	-- the chain: across a swap, a held beat, a lock-on lunge
+	Remotes.EquipItem:FireServer("PipeClub"); run(0.3)
+	Remotes.EquipItem:FireServer("RebarBlade"); run(0.5)
+	local function swings()
+		local t = {}
+		for _, e in M.FireLog do if e[1] == "CombatEvent" and e[3] == "Swing" and e[4] == c then table.insert(t, e[5]) end end
+		return t
+	end
+	local before = #swings()
+	Remotes.Attack:FireServer(); run(0.9)
+	Remotes.Swap:FireServer(); run(0.4)
+	Remotes.Attack:FireServer(); run(0.9)
+	local sw = swings()
+	check("kit: a swap mid-chain carries the chain into the other weapon", #sw >= before + 2 and sw[#sw] == 2)
+	run(2)
+	Remotes.EquipItem:FireServer("RebarBlade"); run(0.5)
+	Remotes.Attack:FireServer(); run(0.35)
+	Remotes.Attack:FireServer(); run(0.05)
+	run(0.6)
+	Remotes.Attack:FireServer(); run(0.05)
+	local lungeSeen = false
+	Remotes.Attack:FireServer(nil, "Forward"); run(1.2)
+	Remotes.Attack:FireServer(nil, "Forward"); run(1.2)
+	for _, e in M.FireLog do if e[1] == "CombatEvent" and e[3] == "Lunge" then lungeSeen = true end end
+	sw = swings()
+	local labels = {}
+	for _, l in sw do labels[tostring(l)] = true end
+	check("kit: a forward press when locked on is a lunge", lungeSeen and labels.Lunge == true)
+	-- knocked down, not dead
+	local helper = makePlayer("Medic", 131)
+	Players.PlayerAdded:Fire(helper); run(0.5)
+	local hum = c:FindFirstChildOfClass("Humanoid")
+	hum.Health = 20
+	local hc = helper.Character
+	hc.HumanoidRootPart.CFrame = c.HumanoidRootPart.CFrame * M.CF.new(0, 0, 3)
+	run(ConfigM.SpawnProtection + 0.5)
+	CombatK.Damage(hc, c, 500)
+	check("knock: a blow that would kill a player knocks them down instead", c:GetAttribute("Knocked") == true and hum.Health > 0 and player.Character == c)
+	local KnockS = M.mockEnv.__require(SSS.Server.Knock)
+	check("knock: knocked, they cannot fight", CombatK.CanAct(c) == false)
+	check("knock: another player picks them up", KnockS.PickUp(c, helper) == true and c:GetAttribute("Knocked") == nil and hum.Health >= hum.MaxHealth * 0.25 - 0.01)
+	hum.Health = 10
+	CombatK.Damage(hc, c, 500)
+	check("knock: only once in a while; the next fatal blow kills", hum.Health <= 0)
+	run(8)
+	helper:Destroy()
+end
+
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

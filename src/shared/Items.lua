@@ -76,6 +76,10 @@ local SHAPES = {
 	Splint = { Size = { 1, 2 }, Weight = 0.4, Stack = 2 },
 	Painkillers = { Size = { 1, 1 }, Weight = 0.1, Stack = 4 },
 	SurgeryKit = { Size = { 2, 1 }, Weight = 1.2, Stack = 1 },
+	PlateCarrier = { Size = { 3, 3 }, Weight = 6 },
+	TacticalVest = { Size = { 3, 2 }, Weight = 2 },
+	DutyBelt = { Size = { 2, 1 }, Weight = 0.8 },
+	DropLegRig = { Size = { 2, 2 }, Weight = 1.2 },
 	PipeGrenade = { Size = { 1, 1 }, Weight = 0.8, Stack = 5 },
 	BreachingCharge = { Size = { 2, 1 }, Weight = 2.0, Stack = 3 },
 	PipeClub = { Size = { 1, 3 }, Weight = 3 },
@@ -149,6 +153,9 @@ Items.Recipes = {
 	Bandage = { Output = "Bandage", Count = 2, Inputs = { Cloth = 1 } },
 	Tourniquet = { Output = "Tourniquet", Count = 1, Inputs = { Cloth = 1, Wire = 1 } },
 	Splint = { Output = "Splint", Count = 1, Inputs = { Cloth = 1, Pipe = 1 } },
+	TacticalVest = { Output = "TacticalVest", Count = 1, Inputs = { Cloth = 6, Wire = 2 } },
+	DutyBelt = { Output = "DutyBelt", Count = 1, Inputs = { Cloth = 3, Scrap = 2 } },
+	DropLegRig = { Output = "DropLegRig", Count = 1, Inputs = { Cloth = 4, Scrap = 2, Wire = 1 } },
 	Satchel = { Output = "Satchel", Count = 1, Inputs = { Cloth = 4, Scrap = 1 } },
 	Rucksack = { Output = "Rucksack", Count = 1, Inputs = { Cloth = 8, Scrap = 4, Wire = 2 } },
 	FramePack = { Output = "FramePack", Count = 1, Inputs = { Cloth = 10, SheetMetal = 2, Wire = 4, Pipe = 2 } },
@@ -192,7 +199,7 @@ Items.LootTables = {
 	Vault = {
 		{ "Scrap", 1, 6, 12 }, { "Wire", 1, 3, 6 }, { "Battery", 0.8, 1, 3 }, { "Powder", 0.7, 2, 4 }, { "ArcCell", 0.8, 6, 12 },
 		{ "Medkit", 0.8, 1, 3 }, { "BreachingCharge", 0.5, 1, 1 }, { "PipeGrenade", 0.5, 1, 3 },
-		{ "Hemostat", 0.4, 1, 2 }, { "SurgeryKit", 0.2, 1, 1 }, { "Painkillers", 0.4, 1, 2 },
+		{ "Hemostat", 0.4, 1, 2 }, { "SurgeryKit", 0.2, 1, 1 }, { "Painkillers", 0.4, 1, 2 }, { "PlateCarrier", 0.2, 1, 1 },
 		{ "Sledge", 0.2, 1, 1 }, { "ArcPistol", 0.2, 1, 1 }, { "RiotPlate", 0.15, 1, 1 }, { "ConduitHarness", 0.12, 1, 1 },
 		{ "ReflexOptic", 0.12, 1, 1 }, { "ServoArm", 0.12, 1, 1 }, { "NeuralCore", 0.1, 1, 1 }, { "OverclockCore", 0.05, 1, 1 },
 		{ "EchoArray", 0.08, 1, 1 }, { "BloodTracer", 0.08, 1, 1 }, { "PistonLeg", 0.08, 1, 1 }, { "PlatedCore", 0.08, 1, 1 },
@@ -230,6 +237,7 @@ Items.LootTables = {
 		} },
 		{ "Scrap", 0.8, 1, 2 }, { "Ration", 0.45, 1, 1 }, { "Cloth", 0.4, 1, 2 }, { "Wire", 0.3, 1, 2 },
 		{ "Medkit", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 }, { "Bandage", 0.35, 1, 2 }, { "Tourniquet", 0.12, 1, 1 },
+		{ "PlateCarrier", 0.06, 1, 1 }, { "DutyBelt", 0.12, 1, 1 }, -- security's own kit
 	},
 	-- the barrens under the Sumps (server/Barrens.lua): the stores of the hall, rich in implants and cells
 	Barrens = {

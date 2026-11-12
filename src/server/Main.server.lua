@@ -91,6 +91,8 @@ local ok, err = pcall(function()
 	require(Server.IntroKit).Init()
 	Autonet.Init()
 	ImplantLibrary.Init()
+	require(Server.Kit).Init() -- two weapons, the rig and belt, quick dressings
+	require(Server.Knock).Init() -- knocked down, not dead
 	-- wounds on every player body (isolated: a fault here must not stop the city)
 	local medOk, medErr = pcall(require(Server.Medicine).Init)
 	if not medOk then

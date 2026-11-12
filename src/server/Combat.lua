@@ -73,7 +73,23 @@ Combat.FX = fx
 function Combat.CanAct(char)
 	local s = st(char)
 	local t = os.clock()
-	return isAlive(char) and t >= s.stunned and t >= s.busyUntil - BUFFER
+	return isAlive(char) and t >= s.stunned and t >= s.busyUntil - BUFFER and not char:GetAttribute("Knocked")
+end
+
+-- Two weapons (server/Kit): a swap may come mid-chain, between swings; never while stunned, knocked or reloading.
+function Combat.CanSwap(char)
+	local s = st(char)
+	local t = os.clock()
+	return isAlive(char) and t >= s.stunned and not s.reloading and not char:GetAttribute("Knocked")
+		and not (s.activeUntil and t < s.activeUntil)
+end
+function Combat.Swapped(char, seconds)
+	local s, t = st(char), os.clock()
+	s.queued = nil
+	s.busyUntil = math.max(s.busyUntil, t + seconds)
+	s.swappedAt = t
+	s.comboExpires = math.max(s.comboExpires, s.busyUntil + Config.Kit.Delay.After + Config.Kit.Delay.Window)
+	Combat.Used:Fire("Swap", Players:GetPlayerFromCharacter(char))
 end
 
 function Combat.SetBusy(char, duration)
@@ -378,6 +394,7 @@ local function land(victim, vs)
 		return
 	end
 	vs.juggledUntil = nil
+	vs.shotPops = 0
 	if victim.Parent then
 		victim:SetAttribute("Juggled", false)
 		local root = victim:FindFirstChild("HumanoidRootPart")
@@ -450,9 +467,24 @@ local function groupLaunch(attacker, victim, opts, t)
 	return n
 end
 -- A hit on a Juggled target keeps it up (until MaxJuggleHits) and keeps it stunned past the landing.
-local function pop(victim, vs, t)
+local function pop(victim, vs, t, shot)
 	local M = Config.Momentum
 	local root = victim:FindFirstChild("HumanoidRootPart")
+	if shot then
+		-- rounds keep a floating body up with small pops of their own (Config.Kit.ShotPop), past the melee cap
+		local P = Config.Kit.ShotPop
+		if not root or (vs.shotPops or 0) >= P.Max then
+			return
+		end
+		vs.shotPops = (vs.shotPops or 0) + 1
+		vs.juggledUntil = math.max(vs.juggledUntil or t, t) + P.Extend
+		Combat.Stun(victim, (vs.juggledUntil - t) + M.LandStun)
+		local v = root.AssemblyLinearVelocity
+		root.AssemblyLinearVelocity = Vector3.new(v.X * 0.5, math.max(v.Y, P.Velocity), v.Z * 0.5)
+		hang(victim, root)
+		fx("Juggle", victim, vs.juggleHits or 0)
+		return
+	end
 	if not root or (vs.juggleHits or 0) >= M.MaxJuggleHits then
 		return
 	end
@@ -577,6 +609,10 @@ local function applyDamage(attacker, victim, amount, opts)
 	-- armor knows Physical and Arc; thrown and explosive damage count as Physical for resists
 	amount *= 1 - math.min(C.MaxResist, vd.Resist[if opts.Type == "Arc" then "Arc" else "Physical"] or 0)
 
+	-- knocked down, not dead (server/Knock): a blow that would end a player drops them instead, once in a while
+	if vp and amount >= vhum.Health and not victim:GetAttribute("Knocked") and require(script.Parent.Knock).Try(victim, attacker) then
+		amount = math.max(0, vhum.Health - 1)
+	end
 	vhum:TakeDamage(amount)
 	victim:SetAttribute("LastHitType", opts.Type or "Physical")
 	if vp and amount > 0 then
@@ -607,7 +643,7 @@ local function applyDamage(attacker, victim, amount, opts)
 	local launchOk = opts.Launches and (opts.StartedAt or t) < stunnedBefore + Config.Momentum.LaunchGrace and launchable(victim)
 	if result ~= "blocked" and vhum.Health > 0 then
 		if juggled then
-			pop(victim, vs, t) -- keep it up there
+			pop(victim, vs, t, opts.Shot == true) -- keep it up there
 		elseif launchOk then
 			launch(attacker, victim, vs, t, direction) -- a heavy on an open hostile sends it up
 			groupLaunch(attacker, victim, opts, t) -- and a big enough weapon takes the crowd around it too
@@ -656,7 +692,7 @@ local function pulse(char, spec, mods, seen, tracer)
 		damage += s.arcBonus
 	end
 	local opts = { Posture = posture, Type = if mods.hitType and spec.Type ~= "Arc" then mods.hitType else spec.Type, Knockback = spec.Knockback, Stun = spec.Stun, Unblockable = mods.unblockable, GuardBreak = mods.guardBreak,
-		Mass = mods.weapon and mods.weapon.Mass, Launches = mods.label == "Heavy" and not spec.Ranged and not spec.NoLaunch, StartedAt = mods.startedAt }
+		Mass = mods.weapon and mods.weapon.Mass, Launches = (mods.label == "Heavy" or mods.launches == true) and not spec.Ranged and not spec.NoLaunch, StartedAt = mods.startedAt }
 	opts.WoundKind = WoundService.KindOf(mods.weapon and mods.weapon.Family, opts.Type, spec.Ranged)
 	if not spec.Ranged and Players:GetPlayerFromCharacter(char) then
 		damage *= WoundService.Effects(char).Melee -- an arm out or broken swings weaker
@@ -775,6 +811,7 @@ local function pulse(char, spec, mods, seen, tracer)
 				damage *= cal.Through -- it went through plate first
 			end
 			opts.HitAt = result.Position
+			opts.Shot = true
 			strike(model)
 		elseif result and Combat.World then
 			Combat.World.Bolt(char, result.Instance, damage, mods.weapon)
@@ -1287,7 +1324,7 @@ function Combat.Reload(player)
 	if s.reloading or m >= math.min(weapon.MagSize, have) or not Combat.CanAct(char) then
 		return false
 	end
-	local seconds = weapon.ReloadSeconds or 1.5
+	local seconds = (weapon.ReloadSeconds or 1.5) * (if (char:GetAttribute("KitMags") or 0) > 0 then Config.Kit.MagReload else 1) -- pouches
 	s.reloading = true
 	s.queued = nil
 	char:SetAttribute("Reloading", true)
@@ -1424,7 +1461,19 @@ local function setAim(char, aim)
 	end
 end
 
-function Combat.Attack(player, aim)
+-- A move made from a weapon's chain step: the step's own frames, scaled (Config.Kit: Delay, Roll, Lunge, Rising).
+local function variant(spec, damage, reach, stamina, posture)
+	local v = table.clone(spec)
+	v.Damage = spec.Damage * damage
+	v.Range = (spec.Range or 6) + (reach or 0)
+	v.Stamina = (spec.Stamina or 0) * (stamina or 1)
+	if posture and v.Posture then
+		v.Posture = spec.Posture * posture
+	end
+	return v
+end
+
+function Combat.Attack(player, aim, intent)
 	local char = player.Character
 	setAim(char, aim)
 	local weapon, improvised = weaponOf(player)
@@ -1432,20 +1481,57 @@ function Combat.Attack(player, aim)
 		return
 	end
 	if not Combat.CanAct(char) then
-		enqueue(player, char, Combat.Attack)
+		enqueue(player, char, function(p)
+			Combat.Attack(p, nil, intent)
+		end)
 		return
 	end
 	st(char).queued = nil
 	local s, t = st(char), os.clock()
-	local combo = if s.comboWeapon == weapon and t <= s.comboExpires then s.combo % #weapon.Attacks + 1 else 1
+	local KD = Config.Kit.Delay
+	local same = s.comboWeapon == weapon
+	local swapped = (s.swappedAt or 0) >= (s.lastSwingAt or 0) and (s.lastSwingAt or 0) > 0
+	local cont = (same or swapped) and t <= math.max(s.comboExpires, s.busyUntil + KD.After + KD.Window)
+	local combo = if cont then s.combo % #weapon.Attacks + 1 else 1
 	local spec = weapon.Attacks[combo]
+	local melee = not spec.Ranged
+	local label, shape, launches = combo, Swings.ShapeFor(weapon.Family, combo, false), false
+	local idle = t - s.busyUntil
+	if melee and (intent == "Forward" or intent == "Back") then
+		-- locked on (client/Style): forward lunges in, back cuts upward and lifts an open body
+		if intent == "Forward" then
+			local L = Config.Kit.Lunge
+			spec, label, shape = variant(weapon.Attacks[1], L.Damage, L.Reach, L.Stamina), "Lunge", "Thrust"
+			local root = char:FindFirstChild("HumanoidRootPart")
+			if root then
+				Remotes.CombatEvent:FireClient(player, "Lunge", root.CFrame.LookVector * L.Speed, L.Seconds)
+			end
+		else
+			local R = Config.Kit.Rising
+			spec, label, shape, launches = variant(weapon.Attacks[1], R.Damage, 0, R.Stamina), "Rising", "Uppercut", true
+		end
+		combo = 1
+	elseif melee and t - s.lastDodge <= Config.Kit.Roll.Window and s.lastDodge > 0 then
+		-- out of a roll: a thrust that carries the roll's reach
+		local R = Config.Kit.Roll
+		spec, label, shape = variant(spec, R.Damage, R.Reach), "Roll", "Thrust"
+	elseif melee and same and cont and combo >= 2 and idle >= KD.After and idle <= KD.After + KD.Window then
+		-- a held beat before the next press: the chain branches into a heavier blow
+		spec, label = variant(spec, KD.Damage, 0, 1, KD.Posture), "Delay"
+	end
 	if not Combat.SpendStamina(char, spec.Stamina) or not spendAmmo(player, weapon) then
 		return
 	end
 	s.block = false
 	char:SetAttribute("Blocking", false)
-	s.combo, s.comboWeapon = combo, weapon
-	local mods = { chargeBonus = weapon.ChargeBonus, label = combo, weapon = weapon, improvised = improvised, shape = Swings.ShapeFor(weapon.Family, combo, false) }
+	s.combo, s.comboWeapon, s.lastSwingAt = combo, weapon, t
+	if label ~= combo then
+		Combat.Used:Fire(label, player)
+	end
+	if launches then
+		holdForLauncher(char, spec, t)
+	end
+	local mods = { chargeBonus = weapon.ChargeBonus, label = label, weapon = weapon, improvised = improvised, shape = shape, launches = launches, startedAt = t }
 	if improvised then
 		mods.onHit = function(result)
 			if (result == "hit" or result == "blocked" or result == "guardbreak") and Combat.World then
@@ -1600,7 +1686,9 @@ function Combat.Dodge(player, direction)
 end
 
 function Combat.Init()
-	Net.On("Attack", { rate = 8, burst = 12, args = { "vector?" } }, Combat.Attack)
+	Net.On("Attack", { rate = 8, burst = 12, args = { "vector?", "string?" } }, function(player, aim, intent)
+		Combat.Attack(player, aim, if intent == "Forward" or intent == "Back" then intent else nil)
+	end)
 	Net.On("Heavy", { rate = 4, burst = 6, args = { "vector?" } }, Combat.Heavy)
 	Net.On("Reload", { rate = 2, burst = 3 }, Combat.Reload)
 	Net.On("Rack", { rate = 4, burst = 5 }, Combat.Rack)
@@ -1654,5 +1742,7 @@ function Combat.Init()
 		end
 	end)
 end
+
+Combat.Tag = tag -- server/Knock credits a finisher
 
 return Combat

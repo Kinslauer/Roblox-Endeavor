@@ -241,5 +241,18 @@ do -- the wounds seen from inside (shared/WoundFx): the body outline shows only 
 		and el.Boxes.ArmL.BackgroundColor3 ~= el.Boxes.Chest.BackgroundColor3 and el.Boxes.LegR.Break.Visible == true and el.Blur.Size > 1)
 	for _, k in { "W_ArmL", "Bleed_ArmL", "Broken_LegR", "Pain" } do c:SetAttribute(k, nil) end
 end
+do -- client/Style: the quiet combo count, the lunge, the swap and quick-med keys
+	local Style = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.Style)
+	local c = player.Character
+	Style.Event("Hit", workspace_, 5, nil, nil, c); Style.Event("Hit", workspace_, 5, nil, nil, c)
+	check("style: hits you land count up in the corner", Style.Count() >= 2)
+	Style.Event("Lunge", M.V3.new(0, 0, -70), 0.2)
+	check("style: a lunge pushes the body forward", c.HumanoidRootPart:FindFirstChild("LungeVelocity") ~= nil)
+	local okKeys, keysErr = pcall(function()
+		return Style.Began({ UserInputType = "UserInputType.Keyboard" }, "KeyCode.One") == true and Style.Began({ UserInputType = "UserInputType.Keyboard" }, "KeyCode.Two") == true
+	end)
+	if not okKeys then print("style keys error:", keysErr) end
+	check("style: 1 and 2 are the swap and the quick dressing", okKeys and keysErr == true)
+end
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

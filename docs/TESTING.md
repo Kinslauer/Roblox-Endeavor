@@ -850,6 +850,31 @@ say what looks wrong, a screenshot of the first-person view helps most.
 - [ ] Things to tell me about: arms that bend the wrong way or do not reach the gun, the gun too close or too far,
       the view sitting too low on the body (it may look out from the chest instead of the helmet).
 
+### Endeavor: the kit and two weapons (2026-11-12, Endeavor v106)
+Round 2 of the reference picks. Nothing here was seen in game before publishing; a screenshot of a carried weapon on
+the body helps most.
+- [ ] New kit in the trader's stock (Verdant Reach) and on the bench: Tactical Vest, Duty Belt, Drop-Leg Rig, and a
+      Plate Carrier (also from the armory's stores and, rarely, a sentry). Equip them from the inventory (Tab): the
+      vest or carrier shows on the chest with magazine pouches, the belt shows round the hips.
+- [ ] Hold one weapon, then equip a second: the first goes onto the body. A rifle, spear, club, blade or sledge goes
+      across the back; a pistol or baton goes to the belt (hip), the drop-leg rig (thigh) or the vest (chest). With
+      no belt or rig, a pistol has nowhere to go and goes back in the pack.
+- [ ] Press 1: the hand reaches to the carried weapon and the two change places. Press 1 again to change back.
+- [ ] Mid-combo: swing twice, press 1, swing again. The new weapon carries on from the next step of the chain.
+- [ ] Pause for a beat between two swings of a chain (about half a second), then swing: a heavier blow.
+- [ ] Attack right out of a roll (Q, then click): a quick thrust with longer reach.
+- [ ] Middle mouse locks on to the enemy you face (a small diamond on it; it never shows through walls). The view
+      keeps it ahead. Hold toward it and attack: you lunge in. Hold away and attack: a rising cut that lifts it.
+      Middle mouse again, or losing sight of it for a second, lets go.
+- [ ] Land hits: a small number counts them in the upper right corner and fades after a few quiet seconds.
+- [ ] Juggle an enemy, then shoot it: each round keeps it floating a little longer.
+- [ ] Wearing a plate carrier, a round of a smaller calibre that hits the chest pings off (as on a guard).
+- [ ] Magazine pouches make a gun's reload quicker. With a bleed, press 2: the right treatment from your pack goes
+      on (the rig or belt needs a med pouch).
+- [ ] Knocked down, not dead: a blow that would kill you leaves you lying on the ground instead. You can crawl and
+      you keep bleeding. Another player can hold X on you to pick you up, or hold F to finish you. After 30 seconds
+      with no help you die. It happens once every 90 seconds at most; the next fatal blow inside that time kills.
+
 ### Endeavor and Front: wounds (2026-11-12, Endeavor v104, Front v39)
 Round 1 of the reference picks. Every body now takes its hits part by part: head, chest, stomach, both arms, both
 legs. Health still ends a life, and a head or chest that reaches zero ends it too. Nothing here was seen in game

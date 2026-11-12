@@ -25,8 +25,8 @@ local GRIPS = {
 	Shoulder = CFrame.new(0, -0.1, 0, -0.918, 0.2537, 0.3048, -0.3956, -0.6391, -0.6596, 0.0275, -0.7261, 0.6871),
 }
 
-function HeldWeapons.Clear(char)
-	local held = char and char:FindFirstChild("HeldWeapon")
+function HeldWeapons.Clear(char, name)
+	local held = char and char:FindFirstChild(name or "HeldWeapon")
 	if held then
 		held:Destroy()
 	end
@@ -69,17 +69,19 @@ function HeldWeapons.Assemble(weaponId, attachments)
 	return holder
 end
 
--- opts (optional): Grip = a GRIPS name instead of the model's own, Scale = the size in the hand (1 = as modelled).
+-- opts (optional): Grip = a GRIPS name instead of the model's own, Scale = the size in the hand (1 = as modelled),
+-- Name / Part / C0 = carry it somewhere else (Endeavor's Kit: "StowedWeapon" on a torso or leg, C0 the mount).
 function HeldWeapons.Attach(char, weaponId, attachments, opts)
-	local held = char and char:FindFirstChild("HeldWeapon")
+	local name = (opts and opts.Name) or "HeldWeapon"
+	local held = char and char:FindFirstChild(name)
 	local build = if weaponId and GunParts.Guns[weaponId] then GunParts.Key(weaponId, attachments) else ""
 	if held and held:GetAttribute("WeaponId") == weaponId and (held:GetAttribute("Build") or "") == build then
 		return held
 	end
-	HeldWeapons.Clear(char)
+	HeldWeapons.Clear(char, name)
 	local entry = weaponId and Assets.Weapons[weaponId]
 	local spec = weaponId and GunParts.Guns[weaponId]
-	local hand = char and char:FindFirstChild("RightHand")
+	local hand = char and char:FindFirstChild((opts and opts.Part) or "RightHand")
 	if not ((entry or spec) and hand) then
 		return nil
 	end
@@ -97,7 +99,7 @@ function HeldWeapons.Attach(char, weaponId, attachments, opts)
 			model = holder
 		end
 	end
-	model.Name = "HeldWeapon"
+	model.Name = name
 	model:SetAttribute("WeaponId", weaponId)
 	model:SetAttribute("Build", build)
 	Assets.Dress(model)
@@ -133,7 +135,7 @@ function HeldWeapons.Attach(char, weaponId, attachments, opts)
 	local grip = Instance.new("Weld")
 	grip.Name = "Grip"
 	grip.Part0, grip.Part1 = hand, primary
-	grip.C0 = GRIPS[(opts and opts.Grip) or (if assembled then spec.Grip else entry.Grip) or "Melee"] or GRIPS.Melee
+	grip.C0 = (opts and opts.C0) or GRIPS[(opts and opts.Grip) or (if assembled then spec.Grip else entry.Grip) or "Melee"] or GRIPS.Melee
 	grip.C1 = origin:ToObjectSpace(primary.CFrame)
 	grip.Parent = primary
 	model.Parent = char

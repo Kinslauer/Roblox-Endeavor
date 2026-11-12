@@ -242,6 +242,7 @@ end
 function Gear.EquipWeapon(player, itemId)
 	local data = PlayerData.Get(player)
 	if data and Weapons.Defs[itemId] and (itemId == "Fists" or (data.Inventory[itemId] or 0) > 0) then
+		require(script.Parent.Kit).OnEquip(data, itemId, data.Equipped) -- the old one rides on the kit if it can
 		data.Equipped = itemId
 		Gear.Recompute(player)
 		return true
@@ -284,6 +285,8 @@ function Gear.Unequip(player, what)
 	end
 	if what == "Weapon" then
 		data.Equipped = "Fists"
+	elseif what == "Second" then
+		data.Second = nil
 	elseif what == "Pack" then
 		if Gear.UnequipPack then
 			Gear.UnequipPack(player)
@@ -305,6 +308,9 @@ function Gear.Validate(player)
 	end
 	if data.Equipped ~= "Fists" and (data.Inventory[data.Equipped] or 0) <= 0 then
 		data.Equipped = "Fists"
+	end
+	if data.Second and (data.Inventory[data.Second] or 0) <= 0 then
+		data.Second = nil
 	end
 	for field in SOURCES do
 		for slot, id in data[field] do

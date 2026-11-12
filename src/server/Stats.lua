@@ -43,6 +43,9 @@ function Stats.Apply(player, fill)
 		sprintMult = 1
 	end
 	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult * sprintMult * weightMult * crouchMult * handsMult * woundMult
+	if char:GetAttribute("Knocked") then
+		hum.WalkSpeed = Config.Kit.Knock.Crawl -- knocked down: a crawl (server/Knock.lua)
+	end
 
 	char:SetAttribute("Weapon", PlayerData.Get(player).Equipped)
 	HeldWeapons.Attach(char, Weapons.Held(PlayerData.Get(player).Equipped))
@@ -52,9 +55,10 @@ function Stats.Apply(player, fill)
 		table.insert(worn, id)
 	end
 	WornGear.Apply(char, worn) -- armor only: implants are drawn client-side from the Cyber_<slot> attributes
+	require(script.Parent.Kit).Apply(player, char) -- the rig and belt, the carried second weapon at its mount
 	hum.UseJumpPower = false
 	-- no jumping while low or with your hands on someone (Space brings you up a stance instead)
-	local grounded = char:GetAttribute("Crouched") or char:GetAttribute("NeckHold") or char:GetAttribute("Carrying") or char:GetAttribute("WoundNoJump")
+	local grounded = char:GetAttribute("Crouched") or char:GetAttribute("NeckHold") or char:GetAttribute("Carrying") or char:GetAttribute("WoundNoJump") or char:GetAttribute("Knocked")
 	hum.JumpHeight = if grounded then 0 else Config.Movement.JumpHeight * (d.JumpMult or 1)
 	for _, slot in Cybernetics.Slots do
 		char:SetAttribute("Cyber_" .. slot, PlayerData.Get(player).Cyber[slot])

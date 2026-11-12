@@ -2,7 +2,7 @@
 -- bonuses and TAGS; skills unlock and scale off the stats + tags you are actually wearing.
 local Armor = {}
 
-Armor.Slots = { "Head", "Chest", "Legs" }
+Armor.Slots = { "Head", "Chest", "Legs", "Rig", "Belt" }
 Armor.WeightScore = { Light = 0, Medium = 1, Heavy = 2 } -- heavier = more stamina cost, slower, sturdier block
 
 -- Resist: 0-1 damage reduction per damage type. Posture: extra max posture.
@@ -20,6 +20,32 @@ Armor.Pieces = {
 	ScrapGreaves = { Name = "Scrap Greaves", Slot = "Legs", Weight = "Light", Resist = { Physical = 0.04 }, Stats = { Agility = 1 }, Tags = { "Scav" } },
 	ServoGreaves = { Name = "Servo Greaves", Slot = "Legs", Weight = "Medium", Resist = { Physical = 0.05, Arc = 0.05 }, Stats = { Agility = 2 }, Speed = 0.04, Tags = { "Conduit" } },
 	PlatedGreaves = { Name = "Plated Greaves", Slot = "Legs", Weight = "Heavy", Resist = { Physical = 0.1 }, Posture = 12, Tags = { "Plated" } },
+
+	-- the kit (round 2): worn over the clothes, it carries things. Holster = where a carried short weapon rides
+	-- (server/Kit.lua draws it there); Mags = magazine pouches (faster reloads); Meds = med pouches (key 2 dresses
+	-- the worst wound from them); Plate = a plate's rating over the chest (stops rounds of a lower calibre Pen)
+	PlateCarrier = { Name = "Plate Carrier", Slot = "Rig", Weight = "Medium", Resist = { Physical = 0.05 }, Posture = 8,
+		Plate = 2, Holster = "Chest", Mags = 3, Meds = 1, Tags = { "Plated" } },
+	TacticalVest = { Name = "Tactical Vest", Slot = "Rig", Weight = "Light", Holster = "Chest", Mags = 4, Meds = 2, Tags = { "Scav" } },
+	DutyBelt = { Name = "Duty Belt", Slot = "Belt", Weight = "Light", Holster = "Hip", Mags = 1, Meds = 1 },
+	DropLegRig = { Name = "Drop-Leg Rig", Slot = "Belt", Weight = "Light", Holster = "Thigh", Mags = 2 },
 }
+
+-- What a worn kit holds: { Holster = { mount = true }, Mags, Meds, Plate } (profile.Armor = { slot = id })
+function Armor.Kit(worn)
+	local kit = { Holster = {}, Mags = 0, Meds = 0, Plate = 0 }
+	for _, id in worn or {} do
+		local p = Armor.Pieces[id]
+		if p then
+			if p.Holster then
+				kit.Holster[p.Holster] = true
+			end
+			kit.Mags += p.Mags or 0
+			kit.Meds += p.Meds or 0
+			kit.Plate = math.max(kit.Plate, p.Plate or 0)
+		end
+	end
+	return kit
+end
 
 return Armor

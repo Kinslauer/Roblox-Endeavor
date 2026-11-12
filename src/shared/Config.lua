@@ -818,4 +818,24 @@ Config.Wounds = {
 	HomeHeal = { PartPerSecond = 0.02, MendSeconds = 90 }, -- in your own compound with a medbay: parts heal, breaks mend
 }
 
+-- The kit and two weapons (round 2 of docs/Reference-Picks-Plan.md; server/Kit.lua, Combat, client/Style.lua)
+Config.Kit = {
+	SwapSeconds = 0.3, -- drawing the other weapon: the hand goes to its mount and back
+	-- where a carried second weapon rides: long ones across the back (a sling, always there), short ones need a place
+	-- on the kit (a belt's holster or frog, a rig's chest holster)
+	Long = { Rifle = true, Spear = true, Hammer = true, Blunt = true, Blade = true },
+	MedSeconds = 0.6, -- a quick dressing from a pouch (key 2)
+	MagReload = 0.75, -- reload time with magazines in rig pouches
+	Lock = { Range = 45, Cone = 0.45, Forward = 0.6, Back = -0.6 }, -- lock-on (middle mouse): reach, cone, stick
+	-- moves that come out of the chain (Combat.Attack): a pause before the next press, an attack out of a roll,
+	-- and the two direction moves while locked on (forward: a lunge; back: a rising cut)
+	Delay = { After = 0.3, Window = 0.6, Damage = 1.3, Posture = 1.6 },
+	Roll = { Window = 0.45, Damage = 1.15, Reach = 2 },
+	Lunge = { Damage = 1.2, Reach = 5, Speed = 70, Seconds = 0.18, Stamina = 1.5 },
+	Rising = { Damage = 0.9, Stamina = 1.4 },
+	ShotPop = { Velocity = 9, Extend = 0.25, Max = 14 }, -- rounds into a juggled body keep it up (their own count)
+	ComboReset = 2.5, -- the corner count clears after this long without a hit landing
+	Knock = { Seconds = 30, Revive = 3, Finish = 1.2, ReviveShare = 0.25, Again = 90, Crawl = 3 },
+}
+
 return Config

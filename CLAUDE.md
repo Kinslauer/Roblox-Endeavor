@@ -629,7 +629,32 @@ Client tab screenshot, because Andy cannot read logs another way.
   no look yet, wounds do not survive a rejoin, Endeavor players still have no plate zones of their own. Tests:
   "wound:" in scenario.lua and war.lua, "woundfx:" in client.lua.
 
+- The kit and two weapons (round 2 of docs/Reference-Picks-Plan.md; Andy: "The weapons they equip should animate onto
+  the character's rig, with specific points for each weapon. The kit should revolve around having body armor or plate
+  carrier, or tactical vest and a belt for attaching a sidearm, or meds or other gear"; "just a combo count in the
+  corner"). Armor slots `Rig` and `Belt` (Armor.Pieces PlateCarrier, TacticalVest, DutyBelt, DropLegRig: Holster
+  Hip/Thigh/Chest, Mags, Meds, Plate; `Armor.Kit(worn)`). `src/server/Kit.lua`: profile `data.Second` = the carried
+  weapon; `Kit.MountFor` (Config.Kit.Long families -> Back, else the kit's holster or nil), `Kit.OnEquip` (from
+  Gear.EquipWeapon: the old hand weapon goes to Second if it has a mount), `Kit.Apply` (from Stats.Apply: draws
+  "KitWorn" parts, sets char attrs Vest (plate rating: Combat.HitZone), KitMags, KitMeds, Second; stows the second
+  weapon as "StowedWeapon" through HeldWeapons.Attach opts {Name, Part, C0} and `seat` turns the grip-to-middle line
+  onto the mount's direction, verified on the real body), `Kit.Swap` (Remote "Swap", key 1; Combat.CanSwap /
+  Combat.Swapped keep the chain), `Kit.QuickMed` (Remote "QuickMed", key 2). Combat.Attack(player, aim, intent):
+  the chain continues across a swap; Config.Kit.Delay (a held beat -> heavier step, label "Delay"), Roll (attack
+  within Roll.Window of a dodge -> thrust), intent "Forward" (lunge, CombatEvent "Lunge" to the client) / "Back"
+  (rising cut that launches, `mods.launches`); `pop(.., shot)` lets rounds keep a juggled body up on their own count
+  (Config.Kit.ShotPop). `src/server/Knock.lua`: a blow that would kill a player knocks them instead (attr Knocked,
+  prompts PickUp X / Finish F, death after Knock.Seconds, once per Knock.Again; Combat.CanAct false; Stats crawl).
+  Client `src/client/Style.lua` (Start(gui) from Main): middle-mouse lock-on (camera lerps to the target after the
+  camera step; no mark through walls), `Intent()`, keys 1/2, the combo count (upper right), the lunge push, the swap
+  reach (Joints.Pose), Prone_Idle/Prone_Crawl while knocked. Tests: "kit:", "knock:" in scenario.lua, "style:" in
+  client.lua. Not done: a drawn knocked pose on other players' screens, magazines and meds shown in the pouches,
+  NPCs that lock on.
 ## State (2026-11-12)
+- Endeavor v106 (2026-11-12): the kit and two weapons, round 2 of the reference picks (rig and belt, weapons
+  carried at their mounts, key 1 swap mid-combo, key 2 quick dressing, lock-on with lunge and rising cut, delayed
+  and out-of-a-roll attacks, the corner combo count, shots that keep a juggle up, knocked down not dead). Awaits Andy:
+  docs/TESTING.md "Endeavor: the kit and two weapons".
 - Endeavor v104 + Front v39 (2026-11-12): wounds, round 1 of the reference picks (body parts, bleeds, breaks,
   pain, concussion, bruising under plate, six treatment items, surgery, medbay healing, the Reach's doctor, scars,
   hunger, the body outline). Real servers: Endeavor start 9.4s, Front 3.9s, 0 warnings; on the real Conduit body

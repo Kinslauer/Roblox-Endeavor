@@ -73,6 +73,8 @@ local UI, corner, stroke, make, label = Kit.Theme, Kit.corner, Kit.stroke, Kit.m
 local Stealth = require(script.Parent:WaitForChild("Stealth")) -- light meter, guard marks, takedowns, crouch (client/Stealth.lua)
 local Intro = require(script.Parent:WaitForChild("Intro")) -- the train ride (client/Intro.lua)
 local Handling = require(script.Parent:WaitForChild("Handling")) -- stances, aiming, reload, the wall (client/Handling.lua)
+local Style = require(script.Parent:WaitForChild("Style")) -- lock-on, two weapons, the combo count, knocked (client/Style.lua)
+Style.Start(gui)
 
 -- A safety net for everything built outside panel/addRow: buttons get the theme's shape, font and a hover;
 -- opaque boxes get rounded corners. Callers' colours are kept.
@@ -3321,11 +3323,14 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		clearPreview()
 		return
 	end
+	if Style.Began(input, key) then
+		return -- middle mouse lock-on, 1 swap weapons, 2 a quick dressing from the pouches
+	end
 	if Handling.Began(input, key) then
 		return -- stances (C, Space, Shift), and with a gun out: RMB aim, V sights, R reload, Q the wall or the prone roll
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		Remotes.Attack:FireServer(cameraDirection()) -- a shot goes where you look; a swing ignores it
+		Remotes.Attack:FireServer(cameraDirection(), Style.Intent()) -- a shot goes where you look; a swing ignores it
 		Handling.Trigger(function() -- an automatic keeps going while the button is down
 			if not menuOpen() then
 				Remotes.Attack:FireServer(cameraDirection())
