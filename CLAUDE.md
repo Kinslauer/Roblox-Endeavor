@@ -36,7 +36,7 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (408 checks), `war` = Front (145), `warclient` = the Front client plays the first link's stages, the screen, the controls, the gun in the view and its code-made animation (52), `stress` = budgets under load (5), `client` = the
+  `scenario` = Endeavor end to end (408 checks), `war` = Front (149), `warclient` = the Front client plays the first link's stages, the screen, the controls, the gun in the view and its code-made animation (56), `stress` = budgets under load (5), `client` = the
   Endeavor client boots + movement, dodge, animation, guard, air and handling checks (52). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
@@ -115,7 +115,7 @@ Client tab screenshot, because Andy cannot read logs another way.
 - Controls are the Cursed Gear layout: E flicker, F block/parry, Q dodge, X interact, M devour/app, R/Y/V skills,
   Z feint, G grab/throw, H drop, Shift sprint, C crouch (hold: prone; sprinting: dive), Space up a stance, B whistle, Tab inventory,
   L loadout, J attributes, O hideout, N recruit app, P helmetcam. With a gun out (owner, 2026-11-11): RMB aim, V sights, R reload, T rack (single-shot guns),
-  Q the wall (prone: roll); X close quarters (tap: takedown, throw or search a body; hold: neck grab or carry a body). Front: LMB fire, RMB aim, R reload (hold: keep the magazine), T rack/unjam, B selector, 1/2 switch,
+  Q the wall (prone: roll); X close quarters (tap: takedown, throw or search a body; hold: neck grab or carry a body). Front: LMB fire, RMB aim, R the magazine's next step (out, then in; hold: the one coming out is kept), T the action (rack, release, unjam), B selector, 1/2 switch,
   G frag, H dressing, Q/E lean (prone: roll), C crouch (hold: prone; sprinting: dive), Space up a stance / mantle,
   Z binoculars, Y check weapon (held: 1-4 change the part in a slot), K artillery, F dig, V sandbags, M app, U unlink.
 
@@ -599,6 +599,21 @@ Client tab screenshot, because Andy cannot read logs another way.
   Config.WarMovement.GunMotion (Rifle / Pistol: Travel, CycleSeconds, Well, Pouch, poses). Guns with no such parts
   (revolver, SKS, Mosin, Makarov) only get the whole-gun moves. Other players still see the old body poses. Tests:
   "gun motion:" in warclient.lua. Rule: no hand-drawn or recorded weapon animation; new weapon moves go in GunMotion.
+  Step 3, handling a step at a time (owner, 2026-11-12, with the demo's link, claude.ai/artifact/HRJ9MeUA7fQJkfBT2GnmH6,
+  and three pages on the game Receiver: "Reciever also has distinct weapon handling broken down to their very core
+  mechanics, can we implement that with less keys?"; the Receiver pages are blocked here, so this is from general
+  knowledge of it, ideas only). Server: `Guns.MagOut(w, keep, quick, careful, done)` (w.Mag = nil; no spare: the
+  magazine stays in the hand, `w.InHand`; clears a jam), `Guns.MagIn(w, done)` (fullest spare, or InHand topped up
+  with loose rounds one by one), `Guns.Reload` = whichever is next; nothing racks but `Guns.Rack`; Snapshot `Step`
+  ("Out" / "In") and `StepKeep`. Keys: R = next magazine step, T = the action, no new keys. GunMotion sequences
+  MagOut (Keep: stripped by hand to the pouch; else it falls: `DropMag`, ViewGun flies a copy), MagIn (stops
+  `Seat.Short`, backs off `WindUp`, driven home, `Rebound`, `Tug`), Rack, Release (a pistol's locked slide over a
+  loaded magazine: ViewGun.Play turns Rack with `Locked` into it). What the demo's code does, applied: every contact
+  is a named mark on the timeline that fires a jolt into the gun's springs (`GunMotion.Jolt`: Strip, Seat, Tug, Back,
+  Home -> `motion.Kick`), `Hide` (no magazine in the well; the gun stays tipped by `Bare`), the off hand's target is
+  smoothed, `Land` (a jump or landing dips the gun), `FirstShot`. Hud: NO MAGAZINE [R], MAGAZINE EMPTY [R], BOLT
+  OPEN [T]. Fingers (the demo poses them) are not possible on the soldier body. Tests: "handling:", "reload:",
+  "mags:" in war.lua, "gun motion:" in warclient.lua.
   Not done (next steps, in order): the camera and lighting pass, layered gun sound; the revolver's cylinder and
   hammer, a bolt for the Mosin; the same in Endeavor (told the train intro thread);
   Tests: "view gun:" in warclient.lua.
@@ -776,6 +791,11 @@ Client tab screenshot, because Andy cannot read logs another way.
   carrying bodies, the wall); v85 the same day: playtest fixes (pistol every ride, third person, quiet screen, cloak,
   takedown alignment). Awaits Andy's play-through: docs/TESTING.md "Endeavor: Metal Gear handling". Andy reported
   "the right click broke" on v79; no fault was found beyond first person not turning the body (fixed); asked what failed.
+- Front v42 (2026-11-12): gun handling a step at a time on R and T (magazine out, magazine in, the action), contact
+  jolts, the magazine that falls, landing dip. Real server (the client modules run there on the M4A1, G17, Garand):
+  the dropped magazine appears, the well is empty, the magazine seats exactly, the action waits for T, the left hand
+  stays within 2.12 of its shoulder (arm 2.26), jolts turn the gun 1.3 to 2.4 degrees; start 4.2s, 0 warnings. Unseen in game: all of it; the
+  jolt sizes are guesses. Awaits Andy: docs/TESTING.md "Front: the gun is worked step by step".
 - Front v40 (2026-11-12): weapon animation made by code for every gun in the view (slide and carrier cycle, brass,
   lock back, the reload with the hand on the magazine, rack, check, draw, selector). Real server: the G17, M4A1, AKM
   and Garand copies have their moving pieces, the action runs its travel and comes home (M4A1 0.32 studs, G17 0.22),

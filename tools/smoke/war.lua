@@ -107,10 +107,17 @@ do
 	for _, part in { "Head", "Chest", "Stomach", "ArmL", "ArmR", "LegL", "LegR" } do if (pc:GetAttribute("W_" .. part) or 1) < 1 then hurt = true end end
 	check("wound: rounds land on body parts, not only the pool", hurt)
 end
-Remotes.Reload:FireServer(); run(2.5)
+-- the magazine is worked a step at a time: R takes it out, R puts one in, T works the action
+Remotes.Reload:FireServer(); run(0.9)
+w = weaponState(u)
+check("handling: R takes the magazine out and nothing more", w.Mag == nil and w.Chamber == false and not w.Reloading)
+Remotes.Reload:FireServer(); run(1.2)
+w = weaponState(u)
+check("handling: R again seats a fresh magazine, the chamber still empty", w.Mag == 20 and w.Chamber == false and w.Spare == 2)
+Remotes.Rack:FireServer(); run(0.6)
 Firearms.MalfunctionChance = malfunction
 w = weaponState(u)
-check("staged reload seats a fresh magazine and chambers", w.Mag == 19 and w.Chamber == true and w.Spare == 2)
+check("handling: T works the action and chambers a round", w.Mag == 19 and w.Chamber == true and w.Spare == 2)
 
 -- kill: hit until dead, then the body is lootable by the enemy who then repairs it
 pc.Humanoid.Health = 30
@@ -432,11 +439,15 @@ do
 	-- reloads
 	run(2)
 	w.Busy, w.Reloading, w.Mag, w.Spare = 0, false, 5, { w.Def.MagSize, w.Def.MagSize }
-	Remotes.Reload:FireServer(false); run(6)
-	check("reload: the quick one drops the half-used magazine", w.Mag ~= nil and w.Mag >= w.Def.MagSize - 1 and #w.Spare == 1 and w.Dropped == 5)
+	w.Chamber = true
+	Remotes.Reload:FireServer(false); run(3)
+	Remotes.Reload:FireServer(false); run(3)
+	check("reload: a tap drops the half-used magazine; with a round chambered there is nothing to rack", w.Mag == w.Def.MagSize and w.Chamber == true and #w.Spare == 1 and w.Dropped == 5)
 	w.Busy, w.Reloading, w.Mag = 0, false, 7
-	Remotes.Reload:FireServer(true); run(8)
-	check("reload: the careful one keeps it", #w.Spare == 1 and w.Spare[1] == 7 and w.Dropped == nil)
+	Remotes.Reload:FireServer(true); run(4)
+	check("reload: held, the magazine goes back in the pouch", w.Mag == nil and #w.Spare == 2 and w.Dropped == nil)
+	Remotes.Reload:FireServer(false); run(4)
+	check("reload: the fullest magazine goes in", w.Mag == w.Def.MagSize and #w.Spare == 1 and w.Spare[1] == 7)
 	-- marking
 	local function figure(name, at)
 		local m = M.newInstance("Model"); m.Name = name
@@ -593,8 +604,10 @@ do -- guns and ammo (round 3): loads, loose rounds by hand, heat, kinds of jam, 
 	check("ammo: AP in the rifle, twenty loose", w.Load == "AmmoAP" and w.Loose == 20 and Guns.Snapshot(w).Load == "AP" and FA.LoadOf("AmmoAP").Pen > 0)
 	-- thumbing rounds in
 	w.Spare, w.Mag, w.Busy, w.Reloading = {}, 5, 0, false
-	check("mags: no magazine left, R loads the one in the gun by hand", Guns.Reload(w) == true and w.HandLoading == true)
-	run(w.Def.Reload.EjectMag + 15 * G.PerRound + w.Def.Reload.InsertMag + 0.4)
+	check("mags: no magazine left, R takes out the one in the gun and it stays in the hand", Guns.Reload(w) == true and w.InHand == 5)
+	run(w.Def.Reload.EjectMag * 2 + 0.4)
+	check("mags: R again thumbs loose rounds into it", Guns.Reload(w) == true and w.HandLoading == true)
+	run(15 * G.PerRound + w.Def.Reload.InsertMag * 2 + 0.4)
 	check("mags: fifteen rounds thumbed in", w.Mag == 20 and w.Loose == 5 and not w.Reloading)
 	-- heat
 	w.Mode, w.Chamber, w.Busy, w.Jammed = "Semi", true, 0, false

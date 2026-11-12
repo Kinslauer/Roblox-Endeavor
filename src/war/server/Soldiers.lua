@@ -1135,11 +1135,11 @@ function Soldiers.Init()
 			if s.Intro and #w.Spare < W.Intro.Sim.ResupplyBelow then
 				Guns.AddMagazines(w, 4 - #w.Spare)
 			end
-			Guns.Reload(w, keep == true, MV.QuickReload, MV.CarefulReload)
+			-- one step of the magazine change; the client hears when it starts and when it is over
+			Guns.Reload(w, keep == true, MV.QuickReload, MV.CarefulReload, function()
+				pushWeapon(player)
+			end)
 			pushWeapon(player)
-			task.delay(0.5, function() pushWeapon(player) end)
-			task.delay(2.5, function() pushWeapon(player) end)
-			task.delay(4.0, function() pushWeapon(player) end)
 		end
 	end)
 	Net.On("FieldMod", { rate = 3, burst = 4, args = { "string", "string?" } }, function(player, slot, id)

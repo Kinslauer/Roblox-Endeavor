@@ -807,6 +807,28 @@ Open the recruit app (M at the base, or the locker) and look at the weapons list
 - [ ] Automatic (AKM, AK-47, AK-74, also M4A1 and M14): with B on AUTO, rounds keep leaving while LMB is held.
 
 
+### Front: the gun is worked step by step (2026-11-12, Front v42)
+Every step of handling a gun is its own press, on two keys: R works the magazine, T works the action. Nothing racks
+the gun for you any more. This replaces the two reload lines in the v40 list below. Nothing was seen in game before
+publishing: say what looks or feels wrong.
+- [ ] With rounds left, tap R. The magazine drops out of the gun and falls to the ground. The gun stays tipped
+      with an empty well, the counter shows "--" and the screen says NO MAGAZINE [R]. Nothing else happens.
+- [ ] Tap R again. A fresh magazine comes up from the belt, stops just short, is driven home with a jolt of the
+      whole gun, and the hand tugs it once. There was a round in the chamber, so you can fire at once.
+- [ ] Hold R instead of tapping, with rounds left. The hand pulls the magazine out and puts it in the pouch (slower).
+      Tap R: the fullest magazine goes in, and the part-used one is still carried.
+- [ ] Fire a magazine empty. The action stays back and the screen says MAGAZINE EMPTY [R]. Tap R (out), tap R (in).
+      The screen now says BOLT OPEN [T] and the gun does not fire.
+- [ ] Press T. On the M4A1 the hand pulls the charging handle and lets it fly; on the G17 the thumb lets the slide
+      run forward with no hand leaving the gun. The gun jolts as the action shuts. Now it fires.
+- [ ] Press T with a round already chambered. The round is thrown out and the next one goes in (one round lost).
+- [ ] Take the magazine out and fire. The one round in the chamber fires and then the gun is empty.
+- [ ] With no spare magazines but loose rounds (the "+20" by the counter): tap R (the magazine comes out and stays
+      in the hand), tap R again: the rounds are thumbed in one by one and the magazine goes back.
+- [ ] Jump, and land from a drop. The gun dips and comes back on its springs.
+- [ ] Wait a second, then fire a burst. The first round kicks the view a little harder than the rest.
+- [ ] Is two presses of R plus T too slow in a fight? Say so and the times can be shortened.
+
 ### Front: weapon animation made by code (2026-11-12, Front v40)
 No animation here was drawn or recorded: every move is worked out by code each frame. Start with the G17 pistol and
 the M4A1 carbine; the other guns use the same moves. Nothing was seen in game before publishing: say what looks

@@ -578,13 +578,27 @@ Config.WarMovement = {
 	-- degrees (pitch up, yaw left, roll: negative tips the top of the gun to the right).
 	GunMotion = {
 		Enabled = true,
-		Seconds = { Rack = 0.5, Draw = 0.45, Selector = 0.18 },
+		Seconds = { Rack = 0.5, Release = 0.25, Draw = 0.45, Selector = 0.18 },
 		TriggerSeconds = 0.12, TriggerPull = 0.02,
 		Draw = { Position = Vector3.new(0.05, -0.9, -0.2), Rotation = Vector3.new(-48, -8, 10) }, -- where a drawn gun comes from
 		Selector = Vector3.new(1.4, 0, -3),
-		RackTug = 0.045, -- the whole gun pulled back with the handle
-		ReloadEase = 0.28, -- the gun coming back up after a reload
-		StripTug = 0.035, SeatBump = 0.045, SeatKick = 2.6, -- the magazine pulled out; pushed home (studs, degrees)
+		-- every contact of hand and metal jolts the gun's springs (Rot degrees a second: pitch up, yaw left, roll;
+		-- Pos studs a second in the gun's frame: +Z the muzzle): the magazine stripped out, driven home, tugged; the
+		-- action hitting its rear stop and slamming shut
+		Jolt = {
+			Strip = { Rot = Vector3.new(-60, 0, 45), Pos = Vector3.new(0, -1.6, 0) },
+			Seat = { Rot = Vector3.new(170, 0, -110), Pos = Vector3.new(0, 3, 0) },
+			Tug = { Rot = Vector3.new(-30, 0, 18), Pos = Vector3.new(0, -1, 0) },
+			Back = { Rot = Vector3.new(50, 0, 0), Pos = Vector3.new(0, 0, -4) },
+			Home = { Rot = Vector3.new(-120, 0, 0), Pos = Vector3.new(0, 0, 5) },
+		},
+		-- a magazine going in, as shares of its own length: it stops Short of home, backs off by WindUp, is driven
+		-- in; the hand comes off by Rebound and pulls by Tug to feel that it holds
+		Seat = { Short = 0.35, WindUp = 0.12, Rebound = 0.3, Tug = 0.12 },
+		Bare = 0.4, -- how much of the magazine-change pose the gun keeps while its well is empty
+		DropMag = { Seconds = 4, Spin = 5, Bounce = 0.25 }, -- a magazine let fall
+		FirstShot = 1.3, FirstShotAfter = 0.35, -- the first round after a pause kicks the view harder
+		Land = { Dip = 0.012, Pitch = 0.5, Max = 60 }, -- the gun dips on a landing and floats on a jump (per stud a second of fall)
 		Brass = { Size = Vector3.new(0.035, 0.035, 0.1), Speed = 9, Up = 5, Back = 2.5, Spin = 28, Seconds = 2.2, Bounce = 0.35, Max = 14,
 			Color = Color3.fromRGB(196, 158, 84) },
 		-- Travel = how far the action runs, as a share of its own length; CycleSeconds = one shot's trip back and

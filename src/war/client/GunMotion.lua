@@ -46,6 +46,9 @@ function GunMotion.New(shape, T)
 	self.Seq = {} -- name -> { At, Seconds, ... }
 	self.Check = 0
 	self.Open = 0 -- how far the action is held back (locked open on an empty magazine)
+	self.Bare = 0 -- how much the gun shows its empty well (no magazine in it)
+	self.HasMag = nil -- whether the magazine is in the gun, as the hands left it (nil: not known yet)
+	self.SeqEnd = -10
 	self.Brass = false
 	return self
 end
@@ -58,25 +61,22 @@ end
 function GunMotion:Click()
 	self.ClickAt = self.Clock
 end
--- name: "Reload" { Eject, Insert, Rack = seconds or nil }, "Rack" { Seconds }, "Draw", "Selector"
+-- name: "MagOut" { Seconds, Keep }, "MagIn" { Seconds }, "Rack" { Seconds }, "Release" (the slide let go by the
+-- thumb), "Draw", "Selector"
 function GunMotion:Start(name, opts)
 	local s = opts or {}
 	s.At = self.Clock
-	if name == "Reload" then
-		s.Seconds = (s.Eject or 0.6) + (s.Insert or 0.9) + (s.Rack or 0)
-	else
-		s.Seconds = s.Seconds or self.T.Seconds[name] or 0.4
-	end
+	s.Seconds = s.Seconds or self.T.Seconds[name] or 0.4
+	s.Done = {} -- the marks on its timeline that have been passed
 	self.Seq[name] = s
-	if name == "Reload" then
-		self.Seq.Rack = nil
+	if name == "MagOut" then
+		self.Seq.MagIn, self.Seq.Rack = nil, nil
+	elseif name == "MagIn" then
+		self.Seq.MagOut, self.Seq.Rack = nil, nil
 	end
 end
 function GunMotion:Stop(name)
-	local s = self.Seq[name]
-	if s and not s.EndAt then
-		s.EndAt = self.Clock -- finished early or late: ease out from wherever it is
-	end
+	self.Seq[name] = nil
 end
 function GunMotion:Playing(name)
 	return self.Seq[name] ~= nil
@@ -84,17 +84,33 @@ end
 
 local ZERO = Vector3.zero
 
--- state: { BoltOpen, Checking, Tired (0..1) }
--- returns { Parts = { name = Vector3 move }, Left = Vector3 or nil (nil: the rest point), LeftWeight (0..1 toward
--- Left), Pos (the whole gun, studs, in the gun's own frame), Rot (degrees: pitch up, yaw left, roll),
--- Brass = true once per shot }
+-- state: { BoltOpen, NoMag (the server's word that no magazine is in the gun), Checking, Aim (0..1), Tired (0..1) }
+-- returns { Parts = { name = Vector3 move }, Hide = { name = true } (a piece that is not on the gun now), Left =
+-- Vector3 or nil (nil: the rest point), LeftWeight (0..1 toward Left), Pos (the whole gun, studs, in the gun's own
+-- frame), Rot (degrees: pitch up, yaw left, roll), Kick = { Rot, Pos } or nil (a jolt for the gun's springs: speed),
+-- Brass = true once per shot, DropMag = true once when a magazine is let fall }
 function GunMotion:Step(dt, state)
 	self.Clock += dt
 	local now, S, K, T = self.Clock, self.Shape, self.Kind, self.T
-	local parts = {}
+	local parts, hide = {}, {}
 	local pos, rot = ZERO, ZERO
 	local left, leftWeight = nil, 0
 	local back = Vector3.new(0, 0, -1)
+	local kickRot, kickPos = ZERO, ZERO
+	local dropMag = false
+	-- a mark on a timeline: true the one step it is passed; its jolt goes to the gun's springs
+	local function mark(seq, name, u, at)
+		if u >= at and not seq.Done[name] then
+			seq.Done[name] = true
+			local j = T.Jolt[name]
+			if j then
+				kickRot += j.Rot
+				kickPos += j.Pos
+			end
+			return true
+		end
+		return false
+	end
 
 	-- the action on a shot: thrown back fast, pushed home slower
 	local since = now - self.ShotAt
@@ -145,7 +161,7 @@ function GunMotion:Step(dt, state)
 		end
 	end
 
-	-- tired arms (round 3, the server's w.Fatigue while aiming): the gun wanders in a slow figure, more as they tire
+	-- tired arms (the server's w.Fatigue while aiming): the gun wanders in a slow figure, more as they tire
 	local tired = state.Tired or 0
 	if tired > 0.02 then
 		local amp = (K.Sway or 1.2) * tired
@@ -162,96 +178,142 @@ function GunMotion:Step(dt, state)
 	end
 
 	-- the hand working the action: to the handle, back with it, let go (the action flies home), hand away
-	local function rackMove(u)
-		-- u 0..1 over the whole move; returns hand weight, pull 0..1
+	local rack = self.Seq.Rack
+	if rack then
+		local u = seg(now, rack.At, rack.At + rack.Seconds)
 		local reach = smooth(seg(u, 0, 0.3))
 		local drawn = if u < 0.62 then smooth(seg(u, 0.3, 0.62)) else 1 - outCubic(seg(u, 0.62, 0.72))
 		local leave = 1 - smooth(seg(u, 0.72, 1))
-		return math.min(reach, leave), drawn
-	end
-	local function applyRack(u, weight)
-		local w, drawn = rackMove(u)
-		local travel = self.Travel * drawn
 		if S.Charging then
 			handle = math.max(handle, drawn)
 		end
 		action = math.max(action * (1 - seg(u, 0.3, 0.62)), drawn) -- the hand takes the action over from the lock
-		left = S.Handle + back * travel + K.HandleGrip
-		leftWeight = math.max(leftWeight, w * weight)
-		rot += K.RackRotation * (bump(seg(u, 0.05, 0.95)) * weight)
-		pos += back * (T.RackTug * bump(seg(u, 0.3, 0.7)) * weight)
+		left = S.Handle + back * (self.Travel * drawn) + K.HandleGrip
+		leftWeight = math.max(leftWeight, math.min(reach, leave))
+		rot += K.RackRotation * bump(seg(u, 0.05, 0.95))
+		mark(rack, "Back", u, 0.6) -- the action hits its stop
 		if u > 0.62 then
 			self.Open = 0 -- let go: the lock is off
 			self.Released = true
 		end
-	end
-
-	local rack = self.Seq.Rack
-	if rack then
-		local u = seg(now, rack.At, rack.At + rack.Seconds)
-		applyRack(u, 1)
+		mark(rack, "Home", u, 0.72) -- and slams shut
 		if u >= 1 then
 			self.Seq.Rack = nil
+			self.SeqEnd = now
+		end
+	end
+	-- the slide let go by the thumb: no hand leaves the gun, the slide just runs home
+	local rel = self.Seq.Release
+	if rel then
+		local u = seg(now, rel.At, rel.At + rel.Seconds)
+		if u > 0.35 then
+			self.Open = 0
+			self.Released = true
+		end
+		mark(rel, "Home", u, 0.55)
+		if u >= 1 then
+			self.Seq.Release = nil
 		end
 	end
 
-	-- the reload: tip the gun, hand to the magazine, magazine out and away, a fresh one up and in, rack if empty
-	local re = self.Seq.Reload
-	if re then
-		local t = now - re.At
-		local tEject, tInsert, tRack = re.Eject or 0.6, re.Insert or 0.9, re.Rack or 0
-		local out = 1 -- how much of the reload pose is on
-		if re.EndAt then
-			out = 1 - smooth(seg(now, re.EndAt, re.EndAt + T.ReloadEase))
-			if out <= 0 then
-				self.Seq.Reload = nil
+	-- the magazine. What the hands last did decides whether it is in the gun; with no move under way the server's
+	-- word is taken (a moment after a move ends, so a late message does not undo it).
+	local out, into = self.Seq.MagOut, self.Seq.MagIn
+	if self.HasMag == nil or (not out and not into and now - self.SeqEnd > 0.6) then
+		self.HasMag = not state.NoMag
+	end
+	local well = if S.TopFed then Vector3.new(0, 1, 0) else K.Well -- the way a magazine (or a clip, from above) leaves
+	local magFoot = S.Mag + well * (S.MagSize.Y * 0.5)
+	local drop = math.max(S.MagSize.Y * 1.15, 0.25)
+	local pouch = K.Pouch
+	local tilt = 0 -- how much of the magazine-change pose is on
+	if out then
+		local u = seg(now, out.At, out.At + out.Seconds)
+		tilt = smooth(seg(u, 0, 0.3))
+		if out.Keep then
+			-- the hand arrives, strips the magazine down the well and carries it to the pouch
+			local arrive = outBack(seg(u, 0, 0.38))
+			local strip = smooth(seg(u, 0.42, 0.72))
+			local away = smooth(seg(u, 0.72, 1))
+			local move = well * (drop * strip) + (pouch - magFoot - well * drop) * away
+			mark(out, "Strip", u, 0.42)
+			if move.Magnitude > 1e-4 then
+				parts.Magazine = move
 			end
-		elseif t >= re.Seconds then
-			re.EndAt = now -- done: the gun comes back up
+			left, leftWeight = magFoot + move + K.MagGrip, arrive
+		else
+			-- the catch is pressed and the magazine falls free; the off hand is already going for the next one
+			if mark(out, "Strip", u, 0.3) then
+				dropMag = true
+				out.Fell = true
+			end
+			if out.Fell then
+				hide.Magazine = true
+			end
+			left, leftWeight = pouch, smooth(seg(u, 0.2, 0.85))
 		end
-		local tilt = smooth(seg(t, 0, tEject * 0.45)) * out
+		if u >= 1 then
+			self.Seq.MagOut = nil
+			self.HasMag = false
+			self.SeqEnd = now
+			self.HandAtPouch = now
+		end
+	elseif into then
+		-- a magazine comes up from the pouch, stops short under the well, backs off a touch, is driven home; the
+		-- hand rebounds off it, tugs it to feel that it holds, and goes back to the gun
+		local u = seg(now, into.At, into.At + into.Seconds)
+		local short, wind = drop * T.Seat.Short, drop * T.Seat.WindUp
+		local along -- how far down the well the magazine is
+		local rise = smooth(seg(u, 0.05, 0.5))
+		if u < 0.5 then
+			along = nil
+		elseif u < 0.6 then
+			along = short + wind * smooth(seg(u, 0.5, 0.6))
+		else
+			local v = seg(u, 0.6, 0.7)
+			along = (short + wind) * (1 - v * v)
+		end
+		local move
+		if along == nil then
+			move = (pouch - magFoot):Lerp(well * short, rise)
+			if u < 0.05 then
+				hide.Magazine = true
+			end
+		else
+			move = well * along
+		end
+		local seated = mark(into, "Seat", u, 0.7)
+		if seated then
+			self.HasMag = true
+		end
+		local hand = magFoot + move + K.MagGrip
+		if u >= 0.7 then
+			move = ZERO
+			local rebound = bump(seg(u, 0.7, 0.8)) * drop * T.Seat.Rebound
+			local tug = bump(seg(u, 0.8, 0.9)) * drop * T.Seat.Tug
+			hand = magFoot + K.MagGrip + well * (rebound + tug)
+			mark(into, "Tug", u, 0.85)
+		end
+		if move.Magnitude > 1e-4 then
+			parts.Magazine = move
+		end
+		left, leftWeight = hand, 1 - smooth(seg(u, 0.9, 1))
+		tilt = 1 - smooth(seg(u, 0.78, 1))
+		if u >= 1 then
+			self.Seq.MagIn = nil
+			self.HasMag = true
+			self.SeqEnd = now
+		end
+	elseif not self.HasMag then
+		hide.Magazine = true
+	end
+	-- with no magazine in it the gun stays tipped a little, showing its empty well (less so at the sights)
+	local bare = if self.HasMag or into then 0 else T.Bare * (1 - (state.Aim or 0))
+	self.Bare += (bare - self.Bare) * math.min(1, dt * 7)
+	tilt = math.max(tilt, self.Bare)
+	if tilt > 0.001 then
 		pos += K.Reload.Position * tilt
 		rot += K.Reload.Rotation * tilt
-
-		local well = if S.TopFed then Vector3.new(0, 1, 0) else K.Well -- the way a magazine (or a clip, from the top) leaves the gun
-		local magBottom = S.Mag + Vector3.new(0, -S.MagSize.Y * 0.5, 0)
-		local pouch = K.Pouch
-		local drop = math.max(S.MagSize.Y * 1.15, 0.25)
-		local move, hand, weight
-		if t < tEject then
-			-- hand arrives (first 45%), strips the magazine (to 80%), carries it off (to 100%)
-			local arrive = outBack(seg(t, 0, tEject * 0.45))
-			local strip = smooth(seg(t, tEject * 0.45, tEject * 0.8))
-			local away = smooth(seg(t, tEject * 0.8, tEject))
-			move = well * (drop * strip) + (pouch - magBottom) * away
-			hand = magBottom + move + K.MagGrip
-			weight = arrive
-			pos += well * (T.StripTug * bump(seg(t, tEject * 0.45, tEject * 0.7)))
-		elseif t < tEject + tInsert then
-			-- the fresh magazine: up from the pouch to under the well (55%), straight in with a bump (to 85%), hand off
-			local v = t - tEject
-			local rise = smooth(seg(v, 0, tInsert * 0.55))
-			local seat = seg(v, tInsert * 0.55, tInsert * 0.8)
-			local under = well * drop
-			local from = pouch - magBottom
-			move = from:Lerp(under, rise):Lerp(ZERO, outBack(seat))
-			hand = magBottom + move + K.MagGrip
-			weight = if tRack > 0 then 1 else 1 - smooth(seg(v, tInsert * 0.85, tInsert))
-			pos += -well * (T.SeatBump * bump(seg(v, tInsert * 0.72, tInsert * 0.9)))
-			rot += Vector3.new(T.SeatKick, 0, 0) * bump(seg(v, tInsert * 0.74, tInsert * 0.92))
-		else
-			move = ZERO
-			if tRack > 0 and t < re.Seconds then
-				applyRack((t - tEject - tInsert) / tRack, out)
-			end
-		end
-		if move and move.Magnitude > 1e-4 then
-			parts.Magazine = move * out
-		end
-		if hand then
-			left = hand
-			leftWeight = math.max(leftWeight, weight * out)
-		end
 	end
 
 	if action > 0.001 and S.Action then
@@ -262,7 +324,10 @@ function GunMotion:Step(dt, state)
 	end
 	local brass = self.Brass and S.Action ~= nil
 	self.Brass = false
-	return { Parts = parts, Left = left, LeftWeight = leftWeight, Pos = pos, Rot = rot, Brass = brass, Action = action }
+	return {
+		Parts = parts, Hide = hide, Left = left, LeftWeight = leftWeight, Pos = pos, Rot = rot, Brass = brass, Action = action,
+		Kick = if kickRot ~= ZERO or kickPos ~= ZERO then { Rot = kickRot, Pos = kickPos } else nil, DropMag = dropMag,
+	}
 end
 
 return GunMotion

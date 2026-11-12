@@ -229,19 +229,46 @@ do
 		check("gun motion: the case is cleared away", cam:FindFirstChild("Case") == nil)
 		state({ Chamber = false, BoltOpen = true, Mag = 0 }); run(0.4)
 		check("gun motion: on the last round the action stays back", at("Carrier_Gunmetal").Z < home.Z - 0.25)
-		-- the reload: the magazine comes out with the hand on it, a fresh one goes in, the hand racks the gun
-		state({ Chamber = false, BoltOpen = true, NoMag = true, Reloading = true, Busy = 0.6 }); run(0.45)
+		-- the magazine is worked a step at a time (2026-11-12): out, in, and the action by its own key
+		local function shownT(name)
+			for _, d in g.Model:GetDescendants() do
+				if d.Name == name then return d.Transparency end
+			end
+		end
+		state({ Chamber = false, BoltOpen = true, NoMag = true, Reloading = true, Step = "Out", StepKeep = true, Busy = 0.6 }); run(0.36)
 		local out, handOut = at("Magazine_Polymer"), leftAt()
-		check("gun motion: the magazine is pulled down out of the gun, the off hand on it", out.Y < magHome.Y - 0.3
-			and (handOut - (out + M.V3.new(0, -0.25, 0))).Magnitude < 0.2 and g.Motion:Playing("Reload"))
-		run(0.95)
-		check("gun motion: a fresh magazine is seated", (at("Magazine_Polymer") - magHome).Magnitude < 0.03)
-		run(0.42)
-		local pulled = at("Charging_Gunmetal")
-		check("gun motion: empty, the hand draws the charging handle back", pulled.Z < 0.6 - 0.15 and leftAt().Z < 0.5)
-		state({ Mag = 29 }); run(1)
-		check("gun motion: let go, the action is home, the hand back on the gun and the reload over", math.abs(at("Carrier_Gunmetal").Z - home.Z) < 0.005
-			and math.abs(at("Charging_Gunmetal").Z - 0.6) < 0.005 and (leftAt() - g.LeftRest).Magnitude < 0.01 and not g.Motion:Playing("Reload"))
+		check("gun motion: kept, the magazine is pulled down out of the gun with the off hand on it", out.Y < magHome.Y - 0.15
+			and (handOut - (out + M.V3.new(0, -0.25, 0))).Magnitude < 0.25 and g.Motion:Playing("MagOut"))
+		state({ Chamber = false, BoltOpen = true, NoMag = true }); run(0.8)
+		check("gun motion: with the magazine out the well is empty, the gun stays tipped and nothing else happens", shownT("Magazine_Polymer") == 1
+			and not g.Motion:Playing("MagOut") and not g.Motion:Playing("MagIn") and not g.Motion:Playing("Rack")
+			and ViewGun.Direction():Dot(cam.CFrame.LookVector) < 0.9985 and at("Carrier_Gunmetal").Z < home.Z - 0.25)
+		state({ Chamber = false, BoltOpen = true, NoMag = true, Reloading = true, Step = "In", Busy = 0.9 }); run(0.5)
+		local rising = at("Magazine_Polymer")
+		check("gun motion: a magazine comes up and stops short of home", g.Motion:Playing("MagIn") and shownT("Magazine_Polymer") ~= 1
+			and rising.Y < magHome.Y - 0.05 and rising.Y > magHome.Y - 0.6)
+		local before = ViewGun.State().Kick
+		run(0.17)
+		check("gun motion: driven home, the magazine jolts the whole gun", (ViewGun.State().Kick - before).Magnitude > 0.2 and (at("Magazine_Polymer") - magHome).Magnitude < 0.03)
+		state({ Chamber = false, BoltOpen = true, Mag = 30 }); run(0.8)
+		check("gun motion: the magazine is in and the action still waits for the hand", (at("Magazine_Polymer") - magHome).Magnitude < 0.01
+			and not g.Motion:Playing("MagIn") and at("Carrier_Gunmetal").Z < home.Z - 0.25 and ViewGun.Direction():Dot(cam.CFrame.LookVector) > 0.9995)
+		do
+			local function key(name, began)
+				(if began then UIS.InputBegan else UIS.InputEnded):Fire({ KeyCode = M.mockEnv.Enum.KeyCode[name], UserInputType = M.mockEnv.Enum.UserInputType.Keyboard }, false)
+			end
+			key("T", true); key("T", false); run(0.3)
+			local pulled = at("Charging_Gunmetal")
+			check("gun motion: T, the hand draws the charging handle back", g.Motion:Playing("Rack") and pulled.Z < 0.6 - 0.15 and leftAt().Z < 0.5)
+			state({ Mag = 29 }); run(1.2)
+			check("gun motion: let go, the action is home and the hand back on the gun", math.abs(at("Carrier_Gunmetal").Z - home.Z) < 0.005
+				and math.abs(at("Charging_Gunmetal").Z - 0.6) < 0.005 and (leftAt() - g.LeftRest).Magnitude < 0.01 and not g.Motion:Playing("Rack"))
+		end
+		-- a tap of R lets the magazine fall
+		state({ NoMag = true, Reloading = true, Step = "Out", StepKeep = false, Busy = 0.4 }); run(0.2)
+		check("gun motion: dropped, the magazine falls away from the gun", cam:FindFirstChild("DroppedMagazine") ~= nil and shownT("Magazine_Polymer") == 1)
+		state({ NoMag = true, Reloading = true, Step = "In", Busy = 0.6 }); run(0.7)
+		state({ Mag = 30 }); run(1)
 		-- the small moves
 		local function key(name, began)
 			(if began then UIS.InputBegan else UIS.InputEnded):Fire({ KeyCode = M.mockEnv.Enum.KeyCode[name], UserInputType = M.mockEnv.Enum.UserInputType.Keyboard }, false)

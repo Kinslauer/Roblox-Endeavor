@@ -60,7 +60,7 @@ function Guns.Snapshot(w)
 	if not w then
 		return nil
 	end
-	return { Id = w.Id, Name = w.Def.Name, Mode = w.Mode, Chamber = w.Chamber, BoltOpen = w.BoltOpen, Jammed = w.Jammed, Reloading = w.Reloading, Mag = w.Mag,
+	return { Id = w.Id, Name = w.Def.Name, Mode = w.Mode, Chamber = w.Chamber, BoltOpen = w.BoltOpen, Jammed = w.Jammed, Reloading = w.Reloading, Step = w.Step, StepKeep = w.StepKeep, Mag = w.Mag,
 		MagSize = w.Def.MagSize, Spare = #w.Spare, Parts = w.Parts, Attachments = w.Attachments, Busy = math.max(0, w.Busy - os.clock()),
 		Zoom = (w.Attachments.Optic and Firearms.Attachments[w.Attachments.Optic.Id] and Firearms.Attachments[w.Attachments.Optic.Id].Zoom) or 1,
 		Load = Firearms.LoadOf(w.Load).Name, Loose = w.Loose or 0, Heat = math.floor(Guns.Heat(w) * 100 + 0.5) / 100, JamKind = w.JamKind,
@@ -124,79 +124,93 @@ function Guns.Rack(w)
 	rack(w)
 end
 
--- Reload in stages: drop the magazine, seat a fresh one, and if the chamber is empty, rack. A mint
--- gun does this fast; a worn one is slower. `keep` is the careful reload: the half-used magazine
--- goes back in the pouch, which takes longer. The quick one lets it fall, rounds and all.
-function Guns.Reload(w, keep, quickMult, carefulMult)
-	if isBusy(w) or w.Reloading then
+-- The magazine is worked one step at a time (owner, 2026-11-12, after a game that breaks handling down to its
+-- core mechanics: "can we implement that with less keys?"). One key does the next step: with a magazine in the
+-- gun it comes out, with none a magazine goes in. Nothing racks the gun but the rack (Guns.Rack). A mint gun is
+-- quick, a worn one slower.
+local function wearOf(w)
+	return 1 + (1 - (w.Parts.Magazine or 100) / 100) * 0.5
+end
+
+-- Out: `keep` puts a part-used magazine back in the pouch (slower); without it the magazine falls, rounds and
+-- all (faster). An empty one is let go. With no other magazine carried it stays in the hand (w.InHand), to be
+-- loaded with loose rounds. A magazine out clears any jam. `done` runs when the step is over.
+function Guns.MagOut(w, keep, quickMult, carefulMult, done)
+	if isBusy(w) or w.Reloading or w.Mag == nil then
 		return false
 	end
+	local seconds = w.Def.Reload.EjectMag * wearOf(w)
+	local had = w.Mag
+	w.Dropped, w.InHand = nil, nil
 	if #w.Spare == 0 then
-		return Guns.HandLoad(w)
+		w.InHand = had
+		keep = true
+	elseif had > 0 then
+		seconds *= if keep then carefulMult or 1.35 else quickMult or 0.8
+		if keep then
+			table.insert(w.Spare, had)
+		else
+			w.Dropped = had -- rounds left on the ground (tests read it)
+		end
+	else
+		keep = false
 	end
-	w.Reloading = true
-	local r = w.Def.Reload
-	local wear = 1 + (1 - (w.Parts.Magazine or 100) / 100) * 0.5
-	local partial = w.Mag and w.Mag > 0
-	if partial then
-		wear *= if keep then carefulMult or 1.35 else quickMult or 0.8
-	end
-	-- pick the fullest spare
-	table.sort(w.Spare, function(a, b) return a > b end)
-	local fresh = table.remove(w.Spare, 1)
-	if partial and keep then
-		table.insert(w.Spare, w.Mag) -- back in the pouch
-	end
-	w.Dropped = if partial and not keep then w.Mag else nil -- rounds left on the ground (tests read it)
+	w.Reloading, w.Step, w.StepKeep = true, "Out", keep == true
 	w.Mag = nil
-	busy(w, r.EjectMag * wear)
-	task.delay(r.EjectMag * wear, function()
-		w.Mag = fresh
-		busy(w, r.InsertMag * wear)
-		task.delay(r.InsertMag * wear, function()
-			if w.Jammed then
-				w.Jammed, w.JamKind, w.Chamber = false, nil, false -- the magazine out clears any jam
-			end
-			if not w.Chamber then
-				rack(w) -- the stage sequence owns the gun; it never gets stuck on a busy check
-			end
-			w.Reloading = false
-		end)
+	busy(w, seconds)
+	task.delay(seconds, function()
+		if w.Jammed then
+			w.Jammed, w.JamKind, w.Chamber = false, nil, false
+		end
+		w.Reloading, w.Step = false, nil
+		if done then
+			done()
+		end
 	end)
 	return true
 end
 
--- No magazine left in the pouch: the one in the gun comes out, loose rounds go into it one by one
--- (Config.Guns.PerRound each), back in, rack if empty. Returns false with nothing to load.
-function Guns.HandLoad(w)
-	local room = w.Def.MagSize - (w.Mag or 0)
-	local count = math.min(room, w.Loose or 0)
-	if isBusy(w) or w.Reloading or count <= 0 then
+-- In: the fullest magazine from the pouch. With none there, the one in the hand takes loose rounds first, one by
+-- one (Config.Guns.PerRound each). Returns false with no magazine to put in.
+function Guns.MagIn(w, done)
+	if isBusy(w) or w.Reloading or w.Mag ~= nil then
 		return false
 	end
-	w.Reloading = true
-	w.HandLoading = true
-	local r = w.Def.Reload
-	local before = w.Mag or 0
-	w.Mag = nil
-	local thumb = count * G.PerRound
-	busy(w, r.EjectMag + thumb)
-	task.delay(r.EjectMag + thumb, function()
-		w.Loose -= count
-		w.Mag = before + count
-		busy(w, r.InsertMag)
-		task.delay(r.InsertMag, function()
-			if w.Jammed then
-				w.Jammed, w.JamKind, w.Chamber = false, nil, false
-			end
-			if not w.Chamber then
-				rack(w)
-			end
-			w.Reloading = false
-			w.HandLoading = nil
-		end)
+	local seconds = w.Def.Reload.InsertMag * wearOf(w)
+	local fresh, thumbed = nil, 0
+	if #w.Spare > 0 then
+		table.sort(w.Spare, function(a, b) return a > b end)
+		fresh = table.remove(w.Spare, 1)
+	elseif w.InHand ~= nil then
+		thumbed = math.min(w.Def.MagSize - w.InHand, w.Loose or 0)
+		fresh = w.InHand + thumbed
+		seconds += thumbed * G.PerRound
+		w.HandLoading = thumbed > 0 or nil
+	else
+		return false
+	end
+	w.InHand = nil
+	w.Reloading, w.Step, w.StepKeep = true, "In", false
+	busy(w, seconds)
+	task.delay(seconds, function()
+		if thumbed > 0 then
+			w.Loose -= thumbed
+		end
+		w.Mag = fresh
+		w.Reloading, w.Step, w.HandLoading = false, nil, nil
+		if done then
+			done()
+		end
 	end)
 	return true
+end
+
+-- The next step of the magazine change.
+function Guns.Reload(w, keep, quickMult, carefulMult, done)
+	if w.Mag ~= nil then
+		return Guns.MagOut(w, keep, quickMult, carefulMult, done)
+	end
+	return Guns.MagIn(w, done)
 end
 
 function Guns.Unjam(w)

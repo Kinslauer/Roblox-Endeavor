@@ -200,7 +200,7 @@ function Hud.Weapon(weapon, slotName, kit)
 	el.Mode.Text = weapon.Mode:upper()
 	el.Mode.TextColor3 = if weapon.Mode == "Safe" then AMBER else DIM
 	local JAMS = { Stovepipe = "STOVEPIPE  [T]", Feed = "FAILURE TO FEED  [T]", DoubleFeed = "DOUBLE FEED  [T]" }
-	el.Status.Text = if weapon.Jammed then (JAMS[weapon.JamKind or ""] or "JAM  [T]") elseif (weapon.Heat or 0) >= 0.95 then "HOT" elseif weapon.Reloading then "" elseif weapon.BoltOpen then "BOLT OPEN  [R]" elseif not weapon.Chamber then "CHAMBER EMPTY  [T]" else ""
+	el.Status.Text = if weapon.Jammed then (JAMS[weapon.JamKind or ""] or "JAM  [T]") elseif (weapon.Heat or 0) >= 0.95 then "HOT" elseif weapon.Reloading then "" elseif weapon.Mag == nil then "NO MAGAZINE  [R]" elseif weapon.Mag == 0 and not weapon.Chamber then "MAGAZINE EMPTY  [R]" elseif weapon.BoltOpen then "BOLT OPEN  [T]" elseif not weapon.Chamber then "CHAMBER EMPTY  [T]" else ""
 	el.Status.TextColor3 = if weapon.Jammed then RED else AMBER
 	local loose = weapon.Loose or 0
 	el.Load.Text = (if weapon.Load and weapon.Load ~= "Ball" then weapon.Load:upper() .. "  " else "") .. (if loose > 0 then "+" .. loose else "")

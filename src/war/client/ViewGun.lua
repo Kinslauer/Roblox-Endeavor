@@ -23,6 +23,7 @@ local view -- the bore frame this frame (looks down -Z), nil while no gun is sho
 local lastLook
 local clock = 0
 local bobPhase = 0
+local lastFall, lastShot = nil, 0
 local aimBlend, sprintBlend, lowBlend = 0, 0, 0
 
 -- ===== springs: position p chases a target; a kick is added speed =====
@@ -49,7 +50,7 @@ local function reset()
 	kickPos = spring(T.Recoil.Frequency, T.Recoil.Damping) -- studs; z back into the shoulder
 	camPunch = spring(T.Camera.Frequency, T.Camera.Damping) -- x pitch, y yaw, z roll (degrees)
 	punchApplied = Vector3.zero
-	lastLook = nil
+	lastLook, lastFall = nil, nil
 end
 
 -- ===== the copy =====
@@ -143,7 +144,7 @@ local function build(held)
 					m = { Parts = {}, Lo = at - ext, Hi = at + ext }
 					moving[group] = m
 				end
-				table.insert(m.Parts, { Part = d, Rel = rel })
+				table.insert(m.Parts, { Part = d, Rel = rel, T = d.Transparency })
 				m.Lo, m.Hi = vmin(m.Lo, at - ext), vmax(m.Hi, at + ext)
 			end
 		end
@@ -335,6 +336,63 @@ local function stepCasings(dt, char)
 	end
 end
 
+-- ===== a magazine let fall: a copy of the gun's own, flown by hand like the brass =====
+local drops = {}
+local function dropMagazine(velocity)
+	local m = gun.Moving.Magazine
+	if not m then
+		return
+	end
+	local model = Instance.new("Model")
+	model.Name = "DroppedMagazine"
+	for _, p in m.Parts do
+		local c = p.Part:Clone()
+		c.Transparency = p.T
+		c.Anchored, c.CanCollide, c.CanQuery, c.CanTouch = true, false, false, false
+		c.Parent = model
+	end
+	model.Parent = camera
+	local D = M.DropMag
+	table.insert(drops, { Model = model, Velocity = velocity, Until = clock + D.Seconds,
+		Spin = Vector3.new(math.random() - 0.5, (math.random() - 0.5) * 0.3, math.random() - 0.5) * D.Spin })
+	if #drops > 3 then
+		table.remove(drops, 1).Model:Destroy()
+	end
+end
+local function stepDrops(dt, char)
+	if #drops == 0 then
+		return
+	end
+	if not caseParams then
+		caseParams = RaycastParams.new()
+		caseParams.FilterType = Enum.RaycastFilterType.Exclude
+	end
+	caseParams.FilterDescendantsInstances = { char, camera }
+	for i = #drops, 1, -1 do
+		local d = drops[i]
+		if clock > d.Until then
+			d.Model:Destroy()
+			table.remove(drops, i)
+		elseif not d.Rest then
+			d.Velocity += Vector3.new(0, -workspace.Gravity * dt, 0)
+			local pivot = d.Model:GetPivot()
+			local step = d.Velocity * dt
+			local hit = if d.Velocity.Y < 0 then workspace:Raycast(pivot.Position, step * 1.2 - Vector3.new(0, 0.15, 0), caseParams) else nil
+			if hit then
+				if d.Bounced then
+					d.Rest = true
+				else
+					d.Bounced = true
+					d.Velocity = Vector3.new(d.Velocity.X * 0.4, -d.Velocity.Y * M.DropMag.Bounce, d.Velocity.Z * 0.4)
+				end
+			else
+				local spin = d.Spin * dt
+				d.Model:PivotTo(CFrame.new(pivot.Position + step) * pivot.Rotation * CFrame.Angles(spin.X, spin.Y, spin.Z))
+			end
+		end
+	end
+end
+
 -- ===== every frame =====
 local function ease(now, target, dt, rate)
 	return now + (target - now) * math.min(1, dt * rate)
@@ -350,6 +408,7 @@ function ViewGun.Step(dt, state)
 	clock += dt
 	local char = player.Character
 	stepCasings(dt, char)
+	stepDrops(dt, char)
 	local held = char and char:FindFirstChild("HeldWeapon")
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if not (held and hum and hum.Health > 0) or state.Hidden then
@@ -417,6 +476,14 @@ function ViewGun.Step(dt, state)
 	local root = char:FindFirstChild("HumanoidRootPart")
 	local speed = if root then Vector3.new(root.AssemblyLinearVelocity.X, 0, root.AssemblyLinearVelocity.Z).Magnitude else 0
 	bobPhase += dt * speed * T.Bob.Rate
+	-- a jump or a landing: the body is thrown upward and the gun, left behind, dips and comes back on its springs
+	local fall = if root then root.AssemblyLinearVelocity.Y else 0
+	if M and M.Land and lastFall and fall - lastFall > 8 then
+		local jolt = math.min(fall - lastFall, M.Land.Max)
+		kickPos.v += Vector3.new(0, -jolt * M.Land.Dip, 0)
+		kickRot.v += Vector3.new(-jolt * M.Land.Pitch, 0, 0)
+	end
+	lastFall = fall
 	local walk = math.min(1, speed / 14) * (1 - 0.6 * aimBlend)
 	local bob = Vector3.new(math.sin(bobPhase) * T.Bob.Side, -math.abs(math.cos(bobPhase)) * T.Bob.Drop, 0) * walk
 
@@ -436,22 +503,26 @@ function ViewGun.Step(dt, state)
 	if gun.Motion then
 		local w = state.Weapon
 		local reloading = w ~= nil and w.Reloading == true
-		if reloading and not gun.WasReloading then
+		-- one step of the magazine change has begun on the server: the hands do that step, in the server's time
+		local step = if reloading then w.Step else nil
+		if step and step ~= gun.WasStep then
 			local r = Firearms and w.Id and Firearms.Defs[w.Id] and Firearms.Defs[w.Id].Reload
-			if r then
-				-- the server's first stage is under way: what is left of it says how fast this reload runs
-				local pace = if r.EjectMag > 0 and (w.Busy or 0) > 0 then math.clamp(w.Busy / r.EjectMag, 0.7, 2.2) else 1
-				gun.Motion:Start("Reload", {
-					Eject = math.max(0.15, r.EjectMag * pace), Insert = r.InsertMag * pace,
-					Rack = if w.Chamber then nil else math.max(0.3, r.Rack),
-				})
+			local seconds = if (w.Busy or 0) > 0.05 then w.Busy elseif r then (if step == "Out" then r.EjectMag else r.InsertMag) else 0.8
+			if step == "Out" then
+				gun.Motion:Start("MagOut", { Seconds = math.max(0.2, seconds), Keep = w.StepKeep == true })
+			else
+				gun.Motion:Start("MagIn", { Seconds = math.max(0.3, seconds) })
 			end
 		end
-		gun.WasReloading = reloading
+		gun.WasStep = step
 		motion = gun.Motion:Step(dt, { BoltOpen = w ~= nil and w.BoltOpen == true, Checking = state.Checking == true and not reloading,
-			Tired = if state.Aiming and w then w.Fatigue else nil })
+			NoMag = w ~= nil and w.Mag == nil, Aim = aimBlend, Tired = if state.Aiming and w then w.Fatigue else nil })
 		pos += Vector3.new(-motion.Pos.X, motion.Pos.Y, -motion.Pos.Z) -- from the gun's frame to the view's
 		rot += motion.Rot
+		if motion.Kick then -- a contact (a magazine driven home, the action slamming shut) jolts the springs
+			kickRot.v += motion.Kick.Rot
+			kickPos.v += Vector3.new(-motion.Kick.Pos.X, motion.Kick.Pos.Y, -motion.Kick.Pos.Z)
+		end
 	end
 
 	local turn = Vector3.new(lag.p.X + swayP + kickRot.p.X, lag.p.Y + swayY + kickRot.p.Y, kickRot.p.Z + rot.Z)
@@ -467,15 +538,22 @@ function ViewGun.Step(dt, state)
 		for name, m in gun.Moving do
 			local move = motion.Parts[name]
 			local shift = if move then origin * CFrame.new(move) else origin
+			local hidden = motion.Hide[name] == true
 			for _, p in m.Parts do
 				p.Part.CFrame = shift * p.Rel
+				p.Part.Transparency = if hidden then 1 else p.T
 			end
 		end
+		-- the off hand follows its target a touch late, so it never snaps from one place to the next
 		local left = if motion.Left then gun.LeftRest:Lerp(motion.Left, motion.LeftWeight) else gun.LeftRest
-		gun.Left.CFrame = gun.AnchorRel:Inverse() * CFrame.new(left)
+		gun.LeftAt = if gun.LeftAt then gun.LeftAt:Lerp(left, math.min(1, dt * 30)) else left
+		gun.Left.CFrame = gun.AnchorRel:Inverse() * CFrame.new(gun.LeftAt)
+		local root0 = char:FindFirstChild("HumanoidRootPart")
 		if motion.Brass then
-			local root0 = char:FindFirstChild("HumanoidRootPart")
 			throwCase(origin, if root0 then root0.AssemblyLinearVelocity else Vector3.zero)
+		end
+		if motion.DropMag then
+			dropMagazine(if root0 then root0.AssemblyLinearVelocity else Vector3.zero)
 		end
 	else
 		gun.Left.CFrame = gun.AnchorRel:Inverse() * CFrame.new(gun.LeftRest)
@@ -507,6 +585,10 @@ function ViewGun.Kick(pitch, yaw, aiming)
 	end
 	local R = T.Recoil
 	local soft = if aiming then R.AimShare else 1
+	if M and M.FirstShot and clock - lastShot > M.FirstShotAfter then
+		soft *= M.FirstShot -- the first round after a pause finds the hands loose
+	end
+	lastShot = clock
 	local side = (math.random() - 0.5) * 2
 	kickRot.v += Vector3.new(pitch * R.Rise, side * yaw * R.Twist, side * pitch * R.Roll) * soft
 	kickPos.v += Vector3.new(side * R.Shift, pitch * R.Hop, pitch * R.Back) * soft
@@ -516,7 +598,8 @@ function ViewGun.Kick(pitch, yaw, aiming)
 	end
 end
 
--- A move of the hands the player asked for: "Rack" (opts.Seconds), "Selector", "Click" (a dry trigger).
+-- A move of the hands the player asked for: "Rack" (opts.Seconds), "Release" (the slide let go by the thumb),
+-- "Selector", "Click" (a dry trigger). The magazine's moves start from the server's word, in ViewGun.Step.
 function ViewGun.Play(name, opts)
 	local m = gun and gun.Motion
 	if not m then
@@ -524,7 +607,10 @@ function ViewGun.Play(name, opts)
 	end
 	if name == "Click" then
 		m:Click()
-	elseif not m:Playing("Reload") then
+	elseif not (m:Playing("MagOut") or m:Playing("MagIn")) then
+		if name == "Rack" and opts and opts.Locked and not gun.Long then
+			name, opts = "Release", nil -- a pistol's slide, locked back over a loaded magazine: the thumb lets it go
+		end
 		m:Start(name, opts)
 	end
 end
@@ -579,7 +665,7 @@ function ViewGun.Shown()
 	return gun ~= nil and view ~= nil
 end
 function ViewGun.State() -- for tests
-	return { Gun = gun, View = view, Aim = aimBlend, Lag = lag and lag.p, Kick = kickRot and kickRot.p, Punch = camPunch and camPunch.p, Arms = ik }
+	return { Drops = drops, Gun = gun, View = view, Aim = aimBlend, Lag = lag and lag.p, Kick = kickRot and kickRot.p, Punch = camPunch and camPunch.p, Arms = ik }
 end
 
 function ViewGun.Init(opts)

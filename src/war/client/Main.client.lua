@@ -758,14 +758,14 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		setAim(true)
 	elseif key == Enum.KeyCode.R then
 		holdKey(key, MV.CarefulReloadHold, function()
-			Remotes.Reload:FireServer(true) -- careful: the magazine goes back in the pouch
+			Remotes.Reload:FireServer(true) -- held: a magazine coming out goes back in the pouch (the next step of the change either way)
 		end)
 	elseif key == Enum.KeyCode.T then
 		Sounds.Play("Rack")
 		if weapon and weapon.Jammed then Remotes.Unjam:FireServer() else Remotes.Rack:FireServer() end
 		if weapon and not weapon.Reloading then
 			local def = Firearms.Defs[weapon.Id]
-			ViewGun.Play("Rack", { Seconds = if weapon.Jammed then (Firearms.JamSeconds[weapon.JamKind or "Feed"] or 1.2) else math.max(0.35, def and def.Reload.Rack or 0.5) })
+			ViewGun.Play("Rack", { Locked = weapon.BoltOpen == true and (weapon.Mag or 0) > 0 and not weapon.Jammed, Seconds = if weapon.Jammed then (Firearms.JamSeconds[weapon.JamKind or "Feed"] or 1.2) else math.max(0.35, def and def.Reload.Rack or 0.5) })
 		end
 	elseif key == Enum.KeyCode.B then
 		Remotes.Mode:FireServer()
@@ -848,7 +848,7 @@ UserInputService.InputEnded:Connect(function(input)
 	elseif key == Enum.KeyCode.E and lean == 1 then
 		setLean(0)
 	elseif key == Enum.KeyCode.R and tapped then
-		Remotes.Reload:FireServer(false) -- quick: a half-used magazine is left where it falls
+		Remotes.Reload:FireServer(false) -- the next step: the magazine out (left where it falls), or a magazine in
 	elseif key == Enum.KeyCode.C and tapped then
 		popUp = false
 		wantStance(if stance == "Stand" then "Crouch" elseif stance == "Crouch" then "Stand" else "Crouch")
