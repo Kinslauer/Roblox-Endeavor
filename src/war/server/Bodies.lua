@@ -70,6 +70,30 @@ function Bodies.Init()
 	for _, id2 in Assets.FrontBodies.Fallen do
 		ModelAssets.Template(id2)
 	end
+	-- the first-person hands (war/client/Fingers.lua): the pieces wait in ReplicatedStorage for each client to copy.
+	-- The gun in the view and these hands are in a collision group of their own, so the fingers' rays find them
+	-- and nothing else in the game does.
+	pcall(function()
+		local PhysicsService = game:GetService("PhysicsService")
+		PhysicsService:RegisterCollisionGroup("ViewGun")
+		PhysicsService:CollisionGroupSetCollidable("ViewGun", "Default", false)
+	end)
+	local okHands, hands = pcall(ModelAssets.Template, Assets.FrontBodies.Hands)
+	if okHands and hands then
+		local folder = Instance.new("Folder")
+		folder.Name = "ViewHands"
+		for _, p in hands:GetDescendants() do
+			if p:IsA("MeshPart") then
+				local c = p:Clone()
+				c.Anchored, c.CanCollide, c.CanTouch = true, false, false
+				c.Parent = folder
+			end
+		end
+		Assets.Dress(folder)
+		folder.Parent = game:GetService("ReplicatedStorage")
+	else
+		warn("[Bodies] the first-person hands did not load; hands stay as they are")
+	end
 	Bodies.Ready = true
 	print("[Bodies] recruits spawn in the layered recruit body")
 	return true

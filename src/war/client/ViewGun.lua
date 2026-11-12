@@ -11,9 +11,11 @@
 local ViewGun = {}
 
 local GunMotion = require(script.Parent:WaitForChild("GunMotion"))
+local Fingers = require(script.Parent:WaitForChild("Fingers"))
 
 local T -- Config.WarMovement.ViewGun
 local M -- Config.WarMovement.GunMotion
+local FT -- Config.WarMovement.Fingers (nil: the hands stay mittens)
 local player, camera, GunParts, Firearms
 local casings = {} -- thrown brass: { Part, Velocity, Spin, Until, Bounced }
 local gun -- { Model, Key, Source, Rel, Sight, MuzzleEnd, Optics = {parts}, Right, Left, LeftRest }
@@ -23,7 +25,7 @@ local view -- the bore frame this frame (looks down -Z), nil while no gun is sho
 local lastLook
 local clock = 0
 local bobPhase = 0
-local lastFall, lastShot = nil, 0
+local lastFall, lastShot, lastClick = nil, 0, -10
 local aimBlend, sprintBlend, lowBlend = 0, 0, 0
 
 -- ===== springs: position p chases a target; a kick is added speed =====
@@ -58,6 +60,9 @@ local function clearGun()
 	if gun then
 		gun.Model:Destroy()
 		gun = nil
+		if FT then
+			Fingers.Hide()
+		end
 	end
 	view = nil
 end
@@ -113,6 +118,12 @@ local function build(held)
 		elseif d:IsA("BasePart") then
 			parts += 1
 			d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch, d.CastShadow = true, false, false, false, false
+			if FT then
+				-- the fingers close on the gun's own shape: their rays see this group and nothing else does
+				d.CanQuery = pcall(function()
+					d.CollisionGroup = FT.Group
+				end)
+			end
 			d.LocalTransparencyModifier = 0
 			local rel = origin:ToObjectSpace(d.CFrame)
 			if shrink ~= 1 then
@@ -176,6 +187,24 @@ local function build(held)
 	local wrist = Vector3.new(0, -math.cos(lean), -math.sin(lean))
 	local palmOut = Vector3.new(-1, 0, 0) -- the gun's left is +X, so the palm (-X) faces it
 	local hand = CFrame.fromMatrix(gripAt + Vector3.new(-pose.Palm, 0, 0), palmOut, wrist, palmOut:Cross(wrist))
+	-- with jointed fingers the hand is laid on the gun by its palm: the middle of the palm on the side of the grip,
+	-- found from the trigger, the forearm leaving back and down
+	local char = held.Parent
+	local handPart = char and char:FindFirstChild("RightHand")
+	local handLength = if handPart then handPart.Size.Y else 0.56
+	local palmAt, triggerAt
+	if FT then
+		local t = moving.Trigger
+		local kind = if long then FT.Right.Rifle else FT.Right.Pistol
+		if t then
+			triggerAt = Vector3.new(0, t.Lo.Y + (t.Hi.Y - t.Lo.Y) * 0.3, t.Hi.Z) -- the face of the trigger
+			palmAt = Vector3.new(-kind.Out, triggerAt.Y + kind.FromTrigger.Y, triggerAt.Z + kind.FromTrigger.Z)
+		else
+			palmAt = Vector3.new(-kind.Out, gripAt.Y, gripAt.Z) -- a one-piece model: the old guess at the grip
+		end
+		local back = math.rad(kind.Wrist)
+		hand = Fingers.PartFor(Fingers.WristAt(1, palmAt, Vector3.new(1, 0, 0), Vector3.new(0, -math.cos(back), -math.sin(back))), handLength)
+	end
 	local leftRest
 	if barrel then
 		leftRest = Vector3.new(0, barrel.Under.Y * T.GunScale, math.min(barrel.Under.Z * T.GunScale, gripAt.Z + T.Reach))
@@ -183,11 +212,14 @@ local function build(held)
 		leftRest = Vector3.new(0, bore - height * 0.2, gripAt.Z + T.Reach)
 	else
 		leftRest = gripAt + Vector3.new(0.14, -0.06, 0.04) -- a pistol: the off hand cups the firing hand
+		if palmAt then
+			leftRest = Vector3.new(0, palmAt.Y, palmAt.Z) + FT.Left.Cup.Offset -- its palm over the firing hand's fingers
+		end
 	end
 	local g = {
 		Model = model, Key = keyOf(held), Source = held, Long = long, Optics = optics, Pose = pose,
 		Rel = origin:ToObjectSpace(model:GetPivot()), Sight = sight, GripAt = gripAt, Lo = lo, Hi = hi,
-		MuzzleEnd = muzzle, LeftRest = leftRest, Hand = hand,
+		MuzzleEnd = muzzle, LeftRest = leftRest, Hand = hand, PalmAt = palmAt, TriggerAt = triggerAt, HandLength = handLength,
 		Magazine = Vector3.new(0, lo.Y + height * 0.15, gripAt.Z + (if long then length * 0.12 else 0)),
 	}
 	-- what the animation needs to know of the gun's shape (war/client/GunMotion.lua)
@@ -254,7 +286,8 @@ local function arms(char)
 			pole.Parent = root
 			local c = Instance.new("IKControl")
 			c.Name = "ViewGun" .. side
-			c.Type = if side == "Right" then Enum.IKControlType.Transform else Enum.IKControlType.Position
+			-- with fingers the off hand is turned as well as placed (its palm has to face what it holds)
+			c.Type = if side == "Right" or FT then Enum.IKControlType.Transform else Enum.IKControlType.Position
 			c.ChainRoot = char:FindFirstChild(side .. "UpperArm")
 			c.EndEffector = char:FindFirstChild(side .. "Hand")
 			c.Pole = pole
@@ -542,12 +575,58 @@ function ViewGun.Step(dt, state)
 			for _, p in m.Parts do
 				p.Part.CFrame = shift * p.Rel
 				p.Part.Transparency = if hidden then 1 else p.T
+				if FT then
+					p.Part.CanQuery = not hidden -- no finger closes on a magazine that is not there
+				end
+			end
+		end
+		-- the off hand on a long gun slides back along it until the arm can reach (low at the hip it is far away)
+		local restAt = gun.LeftRest
+		local upper = FT and gun.Long and gun.PalmAt and char:FindFirstChild("LeftUpperArm")
+		if upper then
+			local shoulder = origin:PointToObjectSpace(upper.CFrame * Vector3.new(0, upper.Size.Y / 2, 0))
+			local off = gun.LeftWristOff
+			if not off then
+				off = Fingers.WristAt(-1, Vector3.zero, FT.Left.Support.Normal, FT.Left.Support.Wrist).Position
+				gun.LeftWristOff = off
+			end
+			local function far(z)
+				return (Vector3.new(restAt.X, restAt.Y, z) + off - shoulder).Magnitude
+			end
+			if far(restAt.Z) > FT.ArmReach then
+				local lo, hi = math.min(restAt.Z, gun.GripAt.Z + FT.MinReach), restAt.Z
+				for _ = 1, 7 do
+					local mid = (lo + hi) / 2
+					if far(mid) > FT.ArmReach then
+						hi = mid
+					else
+						lo = mid
+					end
+				end
+				restAt = Vector3.new(restAt.X, restAt.Y, lo)
 			end
 		end
 		-- the off hand follows its target a touch late, so it never snaps from one place to the next
-		local left = if motion.Left then gun.LeftRest:Lerp(motion.Left, motion.LeftWeight) else gun.LeftRest
+		local left = if motion.Left then restAt:Lerp(motion.Left, motion.LeftWeight) else restAt
 		gun.LeftAt = if gun.LeftAt then gun.LeftAt:Lerp(left, math.min(1, dt * 30)) else left
 		gun.Left.CFrame = gun.AnchorRel:Inverse() * CFrame.new(gun.LeftAt)
+		if FT and gun.PalmAt then
+			-- the off hand turned for what it is doing: its rest on the gun, or the move under way
+			local S = gun.Shape
+			local rest = if gun.Long then FT.Left.Support else FT.Left.Cup
+			if motion.Grip == "Mag" then
+				gun.LeftMode = if S.TopFed then FT.Left.Clip elseif gun.Long then FT.Left.Mag else FT.Left.MagPistol
+			elseif motion.Grip == "Handle" then
+				gun.LeftMode = FT.Left.Handle
+			elseif motion.Grip == "Pouch" then
+				gun.LeftMode = rest
+			end
+			local wristCF = Fingers.WristAt(-1, gun.LeftAt, rest.Normal, rest.Wrist)
+			if gun.LeftMode and gun.LeftMode ~= rest and motion.LeftWeight > 0.001 then
+				wristCF = wristCF:Lerp(Fingers.WristAt(-1, gun.LeftAt, gun.LeftMode.Normal, gun.LeftMode.Wrist), motion.LeftWeight)
+			end
+			gun.Left.CFrame = gun.AnchorRel:Inverse() * Fingers.PartFor(wristCF, gun.HandLength)
+		end
 		local root0 = char:FindFirstChild("HumanoidRootPart")
 		if motion.Brass then
 			throwCase(origin, if root0 then root0.AssemblyLinearVelocity else Vector3.zero)
@@ -557,6 +636,20 @@ function ViewGun.Step(dt, state)
 		end
 	else
 		gun.Left.CFrame = gun.AnchorRel:Inverse() * CFrame.new(gun.LeftRest)
+	end
+
+	-- the fingers: the firing hand closed on the grip, its first finger on the trigger when aimed or firing, the
+	-- off hand closed on whatever it is on
+	if FT and gun.PalmAt then
+		local press = if motion and motion.Parts.Trigger then motion.Parts.Trigger else Vector3.zero
+		gun.Fingers = Fingers.Step(dt, {
+			Char = char, Solids = { gun.Model }, Trigger = if gun.TriggerAt then origin * (gun.TriggerAt + press) else nil,
+			OnTrigger = state.Aiming == true or clock - lastShot < FT.TriggerHold or clock - lastClick < FT.TriggerHold,
+			LeftOpen = motion ~= nil and motion.Grip == "Pouch",
+		})
+	elseif gun.Fingers then
+		gun.Fingers = nil
+		Fingers.Hide()
 	end
 
 	-- both eyes open: a scope's housing fades while it is at the eye
@@ -606,6 +699,7 @@ function ViewGun.Play(name, opts)
 		return
 	end
 	if name == "Click" then
+		lastClick = clock
 		m:Click()
 	elseif not (m:Playing("MagOut") or m:Playing("MagIn")) then
 		if name == "Rack" and opts and opts.Locked and not gun.Long then
@@ -665,13 +759,18 @@ function ViewGun.Shown()
 	return gun ~= nil and view ~= nil
 end
 function ViewGun.State() -- for tests
-	return { Drops = drops, Gun = gun, View = view, Aim = aimBlend, Lag = lag and lag.p, Kick = kickRot and kickRot.p, Punch = camPunch and camPunch.p, Arms = ik }
+	return { Fingers = Fingers, Drops = drops, Gun = gun, View = view, Aim = aimBlend, Lag = lag and lag.p, Kick = kickRot and kickRot.p, Punch = camPunch and camPunch.p, Arms = ik }
 end
 
 function ViewGun.Init(opts)
 	player, camera, GunParts, Firearms = opts.Player, opts.Camera, opts.GunParts, opts.Firearms
 	T = opts.Config
 	M = opts.Motion
+	FT = nil
+	if opts.Fingers and opts.Fingers.Enabled and opts.HandParts then
+		Fingers.Init({ Camera = camera, Config = opts.Fingers, HandParts = opts.HandParts, Find = opts.Hands })
+		FT = opts.Fingers
+	end
 	reset()
 	player.CharacterAdded:Connect(function()
 		clearGun()

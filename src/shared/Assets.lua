@@ -257,6 +257,8 @@ Assets.Front = {
 -- living body, Assets.Skins[side].Tints).
 Assets.FrontBodies = {
 	Fallen = { Union = 111897218046292, Pact = 94176620670545 },
+	-- the first-person hand in separate pieces (tools/models/hands.py; joints in shared/HandParts.lua)
+	Hands = 116546820790887,
 }
 
 Assets.FrontWorld = {

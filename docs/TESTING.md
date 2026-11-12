@@ -807,6 +807,22 @@ Open the recruit app (M at the base, or the locker) and look at the weapons list
 - [ ] Automatic (AKM, AK-47, AK-74, also M4A1 and M14): with B on AUTO, rounds keep leaving while LMB is held.
 
 
+### Front: fingers (2026-11-12, Front v43)
+The hands in the first-person view now have a thumb and four fingers with three joints each. No pose is drawn by
+hand: each finger closes until it touches the gun. Nothing was seen in game before publishing, so say what looks
+wrong (a screenshot helps most).
+- [ ] Deploy with a rifle and look down at the gun. The right hand wraps the pistol grip and the left hand holds
+      the handguard from below. No mitten hands show.
+- [ ] Stand without aiming. The right index finger lies straight along the side of the gun, off the trigger.
+- [ ] Hold RMB to aim. The index finger moves onto the trigger. Fire: it stays there, and goes back off the
+      trigger a moment after you stop aiming.
+- [ ] Switch to the pistol (2). Both hands wrap the grip, the left around the right.
+- [ ] Tap R, then R. The left hand goes to the magazine and its fingers close on it, then return to the gun.
+- [ ] Empty the M4A1, reload, press T. The left hand's fingers take the charging handle.
+- [ ] Do the hands match the body? Bare hands on a conscript, gloves with the full kit, steel with a cyber arm.
+- [ ] Do the wrists join the sleeves cleanly, or is there a gap or a twisted forearm?
+- [ ] Do any fingers pass through the gun, or float off it?
+
 ### Front: the gun is worked step by step (2026-11-12, Front v42)
 Every step of handling a gun is its own press, on two keys: R works the magazine, T works the action. Nothing racks
 the gun for you any more. This replaces the two reload lines in the v40 list below. Nothing was seen in game before

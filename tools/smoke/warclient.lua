@@ -141,6 +141,20 @@ end
 do
 	local ViewGun = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.ViewGun)
 	local UIS = game_:GetService("UserInputService")
+	-- the pieces of the jointed hands, as the server leaves them, and the body's own right hand
+	local HP = M.mockEnv.__require(RS.Shared.HandParts)
+	local Fingers = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.Fingers)
+	local FT = Config.WarMovement.Fingers
+	local viewHands = M.newInstance("Folder"); viewHands.Name = "ViewHands"
+	for piece in HP.Centres do
+		for _, mat in { "Flesh", "HideLeather" } do
+			local p = M.newInstance("Part"); p.Name = piece .. "_" .. mat; p.Transparency = 0; p.Parent = viewHands
+		end
+	end
+	viewHands.Parent = RS
+	local skin = M.newInstance("Model"); skin.Name = "Skin"; skin:SetAttribute("Kind", "Recruit")
+	local ownHand = M.newInstance("Part"); ownHand.Name = "HandR_Flesh"; ownHand.Transparency = 0; ownHand.Parent = skin
+	skin.Parent = char
 	local held = M.newInstance("Model"); held.Name = "HeldWeapon"
 	held:SetAttribute("WeaponId", "AKM"); held:SetAttribute("Build", "Standard|||")
 	local hand = M.newInstance("Part"); hand.Name = "RightHand"; hand.Parent = char
@@ -205,8 +219,10 @@ do
 				if d.Name == name then return frame:PointToObjectSpace(d.Position) end
 			end
 		end
-		local function leftAt()
-			return (g.AnchorRel * g.Left.CFrame).Position
+		local function leftAt() -- the middle of the off hand's palm, in the gun's frame
+			local F, HP = Config.WarMovement.Fingers, M.mockEnv.__require(RS.Shared.HandParts)
+			local wrist = g.AnchorRel * g.Left.CFrame * M.CF.new(0, g.HandLength / 2, 0)
+			return wrist * M.V3.new(HP.PalmHalf + F.PalmGap, F.Palm.Y, F.Palm.Z)
 		end
 		local function state(over)
 			local w = { Id = "AKM", Name = "AKM", Mode = "Auto", Chamber = true, BoltOpen = false, Jammed = false, Reloading = false, Mag = 24, MagSize = 30, Spare = 3,
@@ -284,7 +300,44 @@ do
 		run(1)
 		check("gun motion: T works the action by hand", racking and not g.Motion:Playing("Rack") and math.abs(at("Carrier_Gunmetal").Z - home.Z) < 0.005)
 	end
+	-- fingers (2026-11-12): jointed hands in the view, closed on the gun by code
+	do
+		local wrist = M.CF.new(0, 10, 0)
+		local d = HP.Digits.Middle
+		local _, tip = Fingers.Chain(wrist, 1, "Middle", { 0, 0, 0, 0 })
+		local long = d.Lengths[1] + d.Lengths[2] + d.Lengths[3]
+		check("fingers: a straight finger runs from its knuckle along the hand", (tip - (wrist * M.V3.new(d.Root.X, d.Root.Y - long, d.Root.Z))).Magnitude < 1e-4)
+		local _, curled = Fingers.Chain(wrist, 1, "Middle", { 0, 80, 90, 60 })
+		local _, curledLeft = Fingers.Chain(wrist, -1, "Middle", { 0, 80, 90, 60 })
+		check("fingers: a right hand curls toward its palm and a left hand the other way", curled.X < -0.05 and math.abs(curled.X + curledLeft.X) < 1e-4)
+		-- a flat wall just inside the palm: every joint stops on it
+		local wall = wrist.Position.X - 0.07
+		local function cast(a, b) return a.X < wall or b.X < wall end
+		local a, touched = Fingers.Close(wrist, 1, "Middle", cast, FT.Limits.Finger, 0)
+		local joints, at = Fingers.Chain(wrist, 1, "Middle", a)
+		check("fingers: a finger closes until it touches and no further", touched and a[2] > 0 and at.X > wall - 0.05 and joints[2].Position.X > wall - 0.01)
+		local open, hit = Fingers.Close(wrist, 1, "Middle", function() return false end, FT.Limits.Finger, 0)
+		check("fingers: with nothing to hold a finger closes to its limit and reports no touch", not hit and open[2] == FT.Limits.Finger[1] and open[4] == FT.Limits.Finger[3])
+		local target = wrist * M.V3.new(-0.05, HP.Digits.Index.Root.Y - 0.14, HP.Digits.Index.Root.Z + 0.01)
+		local reach = Fingers.Reach(wrist, 1, "Index", target)
+		local rj, rtip = Fingers.Chain(wrist, 1, "Index", reach)
+		check("fingers: the trigger finger reaches the trigger", ((rj[3].Position + rtip) / 2 - target).Magnitude < 0.05)
+		local grasp = Fingers.Grasp(wrist, 1, function() return false end, { Open = true })
+		check("fingers: an empty hand hangs half open", grasp.Ring[2] == FT.Relax.Ring[2] and grasp.Thumb[1] == FT.Relax.Thumb[1])
+		local wr = Fingers.WristAt(1, M.V3.new(1, 2, 3), M.V3.new(1, 0, 0), M.V3.new(0, 1, 0))
+		local palm = wr * M.V3.new(-(HP.PalmHalf + FT.PalmGap), FT.Palm.Y, FT.Palm.Z)
+		check("fingers: the palm is laid on the point it is given, facing it", (palm - M.V3.new(1, 2, 3)).Magnitude < 1e-4 and (wr.RightVector + M.V3.new(1, 0, 0)).Magnitude < 1e-4)
+		local hs = Fingers.State()
+		local n = 0
+		if hs.Right then for _ in hs.Right.Parts do n += 1 end end
+		check("fingers: the view has a jointed right hand of the body's own skin", cam:FindFirstChild("ViewHandRight") ~= nil and n == 17 and hs.Right.Kind == "HandR_Flesh")
+		check("fingers: the body's own hand is hidden from its owner", ownHand.LocalTransparencyModifier == 1)
+		local w = Fingers.Wrist(hand)
+		check("fingers: the palm sits on the wrist and the fingers ahead of it", (hs.Right.Parts.Palm.CFrame.Position - w * HP.Centres.Palm).Magnitude < 1e-3
+			and (w:PointToObjectSpace(hs.Right.Parts.M3.CFrame.Position)).Y < HP.Digits.Middle.Root.Y + 0.05)
+	end
 	held:Destroy(); run(0.2)
+	check("fingers: with the gun put away the body's own hands are back", cam:FindFirstChild("ViewHandRight") == nil and ownHand.LocalTransparencyModifier == 0)
 	check("view gun: no gun in the hand, none in the view", ViewGun.Shown() == false and ViewGun.Direction() == nil)
 end
 check("no client errors", #M.errors == 0)

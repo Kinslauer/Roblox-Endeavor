@@ -551,13 +551,13 @@ Config.WarMovement = {
 		Enabled = true,
 		GunScale = 0.55, -- the size of a parts-built rifle in the hand (same as Config.War.GunScale)
 		LongGun = 1.6, -- a gun longer than this is a rifle: butt in the shoulder, the off hand forward
-		Reach = 0.75, -- the farthest ahead of the firing hand the off hand goes (the arm is 2.26 long; real server: 2.1 at the hip)
+		Reach = 0.75, -- the farthest ahead of the old grip point the off hand's palm goes
 		-- Grip = the firing hand this far ahead of the eye when aimed; Hip = the move from there when not aiming;
 		-- Pull = butt to grip on a parts-built rifle (PullShare of the length on a whole model); GripDrop = the
 		-- grip below the bore (pistol: share of the height below the top); Wrist = how far the wrist leans back
 		-- from straight down (degrees); Palm = the hand's centre out from the middle of the gun
 		Rifle = { Grip = 0.85, Hip = Vector3.new(0.26, -0.34, 0), Pull = 1.38, PullShare = 0.33, GripDrop = 0.36, BoreDrop = 0.25, Wrist = 35, Palm = 0.1 },
-		Pistol = { Grip = 1.7, Hip = Vector3.new(0.2, -0.3, 0.35), PullShare = 0.22, GripDrop = 0.62, BoreDrop = 0.12, Wrist = 12, Palm = 0.08 },
+		Pistol = { Grip = 1.55, Hip = Vector3.new(0.2, -0.3, 0.35), PullShare = 0.22, GripDrop = 0.62, BoreDrop = 0.12, Wrist = 12, Palm = 0.08 },
 		HipRoll = -5,
 		Carry = { Offset = Vector3.new(-0.16, -0.22, 0.12), Rotation = Vector3.new(-28, 38, 12) }, -- sprinting, binoculars: lowered across the body
 		AimRate = 14, PoseRate = 9,
@@ -617,6 +617,42 @@ Config.WarMovement = {
 			Reload = { Position = Vector3.new(0.14, 0.14, -0.5), Rotation = Vector3.new(24, 10, -30) },
 			RackRotation = Vector3.new(8, 14, -26), HandleGrip = Vector3.new(0.04, 0.03, 0),
 			Well = Vector3.new(0, -0.95, -0.31), Pouch = Vector3.new(0.3, -1.1, -1.1), MagGrip = Vector3.new(0.05, -0.05, 0),
+		},
+	},
+	-- Jointed fingers on the first-person hands (war/client/Fingers.lua). Angles in degrees, lengths in studs.
+	Fingers = {
+		Enabled = true,
+		Group = "ViewGun", -- the collision group of the gun in the view and the hands (registered by the server)
+		Rate = 22, -- how fast a finger goes to where it should be
+		SolveEvery = 0.06, -- seconds between working out a hand's hold again
+		Step = 9, -- a joint closes in steps of this until it touches
+		Palm = Vector3.new(0, -0.17, 0), -- the middle of the palm from the wrist (y down the hand, z to the little finger)
+		PalmGap = 0.004, -- air between the palm and what it holds
+		Limits = { Finger = { 88, 100, 70 }, Thumb = { 30, 55, 65 } }, -- the most each joint bends, knuckle first
+		Register = { 14, 16, 10 }, -- the firing finger off the trigger, along the frame
+		-- an idle digit: fingers { spread, knuckle, middle, tip }; the thumb's first number is its turn to the fingers
+		Relax = { Thumb = { 0.35, 8, 14, 10 }, Index = { 4, 16, 24, 14 }, Middle = { 0, 22, 30, 18 }, Ring = { -3, 26, 34, 20 }, Pinky = { -7, 30, 36, 22 } },
+		Spread = { Index = 4, Middle = 0, Ring = -3, Pinky = -7 },
+		ThumbSwing = 48, ThumbTuck = 14, ThumbRoll = 70, Opp = 0.75, -- the thumb: swung out from the fingers, turned to face them
+		FiringThumb = { Swing = 20, Opp = 0.1 }, -- the firing hand's thumb lies forward along the gun
+		ReachSpread = 30, -- the most the firing finger swings sideways for the trigger
+		ArmReach = 1.6, MinReach = 0.2, -- shoulder to wrist is 1.70 at most: the off hand slides back along the gun to stay inside this (never closer to the grip than MinReach)
+		TriggerHold = 0.8, -- the finger stays on the trigger this long after a shot from the hip
+		-- the firing hand: the middle of the palm from the trigger's face (FromTrigger), out from the gun's middle
+		-- (Out), the forearm leaving this far back from straight down (Wrist)
+		Right = {
+			Rifle = { FromTrigger = Vector3.new(0, -0.09, -0.24), Out = 0.045, Wrist = 100 },
+			Pistol = { FromTrigger = Vector3.new(0, -0.1, -0.25), Out = 0.057, Wrist = 102 },
+		},
+		-- the off hand, by what it does: Normal = the way the palm faces, Wrist = the way the forearm leaves (both
+		-- in the gun's frame: +X its left, +Y up, +Z the muzzle). Cup's Offset is from the firing hand's palm.
+		Left = {
+			Support = { Normal = Vector3.new(0, 1, 0), Wrist = Vector3.new(0.75, -0.55, -0.35) },
+			Cup = { Normal = Vector3.new(-1, 0, 0), Wrist = Vector3.new(0.12, 0.05, -0.99), Offset = Vector3.new(0.062, -0.035, 0.02) },
+			Mag = { Normal = Vector3.new(-1, 0, 0), Wrist = Vector3.new(0.3, -0.45, -0.84) },
+			MagPistol = { Normal = Vector3.new(0, 1, 0), Wrist = Vector3.new(0.55, -0.25, -0.8) },
+			Clip = { Normal = Vector3.new(0, -1, 0), Wrist = Vector3.new(0.7, 0.25, -0.65) },
+			Handle = { Normal = Vector3.new(0, -1, 0), Wrist = Vector3.new(0.75, 0.15, -0.65) },
 		},
 	},
 	CarefulReloadHold = 0.32, -- hold R this long: the half-used magazine goes back in the pouch

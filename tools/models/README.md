@@ -40,6 +40,13 @@ Rules that matter:
   Verified on a real server: the FBX import maps Blender +Y -> Roblox +Z and Blender +Z -> Roblox +Y.
   `server/HeldWeapons.lua` welds them into RightHand with `Assets.Weapons[id].Grip` picking the hand offset.
 
+## First-person hands: hands.py (2026-11-12)
+    $BLENDER -b --python tools/models/hands.py           # out/ViewHands.fbx + out/ViewHands.json (17 pieces x 3 surfaces)
+    python3 tools/models/upload.py ViewHands out/ViewHands.fbx   # id -> Assets.FrontBodies.Hands
+    python3 tools/models/hands_lua.py                    # out/ViewHands.json -> src/shared/HandParts.lua
+Change a finger's length or a knuckle's place in `DIGITS`, then run all three: the game places every piece from
+HandParts, so the model and the file must come from the same run.
+
 ## Characters: figure.py + figures.py (2026-11-12)
 `blender -b --python tools/models/figure.py -- <Name|all> [--stills] [--quick] [--export]`. One-piece skinned bodies:
 `figure.py` is the library (skeleton, lofted garments, weights, export, stills), `figures.py` holds one function per

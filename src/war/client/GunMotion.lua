@@ -98,6 +98,7 @@ function GunMotion:Step(dt, state)
 	local back = Vector3.new(0, 0, -1)
 	local kickRot, kickPos = ZERO, ZERO
 	local dropMag = false
+	local grip = nil -- what the off hand is on: "Mag", "Handle", "Pouch" (reaching, empty), nil = its rest on the gun
 	-- a mark on a timeline: true the one step it is passed; its jolt goes to the gun's springs
 	local function mark(seq, name, u, at)
 		if u >= at and not seq.Done[name] then
@@ -189,6 +190,7 @@ function GunMotion:Step(dt, state)
 		end
 		action = math.max(action * (1 - seg(u, 0.3, 0.62)), drawn) -- the hand takes the action over from the lock
 		left = S.Handle + back * (self.Travel * drawn) + K.HandleGrip
+		grip = "Handle"
 		leftWeight = math.max(leftWeight, math.min(reach, leave))
 		rot += K.RackRotation * bump(seg(u, 0.05, 0.95))
 		mark(rack, "Back", u, 0.6) -- the action hits its stop
@@ -241,6 +243,7 @@ function GunMotion:Step(dt, state)
 				parts.Magazine = move
 			end
 			left, leftWeight = magFoot + move + K.MagGrip, arrive
+			grip = "Mag"
 		else
 			-- the catch is pressed and the magazine falls free; the off hand is already going for the next one
 			if mark(out, "Strip", u, 0.3) then
@@ -251,6 +254,7 @@ function GunMotion:Step(dt, state)
 				hide.Magazine = true
 			end
 			left, leftWeight = pouch, smooth(seg(u, 0.2, 0.85))
+			grip = "Pouch"
 		end
 		if u >= 1 then
 			self.Seq.MagOut = nil
@@ -298,6 +302,7 @@ function GunMotion:Step(dt, state)
 			parts.Magazine = move
 		end
 		left, leftWeight = hand, 1 - smooth(seg(u, 0.9, 1))
+		grip = "Mag"
 		tilt = 1 - smooth(seg(u, 0.78, 1))
 		if u >= 1 then
 			self.Seq.MagIn = nil
@@ -326,7 +331,7 @@ function GunMotion:Step(dt, state)
 	self.Brass = false
 	return {
 		Parts = parts, Hide = hide, Left = left, LeftWeight = leftWeight, Pos = pos, Rot = rot, Brass = brass, Action = action,
-		Kick = if kickRot ~= ZERO or kickPos ~= ZERO then { Rot = kickRot, Pos = kickPos } else nil, DropMag = dropMag,
+		Kick = if kickRot ~= ZERO or kickPos ~= ZERO then { Rot = kickRot, Pos = kickPos } else nil, DropMag = dropMag, Grip = grip,
 	}
 end
 

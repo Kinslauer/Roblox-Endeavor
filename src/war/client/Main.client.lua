@@ -124,7 +124,11 @@ local IntroFx = require(script.Parent:WaitForChild("IntroFx"))
 -- the gun in the view: it floats, kicks on springs and says where the bore points (war/client/ViewGun.lua)
 local ViewGun = require(script.Parent:WaitForChild("ViewGun"))
 ViewGun.Init({ Player = player, Camera = camera, Config = Config.WarMovement.ViewGun, Motion = Config.WarMovement.GunMotion,
-	GunParts = require(Shared:WaitForChild("GunParts")), Firearms = Firearms })
+	GunParts = require(Shared:WaitForChild("GunParts")), Firearms = Firearms,
+	Fingers = Config.WarMovement.Fingers, HandParts = require(Shared:WaitForChild("HandParts")),
+	Hands = function()
+		return game:GetService("ReplicatedStorage"):FindFirstChild("ViewHands")
+	end })
 local function boreDirection()
 	return ViewGun.Direction() or camera.CFrame.LookVector
 end
