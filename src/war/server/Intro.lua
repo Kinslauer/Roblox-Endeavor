@@ -167,8 +167,8 @@ local TANK_D = 7.2
 
 local function silhouette(parent, base)
 	-- another clone, still growing: a dark shape hanging in the fluid (the recruits' own body, unclothed in colour)
-	if Bodies.Ready and Rigs.Statue("Union", CFrame.new(base + Vector3.new(0, 4.9, 0)) * CFrame.Angles(0, math.pi, 0), parent,
-		{ Name = "Clone", Bare = true, Color = Color3.fromRGB(20, 26, 30), Transparency = 0.1 }) then
+	if Bodies.Ready and Rigs.Statue("Recruit", CFrame.new(base + Vector3.new(0, 4.9, 0)) * CFrame.Angles(0, math.pi, 0), parent,
+		{ Name = "Clone", Groups = { Under = true } }) then
 		return
 	end
 	for _, spec in { { Vector3.new(1.8, 2.2, 1), 3.9 }, { Vector3.new(1.1, 1.1, 1.1), 5.6 }, { Vector3.new(1.6, 2.6, 0.9), 1.6 } } do
@@ -511,6 +511,12 @@ local function run(ctx)
 	hum.WalkSpeed = 0
 	Soldiers.Arm(player, ctx.kit, ctx.faction, { Pending = true, Intro = true })
 	Soldiers.WatchDeath(player, char)
+	-- out of the tank a clone has nothing but the wrap it grew in; the battle attire waits in the barracks
+	local fresh = Soldiers.State(player)
+	if fresh then
+		fresh.Bare = true
+		Soldiers.Push(player)
+	end
 
 	-- 1. the tank: hanging in the fluid, cabled in, jolting awake
 	char:PivotTo(ctx.cell.FloatCF)
@@ -559,6 +565,11 @@ local function run(ctx)
 
 	-- 5. the barracks: the conduit's supply, laid out for this recruit
 	layOut(ctx)
+	local landed = Soldiers.State(player)
+	if landed then
+		landed.Bare = nil -- the basic battle attire: undershirt, trousers, boots, the side's armband
+		Soldiers.Push(player)
+	end
 	notify(ctx, "Barracks", { Taken = 0, Total = ctx.total })
 	hold(ctx, I.BarracksSeconds, function()
 		return ctx.taken >= ctx.total

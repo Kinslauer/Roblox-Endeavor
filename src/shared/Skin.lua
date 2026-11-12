@@ -56,15 +56,17 @@ end
 
 -- Puts every bone of one skinned character where its limbs are now (tests, and one-off poses outside the loop).
 function Skin.Update(character)
-	local skin = character and character:FindFirstChild("Skin")
-	if skin then
-		bind(skin)
-		if bodies[skin] then
-			update(bodies[skin], character)
-			return true
+	local any = false
+	for _, skin in (character and character:GetChildren()) or {} do
+		if skin:IsA("Model") and (skin.Name == "Skin" or skin:GetAttribute("Kind")) then -- the body and its layers
+			bind(skin)
+			if bodies[skin] then
+				update(bodies[skin], character)
+				any = true
+			end
 		end
 	end
-	return false
+	return any
 end
 
 function Skin.Count()

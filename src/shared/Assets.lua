@@ -156,9 +156,35 @@ Assets.Skins = {
 	Brute = { Id = 80409033921236, Tints = { Trousers_Twill = Color3.fromRGB(51, 48, 46), Boots_HideLeather = Color3.fromRGB(158, 148, 140), Coat_Techcloth = Color3.fromRGB(61, 51, 43), Head_Twill = Color3.fromRGB(33, 33, 36), Helmet_PlateSteel = Color3.fromRGB(76, 79, 84), Collar_PlateSteel = Color3.fromRGB(102, 59, 36), Plates_PlateSteel = Color3.fromRGB(76, 79, 84), Scrap_PlateSteel = Color3.fromRGB(102, 59, 36), Straps_HideLeather = Color3.fromRGB(140, 128, 117), Pipes_PlateSteel = Color3.fromRGB(102, 59, 36) } },
 	Shocker = { Id = 104823811581787, Tints = { Trousers_Twill = Color3.fromRGB(26, 26, 28), Boots_HideLeather = Color3.fromRGB(158, 148, 140), Coat_Techcloth = Color3.fromRGB(33, 31, 41), Head_Twill = Color3.fromRGB(33, 33, 36), Hood_Techcloth = Color3.fromRGB(20, 20, 26), Straps_HideLeather = Color3.fromRGB(128, 128, 128), Pack_PlateSteel = Color3.fromRGB(66, 69, 76) } },
 	Warden = { Id = 89938150254967, Tints = { Trousers_Twill = Color3.fromRGB(128, 18, 31), Boots_PlateSteel = Color3.fromRGB(128, 133, 143), Coat_Techcloth = Color3.fromRGB(128, 18, 31), LowerArms_Twill = Color3.fromRGB(51, 51, 56), Hands_PlateSteel = Color3.fromRGB(51, 51, 56), Head_Twill = Color3.fromRGB(33, 33, 36), Helmet_PlateSteel = Color3.fromRGB(128, 133, 143), Plates_PlateSteel = Color3.fromRGB(128, 133, 143), Tasset_PlateSteel = Color3.fromRGB(51, 51, 56), LowerArmPlates_PlateSteel = Color3.fromRGB(128, 133, 143), Straps_HideLeather = Color3.fromRGB(51, 51, 56), Cape_Techcloth = Color3.fromRGB(128, 18, 31) } },
-	-- the Front's recruits (figures.py union/pact): Gear = pieces of the body shown only with these item ids (Rigs.Wear)
-	Union = { Id = 123771395161305, Gear = { Helmet = { "Helmet" }, Vest = { "FlakVest", "SteelPlate" }, Plates = { "SteelPlate" } }, Tints = { Trousers_Twill = Color3.fromRGB(64, 71, 46), Boots_HideLeather = Color3.fromRGB(51, 48, 46), Coat_Twill = Color3.fromRGB(64, 71, 46), LowerArms_Twill = Color3.fromRGB(64, 71, 46), Hands_HideLeather = Color3.fromRGB(51, 48, 46), Head_Twill = Color3.fromRGB(41, 46, 33), Wrap_Gauze = Color3.fromRGB(117, 112, 87), Webbing_Twill = Color3.fromRGB(128, 117, 84), Canteen_Twill = Color3.fromRGB(41, 46, 33), Armband_Twill = Color3.fromRGB(51, 92, 184), Helmet_PlateSteel = Color3.fromRGB(59, 66, 43), Vest_Twill = Color3.fromRGB(41, 46, 33), Plates_PlateSteel = Color3.fromRGB(76, 79, 76) } },
-	Pact = { Id = 94770442764504, Gear = { Helmet = { "Helmet" }, Vest = { "FlakVest", "SteelPlate" }, Plates = { "SteelPlate" } }, Tints = { Trousers_Twill = Color3.fromRGB(76, 69, 56), Boots_HideLeather = Color3.fromRGB(38, 36, 36), Coat_Twill = Color3.fromRGB(112, 97, 71), LowerArms_Twill = Color3.fromRGB(112, 97, 71), Hands_HideLeather = Color3.fromRGB(87, 61, 43), Head_Twill = Color3.fromRGB(36, 33, 33), Straps_HideLeather = Color3.fromRGB(87, 61, 43), Pouches_HideLeather = Color3.fromRGB(87, 61, 43), Bedroll_Twill = Color3.fromRGB(76, 79, 66), Armband_Twill = Color3.fromRGB(178, 41, 36), Helmet_PlateSteel = Color3.fromRGB(66, 64, 56), Vest_Twill = Color3.fromRGB(61, 56, 48), Plates_PlateSteel = Color3.fromRGB(69, 69, 71) } },
+	-- the Front's recruits, in layers (figures.py; server/Bodies.lua; Rigs.Dress):
+	--   Groups = pieces that show only while their group is on; Covers = what a showing piece hides in any layer;
+	--   Factions = the cloth tints of each side on the shared body.
+	Recruit = { Id = 134582974124443, Tints = { Head_Flesh = Color3.fromRGB(168, 153, 145), Torso_Flesh = Color3.fromRGB(168, 153, 145), ArmL_Flesh = Color3.fromRGB(168, 153, 145), ArmR_Flesh = Color3.fromRGB(168, 153, 145), HandL_Flesh = Color3.fromRGB(168, 153, 145), HandR_Flesh = Color3.fromRGB(168, 153, 145), LegL_Flesh = Color3.fromRGB(168, 153, 145), LegR_Flesh = Color3.fromRGB(168, 153, 145), FootL_Flesh = Color3.fromRGB(168, 153, 145), FootR_Flesh = Color3.fromRGB(168, 153, 145), Under_Gauze = Color3.fromRGB(133, 128, 112), Singlet_Twill = Color3.fromRGB(51, 57, 37), TrouserL_Twill = Color3.fromRGB(64, 71, 46), TrouserR_Twill = Color3.fromRGB(64, 71, 46), Trousers_Twill = Color3.fromRGB(64, 71, 46), BootR_HideLeather = Color3.fromRGB(51, 48, 46), BootL_HideLeather = Color3.fromRGB(51, 48, 46), Armband_Twill = Color3.fromRGB(51, 92, 184) },
+		Factions = {
+			Union = { Singlet_Twill = Color3.fromRGB(51, 57, 37), Trousers_Twill = Color3.fromRGB(64, 71, 46), TrouserL_Twill = Color3.fromRGB(64, 71, 46), TrouserR_Twill = Color3.fromRGB(64, 71, 46),
+				BootL_HideLeather = Color3.fromRGB(51, 48, 46), BootR_HideLeather = Color3.fromRGB(51, 48, 46), Armband_Twill = Color3.fromRGB(51, 92, 184) },
+			Pact = { Singlet_Twill = Color3.fromRGB(61, 55, 45), Trousers_Twill = Color3.fromRGB(76, 69, 56), TrouserL_Twill = Color3.fromRGB(76, 69, 56), TrouserR_Twill = Color3.fromRGB(76, 69, 56),
+				BootL_HideLeather = Color3.fromRGB(38, 36, 36), BootR_HideLeather = Color3.fromRGB(38, 36, 36), Armband_Twill = Color3.fromRGB(178, 41, 36) },
+		},
+		Groups = { Under = { "Under" }, Attire = { "Singlet", "Trousers", "TrouserL", "TrouserR", "BootL", "BootR", "SoleL", "SoleR", "Armband" } },
+		Covers = { Singlet = { "Torso" }, Trousers = { "Under" }, TrouserL = { "LegL" }, TrouserR = { "LegR" }, BootL = { "FootL" }, BootR = { "FootR" } } },
+	UnionKit = { Id = 102725707924128, Tints = { Coat_Twill = Color3.fromRGB(64, 71, 46), LowerArmL_Twill = Color3.fromRGB(64, 71, 46), LowerArmR_Twill = Color3.fromRGB(64, 71, 46), GloveL_HideLeather = Color3.fromRGB(51, 48, 46), GloveR_HideLeather = Color3.fromRGB(51, 48, 46), Wrap_Gauze = Color3.fromRGB(117, 112, 87), Webbing_Twill = Color3.fromRGB(128, 117, 84), Canteen_Twill = Color3.fromRGB(41, 46, 33), Helmet_PlateSteel = Color3.fromRGB(59, 66, 43), Vest_Twill = Color3.fromRGB(41, 46, 33), Plates_PlateSteel = Color3.fromRGB(76, 79, 76) },
+		Groups = { Kit = { "Coat", "LowerArmL", "LowerArmR", "GloveL", "GloveR", "Wrap", "GoggleRims", "Goggles", "GoggleStrap", "Webbing", "Fittings", "Canteen" },
+			Helmet = { "Helmet" }, Vest = { "Vest" }, Plates = { "Plates" } },
+		Covers = { Coat = { "Torso", "Singlet", "ArmL", "ArmR" }, GloveL = { "HandL" }, GloveR = { "HandR" } } },
+	PactKit = { Id = 110965730805821, Tints = { Coat_Twill = Color3.fromRGB(112, 97, 71), LowerArmL_Twill = Color3.fromRGB(112, 97, 71), LowerArmR_Twill = Color3.fromRGB(112, 97, 71), GloveL_HideLeather = Color3.fromRGB(87, 61, 43), GloveR_HideLeather = Color3.fromRGB(87, 61, 43), Straps_HideLeather = Color3.fromRGB(87, 61, 43), Pouches_HideLeather = Color3.fromRGB(87, 61, 43), Bedroll_Twill = Color3.fromRGB(76, 79, 66), Helmet_PlateSteel = Color3.fromRGB(66, 64, 56), Vest_Twill = Color3.fromRGB(61, 56, 48), Plates_PlateSteel = Color3.fromRGB(69, 69, 71) },
+		Groups = { Kit = { "Coat", "LowerArmL", "LowerArmR", "GloveL", "GloveR", "Mask", "MaskFittings", "Visor", "Straps", "Pouches", "Fittings", "Bedroll" },
+			Helmet = { "Helmet" }, Vest = { "Vest" }, Plates = { "Plates" } },
+		Covers = { Coat = { "Torso", "Singlet", "ArmL", "ArmR" }, GloveL = { "HandL" }, GloveR = { "HandR" } } },
+	-- limbs that take the place of the flesh ones (one group a limb), and a large armour set over the whole body
+	CyberLimbs = { Id = 117173596961679, Tints = { CyArmL_PlateSteel = Color3.fromRGB(56, 59, 64), CyArmLHand_PlateSteel = Color3.fromRGB(56, 59, 64), CyLegL_PlateSteel = Color3.fromRGB(56, 59, 64), CyLegLFoot_PlateSteel = Color3.fromRGB(56, 59, 64), CyArmR_PlateSteel = Color3.fromRGB(56, 59, 64), CyArmRHand_PlateSteel = Color3.fromRGB(56, 59, 64), CyLegR_PlateSteel = Color3.fromRGB(56, 59, 64), CyLegRFoot_PlateSteel = Color3.fromRGB(56, 59, 64) },
+		Groups = { CyArmL = { "CyArmL", "CyArmJointsL", "CyArmLHand" }, CyArmR = { "CyArmR", "CyArmJointsR", "CyArmRHand" },
+			CyLegL = { "CyLegL", "CyLegJointsL", "CyLegLFoot" }, CyLegR = { "CyLegR", "CyLegJointsR", "CyLegRFoot" } },
+		Covers = { CyArmL = { "ArmL", "HandL", "GloveL", "LowerArmL" }, CyArmR = { "ArmR", "HandR", "GloveR", "LowerArmR" },
+			CyLegL = { "LegL", "FootL", "TrouserL", "BootL", "SoleL" }, CyLegR = { "LegR", "FootR", "TrouserR", "BootR", "SoleR" } } },
+	HeavyArmor = { Id = 117965408196673, Tints = { Heavy_PlateSteel = Color3.fromRGB(61, 66, 56), HeavySkirt_PlateSteel = Color3.fromRGB(33, 36, 33), HeavyHelm_PlateSteel = Color3.fromRGB(61, 66, 56) },
+		Groups = { Heavy = { "Heavy", "HeavySkirt", "HeavyHelm", "HeavyVisor" } },
+		Covers = { Heavy = { "Vest", "Plates" }, HeavyHelm = { "Helmet" } } },
 	Sentry = { Id = 115292944079963, Tints = { Trousers_Twill = Color3.fromRGB(51, 48, 46), Boots_HideLeather = Color3.fromRGB(76, 76, 76), Coat_Techcloth = Color3.fromRGB(33, 31, 38), LowerArms_Twill = Color3.fromRGB(33, 31, 38), Hands_HideLeather = Color3.fromRGB(76, 76, 76), Head_Twill = Color3.fromRGB(33, 33, 36), Helmet_PlateSteel = Color3.fromRGB(36, 36, 41), Plates_PlateSteel = Color3.fromRGB(71, 76, 84), Straps_HideLeather = Color3.fromRGB(76, 76, 76), Pouches_HideLeather = Color3.fromRGB(76, 76, 76), LowerArmPlates_PlateSteel = Color3.fromRGB(71, 76, 84) } },
 }
 
@@ -227,7 +253,7 @@ Assets.Front = {
 -- The Front's dead: a fallen recruit of each side, lying face down (figures.py statics; pieces named and tinted like the
 -- living body, Assets.Skins[side].Tints).
 Assets.FrontBodies = {
-	Fallen = { Union = 91594300379290, Pact = 111281988578575 },
+	Fallen = { Union = 111897218046292, Pact = 94176620670545 },
 }
 
 Assets.FrontWorld = {
@@ -491,6 +517,7 @@ Assets.Surfaces = {
 	Twill = { Id = 104454762397293, Tile = 1.5, Material = Enum.Material.Fabric, Color = Color3.fromRGB(110, 110, 112), Base = 0.36 },
 	Gauze = { Id = 130850579621389, Tile = 1.2, Material = Enum.Material.Fabric, Color = Color3.fromRGB(150, 140, 120), Base = 0.45 },
 	PlateSteel = { Id = 88687879872901, Tile = 2, Material = Enum.Material.Metal, Color = Color3.fromRGB(120, 120, 122), Base = 0.40 },
+	Flesh = { Id = 84428858142888, Tile = 2, Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(168, 153, 145), Base = 0.485 }, -- the clone body (tinted)
 }
 Assets.SurfaceFor = nil -- function(name) -> SurfaceAppearance template; set by common/SurfaceLibrary on the server
 

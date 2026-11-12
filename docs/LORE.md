@@ -176,6 +176,9 @@ How to read it:
 - The first link: the recruit wakes panicking in the tank, remembers the battlefield in flashes ("> STACK SYNC"),
   drops down a chute into a barracks where the conduit's kit waits, and trains in a wireframe simulation of a city
   before it is sent to the field. [Andy 2026-11-10; Front intro]
+- A clone leaves the tank bare but for a wrap. The barracks gives it the basic battle attire: undershirt, trousers,
+  boots, its side's armband. Everything over that is kit the conduit shipped, and it can be stripped from the body.
+  [Andy 2026-11-12]
 - Recruits die for good. Their gear drops damaged. Their bodies calcify where they fall, and the dead build the hills
   the war is fought over. [Andy 2026-11-10]
 - The conduit is not hurt by a recruit's death; it costs gear. The conduit can unlink at its own base or between
@@ -247,6 +250,8 @@ How to read it:
   sentries carry 9mm or 5.56 and their helmets stop a .22.
 - 2026-11-12: Endeavor v94, the way down: the Sumps shaft, Barrens Hall 2, unhooking, fragments "Shift Card" and
   "Hands", three contact lines. Question 8 narrowed.
+- 2026-11-12: Andy: recruits can be stripped of all gear; the basic battle attire is acquired after leaving the tank
+  and entering the barracks.
 - 2026-11-12: Andy: the conduits supply the Front; each can link into and supply as many recruits as it can afford.
 - 2026-11-12: Andy's answers to 7 and 8: the world seems to run on the brain slaves' power; conduits and slaves are
   symbiotic (a conduit who tried to free them lost the connection to his stack); players can go down to the shelters,

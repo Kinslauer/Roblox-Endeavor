@@ -341,7 +341,21 @@ def PlateSteel():
     rough = 0.55 + grime * 0.25 - wear * 0.25
     return col, height, 2.0, rough, wear * 0.9 + 0.1
 
-MATERIALS = [CarBody, CarLivery, CarPanel, CarFloor, Moquette, SeatShell, Stainless, Underframe, Gunmetal, Polymer, Waxcloth, HideLeather, CarTrim,
+def Flesh():
+    """The clone body as it leaves the tank: hairless skin, faintly mottled and veined, fine pores. Neutral: the game
+    tints it."""
+    mottle = fbm(171, 300)
+    blotch = np.clip(fbm(172, 520) - 0.5, 0, 1) * 2
+    pores = spots(173, 2600, (1, 2))
+    vein = np.clip(scratches(174, 26, (120, 380), width=2.2), 0, 1)
+    col = rgb((0.50, 0.50, 0.50)) * (0.9 + 0.14 * mottle[..., None])
+    col = mix(col, rgb((0.58, 0.46, 0.46)), blotch * 0.35)
+    col = mix(col, rgb((0.40, 0.44, 0.52)), vein * 0.22)
+    height = mottle * 0.25 - pores * 0.5
+    rough = 0.5 + mottle * 0.1 + pores * 0.08
+    return col, height, 1.1, rough, 0.0
+
+MATERIALS = [Flesh, CarBody, CarLivery, CarPanel, CarFloor, Moquette, SeatShell, Stainless, Underframe, Gunmetal, Polymer, Waxcloth, HideLeather, CarTrim,
              Techcloth, Twill, Gauze, PlateSteel]
 
 if __name__ == "__main__":

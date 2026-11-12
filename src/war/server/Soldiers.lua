@@ -52,8 +52,8 @@ local function pushWeapon(player)
 		if held.Helmet then
 			table.insert(worn, held.Helmet.Id)
 		end
-		-- on the soldier body the helmet and vest are pieces of the body; an avatar gets the welded ones
-		WornGear.Apply(player.Character, if Bodies.Wear(player.Character, worn) then {} else worn)
+		-- on the recruit body the kit, helmet and vest are layers of the body; an avatar gets the welded ones
+		WornGear.Apply(player.Character, if Bodies.Wear(player.Character, held) then {} else worn)
 	end
 	local s = soldiers[player]
 	if s then
@@ -335,7 +335,7 @@ local function dropBody(player, char, s)
 	local lieAt = if ground then ground.Position else root.Position - Vector3.new(0, 3, 0)
 	local flat = root.CFrame.LookVector * Vector3.new(1, 0, 1)
 	local facing = if flat.Magnitude > 0.05 then flat.Unit else Vector3.new(0, 0, -1)
-	local fallen = Bodies.Fallen(s.Faction, CFrame.lookAt(lieAt, lieAt + facing), body)
+	local fallen = Bodies.Fallen(s.Faction, CFrame.lookAt(lieAt, lieAt + facing), body, Bodies.Look(s))
 	if fallen then
 		body.Transparency = 1
 		body.CFrame = CFrame.new(lieAt + Vector3.new(0, 0.5, 0))
@@ -348,10 +348,10 @@ local function dropBody(player, char, s)
 	prompt.Triggered:Connect(function(looter)
 		local war = warOf(looter)
 		local hum = looter.Character and looter.Character:FindFirstChildOfClass("Humanoid")
-		if not body.Parent or not war or not hum or hum.Health <= 0 then
+		if not body.Parent or body:GetAttribute("Stripped") or not war or not hum or hum.Health <= 0 then
 			return
 		end
-		body.Parent = nil
+		body:SetAttribute("Stripped", true)
 		local names = {}
 		for _, item in loot do
 			Recruit.LockerAdd(war, item.Id, item.Condition, 1)
@@ -359,7 +359,13 @@ local function dropBody(player, char, s)
 		end
 		Remotes.Announce:FireClient(looter, "Recovered: " .. table.concat(names, ", ") .. ". It all needs repair.", "Info")
 		pushApp(looter)
-		body:Destroy()
+		if fallen then
+			-- the body stays where it fell, down to its battle attire, until it calcifies
+			prompt:Destroy()
+			Bodies.Strip(fallen)
+		else
+			body:Destroy()
+		end
 	end)
 	body.Parent = workspace
 	table.insert(bodies, body)

@@ -663,7 +663,14 @@ class Figure:
         decimate(ob, 400)
         return s.add(piece, mat, ob, [(None, ("head",))], tint=tint)
 
-    def forearms(s, mat="Twill", tint=None, g=0.03, tris=1300, wraps=False):
+    def forearms(s, mat="Twill", tint=None, g=0.03, tris=1300, wraps=False, split=False):
+        if split:   # one piece a side ("LowerArmL", "LowerArmR"), so a limb can be swapped for a cybernetic one
+            for side, sg in SIDES:
+                sk = s.sk
+                solid = [(s.arm_solid(sg, sk.el[sg].z + 0.14, sk.wr[sg].z - 0.02, g, dome=(0.3, 0.2)), ("arm", sg))]
+                s.blob("LowerArm" + side[0], mat, solid, voxel=0.026, smooth=4, tris=tris // 2,
+                       wr=dict(amp=0.009, folds=[(sk.el[sg] + V(0, 0, -0.2), 0.3, 0.012)], seed=2.2), tint=tint)
+            return None
         sk = s.sk
         solids, folds = [], []
         for side, sg in SIDES:
@@ -673,8 +680,18 @@ class Figure:
         ob = s.blob("LowerArms", mat, solids, voxel=0.026, smooth=4, tris=tris, wr=wr, tint=tint)
         return ob
 
-    def gloves(s, mat="HideLeather", tint=None, g=0.012, cuff=0.2, tris=2000, piece="Hands"):
+    def gloves(s, mat="HideLeather", tint=None, g=0.012, cuff=0.2, tris=2000, piece="Hands", split=False):
         sk = s.sk
+        if split:   # "GloveL", "GloveR"
+            for side, sg in SIDES:
+                solids = [(b, ("arm", sg)) for b in s.hand_solids(sg, g)]
+                st = []
+                for z in (sk.wr[sg].z - 0.03, sk.wr[sg].z + cuff * 0.5, sk.wr[sg].z + cuff):
+                    c, r = sk.arm(sg, z)
+                    st.append((c, r + 0.05, (r + 0.05) * 0.96))
+                solids.append((tube(st, seg=18, dome=(0.2, 0.15)), ("arm", sg)))
+                s.blob("Glove" + side[0], mat, solids, voxel=0.014, smooth=3, tris=tris // 2, tint=tint, weight_smooth=1)
+            return None
         solids = []
         for side, sg in SIDES:
             solids += [(b, ("arm", sg)) for b in s.hand_solids(sg, g)]
@@ -910,6 +927,216 @@ class Figure:
         return s.add(piece, mat, to_object(piece, bm), [(None, ("bone", bone))], tint=tint, glow=glow, sharp=40)
 
     # ---------------------------------------------------------- finishing: join, rig, export, stills
+    # ---- the layered recruit: a bare body cut into regions, clothes and kit over it, limbs that can be swapped
+    def body(s, mat="Flesh", tint=None, tris=5600):
+        """The bare body: one fused surface (so nothing is disjointed), then cut into Head, Torso, ArmL/R, HandL/R,
+        LegL/R, FootL/R. Every piece keeps the fused surface's normals and weights, so the cuts do not show, and
+        the game can hide what clothing covers or what a cybernetic limb replaces."""
+        sk = s.sk
+        hr, zc = sk.hr, sk.zc
+        solids = [(s.torso_solid(sk.z_hip - 0.26, sk.z_neck + 0.02, 0.0, dome=(0.6, 0.3)), ("torso",))]
+        solids += s.shoulder_solids(0.0)
+        for side, sg in SIDES:
+            sh, ar = sk.sh[sg], sk.ar
+            solids.append((s.arm_solid(sg, sh.z - 0.14, sk.wr[sg].z - 0.03, 0.0, dome=(0.55, 0.3)), ("arm", sg)))
+            solids.append((s.trap_solid(sg), ("torso",)))
+            solids += [(b, ("arm", sg)) for b in s.hand_solids(sg, 0.0)]
+            solids.append((s.leg_solid(sg, sk.hp[sg].z + 0.1, sk.az - 0.02, 0.0), ("leg", sg)))
+            solids.append((s.boot_solids(sg, 0.12, -0.018)[0], ("leg", sg)))
+        # the head: skull, jaw, neck, a brow, a nose, ears; hollows where the eyes sit
+        solids.append((ball_bm(hr, (0, 0.03, zc), (0.9, 1.04, 1.1)), ("bone", "Head")))
+        solids.append((ball_bm(hr * 0.7, (0, -hr * 0.24, zc - hr * 0.6), (0.88, 1.0, 0.95)), ("bone", "Head")))
+        nr = hr * 0.6
+        solids.append((tube([(V(0, 0.03, sk.z_neck - 0.14), nr * 1.3, nr * 1.2), (V(0, 0.03, zc - hr * 0.5), nr, nr)], seg=16, dome=(0.2, 0.2)), ("head",)))
+        solids.append((ball_bm(hr * 0.36, (0, -hr * 0.8, zc + hr * 0.2), (1.7, 0.5, 0.34)), ("bone", "Head")))              # brow
+        solids.append((tube([(V(0, -hr * 0.98, zc + hr * 0.1), hr * 0.1, hr * 0.12), (V(0, -hr * 1.2, zc - hr * 0.22), hr * 0.15, hr * 0.13),
+                             (V(0, -hr * 1.06, zc - hr * 0.3), hr * 0.13, hr * 0.08)], seg=10, u=X, v=Y, dome=(0.5, 0.8)), ("bone", "Head")))  # nose
+        for sg in (-1, 1):
+            solids.append((ball_bm(hr * 0.3, (sg * hr * 0.9, 0.06, zc - hr * 0.08), (0.35, 0.75, 1.1)), ("bone", "Head")))   # ear
+        eyes = [ball_bm(hr * 0.2, (sg * hr * 0.36, -hr * 1.04, zc + hr * 0.02), (1.25, 0.6, 0.7)) for sg in (-1, 1)]
+        ob = s.blob("Body", mat, solids, voxel=0.026, smooth=5, tris=tris, cut=eyes, tint=tint, weight_smooth=3)
+        key = f"Body_{mat}"
+        s.pieces.pop(key)
+        s.tints.pop(key, None)
+        # cut along the region borders, then hand each face to its region
+        xa = sk.sh[1].x - sk.ar * 1.02
+        zn, zl, zw_, zf = sk.z_neck - 0.1, sk.z_hip - 0.3, sk.wr[1].z, sk.az + 0.1
+        def region(c):
+            if abs(c.x) > (xa if c.z > zl else xa + 0.03) and c.z > zl - 0.6:
+                side = "L" if c.x < 0 else "R"
+                return ("Hand" if c.z < zw_ else "Arm") + side
+            if c.z > zn:
+                return "Head"
+            if c.z > zl:
+                return "Torso"
+            return ("Foot" if c.z < zf else "Leg") + ("L" if c.x < 0 else "R")
+        cuts = [(V(0, 0, zn), Z, lambda c: abs(c.x) < xa), (V(xa, 0, 0), X, lambda c: c.z > zl), (V(-xa, 0, 0), X, lambda c: c.z > zl),
+                (V(0, 0, zw_), Z, lambda c: abs(c.x) > xa), (V(0, 0, zl), Z, lambda c: abs(c.x) < xa), (V(0, 0, zf), Z, lambda c: abs(c.x) < xa)]
+        return s.cut_regions(ob, mat, cuts, region, tint, "Torso")
+
+    def cut_regions(s, ob, mat, cuts, region, tint, main):
+        """Cuts a registered-then-popped garment along planes [(point, normal, which faces)] and hands each face to
+        the piece region(centre) names. The pieces keep the whole surface's normals, so the cuts do not show."""
+        me = ob.data
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        for co, no, keep in cuts:
+            geom = [f for f in bm.faces if keep(f.calc_center_median())]
+            geom = list({e for f in geom for e in f.edges} | {v for f in geom for v in f.verts} | set(geom))
+            bmesh.ops.bisect_plane(bm, geom=geom, dist=1e-5, plane_co=co, plane_no=no)
+        bm.to_mesh(me)
+        bm.free()
+        me.update()
+        me.normals_split_custom_set_from_vertices([v.normal[:] for v in me.vertices])
+        names = sorted({region(poly.center) for poly in me.polygons})
+        made = []
+        for name in names:
+            if name == main:
+                continue
+            activate(ob)
+            bpy.ops.object.mode_set(mode="EDIT")
+            bpy.ops.mesh.select_mode(type="FACE")
+            bpy.ops.mesh.select_all(action="DESELECT")
+            bpy.ops.object.mode_set(mode="OBJECT")
+            for poly in ob.data.polygons:
+                poly.select = region(poly.center) == name
+            bpy.ops.object.mode_set(mode="EDIT")
+            bpy.ops.mesh.separate(type="SELECTED")
+            bpy.ops.object.mode_set(mode="OBJECT")
+            new = [o for o in bpy.context.selected_objects if o is not ob][0]
+            made.append((name, new))
+        made.append((main, ob))
+        for name, o in made:
+            k = f"{name}_{mat}"
+            o.name = k
+            s.pieces.setdefault(k, []).append(o)
+            if tint:
+                s.tints[k] = tint
+        return [o for _, o in made]
+
+    def split_legs(s):
+        """Cuts the trousers into Trousers (the seat), TrouserL and TrouserR, and the boots and soles into a piece a
+        side, so one leg can be swapped for a cybernetic one."""
+        sk = s.sk
+        zl = sk.z_hip - 0.3
+        for key in [k for k in list(s.pieces) if k.split("_")[0] in ("Trousers", "Boots", "Soles")]:
+            piece, mat = key.split("_")
+            obs = s.pieces.pop(key)
+            tint = s.tints.pop(key, None)
+            if len(obs) > 1:
+                bpy.ops.object.select_all(action="DESELECT")
+                for o in obs:
+                    o.select_set(True)
+                bpy.context.view_layer.objects.active = obs[0]
+                bpy.ops.object.join()
+            if piece == "Trousers":
+                s.cut_regions(obs[0], mat, [(V(0, 0, zl), Z, lambda c: True)], lambda c: "Trousers" if c.z > zl else ("TrouserL" if c.x < 0 else "TrouserR"), tint, "Trousers")
+            else:
+                one = piece[:-1]
+                s.cut_regions(obs[0], mat, [], lambda c: one + ("L" if c.x < 0 else "R"), tint, one + "L")
+
+    def trap_solid(s, sg, g=0.0):
+        """The muscle from the neck out to the point of the shoulder, so the arm does not sit on the body like a peg."""
+        sk = s.sk
+        sh, ar = sk.sh[sg], sk.ar
+        a, b = V(sg * sk.hw * 0.22, 0.04, sk.z_neck - 0.02), V(sh.x - sg * ar * 0.25, 0.0, sh.z - ar * 0.45)
+        st = [(a.lerp(b, t), (0.42 + 0.5 * t) * ar + g, (0.6 + 0.32 * t) * sk.hd + g) for t in (0, 0.33, 0.66, 1.0)]
+        return tube(st, n=2.0, seg=18, u=Z, v=Y, dome=(0.3, 0.9))
+
+    def under(s, mat="Gauze", tint=None):
+        """What a clone wears in the tank: a wrap round the hips."""
+        sk = s.sk
+        solids = [(s.torso_solid(sk.z_hip - 0.27, sk.z_hip + 0.36, 0.014, dome=(0.6, 0.05)), ("torso",))]
+        for side, sg in SIDES:
+            solids.append((s.leg_solid(sg, sk.hp[sg].z + 0.05, sk.hp[sg].z - 0.42, 0.014, dome=(0.3, 0.05)), ("leg", sg)))
+        return s.blob("Under", mat, solids, voxel=0.028, smooth=4, tris=700, tint=tint)
+
+    def singlet(s, mat="Twill", tint=None, g=0.026, tris=1800):
+        """A sleeveless undershirt: the torso and the slope of the shoulders, no sleeves."""
+        sk = s.sk
+        solids = [(s.torso_solid(sk.z_hip + 0.08, sk.z_neck - 0.02, g, dome=(0.2, 0.25)), ("torso",))]
+        solids += s.shoulder_solids(g * 0.6)
+        solids += [(s.trap_solid(sg, g * 0.8), ("torso",)) for sg in (-1, 1)]
+        ob = s.blob("Singlet", mat, solids, voxel=0.03, tris=tris, wr=dict(amp=0.01, freq=(4.5, 4.5, 1.6), seed=0.9), tint=tint)
+        # open armholes exactly where the body's arms begin
+        xa = sk.sh[1].x - sk.ar * 1.02
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        for sg in (-1, 1):
+            geom = list(bm.verts) + list(bm.edges) + list(bm.faces)
+            bmesh.ops.bisect_plane(bm, geom=geom, dist=1e-5, plane_co=V(sg * xa, 0, 0), plane_no=V(sg, 0, 0), clear_outer=True)
+        bm.to_mesh(ob.data)
+        bm.free()
+        return ob
+
+    def anchor(s):
+        """One hidden speck per bone, so every layer uploaded from this figure carries all 15 bones (an importer
+        drops a bone that moves nothing) and can be lined up with the rig."""
+        for l in LIMBS:
+            c = s.sk.centre[l]
+            bm = bmesh.new()
+            vs = [bm.verts.new(c + d) for d in (V(0, 0, 0), V(0.01, 0, 0), V(0, 0, 0.01))]
+            bm.faces.new(vs)
+            s.add("Anchor", "Proxy", to_object("Anchor", bm), [(None, ("bone", l))])
+
+    def cyber_arm(s, sg, tint=(0.22, 0.23, 0.25)):
+        """A cybernetic arm in place of the flesh one: ball joints at shoulder, elbow and wrist, struts with a plate
+        and a piston between them, a steel hand. Rigid pieces, each on one bone."""
+        sk = s.sk
+        side = "Left" if sg < 0 else "Right"
+        p, j = "CyArm" + side[0], "CyArmJoints" + side[0]
+        sh, el, wr, ar = sk.sh[sg], sk.el[sg], sk.wr[sg], sk.ar
+        out = 0 if sg > 0 else 180
+        s.add(j, "Stainless", to_object("J", ball_bm(ar * 1.05, sh + V(0, 0, -ar * 0.5))), [(None, ("bone", side + "UpperArm"))], sharp=50)
+        s.cyl(p, "PlateSteel", sh + V(0, 0, -ar * 0.9), el + V(0, 0, ar * 0.4), ar * 0.62, side + "UpperArm", tint=tint, r2=ar * 0.5)
+        s.limb_plate("UpperArm", sg, z0=el.z + 0.28, z1=sh.z - 0.3, mid=out, half=95, off=0.02, thick=0.05, piece=p, tint=tint)
+        s.cyl(j, "Stainless", sh + V(-sg * ar * 0.5, ar * 0.5, -ar * 1.2), el + V(-sg * ar * 0.4, ar * 0.45, ar * 0.5), ar * 0.14, side + "UpperArm")
+        s.add(j, "Stainless", to_object("J", ball_bm(ar * 0.78, el)), [(None, ("bone", side + "LowerArm"))], sharp=50)
+        s.cyl(p, "PlateSteel", el + V(0, 0, -ar * 0.4), wr + V(0, 0, ar * 0.3), ar * 0.6, side + "LowerArm", tint=tint, r2=ar * 0.42)
+        s.limb_plate("LowerArm", sg, z0=wr.z + 0.2, z1=el.z - 0.22, mid=out, half=110, off=0.0, thick=0.05, piece=p, tint=tint)
+        s.cyl(j, "Stainless", el + V(0, -ar * 0.5, -ar * 0.7), wr + V(0, -ar * 0.38, ar * 0.5), ar * 0.12, side + "LowerArm")
+        s.add(j, "Stainless", to_object("J", ball_bm(ar * 0.5, wr)), [(None, ("bone", side + "Hand"))], sharp=50)
+        s.blob(p + "Hand", "PlateSteel", [(b, ("bone", side + "Hand")) for b in s.hand_solids(sg, 0.004)], voxel=0.014, smooth=2, tris=700, tint=tint, weight_smooth=0)
+
+    def cyber_leg(s, sg, tint=(0.22, 0.23, 0.25)):
+        """A cybernetic leg in place of the flesh one."""
+        sk = s.sk
+        side = "Left" if sg < 0 else "Right"
+        p, j = "CyLeg" + side[0], "CyLegJoints" + side[0]
+        hp, kn, an, lr = sk.hp[sg], sk.kn[sg], sk.an[sg], sk.lr
+        s.add(j, "Stainless", to_object("J", ball_bm(lr * 0.95, hp + V(0, 0, -lr * 0.6))), [(None, ("bone", side + "UpperLeg"))], sharp=50)
+        s.cyl(p, "PlateSteel", hp + V(0, 0, -lr * 1.0), kn + V(0, 0, lr * 0.4), lr * 0.66, side + "UpperLeg", tint=tint, r2=lr * 0.5)
+        s.limb_plate("UpperLeg", sg, z0=kn.z + 0.3, z1=hp.z - 0.35, mid=-90, half=80, off=-0.04, thick=0.06, piece=p, tint=tint)
+        s.cyl(j, "Stainless", hp + V(sg * lr * 0.2, lr * 0.6, -lr * 1.2), kn + V(sg * lr * 0.2, lr * 0.5, lr * 0.5), lr * 0.13, side + "UpperLeg")
+        s.add(j, "Stainless", to_object("J", ball_bm(lr * 0.72, kn)), [(None, ("bone", side + "LowerLeg"))], sharp=50)
+        s.cyl(p, "PlateSteel", kn + V(0, 0, -lr * 0.4), an + V(0, 0.02, lr * 0.3), lr * 0.56, side + "LowerLeg", tint=tint, r2=lr * 0.36)
+        s.limb_plate("LowerLeg", sg, z0=sk.az + 0.35, z1=kn.z - 0.3, mid=-90, half=100, off=-0.03, thick=0.05, piece=p, tint=tint)
+        s.cyl(j, "Stainless", kn + V(0, lr * 0.5, -lr * 0.6), an + V(0, lr * 0.45, lr * 0.5), lr * 0.11, side + "LowerLeg")
+        s.add(j, "Stainless", to_object("J", ball_bm(lr * 0.42, an + V(0, 0.02, 0.02))), [(None, ("bone", side + "Foot"))], sharp=50)
+        s.blob(p + "Foot", "PlateSteel", [(s.boot_solids(sg, 0.1, 0.0)[0], ("bone", side + "Foot"))], voxel=0.024, smooth=2, tris=320, tint=tint, weight_smooth=0)
+
+    def heavy_armor(s, tint=(0.24, 0.26, 0.22), dark=(0.13, 0.14, 0.13)):
+        """A large armour set over the whole body: cuirass front and back, gorget, layered shoulders, tassets, plates
+        on every limb, and a closed helm. Each plate rides one bone, so the set bends where the body bends."""
+        sk, S = s.sk, s.S
+        zs = sk.sh[1].z
+        p = "Heavy"
+        for front in (True, False):
+            s.torso_plate("PlateSteel", tint=tint, z0=sk.z_waist + 0.08, z1=zs + 0.02, half=62, thick=0.11, off=0.17, front=front, piece=p)
+            s.torso_plate("PlateSteel", tint=dark, z0=sk.z_hip + 0.2, z1=sk.z_waist + 0.14, half=56, thick=0.08, off=0.19, front=front, piece=p + "Skirt")
+        s.collar("PlateSteel", tint=dark, height=0.26, open_deg=0, g=0.2, piece=p + "Skirt")
+        for side, sg in SIDES:
+            out = 0 if sg > 0 else 180
+            s.pauldron(sg, tint=tint, scale=1.45, layers=2, piece=p)
+            s.limb_plate("UpperArm", sg, z0=sk.el[sg].z + 0.12, z1=zs - 0.7, mid=out, half=125, off=0.1, thick=0.07, piece=p, tint=tint)
+            s.limb_plate("LowerArm", sg, z0=sk.wr[sg].z + 0.12, z1=sk.el[sg].z - 0.1, mid=out, half=150, off=0.1, thick=0.07, piece=p, tint=tint)
+            s.limb_plate("UpperLeg", sg, z0=sk.kn[sg].z + 0.25, z1=sk.z_hip - 0.25, mid=-90, half=105, off=0.1, thick=0.08, piece=p, tint=tint)
+            s.limb_plate("UpperLeg", sg, z0=sk.kn[sg].z + 0.5, z1=sk.z_hip - 0.05, mid=out, half=50, off=0.12, thick=0.07, piece=p + "Skirt", tint=dark)
+            s.limb_plate("LowerLeg", sg, z0=sk.az + 0.3, z1=sk.kn[sg].z - 0.26, mid=-90, half=125, off=0.1, thick=0.08, piece=p, tint=tint)
+            s.knee(sg, tint=tint, piece=p)
+        s.helmet("PlateSteel", tint=tint, cover=0.92, grow=1.3, piece=p + "Helm")
+        s.visor("GlassDark", half=46, height=0.09, drop=0.0, glow=None, r=1.36, piece=p + "Visor")
+
     def finish(s):
         """Joins each piece's objects, builds the armature and binds everything to it."""
         objs = []
@@ -967,7 +1194,24 @@ class Figure:
             bpy.data.objects.remove(ob)
         print("BUILT Rig", s.name, "height", round(s.sk.height, 2), flush=True)
 
-    def export(s):
+    def export(s, layer=None, pieces=None):
+        """layer + pieces: only the pieces whose name (before the material) is listed, as out/Skin_<layer>.fbx."""
+        if layer:
+            keep = [o for o in s.objects if o.name.rsplit("_", 1)[0] in pieces]
+            assert keep, layer
+            bpy.ops.object.select_all(action="DESELECT")
+            for o in keep:
+                o.select_set(True)
+            s.armature.select_set(True)
+            path = os.path.join(OUT, f"Skin_{layer}.fbx")
+            bpy.ops.export_scene.fbx(filepath=path, use_selection=True, apply_unit_scale=True, global_scale=0.01, bake_space_transform=False,
+                                     axis_forward="-Z", axis_up="Y", object_types={"MESH", "ARMATURE"}, add_leaf_bones=False,
+                                     use_armature_deform_only=False, mesh_smooth_type="FACE")
+            def c255(t):
+                return "Color3.fromRGB(%d, %d, %d)" % tuple(round(c * 255) for c in t)
+            print("LUA", layer, "Tints = { " + ", ".join(f"{o.name} = {c255(s.tints[o.name])}" for o in keep if o.name in s.tints) + " }", flush=True)
+            print("BUILT Skin", layer, len(keep), "pieces", sum(tri_count(o) for o in keep), "tris:", ", ".join(f"{o.name} {tri_count(o)}" for o in keep), flush=True)
+            return path
         bpy.ops.object.select_all(action="DESELECT")
         for o in s.objects:
             o.select_set(True)
@@ -993,7 +1237,7 @@ class Figure:
         made = []
         for ob in s.objects:
             key = ob.name[4:] if ob.name.startswith("src_") else ob.name
-            if key.split("_")[0] in skip:
+            if key.split("_")[0] in skip or key.startswith("Anchor"):
                 continue
             ob.name = "src_" + key
             me = bpy.data.meshes.new_from_object(ob.evaluated_get(dg))
@@ -1108,42 +1352,51 @@ class Figure:
             ob.data.materials.clear()
             ob.data.materials.append(m)
 
-    def stills(s, views=("front", "back", "action"), size=(900, 1200), samples=40, action=None):
-        s.materials_for_stills()
+    def stills(s, views=("front", "back", "action"), size=(900, 1200), samples=40, action=None, look=None, show=None):
+        """look + show: render only the pieces listed (a layered figure in one state), as figure_<Name>_<look>_<view>."""
+        if not getattr(s, "_still_mats", False):
+            s.materials_for_stills()
+            s._still_mats = True
+        for o in s.objects:
+            o.hide_render = bool(show is not None and o.name.rsplit("_", 1)[0] not in show) or o.name.startswith("Anchor")
         sc = bpy.context.scene
         sc.render.engine = "CYCLES"
         sc.cycles.device, sc.cycles.samples, sc.cycles.use_denoising = "CPU", samples, True
         sc.render.resolution_x, sc.render.resolution_y = size
         sc.view_settings.view_transform = "AgX"
         sc.view_settings.look = "AgX - Medium High Contrast"
-        w = bpy.data.worlds.new("W")
-        w.use_nodes = True
-        w.node_tree.nodes["Background"].inputs["Color"].default_value = (0.045, 0.05, 0.058, 1)
-        sc.world = w
         h = s.sk.height
-        bpy.ops.mesh.primitive_plane_add(size=60)
-        floor = bpy.context.active_object
-        fm = bpy.data.materials.new("Floor")
-        fm.use_nodes = True
-        fm.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.05, 0.052, 0.056, 1)
-        fm.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.55
-        floor.data.materials.append(fm)
-        def lamp(at, energy, color, sz):
-            d = bpy.data.lights.new("L", "AREA")
-            d.energy, d.color, d.size = energy, color, sz
-            o = bpy.data.objects.new("L", d)
-            bpy.context.collection.objects.link(o)
-            o.location = at
-            o.rotation_euler = (V(0, 0, h * 0.55) - Vector(at)).to_track_quat("-Z", "Y").to_euler()
-            return o
-        k = h / 5.9
-        lamps = [lamp((5 * k, -7 * k, h * 1.5), 2100 * k * k, (1.0, 0.95, 0.9), 5 * k), lamp((-7 * k, -3 * k, h * 0.7), 500 * k * k, (0.75, 0.86, 1.0), 6 * k),
-                 lamp((-2 * k, 8 * k, h * 1.3), 1500 * k * k, (0.85, 0.93, 1.0), 4 * k)]
-        cd = bpy.data.cameras.new("Cam")
-        cam = bpy.data.objects.new("Cam", cd)
-        bpy.context.collection.objects.link(cam)
-        sc.camera = cam
-        cd.lens = 70
+        if not getattr(s, "_stage", None):
+            w = bpy.data.worlds.new("W")
+            w.use_nodes = True
+            w.node_tree.nodes["Background"].inputs["Color"].default_value = (0.045, 0.05, 0.058, 1)
+            sc.world = w
+            h = s.sk.height
+            bpy.ops.mesh.primitive_plane_add(size=60)
+            floor = bpy.context.active_object
+            fm = bpy.data.materials.new("Floor")
+            fm.use_nodes = True
+            fm.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.05, 0.052, 0.056, 1)
+            fm.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.55
+            floor.data.materials.append(fm)
+            def lamp(at, energy, color, sz):
+                d = bpy.data.lights.new("L", "AREA")
+                d.energy, d.color, d.size = energy, color, sz
+                o = bpy.data.objects.new("L", d)
+                bpy.context.collection.objects.link(o)
+                o.location = at
+                o.rotation_euler = (V(0, 0, h * 0.55) - Vector(at)).to_track_quat("-Z", "Y").to_euler()
+                return o
+            k = h / 5.9
+            lamps = [lamp((5 * k, -7 * k, h * 1.5), 2100 * k * k, (1.0, 0.95, 0.9), 5 * k), lamp((-7 * k, -3 * k, h * 0.7), 500 * k * k, (0.75, 0.86, 1.0), 6 * k),
+                     lamp((-2 * k, 8 * k, h * 1.3), 1500 * k * k, (0.85, 0.93, 1.0), 4 * k)]
+            cd = bpy.data.cameras.new("Cam")
+            cam = bpy.data.objects.new("Cam", cd)
+            bpy.context.collection.objects.link(cam)
+            sc.camera = cam
+            cd.lens = 70
+            s._stage = (lamps, cam)
+        lamps, cam = s._stage
         shots = {"front": (0.5, -1.0), "back": (-0.55, 1.0), "action": (0.75, -1.0), "side": (1.0, -0.05)}
         out = []
         for view in views:
@@ -1156,7 +1409,7 @@ class Figure:
                     l.rotation_euler = (V(0, 0, h * 0.55) - l.location).to_track_quat("-Z", "Y").to_euler()
             cam.location = V(0, 0, h * 0.52) + d * (h * 2.25) + V(0, 0, h * 0.1)
             cam.rotation_euler = (V(0, 0, h * 0.5) - cam.location).to_track_quat("-Z", "Y").to_euler()
-            p = os.path.join(OUT, f"figure_{s.name}_{view}.png")
+            p = os.path.join(OUT, f"figure_{s.name}_{look + '_' if look else ''}{view}.png")
             sc.render.filepath = p
             bpy.ops.render.render(write_still=True)
             if view == "back":
@@ -1195,9 +1448,16 @@ def run(argv):
         fn(f)
         f.finish()
         if "--export" in argv:
-            f.export()
+            if kw.get("layers"):
+                for layer, pieces in kw["layers"].items():
+                    f.export(layer, set(pieces) | {"Anchor"})
+            else:
+                f.export()
             f.proxy()
-        if "--stills" in argv:
+        if "--stills" in argv and kw.get("looks"):
+            for look, (show, views) in kw["looks"].items():
+                f.stills(views=views, action=ACTION, samples=24 if "--quick" in argv else 40, look=look, show=show)
+        elif "--stills" in argv:
             views = ("front", "back", "action") if "--quick" not in argv else ("front", "action")
             f.stills(views=views, action=ACTION, samples=24 if "--quick" in argv else 40)
         if "--export" in argv and kw.get("statics"):

@@ -3,6 +3,19 @@
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
 report).
 
+## Front: the realistic pass, round 6 (strippable soldiers) (2026-11-12)
+- [ ] First link (F2 skips stages in dev): in the tank you and the other clones are bare bodies with only a cloth
+      wrap. When you land in the barracks you wear the basic battle attire: a sleeveless undershirt, trousers, boots
+      and your side's armband (blue Union, red Pact).
+- [ ] Deploy a recruit with a rifle: it wears its side's full kit over the attire (Union jacket, scarf, goggles and
+      webbing; Pact greatcoat, gas mask and straps). A conscript with only the free pistol fights in the attire.
+- [ ] Helmet, flak vest and steel plates still appear only when the recruit owns them, and vanish when it does not.
+- [ ] Kill a recruit that carries gear and strip the body with X: the body stays on the ground, now in its attire
+      only, and cannot be stripped again.
+- [ ] No skin shows through the clothes and no clothes float off the body when you crouch, go prone, lean or sprint.
+- [ ] Look at the stills of the cybernetic arm and leg and of the heavy armour set (not obtainable in game yet). Say
+      where recruits should get them, and what to change in their look.
+
 ## Front: the realistic pass, round 5 (one-piece soldiers) (2026-11-12)
 - [ ] On the Front you are no longer your Roblox avatar. Union recruits wear a short olive jacket, canvas belt and
       pouches, a scarf and dust goggles, with a blue armband. Pact recruits wear a long tan greatcoat, tall boots, a

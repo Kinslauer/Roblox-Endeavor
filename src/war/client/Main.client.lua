@@ -103,11 +103,12 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 	-- the one-piece body: everything but what sits on the head (the camera looks out from inside the helmet)
-	local skin = char:FindFirstChild("Skin")
-	if skin then
-		for _, p in skin:GetChildren() do
-			if p:IsA("BasePart") then
-				p.LocalTransparencyModifier = if p:GetAttribute("HeadPiece") then 1 else 0
+	for _, layer in char:GetChildren() do
+		if layer:IsA("Model") and layer:GetAttribute("Kind") then -- the body and every layer over it
+			for _, p in layer:GetChildren() do
+				if p:IsA("BasePart") then
+					p.LocalTransparencyModifier = if p:GetAttribute("HeadPiece") then 1 else 0
+				end
 			end
 		end
 	end

@@ -446,9 +446,8 @@ Client tab screenshot, because Andy cannot read logs another way.
   treatment?"). figures.py `union` (short olive jacket, canvas webbing, scarf, dust goggles, blue armband) and `pact`
   (long tan greatcoat, tall boots, gas mask, red armband) on one build (`BUILDS["Soldier"]`); recruits are clones, so
   no faces. `Rigs.lua` moved to `src/common` (both places): `Rigs.Skin(char, kind)` re-dresses a built rig,
-  `Rigs.Wear(char, itemIds)` shows the gear pieces of the body (`Assets.Skins[kind].Gear`: Helmet, Vest, Plates;
-  hidden otherwise), `Rigs.Holo(model, color)` = ForceField figure, `Rigs.Statue(kind, cf, parent, {Bare, Color})` =
-  an anchored skin. attachSkin marks pieces wholly on the head with attribute `HeadPiece`. `src/war/server/Bodies.lua`:
+  `Rigs.Holo(model, color)` = ForceField figure, `Rigs.Statue(kind, cf, parent, opts)` = an anchored skin (gear
+  showing was `Rigs.Wear` in round 5; round 6 replaced it with layers and groups, below). attachSkin marks pieces wholly on the head with attribute `HeadPiece`. `src/war/server/Bodies.lua`:
   Init (first in the Front's Main: SurfaceLibrary, StarterCharacter = `Assets.Rigs.Soldier` with attribute
   `StockAnimations`, so `src/character/Animate` (now also in war.project.json) plays Roblox's idle/walk/run and no
   stance animations there), `Dress(char, faction)` after every LoadCharacter (Soldiers.Spawn, Intro run), `Wear`
@@ -456,6 +455,28 @@ Client tab screenshot, because Andy cannot read logs another way.
   the RecruitRemains part. Simulation `figure` = the soldier rig as light (block fallback), the Intro's tank clones =
   Rigs.Statue, `Assets.FrontWorld.Calcified` = the soldier crawling / kneeling (figure.py `Figure.static`, statics=
   on the @figure). Front client: Skin.Start, first person shows every skin piece but HeadPiece ones.
+  Round 6, strippable soldiers (Andy, 2026-11-12: "They need to be able to be stripped of all gear, so the base
+  clothing layer should look more bare ... their basic battle attire acquired after leaving the tank and entering the
+  barracks. They also need rigging for cybernetics and large armor sets"). A body is now layers on one skeleton: the
+  base skin Model "Skin" plus Models "Layer_<kind>", each with attribute `Kind`, each a separate skinned upload whose
+  bones follow the same proxy limbs (Skin.lua updates all). `Assets.Skins`: `Recruit` (the bare clone body cut into
+  Head/Torso/ArmL/R/HandL/R/LegL/R/FootL/R on the new Flesh surface, the tank wrap, and the battle attire: singlet,
+  trousers, boots, armband; `Factions` = per-side tints), `UnionKit` / `PactKit` (coat, face wear, webbing, gloves,
+  helmet, vest, plates), `CyberLimbs` (groups CyArmL/R, CyLegL/R), `HeavyArmor` (group Heavy). `Groups = { name =
+  {pieces} }`: those pieces show only while the group is on; `Covers = { piece = {pieces} }`: a showing piece hides
+  those in any layer (coat hides torso and arms, a cyber arm hides the flesh arm, sleeve and glove). Rigs:
+  `Skin(model, kind, tints)`, `Layer`, `Unlayer`, `Dress(model, on)`, `DressParts`, `Statue(kind, cf, parent,
+  {Groups, Color, Tints, Transparency, Name})`; MeshPart attribute `BaseT` = its shown transparency. Bodies (Front):
+  `Dress` (Recruit + the side's kit layer), `Look(s)` = groups from the soldier state (Under while `s.Bare`: the
+  intro until the barracks; Attire after; Kit only while a Primary weapon is carried, so a conscript with the free
+  pistol fights in the attire; Helmet, Vest, Plates when owned), `Wear`, `Augment(char, "CyberLimbs"|"HeavyArmor",
+  groups)` (kept across Wear through character attributes `Group_<name>`), `Fallen(.., on)` + `Strip(fallen)`: a
+  looted body stays, stripped to its attire (RecruitRemains attribute `Stripped`). An importer drops bones with no
+  weights, so every layer carries an "Anchor" piece that attachSkin destroys. figure.py: `body`, `cut_regions`,
+  `split_legs`, `under`, `singlet`, `anchor`, `cyber_arm/leg`, `heavy_armor`, a figure's `layers={kind: pieces}` and
+  `looks`; figures.py `Union` (exports Recruit + UnionKit), `Pact` (PactKit), `Augment` (CyberLimbs, HeavyArmor).
+  No Front item gives cybernetic limbs or the heavy set yet: Bodies.Augment is the hook, where they come from is
+  Andy's call. Claude's choices, unconfirmed: the Kit-with-a-primary rule, the looks of both layers.
   The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
 - Guns from components (owner, 2026-11-12: "The weapons should be made from the components we animated before, and
   there can be swapped in barrels of differing sizes, attachments, muzzle devices etc. All the cold war era weapons
@@ -495,6 +516,13 @@ Client tab screenshot, because Andy cannot read logs another way.
   the control room. Unseen in game: the UI at the new scale (blind change: watch for text that overflows its plate),
   the tracer and kick. Awaits Andy: docs/TESTING.md "Endeavor: station fixes". Andy has not yet seen v86 on the
   one-piece bodies.
+- Front v29 + Endeavor v96 (2026-11-12): realistic pass round 6, strippable soldiers (bare clone body in the tank,
+  battle attire from the barracks, kit and armour as layers, looted bodies stay stripped, cybernetic limbs and a
+  heavy armour set rigged but given by no item yet). Endeavor only shares Rigs/Skin/Assets. Real servers: Front start
+  5.3s, 0 warnings, every group hides and shows the right pieces on both sides, 4 layers of 15 bones on one body,
+  fallen bodies strip 24 -> 14 pieces; Endeavor start 7.3s, 0 warnings. Unseen in game: all of it in motion, the
+  shoulder of the bare body (a crease in the stills). Awaits Andy: docs/TESTING.md "Front: the realistic pass,
+  round 6". Stills in /mnt/project-files/realistic-pass/round6.
 - Front v28 + Endeavor v91 (2026-11-12): realistic pass round 5, one-piece soldiers on the Front (Union, Pact, the
   fallen, the calcified, simulation figures, tank clones); Endeavor only moved Rigs to common. Real servers: Front
   start 2.9s, 0 warnings, both skins 15 bones / 18 pieces, gear pieces hide and show, 9 simulation figures and 2 tank

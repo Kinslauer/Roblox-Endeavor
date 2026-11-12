@@ -167,9 +167,9 @@ Simulation.DamageBlock = damageBlock
 local function figure(sim, cf, color, health, name)
 	-- the recruits' own body, drawn in light; the block figure below is the fallback
 	if Bodies.Ready then
-		local model, hum, root = Rigs.Build(Assets.Rigs.Soldier, name, "Union")
-		if model and Rigs.Holo(model, color) then
-			Rigs.Wear(model, { "Helmet" })
+		local model, hum, root = Rigs.Build(Assets.Rigs.Soldier, name, "Recruit")
+		if model and Rigs.Layer(model, "UnionKit") and Rigs.Holo(model, color) then
+			Rigs.Dress(model, { Attire = true, Kit = true, Helmet = true })
 			model:PivotTo(cf + Vector3.new(0, hum.HipHeight - 2, 0)) -- callers place the old figure's root: 3 studs over the floor
 			hum.MaxHealth, hum.Health = health, health
 			hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None

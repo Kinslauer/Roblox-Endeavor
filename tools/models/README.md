@@ -46,6 +46,11 @@ Rules that matter:
 character. `--export` writes `out/Skin_<Name>.fbx` and `out/Rig_<Name>.fbx` and prints a `LUA <Name> Tints = ...` line
 for `Assets.Skins`. Upload both, put the ids in `Assets.Skins` and `Assets.Rigs`. The older `conduit.py`, `raider.py`,
 `enemies.py` and the Sentry block of `station.py` built the retired blocky rigs; they are kept for reference.
+Layered bodies (the Front's recruits): a figure's `layers={kind: [pieces]}` exports one `Skin_<kind>.fbx` per layer on
+the same 15 bones (each with an "Anchor" piece so the importer keeps every bone) and `looks={name: [pieces]}` renders
+one set of stills per look. `Union` exports `Recruit` (bare body + wrap + attire) and `UnionKit`, `Pact` exports
+`PactKit`, `Augment` exports `CyberLimbs` and `HeavyArmor`. Which pieces show together is `Groups`/`Covers` in
+`Assets.Skins`.
 The Front's recruits are `Union` and `Pact` (one build, `BUILDS["Soldier"]`; upload one `Rig_Union.fbx` as
 `Assets.Rigs.Soldier`). A figure's `statics={name: dict(angles, turn, tris, fused, skip)}` also exports posed,
 unskinned copies with `--export` (`Fallen_<Side>.fbx` -> `Assets.FrontBodies.Fallen`, `Calcified_A/B.fbx` ->

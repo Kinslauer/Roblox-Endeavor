@@ -225,25 +225,58 @@ def _soldier_gear(f, helm_tint, vest_tint, plate_tint, cover, brim):
     for sx in (-1, 1):
         f.strap("Twill", zs + 0.02, -90 + sx * 36, zs + 0.0, 90 - sx * 36, off=0.115, width=0.3, tint=vest_tint, steps=8, piece="Vest", thick=0.05)
 
-@figure("Union", build=BUILDS["Soldier"], statics={
-    "Fallen_Union": dict(angles=FALLEN, turn=LAY, tris=2800),
-    "Calcified_A": dict(angles=CRAWL, turn=LAY, tris=1500, fused="Calcified", skip=("Vest", "Plates")),
-    "Calcified_B": dict(angles=REACH, tris=1700, fused="Calcified", skip=("Vest", "Plates"))})
+# The recruit is built in layers (Andy, 2026-11-12: "They need to be able to be stripped of all gear, so the base
+# clothing layer should look more bare ... basic battle attire acquired after leaving the tank and entering the
+# barracks. They also need rigging for cybernetics and large armor sets"):
+#   Recruit   the bare clone body in regions, the tank wrap, and the battle attire (undershirt, trousers, boots, armband)
+#   UnionKit / PactKit   everything a recruit can be stripped of: coat, face wear, webbing, helmet, vest, plates
+#   CyberLimbs   an arm and a leg a side that take the place of the flesh ones
+#   HeavyArmor   a large armour set over the whole body
+# Each layer is its own skinned upload on the same 15 bones; the game shows and hides pieces (Assets.Skins[..].Groups
+# and .Covers). BASE / the kit lists name the pieces of each layer.
+BODY = ["Head", "Torso", "ArmL", "ArmR", "HandL", "HandR", "LegL", "LegR", "FootL", "FootR"]
+ATTIRE = ["Singlet", "Trousers", "TrouserL", "TrouserR", "BootL", "BootR", "SoleL", "SoleR", "Armband"]
+BASE = BODY + ["Under"] + ATTIRE
+UNION_KIT = ["Coat", "LowerArmL", "LowerArmR", "GloveL", "GloveR", "Wrap", "GoggleRims", "Goggles", "GoggleStrap", "Webbing", "Fittings", "Canteen"]
+PACT_KIT = ["Coat", "LowerArmL", "LowerArmR", "GloveL", "GloveR", "Mask", "MaskFittings", "Visor", "Straps", "Pouches", "Fittings", "Bedroll"]
+ARMOUR = ["Helmet", "Vest", "Plates"]
+CYBER = [p + sd for sd in "LR" for p in ("CyArm", "CyArmJoints", "CyLeg", "CyLegJoints")] + ["CyArmLHand", "CyArmRHand", "CyLegLFoot", "CyLegRFoot"]
+HEAVY = ["Heavy", "HeavySkirt", "HeavyHelm", "HeavyVisor"]
+FLESH = (0.66, 0.60, 0.57)
+
+def _recruit_base(f, cloth, boot, band):
+    """What every recruit is under its kit. Both sides share these meshes; the game tints the cloth by side."""
+    f.detail = 0.8
+    f.body("Flesh", tint=FLESH)
+    f.under("Gauze", tint=(0.52, 0.5, 0.44))
+    f.singlet("Twill", tint=tuple(c * 0.8 for c in cloth))
+    f.trousers("Twill", tint=cloth)
+    f.boots("HideLeather", shaft=0.55, tint=boot, g=0.03)
+    f.split_legs()
+    f.band("UpperArm", -1, f.sk.sh[1].z - 0.62, "Twill", tint=band, off=0.03, height=0.16, piece="Armband")
+    f.anchor()
+
+def _shown(*groups):
+    return set(sum(groups, []))
+
+@figure("Union", build=BUILDS["Soldier"],
+        layers={"Recruit": BASE, "UnionKit": UNION_KIT + ARMOUR},
+        looks={"bare": (_shown(BODY, ["Under"]), ("front", "back")),
+               "attire": (_shown(["Head", "ArmL", "ArmR", "HandL", "HandR"], ATTIRE), ("front", "action")),
+               "kit": (_shown(["Head"], ATTIRE, UNION_KIT, ARMOUR) - {"Singlet"}, ("front", "back"))},
+        statics={"Fallen_Union": dict(angles=FALLEN, turn=LAY, tris=4200)})
 def union(f):
-    """The Union recruit: short olive field jacket, trousers bloused into boots, canvas webbing with pouches and a
-    canteen, a scarf over the face, dust goggles; a brimmed steel helmet."""
+    """The Union recruit's kit over the base: short olive field jacket, canvas webbing with pouches and a canteen, a
+    scarf over the face, dust goggles; a brimmed steel helmet, flak vest and plates."""
     sk, S = f.sk, f.S
     OLIVE, DARK, WEB, BOOT, BLUE = (0.25, 0.28, 0.18), (0.16, 0.18, 0.13), (0.50, 0.46, 0.33), (0.2, 0.19, 0.18), (0.20, 0.36, 0.72)
     zs = sk.sh[1].z
-    f.detail = 0.8
-    f.trousers("Twill", tint=OLIVE)
-    f.boots("HideLeather", shaft=0.55, tint=BOOT, g=0.03)
+    _recruit_base(f, OLIVE, BOOT, BLUE)
     f.jacket("Twill", tint=OLIVE, sleeve="elbow", cap=0.4)
     f.skirt("Twill", tint=OLIVE, length=0.42, flare=0.07, back_longer=0.0)
     f.collar("Twill", tint=OLIVE, height=0.16)
-    f.forearms("Twill", tint=OLIVE)
-    f.gloves("HideLeather", tint=BOOT)
-    f.head_core(tint=DARK)
+    f.forearms("Twill", tint=OLIVE, split=True)
+    f.gloves("HideLeather", tint=BOOT, split=True)
     f.face_wrap("Gauze", tint=(0.46, 0.44, 0.34))
     f.goggles("GlassDark", glow=None, z=-0.04, strap_piece="GoggleStrap")
     f.belt("Twill", tint=WEB, piece="Webbing")
@@ -255,25 +288,25 @@ def union(f):
     p, nrm = sk.torso_point(sk.z_hip + 0.3, 62, 0.2)
     f.cyl("Canteen", "Twill", p + V(0, 0, -0.2), p + V(0, 0, 0.2), 0.17, "LowerTorso", tint=DARK)
     f.pouch("Twill", sk.z_hip + 0.3, 118, size=(0.34, 0.16, 0.34), off=0.1, bone="LowerTorso", tint=WEB, piece="Webbing")
-    f.band("UpperArm", -1, zs - 0.62, "Twill", tint=BLUE, off=0.06, height=0.16, piece="Armband")
     _soldier_gear(f, (0.23, 0.26, 0.17), DARK, (0.3, 0.31, 0.3), cover=-0.3, brim=0.08)
 
-@figure("Pact", build=BUILDS["Soldier"], statics={"Fallen_Pact": dict(angles=FALLEN, turn=LAY, tris=2800)})
+@figure("Pact", build=BUILDS["Soldier"],
+        layers={"PactKit": PACT_KIT + ARMOUR},
+        looks={"attire": (_shown(["Head", "ArmL", "ArmR", "HandL", "HandR"], ATTIRE), ("front",)),
+               "kit": (_shown(["Head"], ATTIRE, PACT_KIT, ARMOUR) - {"Singlet"}, ("front", "back"))},
+        statics={"Fallen_Pact": dict(angles=FALLEN, turn=LAY, tris=4200)})
 def pact(f):
-    """The Pact recruit: a long belted greatcoat with a high collar, tall boots, a cross strap and a bedroll, a
-    gas mask with one dark eye band; a deep steel helmet."""
+    """The Pact recruit's kit over the base: a long belted greatcoat with a high collar, a cross strap and a bedroll,
+    a gas mask with one dark eye band; a deep steel helmet, flak vest and plates."""
     sk, S = f.sk, f.S
-    COAT, DARK, LEATHER, BOOT, RED = (0.44, 0.38, 0.28), (0.14, 0.13, 0.13), (0.34, 0.24, 0.17), (0.15, 0.14, 0.14), (0.70, 0.16, 0.14)
+    COAT, LEATHER, BOOT, RED = (0.44, 0.38, 0.28), (0.34, 0.24, 0.17), (0.15, 0.14, 0.14), (0.70, 0.16, 0.14)
     zs = sk.sh[1].z
-    f.detail = 0.8
-    f.trousers("Twill", tint=(0.3, 0.27, 0.22))
-    f.boots("HideLeather", shaft=0.75, tint=BOOT, g=0.05)
+    _recruit_base(f, (0.3, 0.27, 0.22), BOOT, RED)
     f.jacket("Twill", tint=COAT, sleeve="elbow", cap=0.4)
     f.skirt("Twill", tint=COAT, length=1.5, flare=0.2)
     f.collar("Twill", tint=COAT, height=0.3)
-    f.forearms("Twill", tint=COAT)
-    f.gloves("HideLeather", tint=LEATHER)
-    f.head_core(tint=DARK)
+    f.forearms("Twill", tint=COAT, split=True)
+    f.gloves("HideLeather", tint=LEATHER, split=True)
     f.respirator(cans=True, fittings="MaskFittings")
     f.visor("GlassDark", half=50, height=0.13, drop=0.02, glow=None, r=1.08)
     f.belt("HideLeather", tint=LEATHER, height=0.2)
@@ -283,6 +316,18 @@ def pact(f):
         f.pouch("HideLeather", sk.z_hip + 0.36, deg, size=(0.34, 0.14, 0.3), off=0.1, bone="LowerTorso", tint=LEATHER)
     back, nrm = sk.torso_point(sk.z_waist + 0.2, 90, 0.2)
     f.cyl("Bedroll", "Twill", back + V(-0.55, 0.02, 0), back + V(0.55, 0.02, 0), 0.19, "UpperTorso", tint=(0.3, 0.31, 0.26))
-    f.band("UpperArm", 1, zs - 0.62, "Twill", tint=RED, off=0.06, height=0.16, piece="Armband")
     _soldier_gear(f, (0.26, 0.25, 0.22), (0.24, 0.22, 0.19), (0.27, 0.27, 0.28), cover=-0.18, brim=0.0)
     f.box("Helmet", "PlateSteel", (0.06, 0.62, 0.1), V(0, 0.06, sk.zc + sk.hr * 1.2), "Head", bev=0.03, tint=(0.26, 0.25, 0.22))
+
+@figure("Augment", build=BUILDS["Soldier"],
+        layers={"CyberLimbs": CYBER, "HeavyArmor": HEAVY},
+        looks={"cyber": (_shown(["Head", "Torso", "ArmR", "HandR", "LegL", "FootL", "Under"], ["CyArmL", "CyArmJointsL", "CyArmLHand", "CyLegR", "CyLegJointsR", "CyLegRFoot"]), ("front", "action")),
+               "cyber_attire": (_shown(["Head", "ArmR", "HandR"], ["Singlet", "Trousers", "TrouserL", "BootL", "SoleL", "Armband"], ["CyArmL", "CyArmJointsL", "CyArmLHand", "CyLegR", "CyLegJointsR", "CyLegRFoot"]), ("front",)),
+               "heavy": (_shown(["Head", "ArmL", "ArmR", "HandL", "HandR"], ATTIRE, HEAVY), ("front", "back", "action"))})
+def augment(f):
+    """The base recruit with both add-on layers: cybernetic arms and legs, and the large armour set."""
+    _recruit_base(f, (0.25, 0.28, 0.18), (0.2, 0.19, 0.18), (0.20, 0.36, 0.72))
+    for side, sg in SIDES:
+        f.cyber_arm(sg)
+        f.cyber_leg(sg)
+    f.heavy_armor()

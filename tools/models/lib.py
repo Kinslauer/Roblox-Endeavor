@@ -127,7 +127,7 @@ TEX = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
 # studs per texture repeat; keep in step with Assets.Surfaces[name].Tile
 TILE = {"CarBody": 8.0, "CarLivery": 8.0, "CarPanel": 6.0, "CarFloor": 4.0, "Moquette": 2.5, "SeatShell": 4.0,
         "Stainless": 3.0, "Underframe": 6.0, "Gunmetal": 1.5, "Polymer": 1.0, "Waxcloth": 2.5, "HideLeather": 1.5,
-        "CarTrim": 4.0, "Techcloth": 2.0, "Twill": 1.5, "Gauze": 1.2, "PlateSteel": 2.0}
+        "CarTrim": 4.0, "Techcloth": 2.0, "Twill": 1.5, "Gauze": 1.2, "PlateSteel": 2.0, "Flesh": 2.0}
 
 def uv_box(ob, tile=None):
     """World-scale box mapping: each face takes the two axes across its normal, so every model that uses a

@@ -19,7 +19,7 @@ local warned = {} -- asset ids already reported as unusable
 -- with the rig, each bone is tied to the limb nearest to it (attributes Limb and Rest; shared/Skin.lua makes the
 -- bone follow that limb on every client), and the rig's own limbs turn invisible: they stay as the joints, the
 -- hitboxes and what gear welds to. Returns true when the skin is on.
-local function attachSkin(model, limbs, kind)
+local function attachSkin(model, limbs, kind, layerName, tints)
 	local spec = Assets.Skins and Assets.Skins[kind]
 	local template = spec and spec.Id and spec.Id ~= 0 and ModelAssets.Template(spec.Id)
 	if not template then
@@ -87,7 +87,7 @@ local function attachSkin(model, limbs, kind)
 			if p:IsA("MeshPart") then
 				local suffix = p.Name:match("_(%w+)$")
 				p:SetAttribute("Mat", (spec.Mats and spec.Mats[p.Name]) or suffix)
-				local tint = spec.Tints and spec.Tints[p.Name]
+				local tint = (tints and tints[p.Name]) or (spec.Tints and spec.Tints[p.Name])
 				if tint then
 					Assets.Tint(p, tint)
 				end
@@ -103,10 +103,20 @@ local function attachSkin(model, limbs, kind)
 	weld.Name = "SkinWeld"
 	weld.Part0, weld.Part1 = limbs.LowerTorso, holder
 	weld.Parent = holder
-	skin.Name = "Skin"
+	for _, p in meshes do
+		if p.Name:sub(1, 6) == "Anchor" then
+			p:Destroy() -- a speck per bone that only made the upload keep every bone
+		else
+			p:SetAttribute("BaseT", p.Transparency)
+		end
+	end
+	skin.Name = layerName or "Skin"
 	skin:SetAttribute("Kind", kind)
 	CollectionService:AddTag(skin, "Skin")
 	skin.Parent = model
+	if layerName then
+		return true
+	end
 	for _, limb in limbs do
 		limb.Transparency = 1
 		limb:SetAttribute("Proxy", true)
@@ -283,22 +293,32 @@ function Rigs.Build(assetId, name, kind)
 	return model, hum, root
 end
 
--- Dresses an already built rig (a spawned character) in another skin: the Front's recruits all spawn as the same
--- rig and put on their side's body. Returns true when the skin is on; if it is not, the plain limbs show.
-function Rigs.Skin(model, kind)
+local function limbsOf(model)
 	local limbs = {}
 	for _, name in LIMBS do
 		local limb = model:FindFirstChild(name)
 		if not (limb and limb:IsA("BasePart")) then
-			return false
+			return nil
 		end
 		limbs[name] = limb
 	end
-	local old = model:FindFirstChild("Skin")
-	if old then
-		old:Destroy()
+	return limbs
+end
+
+-- Dresses an already built rig (a spawned character) in another skin: the Front's recruits all spawn as the same
+-- rig and put on their side's colours. tints overrides Assets.Skins[kind].Tints piece by piece. Returns true when
+-- the skin is on; if it is not, the plain limbs show.
+function Rigs.Skin(model, kind, tints)
+	local limbs = limbsOf(model)
+	if not limbs then
+		return false
 	end
-	local on = attachSkin(model, limbs, kind)
+	for _, child in model:GetChildren() do
+		if child:IsA("Model") and child:GetAttribute("Kind") then
+			child:Destroy()
+		end
+	end
+	local on = attachSkin(model, limbs, kind, nil, tints)
 	if not on then
 		for _, limb in limbs do
 			limb.Transparency = 0
@@ -309,50 +329,110 @@ function Rigs.Skin(model, kind)
 	return on
 end
 
--- Gear that is part of the body: Assets.Skins[kind].Gear = { <Piece> = { item ids that show it } }. Shows the
--- pieces for the item ids given and hides the rest of the gear pieces.
-function Rigs.Wear(model, itemIds)
-	local skin = model and model:FindFirstChild("Skin")
-	local spec = skin and Assets.Skins[skin:GetAttribute("Kind")]
-	if not (spec and spec.Gear) then
-		return false
+-- A layered body. A skin is a set of named pieces on the rig's 15 bones; more skins can be laid over the same rig
+-- (a side's kit, cybernetic limbs, a large armour set), each its own upload:
+--   Assets.Skins[kind].Groups = { <Group> = { piece names } }   pieces that show only while their group is on
+--   Assets.Skins[kind].Covers = { <Piece> = { piece names } }   what a showing piece hides, in any layer (clothing
+--                                                               hides the body under it; a cybernetic arm takes the
+--                                                               place of the flesh arm, its glove and its sleeve end)
+-- Rigs.Layer adds a layer, Rigs.Dress(model, { Group = true }) says which groups are on.
+function Rigs.Layer(model, kind)
+	local name = "Layer_" .. kind
+	if model:FindFirstChild(name) then
+		return true
 	end
-	local worn = {}
-	for _, id in itemIds do
-		worn[id] = true
+	local limbs = model:GetAttribute("Skinned") and limbsOf(model)
+	return limbs ~= nil and attachSkin(model, limbs, kind, name)
+end
+
+function Rigs.Unlayer(model, kind)
+	local layer = model:FindFirstChild("Layer_" .. kind)
+	if layer then
+		layer:Destroy()
 	end
-	for _, p in skin:GetChildren() do
-		local shows = p:IsA("MeshPart") and spec.Gear[p.Name:match("^(%w-)_") or p.Name]
-		if shows then
-			local on = false
-			for _, id in shows do
-				on = on or worn[id] == true
+end
+
+local function pieceOf(part)
+	return part.Name:match("^(%w-)_") or part.Name
+end
+
+-- parts: MeshParts named "<Piece>_<Material>"; kinds: the skins they come from; on: { Group = true }.
+function Rigs.DressParts(parts, kinds, on)
+	local groupOf, covers = {}, {}
+	for _, kind in kinds do
+		local spec = Assets.Skins[kind]
+		for group, pieces in (spec and spec.Groups) or {} do
+			for _, piece in pieces do
+				groupOf[piece] = group
 			end
-			p.Transparency = if on then 0 else 1
+		end
+		for piece, hides in (spec and spec.Covers) or {} do
+			covers[piece] = hides
 		end
 	end
+	local showing, hidden = {}, {}
+	for _, p in parts do
+		local piece = pieceOf(p)
+		local group = groupOf[piece]
+		if group == nil or on[group] then
+			showing[piece] = true
+		end
+	end
+	for piece in showing do
+		for _, under in covers[piece] or {} do
+			hidden[under] = true
+		end
+	end
+	for _, p in parts do
+		local piece = pieceOf(p)
+		local base = p:GetAttribute("BaseT") or 0
+		p.Transparency = if showing[piece] and not hidden[piece] then base else 1
+	end
+end
+
+function Rigs.Dress(model, on)
+	local parts, kinds = {}, {}
+	for _, layer in model:GetChildren() do
+		local kind = layer:IsA("Model") and layer:GetAttribute("Kind")
+		if kind then
+			table.insert(kinds, kind)
+			for _, p in layer:GetChildren() do
+				if p:IsA("MeshPart") then
+					table.insert(parts, p)
+				end
+			end
+		end
+	end
+	if #parts == 0 then
+		return false
+	end
+	Rigs.DressParts(parts, kinds, on)
 	return true
 end
 
 -- Turns a skinned body into a figure of light (the Front's simulation): no textures, one glowing colour.
 function Rigs.Holo(model, color)
-	local skin = model and model:FindFirstChild("Skin")
-	if not skin then
-		return false
-	end
-	for _, p in skin:GetDescendants() do
-		if p:IsA("SurfaceAppearance") or p:IsA("PointLight") then
-			p:Destroy()
-		elseif p:IsA("MeshPart") then
-			p.Material, p.Color, p.CastShadow = Enum.Material.ForceField, color, false
+	local any = false
+	for _, layer in model:GetChildren() do
+		if layer:IsA("Model") and layer:GetAttribute("Kind") then
+			any = true
+			for _, p in layer:GetDescendants() do
+				if p:IsA("SurfaceAppearance") or p:IsA("PointLight") then
+					p:Destroy()
+				elseif p:IsA("MeshPart") then
+					p.Material, p.Color, p.CastShadow = Enum.Material.ForceField, color, false
+				end
+			end
 		end
 	end
-	return true
+	return any
 end
 
 -- A body that never moves (a clone in its tank): the skin alone, standing at `cf` (its hips there), anchored.
--- opts.Color paints it one flat colour; opts.Bare leaves the gear pieces off. Returns the Model or nil.
+-- opts.Groups = the groups that are on; opts.Color paints it one flat colour; opts.Tints overrides tints.
+-- Returns the Model or nil.
 function Rigs.Statue(kind, cf, parent, opts)
+	opts = opts or {}
 	local spec = Assets.Skins and Assets.Skins[kind]
 	local template = spec and ModelAssets.Template(spec.Id)
 	if not template then
@@ -370,28 +450,33 @@ function Rigs.Statue(kind, cf, parent, opts)
 	Assets.Dress(skin)
 	local at = if hips then (if hips.Parent:IsA("BasePart") then hips.Parent.CFrame else CFrame.identity) * hips.CFrame else skin:GetPivot()
 	local move = cf * at:Inverse()
+	local parts = {}
 	for _, p in skin:GetDescendants() do
 		if p:IsA("BasePart") then
 			p.CFrame = move * p.CFrame
 			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
-			if p:IsA("MeshPart") then
-				local piece = p.Name:match("^(%w-)_") or p.Name
-				if opts and opts.Bare and spec.Gear and spec.Gear[piece] then
-					p.Transparency = 1
-				elseif opts and opts.Color then
+			if p:IsA("MeshPart") and p.Name:sub(1, 6) == "Anchor" then
+				p:Destroy()
+			elseif p:IsA("MeshPart") then
+				if opts.Color then
 					local surface = p:FindFirstChildOfClass("SurfaceAppearance")
 					if surface then
 						surface:Destroy()
 					end
 					p.Material, p.Color = Enum.Material.SmoothPlastic, opts.Color
-					p.Transparency = opts.Transparency or 0
-				elseif spec.Tints and spec.Tints[p.Name] then
-					Assets.Tint(p, spec.Tints[p.Name])
+				else
+					local tint = (opts.Tints and opts.Tints[p.Name]) or (spec.Tints and spec.Tints[p.Name])
+					if tint then
+						Assets.Tint(p, tint)
+					end
 				end
+				p:SetAttribute("BaseT", opts.Transparency or p.Transparency)
+				table.insert(parts, p)
 			end
 		end
 	end
-	skin.Name = (opts and opts.Name) or "Statue"
+	Rigs.DressParts(parts, { kind }, opts.Groups or {})
+	skin.Name = opts.Name or "Statue"
 	skin.Parent = parent
 	return skin
 end
