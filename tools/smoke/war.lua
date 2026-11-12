@@ -359,7 +359,7 @@ do
 	for _, l in Battlefield.Lockers do if l:GetAttribute("Faction") == "Union" then mine = l end end
 	local lp = (if mine:IsA("Model") then mine.PrimaryPart else mine).Position
 	g.Character.HumanoidRootPart.CFrame = M.CF.new(lp + M.V3.new(0, 0, 4))
-	s.LastHit = { by = g, t = os.clock() }
+	s.LastHit = { by = g, t = M.mockEnv.os.clock() }
 	check("unlink: refused under fire", Soldiers.Unlink(g) == false)
 	s.LastHit = nil
 	game_:GetService("TeleportService").TeleportAsync = function() error("no teleports in the mock") end
