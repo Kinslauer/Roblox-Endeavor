@@ -20,7 +20,10 @@ local IDS = {
 local ok, Assets = pcall(function()
 	return require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Assets"))
 end)
-local OWN = ok and Assets.Anims or {}
+-- the Front's soldier body (attribute StockAnimations): Roblox's own idle, walk and run, and no stance animations,
+-- because its arm holds were tuned over those and the server poses its crouch and prone
+local STOCK = char:GetAttribute("StockAnimations") == true
+local OWN = (ok and not STOCK) and Assets.Anims or {}
 for _, name in { "Idle", "Walk", "Run" } do
 	if OWN[name] and OWN[name] ~= 0 then
 		IDS[name] = "rbxassetid://" .. tostring(OWN[name])

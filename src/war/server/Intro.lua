@@ -21,6 +21,8 @@ local ModelAssets = require(script.Parent.Common.ModelAssets)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local Recruit = require(script.Parent.Common.Recruit)
 local Soldiers = require(script.Parent.Soldiers)
+local Bodies = require(script.Parent.Bodies)
+local Rigs = require(script.Parent.Common.Rigs)
 local Simulation = require(script.Parent.Simulation)
 
 local I = Config.War.Intro
@@ -164,7 +166,11 @@ local TANK_H = 11
 local TANK_D = 7.2
 
 local function silhouette(parent, base)
-	-- another clone, still growing: a dark shape hanging in the fluid
+	-- another clone, still growing: a dark shape hanging in the fluid (the recruits' own body, unclothed in colour)
+	if Bodies.Ready and Rigs.Statue("Union", CFrame.new(base + Vector3.new(0, 4.9, 0)) * CFrame.Angles(0, math.pi, 0), parent,
+		{ Name = "Clone", Bare = true, Color = Color3.fromRGB(20, 26, 30), Transparency = 0.1 }) then
+		return
+	end
 	for _, spec in { { Vector3.new(1.8, 2.2, 1), 3.9 }, { Vector3.new(1.1, 1.1, 1.1), 5.6 }, { Vector3.new(1.6, 2.6, 0.9), 1.6 } } do
 		part(parent, { Name = "Clone", Size = spec[1], CFrame = CFrame.new(base + Vector3.new(0, spec[2] + 1, 0)), Color = Color3.fromRGB(20, 26, 30), Material = Enum.Material.SmoothPlastic, CanCollide = false, CanQuery = false, Transparency = 0.15 })
 	end
@@ -499,6 +505,7 @@ local function run(ctx)
 	end
 	ctx.char = char
 	char:SetAttribute("Faction", ctx.faction)
+	Bodies.Dress(char, ctx.faction)
 	char:SetAttribute("Intro", true)
 	hum.MaxHealth, hum.Health = 100, 100
 	hum.WalkSpeed = 0
@@ -691,7 +698,23 @@ function Intro.Probe(origin)
 			break
 		end
 	end
-	local summary = ("cell+sim descendants %d, buildings %d, benches %d, blocks broken %d"):format(parts, #sim.Buildings, ctx.total or 0, broke)
+	local clones, figures, bodied, low = 0, 0, 0, math.huge
+	for _, d in ctx.cell.Folder:GetDescendants() do
+		if d.Name == "Clone" and d:IsA("Model") then
+			clones += 1
+		end
+	end
+	for _, d in sim.Folder:GetChildren() do
+		if d:FindFirstChildOfClass("Humanoid") then
+			figures += 1
+			if d:FindFirstChild("Skin") then
+				bodied += 1
+				low = math.min(low, d.LeftFoot.Position.Y - d.LeftFoot.Size.Y / 2 - sim.Center.Y)
+			end
+		end
+	end
+	local summary = ("cell+sim descendants %d, buildings %d, benches %d, blocks broken %d, tank clones with a body %d, figures %d (with a body %d, soles %.2f over the floor)"):format(
+		parts, #sim.Buildings, ctx.total or 0, broke, clones, figures, bodied, if bodied > 0 then low else 0)
 	Simulation.Destroy(sim)
 	ctx.cell.Folder:Destroy()
 	return summary

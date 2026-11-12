@@ -44,3 +44,7 @@ Rules that matter:
 character. `--export` writes `out/Skin_<Name>.fbx` and `out/Rig_<Name>.fbx` and prints a `LUA <Name> Tints = ...` line
 for `Assets.Skins`. Upload both, put the ids in `Assets.Skins` and `Assets.Rigs`. The older `conduit.py`, `raider.py`,
 `enemies.py` and the Sentry block of `station.py` built the retired blocky rigs; they are kept for reference.
+The Front's recruits are `Union` and `Pact` (one build, `BUILDS["Soldier"]`; upload one `Rig_Union.fbx` as
+`Assets.Rigs.Soldier`). A figure's `statics={name: dict(angles, turn, tris, fused, skip)}` also exports posed,
+unskinned copies with `--export` (`Fallen_<Side>.fbx` -> `Assets.FrontBodies.Fallen`, `Calcified_A/B.fbx` ->
+`Assets.FrontWorld.Calcified`).

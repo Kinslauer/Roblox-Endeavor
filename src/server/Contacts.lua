@@ -9,7 +9,7 @@ local Shared = ReplicatedStorage.Shared
 local Assets = require(Shared.Assets)
 local F = require(Shared.Frontier)
 local T = require(Shared.Terminal)
-local Rigs = require(script.Parent.Rigs)
+local Rigs = require(script.Parent.Common.Rigs)
 local Terminal = require(script.Parent.Terminal)
 
 local Contacts = {}

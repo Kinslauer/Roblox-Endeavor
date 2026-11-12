@@ -17,6 +17,7 @@ local Assets = require(Shared.Assets)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local Recruit = require(script.Parent.Common.Recruit)
 local Battlefield = require(script.Parent.Battlefield)
+local Bodies = require(script.Parent.Bodies)
 local Factions = require(script.Parent.Factions)
 local Guns = require(script.Parent.Guns)
 local Hill = require(script.Parent.Hill)
@@ -51,13 +52,28 @@ local function pushWeapon(player)
 		if held.Helmet then
 			table.insert(worn, held.Helmet.Id)
 		end
-		WornGear.Apply(player.Character, worn)
+		-- on the soldier body the helmet and vest are pieces of the body; an avatar gets the welded ones
+		WornGear.Apply(player.Character, if Bodies.Wear(player.Character, worn) then {} else worn)
 	end
 	local s = soldiers[player]
 	if s then
 		Remotes.Weapon:FireClient(player, "State", Guns.Snapshot(s.Weapons[s.Active]), s.Active, { Grenades = s.Grenades, Medkits = s.Medkits, Sandbags = s.Sandbags,
 			Armor = s.Armor and { Id = s.Armor.Id, Condition = s.Armor.Condition }, Helmet = s.Helmet and { Id = s.Helmet.Id, Condition = s.Helmet.Condition } })
 	end
+end
+
+-- rays that only see the world: no characters, no fallen
+local function groundOnly()
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local skip = table.clone(bodies)
+	for _, p in Players:GetPlayers() do
+		if p.Character then
+			table.insert(skip, p.Character)
+		end
+	end
+	params.FilterDescendantsInstances = skip
+	return params
 end
 
 local function pushApp(player)
@@ -209,6 +225,7 @@ function Soldiers.Spawn(player)
 		return
 	end
 	char:SetAttribute("Faction", faction)
+	Bodies.Dress(char, faction)
 	hum.MaxHealth, hum.Health = 100, 100
 	Soldiers.Arm(player, kit, faction)
 	Soldiers.Place(player)
@@ -312,6 +329,17 @@ local function dropBody(player, char, s)
 	body.Name, body.Size, body.Anchored = "RecruitRemains", Vector3.new(4, 1, 2), true
 	body.CFrame = CFrame.new(root.Position - Vector3.new(0, 2, 0))
 	body.Color, body.Material = Color3.fromRGB(60, 55, 50), Enum.Material.Fabric
+	body.CanCollide = false
+	-- the recruit lies where it fell, in its side's uniform; the plain block is only the fallback
+	local ground = workspace:Raycast(root.Position, Vector3.new(0, -14, 0), groundOnly())
+	local lieAt = if ground then ground.Position else root.Position - Vector3.new(0, 3, 0)
+	local flat = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+	local facing = if flat.Magnitude > 0.05 then flat.Unit else Vector3.new(0, 0, -1)
+	local fallen = Bodies.Fallen(s.Faction, CFrame.lookAt(lieAt, lieAt + facing), body)
+	if fallen then
+		body.Transparency = 1
+		body.CFrame = CFrame.new(lieAt + Vector3.new(0, 0.5, 0))
+	end
 	body:SetAttribute("Label", player.DisplayName .. "'s recruit")
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ObjectText, prompt.ActionText, prompt.HoldDuration = "Fallen recruit", "Strip gear", W.LootHold

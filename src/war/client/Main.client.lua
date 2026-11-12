@@ -102,7 +102,18 @@ RunService.RenderStepped:Connect(function()
 			p.LocalTransparencyModifier = 0
 		end
 	end
+	-- the one-piece body: everything but what sits on the head (the camera looks out from inside the helmet)
+	local skin = char:FindFirstChild("Skin")
+	if skin then
+		for _, p in skin:GetChildren() do
+			if p:IsA("BasePart") then
+				p.LocalTransparencyModifier = if p:GetAttribute("HeadPiece") then 1 else 0
+			end
+		end
+	end
 end)
+-- one-piece bodies follow their limbs (shared/Skin.lua)
+require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Skin")).Start()
 
 -- ===== HUD (war/client/Hud.lua): rounds, mode, spares; health, stance, three items; one thin bar =====
 local Hud = require(script.Parent:WaitForChild("Hud"))

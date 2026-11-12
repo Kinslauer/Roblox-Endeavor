@@ -602,17 +602,17 @@ class Figure:
             folds += [(sk.kn[sg] + V(0, 0.12, 0.0), 0.3, 0.014), (V(sk.kn[sg].x, 0, sk.az + 0.5), 0.25, 0.016), (sk.hp[sg] + V(0, -0.2, -0.1), 0.3, 0.01)]
         return s.blob("Trousers", mat, solids, voxel=0.032, tris=tris, wr=dict(amp=0.014, freq=(5.0, 5.0, 1.8), folds=folds, seed=1.7), tint=tint)
 
-    def boots(s, mat="HideLeather", tint=None, shaft=0.5, tris=1900):
+    def boots(s, mat="HideLeather", tint=None, shaft=0.5, tris=1900, g=0.0):
         solids = []
         for side, sg in SIDES:
-            solids += [(b, ("leg", sg)) for b in s.boot_solids(sg, shaft)]
+            solids += [(b, ("leg", sg)) for b in s.boot_solids(sg, shaft, g)]
         ob = s.blob("Boots", mat, solids, voxel=0.028, smooth=4, tris=tris, wr=dict(amp=0.005, freq=(4, 4, 9)), tint=tint)
         for side, sg in SIDES:
             so = to_object("Sole", s.sole(sg))
             s.add("Soles", "Polymer", so, [(None, ("bone", side + "Foot"))], sharp=40)
         return ob
 
-    def jacket(s, mat="Techcloth", tint=None, g=0.038, bottom=None, sleeve="elbow", tris=4000, collar=0.0, piece="Coat"):
+    def jacket(s, mat="Techcloth", tint=None, g=0.038, bottom=None, sleeve="elbow", tris=4000, collar=0.0, piece="Coat", cap=0.8):
         """Torso and sleeves as one garment. sleeve: "elbow" stops just past the elbow, "wrist" runs to the cuff,
         "cap" stops at mid upper arm."""
         sk = s.sk
@@ -622,7 +622,7 @@ class Figure:
         folds = []
         for side, sg in SIDES:
             end = {"elbow": sk.el[sg].z - 0.16, "wrist": sk.wr[sg].z + 0.05, "cap": (sk.sh[sg].z + sk.el[sg].z) / 2}[sleeve]
-            solids.append((s.arm_solid(sg, sk.sh[sg].z - 0.02, end, g, flare=0.025), ("arm", sg)))
+            solids.append((s.arm_solid(sg, sk.sh[sg].z - 0.02, end, g, flare=0.025, dome=(cap, 0.4)), ("arm", sg)))
             folds += [(sk.el[sg] + V(0, 0.05, 0.05), 0.26, 0.015), (sk.sh[sg] + V(-sg * 0.3, 0, -0.35), 0.3, 0.014)]
         return s.blob(piece, mat, solids, voxel=0.032, tris=tris, wr=dict(amp=0.016, freq=(4.5, 4.5, 1.6), folds=folds, seed=0.4), tint=tint)
 
@@ -739,7 +739,7 @@ class Figure:
         ob = patch("Visor", fn, -90 - half, -90 + half, zc + drop - height / 2, zc + drop + height / 2, nu=16, nv=2, thick=0.035, bevel=0.01)
         return s.add(piece, mat, ob, [(None, ("bone", "Head"))], sharp=50, glow=glow, tint=tint)
 
-    def respirator(s, mat="Polymer", piece="Mask", cans=True):
+    def respirator(s, mat="Polymer", piece="Mask", cans=True, fittings="Fittings"):
         """A half mask over nose and mouth with a filter canister on each cheek."""
         sk = s.sk
         hr, zc = sk.hr, sk.zc
@@ -759,15 +759,15 @@ class Figure:
                 can = skin_rings([ring(c + d * t, 0.105 * k * q, 0.105 * k * q, 2.0, 16, u, v) for t, q in ((0, 0.9), (0.02, 1.0), (0.13 * k, 1.0), (0.15 * k, 0.9))])
                 s.add(piece, mat, to_object("Can", can), [(None, ("bone", "Head"))], sharp=40)
                 cap = skin_rings([ring(c + d * (0.15 * k + t), 0.08 * k, 0.08 * k, 2.0, 14, u, v) for t in (0, 0.03 * k)])
-                s.add("Fittings", "Stainless", to_object("Cap", cap), [(None, ("bone", "Head"))], sharp=40)
+                s.add(fittings, "Stainless", to_object("Cap", cap), [(None, ("bone", "Head"))], sharp=40)
         return ob
 
-    def goggles(s, mat="Goggle", glow=(1.0, 0.45, 0.15), piece="Goggles", strap="HideLeather"):
+    def goggles(s, mat="Goggle", glow=(1.0, 0.45, 0.15), piece="Goggles", strap="HideLeather", z=0.08, strap_piece="Straps"):
         sk = s.sk
         hr, zc = sk.hr, sk.zc
         k = hr / 0.48
         for sg in (-1, 1):
-            c = V(sg * 0.2 * k, -hr * 1.0, zc + 0.08 * k)
+            c = V(sg * 0.2 * k, -hr * 1.0, zc + z * k)
             d = V(sg * 0.25, -1, 0).normalized()
             u = d.cross(Z).normalized()
             rim = skin_rings([ring(c + d * t, 0.16 * k * q, 0.14 * k * q, 2.4, 18, u, Z) for t, q in ((-0.06, 1.0), (0.07 * k, 1.0), (0.09 * k, 0.86))])
@@ -777,8 +777,8 @@ class Figure:
         def fn(deg, z):
             a = math.radians(deg)
             return V(math.cos(a) * hr * 0.96, 0.03 + math.sin(a) * hr * 1.09, z)
-        band = patch("Strap", fn, -60, 240, zc + 0.03 * k, zc + 0.13 * k, nu=24, nv=1, thick=0.025, bevel=0.0)
-        s.add("Straps", strap, band, [(None, ("bone", "Head"))], sharp=50)
+        band = patch("Strap", fn, -60, 240, zc + (z - 0.05) * k, zc + (z + 0.05) * k, nu=24, nv=1, thick=0.025, bevel=0.0)
+        s.add(strap_piece, strap, band, [(None, ("bone", "Head"))], sharp=50)
 
     def face_wrap(s, mat="Gauze", tint=None, piece="Wrap"):
         """Cloth wound over nose, mouth and neck."""
@@ -983,6 +983,57 @@ class Figure:
         print("BUILT Skin", s.name, len(s.objects), "pieces", total, "tris:", ", ".join(f"{o.name} {tri_count(o)}" for o in s.objects), flush=True)
         return path
 
+    def static(s, name, angles, tris=2600, turn=None, fused=None, skip=()):
+        """A posed, unskinned copy for bodies that never move (the dead): out/<name>.fbx. `turn` lays the figure
+        down (a Matrix); it is then dropped onto the ground at the origin. fused = a material name: every piece
+        is melted into one mesh of that material (the calcified dead). Otherwise pieces keep their names, so the
+        game dresses and tints them like the living body. skip = piece names left out."""
+        s.pose(angles)
+        dg = bpy.context.evaluated_depsgraph_get()
+        made = []
+        for ob in s.objects:
+            key = ob.name[4:] if ob.name.startswith("src_") else ob.name
+            if key.split("_")[0] in skip:
+                continue
+            ob.name = "src_" + key
+            me = bpy.data.meshes.new_from_object(ob.evaluated_get(dg))
+            me.transform((turn or Matrix.Identity(4)) @ ob.matrix_world)
+            o2 = bpy.data.objects.new(key, me)
+            bpy.context.collection.objects.link(o2)
+            made.append(o2)
+        lo = min(min((v.co.z for v in o.data.vertices)) for o in made)
+        xs = [v.co.x for o in made for v in o.data.vertices]
+        ys = [v.co.y for o in made for v in o.data.vertices]
+        shift = Matrix.Translation(V(-(min(xs) + max(xs)) / 2, -(min(ys) + max(ys)) / 2, -lo))
+        for o in made:
+            o.data.transform(shift)
+        total = sum(tri_count(o) for o in made)
+        if fused:
+            bpy.ops.object.select_all(action="DESELECT")
+            for o in made:
+                o.select_set(True)
+            bpy.context.view_layer.objects.active = made[0]
+            bpy.ops.object.join()
+            ob = made[0]
+            modify(ob, "REMESH", mode="VOXEL", voxel_size=0.07)
+            modify(ob, "SMOOTH", factor=0.6, iterations=4)
+            decimate(ob, tris)
+            smooth_shade(ob)
+            ob.name = f"Body_{fused}"
+            ob.data.materials.clear()
+            ob.data.materials.append(material(fused, (0.7, 0.67, 0.6)))
+            made = [ob]
+        else:
+            for o in made:
+                n = tri_count(o)
+                if n > 60:
+                    decimate(o, max(40, int(n * tris / total)))
+        export_fbx(os.path.join(OUT, f"{name}.fbx"), made)
+        print("BUILT Static", name, len(made), "parts", sum(tri_count(o) for o in made), "tris", flush=True)
+        for o in made:
+            bpy.data.objects.remove(o)
+        s.pose({})
+
     # joints for posing the stills: limb -> (parent, pivot)
     def pivots(s):
         sk = s.sk
@@ -1149,6 +1200,9 @@ def run(argv):
         if "--stills" in argv:
             views = ("front", "back", "action") if "--quick" not in argv else ("front", "action")
             f.stills(views=views, action=ACTION, samples=24 if "--quick" in argv else 40)
+        if "--export" in argv and kw.get("statics"):
+            for sname, spec in kw["statics"].items():
+                f.static(sname, **spec)
         if "--blend" in argv:
             bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, f"Skin_{name}.blend"))
 

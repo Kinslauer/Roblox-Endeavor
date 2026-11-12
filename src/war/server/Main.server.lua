@@ -11,6 +11,11 @@ local ok, err = pcall(function()
 	local Soldiers = require(Server.Soldiers)
 	local Intro = require(Server.Intro)
 	Net.Init()
+	-- the recruits' bodies: players spawn as them (before anyone loads a character)
+	local bodyOk, bodyErr = pcall(require(Server.Bodies).Init)
+	if not bodyOk then
+		warn("[Bodies] failed:", bodyErr)
+	end
 	Battlefield.Init()
 	Factions.Init()
 	Hill.Init()

@@ -16,6 +16,9 @@ local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local Guns = require(script.Parent.Guns)
 local Soldiers = require(script.Parent.Soldiers)
+local Bodies = require(script.Parent.Bodies)
+local Rigs = require(script.Parent.Common.Rigs)
+local Assets = require(Shared.Assets)
 
 local S = Config.War.Intro.Sim
 local B = S.Block
@@ -162,6 +165,22 @@ Simulation.DamageBlock = damageBlock
 
 -- ===== targets and hostiles (non-player humanoids: Soldiers.Damage and Guns.Shoot treat them as bodies) =====
 local function figure(sim, cf, color, health, name)
+	-- the recruits' own body, drawn in light; the block figure below is the fallback
+	if Bodies.Ready then
+		local model, hum, root = Rigs.Build(Assets.Rigs.Soldier, name, "Union")
+		if model and Rigs.Holo(model, color) then
+			Rigs.Wear(model, { "Helmet" })
+			model:PivotTo(cf + Vector3.new(0, hum.HipHeight - 2, 0)) -- callers place the old figure's root: 3 studs over the floor
+			hum.MaxHealth, hum.Health = health, health
+			hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+			hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+			model.Parent = sim.Folder
+			Rigs.Animate(model, hum)
+			return model, hum, root
+		elseif model then
+			model:Destroy()
+		end
+	end
 	local model = Instance.new("Model")
 	model.Name = name
 	local root = holo(model, { Name = "HumanoidRootPart", Size = Vector3.new(2, 2, 1), CFrame = cf, Transparency = 1 }, color)
@@ -192,7 +211,7 @@ end
 local function onFigureDown(sim, model, drill)
 	if sim.Player.Parent then
 		for _, p in model:GetChildren() do
-			if p:IsA("BasePart") and p.Transparency < 1 then
+			if p:IsA("BasePart") and (p.Transparency < 1 or p:GetAttribute("Proxy")) and p.Name ~= "HumanoidRootPart" then
 				Remotes.World:FireClient(sim.Player, "SimBreak", p.Position, math.max(p.Size.X, p.Size.Y), true)
 			end
 		end

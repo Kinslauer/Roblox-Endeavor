@@ -7,7 +7,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Assets = require(ReplicatedStorage.Shared.Assets)
-local ModelAssets = require(script.Parent.Common.ModelAssets)
+local ModelAssets = require(script.Parent.ModelAssets)
 
 local CollectionService = game:GetService("CollectionService")
 
@@ -91,6 +91,11 @@ local function attachSkin(model, limbs, kind)
 				if tint then
 					Assets.Tint(p, tint)
 				end
+				-- what sits wholly on the head (helmet, mask, goggles): a first-person camera looks out from inside it
+				local head = limbs.Head
+				if p.Position.Y - p.Size.Y / 2 > head.Position.Y - head.Size.Y / 2 - 0.35 then
+					p:SetAttribute("HeadPiece", true)
+				end
 			end
 		end
 	end
@@ -99,6 +104,7 @@ local function attachSkin(model, limbs, kind)
 	weld.Part0, weld.Part1 = limbs.LowerTorso, holder
 	weld.Parent = holder
 	skin.Name = "Skin"
+	skin:SetAttribute("Kind", kind)
 	CollectionService:AddTag(skin, "Skin")
 	skin.Parent = model
 	for _, limb in limbs do
@@ -275,6 +281,119 @@ function Rigs.Build(assetId, name, kind)
 	hum.Parent = model
 	model.PrimaryPart = root
 	return model, hum, root
+end
+
+-- Dresses an already built rig (a spawned character) in another skin: the Front's recruits all spawn as the same
+-- rig and put on their side's body. Returns true when the skin is on; if it is not, the plain limbs show.
+function Rigs.Skin(model, kind)
+	local limbs = {}
+	for _, name in LIMBS do
+		local limb = model:FindFirstChild(name)
+		if not (limb and limb:IsA("BasePart")) then
+			return false
+		end
+		limbs[name] = limb
+	end
+	local old = model:FindFirstChild("Skin")
+	if old then
+		old:Destroy()
+	end
+	local on = attachSkin(model, limbs, kind)
+	if not on then
+		for _, limb in limbs do
+			limb.Transparency = 0
+			limb:SetAttribute("Proxy", nil)
+		end
+	end
+	model:SetAttribute("Skinned", on)
+	return on
+end
+
+-- Gear that is part of the body: Assets.Skins[kind].Gear = { <Piece> = { item ids that show it } }. Shows the
+-- pieces for the item ids given and hides the rest of the gear pieces.
+function Rigs.Wear(model, itemIds)
+	local skin = model and model:FindFirstChild("Skin")
+	local spec = skin and Assets.Skins[skin:GetAttribute("Kind")]
+	if not (spec and spec.Gear) then
+		return false
+	end
+	local worn = {}
+	for _, id in itemIds do
+		worn[id] = true
+	end
+	for _, p in skin:GetChildren() do
+		local shows = p:IsA("MeshPart") and spec.Gear[p.Name:match("^(%w-)_") or p.Name]
+		if shows then
+			local on = false
+			for _, id in shows do
+				on = on or worn[id] == true
+			end
+			p.Transparency = if on then 0 else 1
+		end
+	end
+	return true
+end
+
+-- Turns a skinned body into a figure of light (the Front's simulation): no textures, one glowing colour.
+function Rigs.Holo(model, color)
+	local skin = model and model:FindFirstChild("Skin")
+	if not skin then
+		return false
+	end
+	for _, p in skin:GetDescendants() do
+		if p:IsA("SurfaceAppearance") or p:IsA("PointLight") then
+			p:Destroy()
+		elseif p:IsA("MeshPart") then
+			p.Material, p.Color, p.CastShadow = Enum.Material.ForceField, color, false
+		end
+	end
+	return true
+end
+
+-- A body that never moves (a clone in its tank): the skin alone, standing at `cf` (its hips there), anchored.
+-- opts.Color paints it one flat colour; opts.Bare leaves the gear pieces off. Returns the Model or nil.
+function Rigs.Statue(kind, cf, parent, opts)
+	local spec = Assets.Skins and Assets.Skins[kind]
+	local template = spec and ModelAssets.Template(spec.Id)
+	if not template then
+		return nil
+	end
+	local skin = template:Clone()
+	local hips
+	for _, d in skin:GetDescendants() do
+		if d:IsA("AnimationController") or d:IsA("CFrameValue") or (d:IsA("Folder") and d.Name == "InitialPoses") then
+			d:Destroy()
+		elseif d:IsA("Bone") and d.Name == "LowerTorso" then
+			hips = d
+		end
+	end
+	Assets.Dress(skin)
+	local at = if hips then (if hips.Parent:IsA("BasePart") then hips.Parent.CFrame else CFrame.identity) * hips.CFrame else skin:GetPivot()
+	local move = cf * at:Inverse()
+	for _, p in skin:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.CFrame = move * p.CFrame
+			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
+			if p:IsA("MeshPart") then
+				local piece = p.Name:match("^(%w-)_") or p.Name
+				if opts and opts.Bare and spec.Gear and spec.Gear[piece] then
+					p.Transparency = 1
+				elseif opts and opts.Color then
+					local surface = p:FindFirstChildOfClass("SurfaceAppearance")
+					if surface then
+						surface:Destroy()
+					end
+					p.Material, p.Color = Enum.Material.SmoothPlastic, opts.Color
+					p.Transparency = opts.Transparency or 0
+				elseif spec.Tints and spec.Tints[p.Name] then
+					Assets.Tint(p, spec.Tints[p.Name])
+				end
+			end
+		end
+	end
+	skin.Name = (opts and opts.Name) or "Statue"
+	skin.Parent = parent
+	return skin
 end
 
 -- Idle/walk animation playback for an NPC humanoid (server-side Animator works for NPCs).

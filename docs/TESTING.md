@@ -3,6 +3,24 @@
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
 report).
 
+## Front: the realistic pass, round 5 (one-piece soldiers) (2026-11-12)
+- [ ] On the Front you are no longer your Roblox avatar. Union recruits wear a short olive jacket, canvas belt and
+      pouches, a scarf and dust goggles, with a blue armband. Pact recruits wear a long tan greatcoat, tall boots, a
+      gas mask and a red armband. You can tell the sides apart at range.
+- [ ] Look down in first person: you see your own sleeves, gloves, coat and boots, and never the inside of your
+      helmet or mask. The rifle sits in the hands. Say if the hold is off (it was tuned on the old avatar).
+- [ ] A recruit with no helmet is bare-headed (scarf or mask only). Buy or loot a Steel helmet, Flak vest or Steel
+      plate carrier and it appears on the body as part of it: the vest for the flak vest, vest plus plates for the
+      carrier.
+- [ ] Crouch, go prone, dive, lean, walk and sprint: the body folds at the joints without gaps, on you and on others.
+- [ ] Kill a recruit that carries gear: it leaves a fallen soldier in its side's uniform, face down, and X strips
+      the gear from it. (A conscript with only the free kit leaves nothing to strip, as before.)
+- [ ] The calcified dead on the barrows are now stone figures of the same soldier, crawling or kneeling with an arm
+      raised.
+- [ ] First link (F2 skips stages in dev): the two other tanks hold dark clone bodies, not blocks. In the
+      simulation the targets and the hostiles are soldier figures made of light; shooting one still breaks it apart.
+- [ ] Frame rate with many recruits in view is no worse than before.
+
 ## Endeavor: the realistic pass, round 4 (one-piece bodies) (2026-11-12)
 - [ ] Your character is one smooth figure with human proportions (narrower shoulders, smaller head, longer legs):
       hooded long coat, respirator, lit visor, chest plate, gloves, boots. No gaps or separate blocks anywhere.

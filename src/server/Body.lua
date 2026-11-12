@@ -10,7 +10,7 @@ local Shared = ReplicatedStorage.Shared
 local Assets = require(Shared.Assets)
 local Config = require(Shared.Config)
 local PlayerData = require(script.Parent.Common.PlayerData)
-local Rigs = require(script.Parent.Rigs)
+local Rigs = require(script.Parent.Common.Rigs)
 
 local Body = {}
 local B = Config.Body

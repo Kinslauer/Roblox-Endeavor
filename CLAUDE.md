@@ -397,11 +397,31 @@ Client tab screenshot, because Andy cannot read logs another way.
   SurfaceAppearance.Color (neutral textures Techcloth/Twill/Gauze/PlateSteel carry `Base`). Gore: a whole corpse keeps
   a cloned skin, a scattered one shows its proxy limbs. WornGear squeezes pieces to Proxy limbs (AUTHORED sizes).
   First person shows skin pieces named *LowerArm*/*Hand*. Not adapted yet: cybernetic limb art sits over the skinned
-  arm (the flesh cannot be hidden per limb), the Front still uses Roblox avatars, the intro cloak was draped on the
-  old wider body.
+  arm (the flesh cannot be hidden per limb), the intro cloak was draped on the
+  old wider body (the Front got its bodies in round 5).
+  Round 5, the Front's soldiers (Andy, 2026-11-12: "These look great ... can you give the front models the same
+  treatment?"). figures.py `union` (short olive jacket, canvas webbing, scarf, dust goggles, blue armband) and `pact`
+  (long tan greatcoat, tall boots, gas mask, red armband) on one build (`BUILDS["Soldier"]`); recruits are clones, so
+  no faces. `Rigs.lua` moved to `src/common` (both places): `Rigs.Skin(char, kind)` re-dresses a built rig,
+  `Rigs.Wear(char, itemIds)` shows the gear pieces of the body (`Assets.Skins[kind].Gear`: Helmet, Vest, Plates;
+  hidden otherwise), `Rigs.Holo(model, color)` = ForceField figure, `Rigs.Statue(kind, cf, parent, {Bare, Color})` =
+  an anchored skin. attachSkin marks pieces wholly on the head with attribute `HeadPiece`. `src/war/server/Bodies.lua`:
+  Init (first in the Front's Main: SurfaceLibrary, StarterCharacter = `Assets.Rigs.Soldier` with attribute
+  `StockAnimations`, so `src/character/Animate` (now also in war.project.json) plays Roblox's idle/walk/run and no
+  stance animations there), `Dress(char, faction)` after every LoadCharacter (Soldiers.Spawn, Intro run), `Wear`
+  (pushWeapon; WornGear only on an avatar fallback), `Fallen(faction, cf, parent)` = `Assets.FrontBodies.Fallen` inside
+  the RecruitRemains part. Simulation `figure` = the soldier rig as light (block fallback), the Intro's tank clones =
+  Rigs.Statue, `Assets.FrontWorld.Calcified` = the soldier crawling / kneeling (figure.py `Figure.static`, statics=
+  on the @figure). Front client: Skin.Start, first person shows every skin piece but HeadPiece ones.
   The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
 
 ## State (2026-11-12)
+- Front v28 + Endeavor v91 (2026-11-12): realistic pass round 5, one-piece soldiers on the Front (Union, Pact, the
+  fallen, the calcified, simulation figures, tank clones); Endeavor only moved Rigs to common. Real servers: Front
+  start 2.9s, 0 warnings, both skins 15 bones / 18 pieces, gear pieces hide and show, 9 simulation figures and 2 tank
+  clones bodied; Endeavor start 10.3s, 0 warnings. Unseen in game: the rifle hold and stances on the new body, the
+  first-person view of the own body. Awaits Andy: docs/TESTING.md "Front: the realistic pass, round 5". Stills in
+  /mnt/project-files/realistic-pass/round5.
 - Endeavor v90 (2026-11-12): realistic pass round 4, one-piece skinned bodies for the player and every enemy with
   human proportions; real-server start 11.1s, 0 warnings; all 7 kinds skinned, 15 bones each, bones follow limbs with
   0.000 error. Unseen in game (animation and rendering cannot be checked from Open Cloud): awaits Andy's look,

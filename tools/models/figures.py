@@ -199,3 +199,90 @@ def sentry(f):
         f.limb_plate("LowerArm", sg, z0=sk.wr[sg].z + 0.2, z1=sk.el[sg].z - 0.15, mid=out, half=120, tint=PLATE, piece="LowerArmPlates")
         f.limb_plate("LowerLeg", sg, z0=sk.az + 0.5, z1=sk.kn[sg].z - 0.25, mid=-90, half=80, tint=PLATE)
         f.knee(sg, tint=PLATE)
+
+# ---- The Front: the recruits of both sides. Tank-grown clones, so one body and no faces: the Union's wear dust
+# goggles and a scarf, the Pact's a gas mask. Helmet, flak vest and plates are pieces of the body that the game shows
+# only when the recruit owns them (Assets.Skins[..].Gear), so issued gear fits the body exactly.
+BUILDS["Soldier"] = dict(H=6.0, shoulder=1.38, arm=0.34, leg=0.41, stance=0.5, depth=0.52)
+LAY = Matrix.Rotation(math.radians(90), 4, "X")   # face down, head toward -Y
+FALLEN = {"Head": [("Z", 55)], "UpperTorso": [("Z", 8)], "RightUpperArm": [("Y", -148)], "RightLowerArm": [("Y", -24)],
+          "LeftUpperArm": [("Y", 52)], "LeftLowerArm": [("Y", 38)], "LeftUpperLeg": [("Y", 20)], "LeftLowerLeg": [("Y", -30)],
+          "RightUpperLeg": [("Y", -7)], "RightLowerLeg": [("X", 14)]}
+CRAWL = {"Head": [("X", 18)], "RightUpperArm": [("Y", -168)], "LeftUpperArm": [("Y", 96)], "LeftLowerArm": [("Y", 70)],
+         "LeftUpperLeg": [("Y", 46)], "LeftLowerLeg": [("Y", -78)], "RightUpperLeg": [("Y", -4)]}
+REACH = {"UpperTorso": [("X", -14), ("Z", -10)], "Head": [("X", 24)], "RightUpperArm": [("X", -152), ("Y", -8)], "RightLowerArm": [("X", -22)],
+         "LeftUpperArm": [("X", 12), ("Y", 10)], "LeftLowerArm": [("X", -30)], "LeftUpperLeg": [("X", -8)], "RightUpperLeg": [("X", -2)],
+         "LeftLowerLeg": [("X", 98)], "RightLowerLeg": [("X", 92)], "LeftFoot": [("X", 40)], "RightFoot": [("X", 40)]}
+GEAR = ("Helmet", "Vest", "Plates")
+
+def _soldier_gear(f, helm_tint, vest_tint, plate_tint, cover, brim):
+    sk = f.sk
+    zs = sk.sh[1].z
+    f.helmet("PlateSteel", tint=helm_tint, cover=cover, brim=brim, grow=1.2)
+    for front in (True, False):
+        f.torso_plate("Twill", tint=vest_tint, z0=sk.z_waist + 0.02, z1=zs - 0.02, half=66, thick=0.06, off=0.09, front=front, piece="Vest")
+        f.torso_plate("PlateSteel", tint=plate_tint, z0=sk.z_waist + 0.2, z1=zs - 0.22, half=38, thick=0.05, off=0.16, front=front, piece="Plates")
+    for sx in (-1, 1):
+        f.strap("Twill", zs + 0.02, -90 + sx * 36, zs + 0.0, 90 - sx * 36, off=0.115, width=0.3, tint=vest_tint, steps=8, piece="Vest", thick=0.05)
+
+@figure("Union", build=BUILDS["Soldier"], statics={
+    "Fallen_Union": dict(angles=FALLEN, turn=LAY, tris=2800),
+    "Calcified_A": dict(angles=CRAWL, turn=LAY, tris=1500, fused="Calcified", skip=("Vest", "Plates")),
+    "Calcified_B": dict(angles=REACH, tris=1700, fused="Calcified", skip=("Vest", "Plates"))})
+def union(f):
+    """The Union recruit: short olive field jacket, trousers bloused into boots, canvas webbing with pouches and a
+    canteen, a scarf over the face, dust goggles; a brimmed steel helmet."""
+    sk, S = f.sk, f.S
+    OLIVE, DARK, WEB, BOOT, BLUE = (0.25, 0.28, 0.18), (0.16, 0.18, 0.13), (0.50, 0.46, 0.33), (0.2, 0.19, 0.18), (0.20, 0.36, 0.72)
+    zs = sk.sh[1].z
+    f.detail = 0.8
+    f.trousers("Twill", tint=OLIVE)
+    f.boots("HideLeather", shaft=0.55, tint=BOOT, g=0.03)
+    f.jacket("Twill", tint=OLIVE, sleeve="elbow", cap=0.4)
+    f.skirt("Twill", tint=OLIVE, length=0.42, flare=0.07, back_longer=0.0)
+    f.collar("Twill", tint=OLIVE, height=0.16)
+    f.forearms("Twill", tint=OLIVE)
+    f.gloves("HideLeather", tint=BOOT)
+    f.head_core(tint=DARK)
+    f.face_wrap("Gauze", tint=(0.46, 0.44, 0.34))
+    f.goggles("GlassDark", glow=None, z=-0.04, strap_piece="GoggleStrap")
+    f.belt("Twill", tint=WEB, piece="Webbing")
+    for sx in (-1, 1):
+        f.strap("Twill", zs - 0.06, -90 + sx * 36, sk.z_waist + 0.02, -90 + sx * 30, off=0.085, width=0.13, tint=WEB, piece="Webbing")
+        f.strap("Twill", zs - 0.06, 90 - sx * 36, sk.z_waist + 0.02, 90 - sx * 12, off=0.085, width=0.13, tint=WEB, piece="Webbing")
+    for deg in (-128, -106, -74, -52):
+        f.pouch("Twill", sk.z_hip + 0.4, deg, size=(0.24, 0.13, 0.3), off=0.1, bone="LowerTorso", tint=WEB, piece="Webbing")
+    p, nrm = sk.torso_point(sk.z_hip + 0.3, 62, 0.2)
+    f.cyl("Canteen", "Twill", p + V(0, 0, -0.2), p + V(0, 0, 0.2), 0.17, "LowerTorso", tint=DARK)
+    f.pouch("Twill", sk.z_hip + 0.3, 118, size=(0.34, 0.16, 0.34), off=0.1, bone="LowerTorso", tint=WEB, piece="Webbing")
+    f.band("UpperArm", -1, zs - 0.62, "Twill", tint=BLUE, off=0.06, height=0.16, piece="Armband")
+    _soldier_gear(f, (0.23, 0.26, 0.17), DARK, (0.3, 0.31, 0.3), cover=-0.3, brim=0.08)
+
+@figure("Pact", build=BUILDS["Soldier"], statics={"Fallen_Pact": dict(angles=FALLEN, turn=LAY, tris=2800)})
+def pact(f):
+    """The Pact recruit: a long belted greatcoat with a high collar, tall boots, a cross strap and a bedroll, a
+    gas mask with one dark eye band; a deep steel helmet."""
+    sk, S = f.sk, f.S
+    COAT, DARK, LEATHER, BOOT, RED = (0.44, 0.38, 0.28), (0.14, 0.13, 0.13), (0.34, 0.24, 0.17), (0.15, 0.14, 0.14), (0.70, 0.16, 0.14)
+    zs = sk.sh[1].z
+    f.detail = 0.8
+    f.trousers("Twill", tint=(0.3, 0.27, 0.22))
+    f.boots("HideLeather", shaft=0.75, tint=BOOT, g=0.05)
+    f.jacket("Twill", tint=COAT, sleeve="elbow", cap=0.4)
+    f.skirt("Twill", tint=COAT, length=1.5, flare=0.2)
+    f.collar("Twill", tint=COAT, height=0.3)
+    f.forearms("Twill", tint=COAT)
+    f.gloves("HideLeather", tint=LEATHER)
+    f.head_core(tint=DARK)
+    f.respirator(cans=True, fittings="MaskFittings")
+    f.visor("GlassDark", half=50, height=0.13, drop=0.02, glow=None, r=1.08)
+    f.belt("HideLeather", tint=LEATHER, height=0.2)
+    f.strap("HideLeather", zs - 0.02, -128, sk.z_waist + 0.05, -40, off=0.085, tint=LEATHER)
+    f.strap("HideLeather", zs - 0.02, 128, sk.z_waist + 0.05, 40, off=0.085, tint=LEATHER)
+    for deg in (-122, -58):
+        f.pouch("HideLeather", sk.z_hip + 0.36, deg, size=(0.34, 0.14, 0.3), off=0.1, bone="LowerTorso", tint=LEATHER)
+    back, nrm = sk.torso_point(sk.z_waist + 0.2, 90, 0.2)
+    f.cyl("Bedroll", "Twill", back + V(-0.55, 0.02, 0), back + V(0.55, 0.02, 0), 0.19, "UpperTorso", tint=(0.3, 0.31, 0.26))
+    f.band("UpperArm", 1, zs - 0.62, "Twill", tint=RED, off=0.06, height=0.16, piece="Armband")
+    _soldier_gear(f, (0.26, 0.25, 0.22), (0.24, 0.22, 0.19), (0.27, 0.27, 0.28), cover=-0.18, brim=0.0)
+    f.box("Helmet", "PlateSteel", (0.06, 0.62, 0.1), V(0, 0.06, sk.zc + sk.hr * 1.2), "Head", bev=0.03, tint=(0.26, 0.25, 0.22))

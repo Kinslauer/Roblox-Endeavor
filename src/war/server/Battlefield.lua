@@ -221,7 +221,7 @@ function BUILD.Barrow(s)
 end
 function BUILD.Calcified(s)
 	return prop(deadFolder, FW.Calcified[if rng:NextNumber() < 0.7 then 1 else 2], s, s.Yaw, "Calcified",
-		{ Size = Vector3.new(2, 1, 5.5), Position = Vector3.new(0, 0.3, 0), Color = BONE, Material = Enum.Material.Limestone }, rng:NextNumber(0.2, 0.6))
+		{ Size = Vector3.new(2, 1, 5.5), Position = Vector3.new(0, 0.3, 0), Color = BONE, Material = Enum.Material.Limestone }, rng:NextNumber(0.1, 0.3))
 end
 function BUILD.Wire(s)
 	return prop(propsFolder, FW.Wire, s, s.Yaw, "Wire", { Size = Vector3.new(10, 2.6, 1.6), Position = Vector3.new(0, 1.3, 0), Color = Color3.fromRGB(60, 50, 44), Material = Enum.Material.CorrodedMetal, Transparency = 0.5 }, 0.2)
