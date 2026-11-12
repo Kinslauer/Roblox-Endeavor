@@ -269,10 +269,17 @@ local function build()
 				figure.Parent = model
 			end
 			figure:SetAttribute("Station", station.Index)
+			-- stand it on the plinth (a skin's hips are not at a fixed height): feet on the plate, the head where it is
+			local bcf, bsize = figure:GetBoundingBox()
+			local bottom = bcf.Position.Y - bsize.Y / 2
+			figure:PivotTo(figure:GetPivot() + Vector3.new(0, origin.Y + 0.4 - bottom, 0))
+			local headY = 0.4 + bsize.Y - 0.85
 			station.Figure = figure
 			station.Rest = figure:GetPivot()
+			line.Size = Vector3.new(0.2, 21 - headY, 0.2)
+			line.CFrame = CFrame.new(at(x, (21 + headY) / 2, z))
 			-- a halo of contacts round the head
-			local ring = box(model, "Halo", station.Stand * CFrame.new(0, 6.15, 0) * CFrame.Angles(0, 0, math.pi / 2), Vector3.new(0.25, 1.6, 1.6), Enum.Material.Metal, Color3.fromRGB(40, 40, 44))
+			local ring = box(model, "Halo", station.Stand * CFrame.new(0, headY, 0) * CFrame.Angles(0, 0, math.pi / 2), Vector3.new(0.25, 1.6, 1.6), Enum.Material.Metal, Color3.fromRGB(40, 40, 44))
 			ring.Shape = Enum.PartType.Cylinder
 			ring.CanCollide = false
 			station.Halo = ring
