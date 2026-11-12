@@ -114,6 +114,25 @@ middle island (the plaza with the water tower). Nothing marks it.
       fragment can turn up in the hall. The Broker, the Fixer and the Dealer each have one new line about the
       Sumps.
 
+## Endeavor: rifles (2026-11-12, Endeavor v100)
+Fastest way to all three: F2 → "Armory", then "Weapons Rack" (every weapon) and "Supplies" (60 of every cartridge).
+In the station, about one sentry in eight carries a Carbine with his 5.56 (search him: tap X on the body).
+- [ ] Equip the Carbine (Tab, Equip). It sits in both hands: right hand on the grip, left hand under the handguard,
+      muzzle down and a little left. It is about as long as from your shoulder to your knee.
+- [ ] Hold RMB: the rifle comes up to the right shoulder and points where the reticle is, level. V goes to the sights.
+- [ ] Hold LMB: it keeps firing, about six rounds a second, with a rifle's boom, and the counter runs down from 30.
+      The pack loses one 5.56 per round. Every sentry on the floor hears it.
+- [ ] R reloads: the left hand takes the magazine out, goes to the chest and brings a new one up. About 2.4 seconds.
+- [ ] 5.56 goes through a sentry's helmet and his chest plate (he is hurt less through the plate).
+- [ ] The AK-47 takes 7.62x39 only, 30 rounds, automatic, a little slower and harder hitting than the Carbine.
+- [ ] The M1 Garand takes 7.62x51 only, 8 rounds, one round for each press of LMB. One round to the chest drops a
+      sentry. Its kick on the camera is the strongest.
+- [ ] Hover each cartridge in the pack: the card names its calibre and the gun it fits. No gun takes another's rounds.
+- [ ] In the city, raiders sometimes carry 7.62x39 (rarely the AK-47) and rival crews in the valley 7.62x51 (rarely
+      the Garand).
+- [ ] Look for anything wrong with the hold: the rifle through the body, the left hand off the handguard, the rifle
+      pointing off to one side when you aim. A screenshot from the side helps most.
+
 ## Endeavor: calibres and plate (2026-11-12, Endeavor v95)
 Try it in the station (F2 → "Train intro" → Replay).
 - [ ] You start with the Whisper and 21 rounds of .22 LR (7 in the magazine, 14 spare). Hover the rounds in the

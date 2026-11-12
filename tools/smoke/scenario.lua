@@ -697,6 +697,53 @@ Inventory.Add(player, "ArcCell", 3); run(0.6)
 Remotes.Attack:FireServer(); run(0.6)
 check("arc pistol spends a cell per shot", Inventory.Count(player, "ArcCell") == 2)
 
+-- long guns: the 5.56 carbine, the AK-47 in 7.62x39, the Garand in 7.62x51
+do
+	local W = M.mockEnv.__require(RS.Shared.Weapons)
+	local GP = M.mockEnv.__require(RS.Shared.GunParts)
+	local ItemsR = M.mockEnv.__require(RS.Shared.Items)
+	check("rifle: each long gun feeds on its own calibre", W.Defs.Carbine.Ammo == "Round556" and W.Defs.AK47.Ammo == "Round762x39" and W.Defs.M1Garand.Ammo == "Round762x51"
+		and W.Chambered("Round556")[1] == "Carbine" and ItemsR.Defs.Round762x39.Caliber == "7.62x39" and ItemsR.Defs.Round762x51.Caliber == "7.62x51")
+	check("rifle: long guns and pistols are guns, a club is not", W.IsGun(W.Defs.Carbine) and W.IsGun(W.Defs.M1Garand) and W.IsGun(W.Defs.Whisper) and not W.IsGun(W.Defs.PipeClub))
+	local gunId, atts, opts = W.Held("Carbine")
+	local _, option = GP.Barrel(gunId, atts)
+	check("rifle: the carbine is the AR parts with the carbine barrel, sized for the hands", gunId == "M16A1" and option == "Carbine" and opts.Scale < 1 and opts.Grip == "Shoulder"
+		and GP.Pieces(gunId, atts)[2].Asset == GP.Guns.M16A1.Barrels.Carbine.Asset and W.Held("PipeClub") == "PipeClub")
+	check("rifle: the AK-47 and the Garand have their parts", GP.Guns[(W.Held("AK47"))] ~= nil and GP.Guns[(W.Held("M1Garand"))] ~= nil)
+	check("rifle: 7.62x51 goes through what stops a 5.56, and a .22 through nothing", W.Calibers["7.62x51"].Pen > W.Calibers["5.56"].Pen and W.Calibers["7.62x39"].Pen >= 2 and W.Calibers[".22"].Pen == 0)
+	Inventory.Add(player, "Carbine", 1); Inventory.Add(player, "Round556", 40, true)
+	Remotes.EquipItem:FireServer("Carbine"); run(1.5)
+	local pcR = player.Character
+	local held = pcR:FindFirstChild("HeldWeapon")
+	check("rifle: the carbine is in the hands, thirty in the magazine", pcR:GetAttribute("Weapon") == "Carbine" and pcR:GetAttribute("MagSize") == 30 and pcR:GetAttribute("Mag") == 30
+		and (held == nil or held:GetAttribute("WeaponId") == "M16A1"))
+	local rootR = pcR.HumanoidRootPart
+	local stood = rootR.CFrame
+	rootR.CFrame = M.CF.lookAt(stood.Position, stood.Position + (stood.Position - rc.HumanoidRootPart.Position) * M.V3.new(1, 0, 1)); run(0.1) -- muzzle away from the other player
+	local before, log0 = Inventory.Count(player, "Round556"), #M.FireLog
+	for _ = 1, 3 do
+		Remotes.Attack:FireServer(pcR.HumanoidRootPart.CFrame.LookVector); run(0.25)
+	end
+	local bolts, loud = 0, false
+	for i = log0 + 1, #M.FireLog do
+		local e = M.FireLog[i]
+		if e[1] == "CombatEvent" and e[3] == "Bolt" then bolts += 1; loud = e[6] == 120 end
+	end
+	check("rifle: three pulls, three rounds of 5.56 gone, each one loud", bolts == 3 and loud and pcR:GetAttribute("Mag") == 27 and Inventory.Count(player, "Round556") == before - 3)
+	Remotes.Aim:FireServer(true); run(0.3)
+	check("rifle: RMB aims it like any gun", pcR:GetAttribute("Aiming") == true)
+	Remotes.Aim:FireServer(false); run(0.2)
+	rootR.CFrame = stood; run(0.1)
+	local withGun, never = 0, true
+	for _ = 1, 300 do
+		local roll = ItemsR.Roll("Sentry")
+		if roll.Carbine then withGun += 1; never = never and (roll.Round556 or 0) >= 15 and roll.Round9 == nil end
+	end
+	check("rifle: some sentries carry the carbine, always with 5.56 and never 9mm", withGun > 10 and withGun < 80 and never)
+	Remotes.EquipItem:FireServer("ArcPistol"); run(0.5)
+	Inventory.Remove(player, "Carbine", 1); Inventory.Remove(player, "Round556", Inventory.Count(player, "Round556"))
+end
+
 -- dematerialization brings everything back
 Destruction.Reset(); run(1)
 local lampBack = false

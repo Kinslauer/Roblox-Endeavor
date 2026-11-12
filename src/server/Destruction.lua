@@ -304,7 +304,7 @@ function Destruction.HitBreach(model, amount, damageType, attacker)
 end
 
 -- ===== Damage routing from Combat =====
-local FAMILY_TYPE = { Fists = "Blunt", Blunt = "Blunt", Blade = "Blade", Baton = "Arc", Spear = "Blade", Hammer = "Blunt", Sidearm = "Arc" }
+local FAMILY_TYPE = { Fists = "Blunt", Blunt = "Blunt", Blade = "Blade", Baton = "Arc", Spear = "Blade", Hammer = "Blunt", Sidearm = "Arc", Rifle = "Blunt" }
 
 local function worldTarget(part)
 	local model = part:FindFirstAncestorOfClass("Model")

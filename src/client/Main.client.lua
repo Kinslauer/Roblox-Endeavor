@@ -2044,7 +2044,7 @@ local FAMILY_POSE = {
 	Spear = { windup = { -45, 15, 100, 0, 25 }, slash = { 90, 0, 0, 10, -25 } }, -- thrust: pulled back, driven forward
 	Sidearm = { windup = { 85, 0, 10, 0, 10 }, slash = { 100, 0, 0, -4, 8 } }, -- aim then recoil
 }
-FAMILY_POSE.Baton, FAMILY_POSE.Blunt = FAMILY_POSE.Blade, FAMILY_POSE.Blade
+FAMILY_POSE.Baton, FAMILY_POSE.Blunt, FAMILY_POSE.Rifle = FAMILY_POSE.Blade, FAMILY_POSE.Blade, FAMILY_POSE.Sidearm
 local function familyOf(char)
 	local id = typeof(char) == "Instance" and char:GetAttribute("Weapon")
 	local def = id and Weapons.Defs[id]
@@ -2486,7 +2486,7 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 			local muzzle = from.Position + Vector3.new(0, if quiet then 1.2 else 0, 0)
 			local held = quiet and a:FindFirstChild("HeldWeapon")
 			if held and held:IsA("Model") then
-				muzzle = held:GetPivot().Position + from.CFrame.LookVector * 1.1 + Vector3.new(0, 0.15, 0)
+				muzzle = held:GetPivot().Position + from.CFrame.LookVector * (if c >= 100 then 2.2 else 1.1) + Vector3.new(0, 0.15, 0) -- a long gun's muzzle is further out
 			end
 			local length = (b - muzzle).Magnitude
 			local beam = make("Part", {
@@ -2503,7 +2503,7 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 				TweenService:Create(flash, TweenInfo.new(0.07), { Transparency = 1, Size = Vector3.new(0.9, 0.9, 0.9) }):Play()
 				Debris:AddItem(flash, 0.08)
 				sparks(b, { Count = 7, Color = Color3.fromRGB(255, 220, 170), Size = 0.2, Speed = 10, Life = 0.25 })
-				Sounds.Play(if c <= 20 then "ShotQuiet" else "ShotPistol", from) -- a suppressed .22 coughs; anything else cracks
+				Sounds.Play(if c <= 20 then "ShotQuiet" elseif c >= 100 then "ShotRifle" else "ShotPistol", from) -- a suppressed .22 coughs, a pistol cracks, a rifle booms
 				-- the hand kicks: the gun arm jumps and settles (on top of whatever the arm animation holds)
 				pose(a, "RightShoulder", CFrame.Angles(math.rad(9), 0, 0), 0.03)
 				pose(a, "RightElbow", CFrame.Angles(math.rad(7), 0, 0), 0.03)
@@ -2513,8 +2513,8 @@ Remotes.CombatEvent.OnClientEvent:Connect(function(kind, a, b, c, d, e, f)
 				end)
 				if a == player.Character then
 					local cam = workspace.CurrentCamera
-					cam.CFrame = cam.CFrame * CFrame.Angles(math.rad(0.7), 0, 0)
-					shake(0.12)
+					cam.CFrame = cam.CFrame * CFrame.Angles(math.rad(if c >= 140 then 1.6 elseif c >= 100 then 0.5 else 0.7), 0, 0)
+					shake(if c >= 140 then 0.22 else 0.12)
 				end
 			else
 				Debris:AddItem(beam, 0.1)
@@ -2735,7 +2735,7 @@ end
 local function aimPreset()
 	local char = player.Character
 	local def = char and Weapons.Defs[char:GetAttribute("Weapon") or ""]
-	return if def and def.Family == "Sidearm" then AIM.Ranged else AIM.Melee
+	return if Weapons.IsGun(def) then AIM.Ranged else AIM.Melee
 end
 applyAim = function()
 	local char = player.Character
@@ -3323,6 +3323,11 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		Remotes.Attack:FireServer(cameraDirection()) -- a shot goes where you look; a swing ignores it
+		Handling.Trigger(function() -- an automatic keeps going while the button is down
+			if not menuOpen() then
+				Remotes.Attack:FireServer(cameraDirection())
+			end
+		end)
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 		Remotes.Heavy:FireServer(cameraDirection())
 	elseif Stealth.Key(key) then

@@ -259,7 +259,7 @@ function NPCs.Spawn(typeName, position, opts)
 	if model:GetAttribute("Rigged") then
 		Rigs.Animate(model, hum)
 		model:SetAttribute("Weapon", def.Weapon)
-		HeldWeapons.Attach(model, def.Weapon)
+		HeldWeapons.Attach(model, Weapons.Held(def.Weapon))
 	end
 
 	local alive = true

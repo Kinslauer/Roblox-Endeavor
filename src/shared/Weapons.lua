@@ -119,7 +119,45 @@ Weapons.Defs = {
 		},
 		Heavy = frames(24, 8, 5, 3, 13, 150, { Ranged = true, Stamina = 5 }),
 	},
+	-- Long guns (owner, 2026-11-12: "a carbine firing 5.56 based off the exploded ar-15 model is next, then the ak-47
+	-- firing 7.62x39. And the garand fires .308 or 7.62x51"). Family "Rifle" = held in two hands (client/Handling:
+	-- Rifle_Ready, Aim_Rifle, Reload_Rifle). Auto = holding the trigger keeps firing. Model = how common/HeldWeapons
+	-- builds it from the gun components (shared/GunParts): the gun there, its barrel, the size in the hands (the
+	-- parts are modelled 0.19 studs to the inch, twice a body's scale) and the grip the two-handed animations expect.
+	Carbine = {
+		Name = "Carbine", Family = "Rifle", ComboReset = 0.3, ComboCooldown = 0, ChargeBonus = 1, Caliber = "5.56", Noise = 120,
+		MagSize = 30, ReloadSeconds = 2.4, Auto = true, Model = { Gun = "M16A1", Attachments = { Barrel = "BarrelCarbine" }, Scale = 0.5, Grip = "Shoulder" },
+		Attacks = { frames(30, 8, 3, 2, 4, 260, { Ranged = true, Stamina = 2 }) },
+		Heavy = frames(30, 8, 3, 2, 4, 260, { Ranged = true, Stamina = 2 }),
+	},
+	AK47 = {
+		Name = "AK-47", Family = "Rifle", ComboReset = 0.3, ComboCooldown = 0, ChargeBonus = 1, Caliber = "7.62x39", Noise = 135,
+		MagSize = 30, ReloadSeconds = 2.7, Auto = true, Model = { Gun = "AK47", Scale = 0.5, Grip = "Shoulder" },
+		Attacks = { frames(38, 12, 3, 2, 6, 240, { Ranged = true, Stamina = 3 }) },
+		Heavy = frames(38, 12, 3, 2, 6, 240, { Ranged = true, Stamina = 3 }),
+	},
+	-- eight rounds, one for each pull of the trigger, and the heaviest round of the three
+	M1Garand = {
+		Name = "M1 Garand", Family = "Rifle", ComboReset = 0.5, ComboCooldown = 0.1, ChargeBonus = 1, Caliber = "7.62x51", Noise = 150,
+		MagSize = 8, ReloadSeconds = 2.2, Model = { Gun = "M1Garand", Scale = 0.5, Grip = "Shoulder" },
+		Attacks = { frames(64, 20, 4, 2, 14, 380, { Ranged = true, Stamina = 5 }) },
+		Heavy = frames(64, 20, 4, 2, 14, 380, { Ranged = true, Stamina = 5 }),
+	},
 }
+
+-- A gun is aimed, not swung: RMB aims, R reloads, the body faces the camera (client/Handling, server/Stealth).
+function Weapons.IsGun(def)
+	return def ~= nil and (def.Family == "Sidearm" or def.Family == "Rifle")
+end
+
+-- What common/HeldWeapons needs to put weapon id in a hand: the model's id, its attachments, its options.
+function Weapons.Held(id)
+	local model = id and Weapons.Defs[id] and Weapons.Defs[id].Model
+	if not model then
+		return id
+	end
+	return model.Gun or id, model.Attachments, model
+end
 
 -- Calibres (owner, 2026-11-12: "a realistic ammunition system ... different weapons could be compatible with the
 -- same caliber"). A gun names its Caliber; the cartridge is an item any gun of that calibre feeds on.
@@ -132,6 +170,8 @@ Weapons.Calibers = {
 	[".22"] = { Item = "Round22", Name = ".22 LR", Pen = 0, Head = 9, Limb = 0.6, Through = 1 },
 	["9mm"] = { Item = "Round9", Name = "9mm", Pen = 1, Head = 5, Limb = 0.7, Through = 0.6 },
 	["5.56"] = { Item = "Round556", Name = "5.56", Pen = 2, Head = 6, Limb = 0.8, Through = 0.75 },
+	["7.62x39"] = { Item = "Round762x39", Name = "7.62x39", Pen = 2, Head = 6, Limb = 0.85, Through = 0.8 },
+	["7.62x51"] = { Item = "Round762x51", Name = "7.62x51", Pen = 3, Head = 8, Limb = 0.9, Through = 0.9 }, -- .308: nothing a guard wears stops it
 }
 for _, def in Weapons.Defs do
 	local cal = def.Caliber and Weapons.Calibers[def.Caliber]

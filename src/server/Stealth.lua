@@ -1161,7 +1161,7 @@ function Stealth.SetAim(player, on)
 		return
 	end
 	local def = Weapons.Defs[char:GetAttribute("Weapon") or ""]
-	on = on == true and def ~= nil and def.Family == "Sidearm" and not char:GetAttribute("NeckHold") and not char:GetAttribute("Carrying")
+	on = on == true and Weapons.IsGun(def) and not char:GetAttribute("NeckHold") and not char:GetAttribute("Carrying")
 	if (char:GetAttribute("Aiming") == true) ~= on then
 		char:SetAttribute("Aiming", if on then true else nil)
 		if on and char:GetAttribute("Sprinting") then

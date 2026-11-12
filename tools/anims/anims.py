@@ -528,6 +528,33 @@ RELOAD_PISTOL = dict(length=1.5, loop=False, priority="Action3", keys=[
     (1.05, {"RightUpperArm": (48, 0, -6), "RightLowerArm": (108, 0, 0), "RightHand": (0, 0, -20), "LeftUpperArm": (46, 0, 34), "LeftLowerArm": (112, 0, 0), "Head": (8, -8, 0)}, "CubicV2", "InOut"),
     (1.5, {"RightUpperArm": (28, 0, -50), "RightLowerArm": (72, 0, 0), "LeftUpperArm": (34, 0, 55), "LeftLowerArm": (80, 0, 0)}, "Linear", "InOut"),
 ])
+# A long gun in two hands (owner, 2026-11-12: the 5.56 carbine, the AK-47, the Garand). The right hand has the
+# grip, the left hand the handguard. The angles were solved by forward kinematics on the skinned body (shoulders
+# 0.86 out) for common/HeldWeapons GRIPS.Shoulder, which is the same solve: with _AIM_RIFLE the bore is level and
+# dead ahead, the butt in the right shoulder. Change the grip and these together.
+_RIFLE_READY = {"UpperTorso": (-2, -16, 0), "Head": (0, 14, 0), "RightUpperArm": (-20, 44, 29), "RightLowerArm": (127, 0, 0), "RightHand": (0, 0, 0),
+                "LeftUpperArm": (24, -22, 16), "LeftLowerArm": (82, 0, 0)}
+RIFLE_READY = dict(length=2.6, loop=True, priority="Action", keys=[   # muzzle down and a little left, across the chest
+    (0.0, _RIFLE_READY, "CubicV2", "InOut"),
+    (1.3, merge(_RIFLE_READY, {"RightUpperArm": (-19, 44, 29), "LeftUpperArm": (25, -22, 16)}), "CubicV2", "InOut"),
+    (2.6, _RIFLE_READY, "Linear", "InOut"),
+])
+_AIM_RIFLE = {"UpperTorso": (-2, -24, 0), "Head": (0, 22, 0), "RightUpperArm": (18, 44, 3), "RightLowerArm": (120, 0, 0), "RightHand": (0, 0, 0),
+              "LeftUpperArm": (50, -35, -2), "LeftLowerArm": (80, 0, 0)}
+AIM_RIFLE = dict(length=2.2, loop=True, priority="Action2", keys=[
+    (0.0, _AIM_RIFLE, "CubicV2", "InOut"), (1.1, merge(_AIM_RIFLE, {"LeftUpperArm": (51, -35, -2)}), "CubicV2", "InOut"), (2.2, _AIM_RIFLE, "Linear", "InOut"),
+])
+_RELOAD_R = {"UpperTorso": (-2, -16, 0), "Head": (12, 10, 0), "RightUpperArm": (-16, 42, 28), "RightLowerArm": (125, 0, 0), "RightHand": (25, 0, -2)}  # muzzle up a little, the well turned in
+RELOAD_RIFLE = dict(length=2.2, loop=False, priority="Action3", keys=[
+    (0.0, _RIFLE_READY, "CubicV2", "InOut"),
+    (0.3, merge(_RELOAD_R, {"LeftUpperArm": (11, -29, 20), "LeftLowerArm": (88, 0, 0)}), "CubicV2", "InOut"),   # hand to the magazine
+    (0.55, merge(_RELOAD_R, {"LeftUpperArm": (0, -20, 14), "LeftLowerArm": (70, 0, 0)}), "CubicV2", "InOut"),   # it comes out and down
+    (0.95, merge(_RELOAD_R, {"LeftUpperArm": (-8, 0, 16), "LeftLowerArm": (112, 0, 0)}), "CubicV2", "InOut"),   # to the pouch on the chest
+    (1.4, merge(_RELOAD_R, {"LeftUpperArm": (6, -24, 18), "LeftLowerArm": (78, 0, 0)}), "Cubic", "In"),         # the fresh one comes up under the well
+    (1.6, merge(_RELOAD_R, {"LeftUpperArm": (11, -29, 20), "LeftLowerArm": (90, 0, 0)}), "CubicV2", "InOut"),   # and is driven home
+    (1.85, merge(_RELOAD_R, {"LeftUpperArm": (33, -26, 14), "LeftLowerArm": (94, 0, 0), "RightHand": (12, 0, 0)}), "CubicV2", "InOut"),
+    (2.2, _RIFLE_READY, "Linear", "InOut"),
+])
 # Hands up (a guard with a gun on him): upper arms straight out, forearms straight up. (90, 0, -90) is the left
 # arm out to the side rolled so the elbow folds upward.
 _UP_HANDS = {"UpperTorso": (4, 0, 0), "Head": (-6, 0, 0), "LeftUpperArm": (90, 0, -90), "LeftLowerArm": (88, 0, 0),
@@ -603,6 +630,7 @@ COVER_IDLE = dict(length=2.6, loop=True, priority="Action", keys=[
 
 ANIMS = {
     "Prone_Idle": PRONE_IDLE, "Prone_Crawl": PRONE_CRAWL, "Prone_RollL": PRONE_ROLL_L, "Prone_RollR": PRONE_ROLL_R,
+    "Rifle_Ready": RIFLE_READY, "Aim_Rifle": AIM_RIFLE, "Reload_Rifle": RELOAD_RIFLE,
     "Pistol_Ready": PISTOL_READY, "Aim_Pistol": AIM_PISTOL, "Reload_Pistol": RELOAD_PISTOL, "HandsUp": HANDS_UP,
     "Takedown_Throw": TAKEDOWN_THROW, "Takedown_ThrowVictim": TAKEDOWN_THROW_VICTIM, "Takedown_Shove": TAKEDOWN_SHOVE,
     "Takedown_ShoveVictim": TAKEDOWN_SHOVE_VICTIM, "Hold": HOLD, "Held": HELD, "Carry": CARRY, "Cover_Idle": COVER_IDLE,

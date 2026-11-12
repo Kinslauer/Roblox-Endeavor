@@ -4,6 +4,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Cybernetics = require(ReplicatedStorage.Shared.Cybernetics)
 local Props = require(ReplicatedStorage.Shared.Props)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Weapons = require(ReplicatedStorage.Shared.Weapons)
 local Gear = require(script.Parent.Gear)
 local HeldWeapons = require(script.Parent.Common.HeldWeapons)
 local WornGear = require(script.Parent.Common.WornGear)
@@ -39,7 +40,7 @@ function Stats.Apply(player, fill)
 	hum.WalkSpeed = if char:GetAttribute("Stunned") then 0 else d.WalkSpeed * holdMult * sprintMult * weightMult * crouchMult * handsMult
 
 	char:SetAttribute("Weapon", PlayerData.Get(player).Equipped)
-	HeldWeapons.Attach(char, PlayerData.Get(player).Equipped)
+	HeldWeapons.Attach(char, Weapons.Held(PlayerData.Get(player).Equipped))
 	require(script.Parent.Combat).SyncMag(player)
 	local worn = {}
 	for _, id in PlayerData.Get(player).Armor do

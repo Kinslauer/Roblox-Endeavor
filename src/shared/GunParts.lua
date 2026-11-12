@@ -52,7 +52,7 @@ GunParts.Accessories = {
 }
 
 -- Attachment id in the Barrel slot -> the barrel option
-GunParts.BarrelOf = { BarrelShort = "Short", BarrelLong = "Long" }
+GunParts.BarrelOf = { BarrelShort = "Short", BarrelLong = "Long", BarrelCarbine = "Carbine" } -- Carbine: only where a gun has that barrel (Endeavor's carbine)
 
 local function idOf(attachments, slot)
 	local a = attachments and attachments[slot]

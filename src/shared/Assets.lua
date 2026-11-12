@@ -115,6 +115,9 @@ Assets.Anims = {
 	Prone_Crawl = 93255193883909,
 	Prone_RollL = 126125091482574,
 	Prone_RollR = 104668146435989,
+	Rifle_Ready = 73218657444853,
+	Aim_Rifle = 123778705669365,
+	Reload_Rifle = 124676858383066,
 	Pistol_Ready = 106650486186059,
 	Aim_Pistol = 88182789208588,
 	Reload_Pistol = 76268295993088,
@@ -385,6 +388,11 @@ Assets.Icons = {
 	SignPlating = 89360434017768,
 	Wire = 125102654490358,
 }
+-- Endeavor's long guns are built from components in the hand; in the pack they show a whole model
+Assets.Icons.Carbine = Assets.GunKit.Rifle16
+Assets.Icons.AK47 = Assets.Weapons.AKM.Id
+Assets.Icons.M1Garand = Assets.Weapons.M14.Id
+
 function Assets.IconFor(itemId)
 	if Assets.Icons[itemId] then
 		return Assets.Icons[itemId]

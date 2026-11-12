@@ -62,7 +62,7 @@ end
 function Handling.GunOut()
 	local char = player.Character
 	local def = char and Weapons.Defs[char:GetAttribute("Weapon") or ""]
-	return def ~= nil and def.Family == "Sidearm", def
+	return Weapons.IsGun(def), def
 end
 
 function Handling.Aiming()
@@ -311,10 +311,13 @@ local function wantArms(char)
 		return nil
 	elseif cover and cover.out < 0.5 then
 		return "Cover_Idle"
-	elseif aiming then
-		return "Aim_Pistol"
 	end
-	return "Pistol_Ready"
+	local _, def = Handling.GunOut()
+	local long = def.Family == "Rifle" -- two hands on it
+	if aiming then
+		return if long then "Aim_Rifle" else "Aim_Pistol"
+	end
+	return if long then "Rifle_Ready" else "Pistol_Ready"
 end
 
 local function driveArms()
@@ -330,6 +333,28 @@ local function driveArms()
 			Anims.Play(char, want, { fade = 0.15 })
 		end
 	end
+end
+
+-- The trigger (LMB went down and the first round is away): a gun with Auto keeps firing while it is held.
+local trigger = 0
+function Handling.Trigger(fire)
+	trigger += 1
+	local mine = trigger
+	local gun, def = Handling.GunOut()
+	if not (gun and def.Auto) then
+		return
+	end
+	local every = math.max(0.08, (def.Attacks[1].End or 0.15) + (def.ComboCooldown or 0) + 0.02)
+	task.spawn(function()
+		while true do
+			task.wait(every)
+			local still, now = Handling.GunOut()
+			if mine ~= trigger or not still or now ~= def or not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+				return
+			end
+			fire()
+		end
+	end)
 end
 
 -- ===== keys (the main script forwards them; true = used) =====
@@ -471,7 +496,12 @@ function Handling.Init(options)
 		local root = char:FindFirstChild("HumanoidRootPart")
 		if kind == "Reload" then
 			seconds = if type(seconds) == "number" and seconds > 0.1 then seconds else 1.5
-			Anims.Play(char, "Reload_Pistol", { fade = 0.1, speed = 1.5 / seconds })
+			local def = Weapons.Defs[char:GetAttribute("Weapon") or ""]
+			if def and def.Family == "Rifle" then
+				Anims.Play(char, "Reload_Rifle", { fade = 0.1, speed = 2.2 / seconds })
+			else
+				Anims.Play(char, "Reload_Pistol", { fade = 0.1, speed = 1.5 / seconds })
+			end
 			Sounds.Play("DryClick", root, { Volume = 0.5, Pitch = 0.8 })
 			task.delay(seconds * 0.66, function()
 				if root and root.Parent then

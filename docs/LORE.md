@@ -89,6 +89,8 @@ How to read it:
 - Guns take real calibres, and a cartridge fits every gun chambered for it. The conduit arrives with a suppressed
   .22 pistol (the Whisper): a small, very quiet round that only kills through flesh. The station's sentries wear
   steel helmets and plate, and carry 9mm or 5.56, the common pistol and rifle calibres; none of them carries .22.
+  The sentries' rifle is a 5.56 carbine. The AK-47 fires 7.62x39 and the Garand 7.62x51 (.308): the same old
+  patterns the Front is fought with.
   [Andy 2026-11-12]
 
 **Hinted**
@@ -254,6 +256,8 @@ How to read it:
    facilities). (One way down, the Sumps shaft to Barrens Hall 2, is now Canon.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: Andy: long guns. A 5.56 carbine (the sentries' rifle), the AK-47 in 7.62x39, the Garand in 7.62x51.
+  Claude placed them: 7.62x39 with raiders, 7.62x51 with the valley's rival crews (Hinted, Andy has not confirmed).
 - 2026-11-12: Andy: cybernetics on the Front come shipped from conduits.
 - 2026-11-12: Andy: modern guns reach the Front by shipment; the Front's places stay 1970s.
 - 2026-11-12: Andy: realistic ammunition. Calibres (.22, 9mm, 5.56) shared between guns; the Whisper is a .22; the

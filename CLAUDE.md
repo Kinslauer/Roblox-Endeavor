@@ -331,6 +331,23 @@ Client tab screenshot, because Andy cannot read logs another way.
   (exactly one bundle); Sentry = 9mm (30% with a DutyPistol) or 5.56. DutyPistol = Assets.GunKit.Striker17, 9mm, 15
   rounds, Noise 75. No gun takes 5.56 in Endeavor yet. PlayerData.Load renames saved "Subsonic" to Round22.
   Players have no plate zones yet (only the head multiplier). Tests: "calibre:", "plate:", "loot:" in scenario.lua.
+- Long guns (owner, 2026-11-12: "a carbine firing 5.56 based off the exploded ar-15 model is next, then the ak-47
+  firing 7.62x39. And the garand fires .308 or 7.62x51"). Weapons `Carbine` (5.56, 30, Auto), `AK47` (7.62x39, 30,
+  Auto), `M1Garand` (7.62x51, 8, semi); calibres 7.62x39 (Pen 2) and 7.62x51 (Pen 3), items Round762x39 /
+  Round762x51. Family "Rifle"; `Weapons.IsGun(def)` (Sidearm or Rifle) is the test for aim, reload and the gun camera,
+  never `Family == "Sidearm"`. `def.Model = { Gun, Attachments, Scale, Grip }` + `Weapons.Held(id)` -> what
+  `HeldWeapons.Attach(char, gunId, attachments, opts)` takes: the models are the Front thread's components
+  (shared/GunParts; the Carbine = M16A1 with `BarrelCarbine`, a BarrelOf row added in tools/models/
+  gunparts_template.lua), shrunk to Scale 0.5 in the hand (the parts are 0.19 studs to the inch, about twice body
+  scale; pistols are still that big) on GRIPS.Shoulder. That grip matrix and the arm angles of Rifle_Ready /
+  Aim_Rifle / Reload_Rifle (tools/anims) were solved together by forward kinematics (shoulders 0.86 out): change them
+  together. Real-server check on the real body: aiming, the bore is exactly ahead and level, the butt 0.34 from the
+  shoulder joint, the left hand 0.06 from the handguard. `def.Auto`: client `Handling.Trigger(fire)` repeats Attack
+  while LMB is held. "Bolt" picks ShotRifle and a longer muzzle offset from Noise >= 100. Pack icons:
+  Assets.Icons.Carbine/AK47/M1Garand (whole old models). Loot: Sentry 5.56 bundle 35% Carbine, Raider 7.62x39 (AK47
+  5%), Rival 7.62x51 (Garand 8%); the armory's Supplies gives 60 of every cartridge. Not done: sentries do not hold
+  or fire rifles, no rifle pose behind a wall (Cover_Idle is the pistol's), no slung second weapon, the tracer starts
+  at a guess of the muzzle. Tests: "rifle:" in scenario.lua.
 - The arrival (owner, 2026-11-10: "UI and Intro sequence overhauled ... riding a train ... revealing the weapons under
   a cloak ... racking the slide ... pans behind ... zooms into the fpv ... a tutorial stealth level ... subway ...
   based off splinter cell chaos theory and batman arkham involving environmental takedowns and light level hiding";
@@ -521,6 +538,11 @@ Client tab screenshot, because Andy cannot read logs another way.
   "spares:", "field:", "barracks:" in war.lua, "parts:" in warclient.lua.
 
 ## State (2026-11-12)
+- Endeavor v100 (2026-11-12): rifles. The 5.56 Carbine (AR parts), the AK-47 (7.62x39) and the M1 Garand (7.62x51)
+  with a two-handed hold, automatic fire on the first two. Real server: start 7.5s, 0 warnings; all three assemble
+  (3.3, 3.4 and 4.1 studs long) and the aim pose lines the bore up dead ahead on the real body. Unseen in game: the
+  hold and the reload in motion, the rifle behind a wall, the feel of automatic fire. Awaits Andy: docs/TESTING.md
+  "Endeavor: rifles".
 - Endeavor v95 (2026-11-12): calibres and plate. The Whisper is a .22 (stopped by any plate, one round through
   the face), sentries wear helmet / vest / bracers / shin guards and carry 9mm or 5.56, the Duty Pistol (9mm) can
   be looted. Real server: start 12.1s, 0 warnings; hit zones read right on the real Sentry body (crown and back of

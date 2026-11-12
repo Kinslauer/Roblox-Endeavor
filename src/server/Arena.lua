@@ -270,6 +270,9 @@ local function buildArmory()
 		Inventory.Add(player, "Wire", 10)
 		Inventory.Add(player, "Cloth", 10)
 		Inventory.Add(player, "Medkit", 2)
+		for _, cal in Weapons.Calibers do -- two stacks of every cartridge
+			Inventory.Add(player, cal.Item, 60)
+		end
 	end)
 	console(spots[5], "Instructor", ("+%d attribute points"):format(Config.Dev.ArmoryPoints), MAGENTA, function(player)
 		local data = PlayerData.Get(player)
@@ -300,7 +303,7 @@ local function buildArmory()
 				root:SetNetworkOwner(nil)
 				root.Anchored = true -- it stands still; the idle animation still plays on the limbs
 				Rigs.Animate(model, hum)
-				HeldWeapons.Attach(model, (NPCs.Types[typeName] or {}).Weapon)
+				HeldWeapons.Attach(model, Weapons.Held((NPCs.Types[typeName] or {}).Weapon))
 				local label = Instance.new("BillboardGui")
 				label.Size, label.StudsOffset, label.AlwaysOnTop = UDim2.fromOffset(160, 30), Vector3.new(0, 4.5, 0), false
 				label.MaxDistance = 45

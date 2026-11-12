@@ -27,6 +27,7 @@ Swings.Families = {
 	Hammer = { "SlashR", "Overhead", Heavy = "Overhead" },
 	Spear = { "Thrust", "Thrust", "SlashR", "Thrust", Heavy = "Thrust" },
 	Fists = { "Jab", "Jab", "Jab", "Uppercut", Heavy = "Uppercut" },
+	Rifle = false,
 	Sidearm = false, -- guns are aimed, not swung: no arc (the client's aim-and-recoil pose instead)
 }
 

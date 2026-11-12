@@ -19,6 +19,10 @@ local GRIPS = {
 	Pistol = CFrame.new(0, -0.1, 0) * CFrame.Angles(-math.pi / 2, 0, 0),
 	-- firearms: barrel (+Z) -> forward, grip in the palm, held a little high so the sights sit near eye line
 	Rifle = CFrame.new(0, -0.1, -0.3) * CFrame.Angles(0, math.pi, 0),
+	-- Endeavor's long guns: the grip sits in the hand the way a pistol grip does, turned so that the arm pose of
+	-- the Aim_Rifle animation (tools/anims/anims.py, solved together with this matrix) puts the bore level and
+	-- dead ahead with the butt in the right shoulder. The Rifle grip above leaves the barrel square to the forearm.
+	Shoulder = CFrame.new(0, -0.1, 0, -0.918, 0.2537, 0.3048, -0.3956, -0.6391, -0.6596, 0.0275, -0.7261, 0.6871),
 }
 
 function HeldWeapons.Clear(char)
@@ -65,7 +69,8 @@ function HeldWeapons.Assemble(weaponId, attachments)
 	return holder
 end
 
-function HeldWeapons.Attach(char, weaponId, attachments)
+-- opts (optional): Grip = a GRIPS name instead of the model's own, Scale = the size in the hand (1 = as modelled).
+function HeldWeapons.Attach(char, weaponId, attachments, opts)
 	local held = char and char:FindFirstChild("HeldWeapon")
 	local build = if weaponId and GunParts.Guns[weaponId] then GunParts.Key(weaponId, attachments) else ""
 	if held and held:GetAttribute("WeaponId") == weaponId and (held:GetAttribute("Build") or "") == build then
@@ -112,6 +117,13 @@ function HeldWeapons.Attach(char, weaponId, attachments)
 	local primary = parts[1]
 	model.PrimaryPart = primary
 	local origin = if assembled then CFrame.new() else model:GetPivot()
+	local scale = opts and opts.Scale
+	if scale and scale ~= 1 then
+		for _, p in parts do -- shrink every part toward the grip
+			p.Size *= scale
+			p.CFrame += (p.Position - origin.Position) * (scale - 1)
+		end
+	end
 	for i = 2, #parts do
 		local weld = Instance.new("Weld")
 		weld.Part0, weld.Part1 = primary, parts[i]
@@ -121,7 +133,7 @@ function HeldWeapons.Attach(char, weaponId, attachments)
 	local grip = Instance.new("Weld")
 	grip.Name = "Grip"
 	grip.Part0, grip.Part1 = hand, primary
-	grip.C0 = GRIPS[(if assembled then spec.Grip else entry.Grip) or "Melee"] or GRIPS.Melee
+	grip.C0 = GRIPS[(opts and opts.Grip) or (if assembled then spec.Grip else entry.Grip) or "Melee"] or GRIPS.Melee
 	grip.C1 = origin:ToObjectSpace(primary.CFrame)
 	grip.Parent = primary
 	model.Parent = char

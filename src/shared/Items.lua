@@ -22,7 +22,12 @@ Items.Defs = {
 	Round22 = { Name = ".22 LR", Type = "Ammo", Caliber = ".22" },
 	Round9 = { Name = "9mm", Type = "Ammo", Caliber = "9mm" },
 	Round556 = { Name = "5.56", Type = "Ammo", Caliber = "5.56" },
+	Round762x39 = { Name = "7.62x39", Type = "Ammo", Caliber = "7.62x39" },
+	Round762x51 = { Name = "7.62x51", Type = "Ammo", Caliber = "7.62x51" },
 	DutyPistol = { Name = "Duty Pistol", Type = "Weapon" },
+	Carbine = { Name = "Carbine", Type = "Weapon" },
+	AK47 = { Name = "AK-47", Type = "Weapon" },
+	M1Garand = { Name = "M1 Garand", Type = "Weapon" },
 	PipeGrenade = { Name = "Pipe Grenade", Type = "Consumable", Throwable = "Grenade" },
 	BreachingCharge = { Name = "Breaching Charge", Type = "Consumable", Plantable = "Charge" },
 	-- packs: worn on the back, they set the size of your grid and how much you can carry at speed
@@ -50,7 +55,12 @@ local SHAPES = {
 	Round22 = { Size = { 1, 1 }, Weight = 0.04, Stack = 50 },
 	Round9 = { Size = { 1, 1 }, Weight = 0.1, Stack = 30 },
 	Round556 = { Size = { 1, 1 }, Weight = 0.12, Stack = 30 },
+	Round762x39 = { Size = { 1, 1 }, Weight = 0.16, Stack = 30 },
+	Round762x51 = { Size = { 1, 1 }, Weight = 0.25, Stack = 24 },
 	DutyPistol = { Size = { 2, 1 }, Weight = 1.0 },
+	Carbine = { Size = { 4, 2 }, Weight = 3.0 },
+	AK47 = { Size = { 4, 2 }, Weight = 3.9 },
+	M1Garand = { Size = { 5, 2 }, Weight = 4.3 },
 	Medkit = { Size = { 1, 1 }, Weight = 0.6, Stack = 5 },
 	Ration = { Size = { 1, 1 }, Weight = 0.4, Stack = 5 },
 	PipeGrenade = { Size = { 1, 1 }, Weight = 0.8, Stack = 5 },
@@ -142,6 +152,8 @@ Items.Recipes = {
 	Round22 = { Output = "Round22", Count = 10, Inputs = { Powder = 1, Scrap = 1 } },
 	Round9 = { Output = "Round9", Count = 6, Inputs = { Powder = 1, Scrap = 1 } },
 	Round556 = { Output = "Round556", Count = 4, Inputs = { Powder = 1, Scrap = 1 } },
+	Round762x39 = { Output = "Round762x39", Count = 4, Inputs = { Powder = 1, Scrap = 1 } },
+	Round762x51 = { Output = "Round762x51", Count = 3, Inputs = { Powder = 1, Scrap = 1 } },
 	PipeGrenade = { Output = "PipeGrenade", Count = 1, Inputs = { Pipe = 1, Powder = 2, Wire = 1 } },
 	BreachingCharge = { Output = "BreachingCharge", Count = 1, Inputs = { SheetMetal = 1, Powder = 3, Wire = 2, Battery = 1 } },
 	SignPlating = { Output = "SignPlating", Count = 1, Inputs = { SheetMetal = 3, Cloth = 1 } },
@@ -188,13 +200,14 @@ Items.LootTables = {
 	Rival = {
 		{ "Scrap", 0.8, 1, 3 }, { "Wire", 0.6, 1, 3 }, { "Medkit", 0.45, 1, 1 }, { "ArcCell", 0.5, 4, 8 }, { "Ration", 0.4, 1, 2 },
 		{ "RebarBlade", 0.1, 1, 1 }, { "PlatedHelm", 0.08, 1, 1 }, { "ConduitHarness", 0.05, 1, 1 }, { "ReflexOptic", 0.05, 1, 1 }, { "PipeGrenade", 0.2, 1, 1 },
+		{ "Round762x51", 0.3, 5, 16 }, { "M1Garand", 0.08, 1, 1 }, -- a crew that works the valley keeps a long rifle
 	},
 	-- station sentries carry what security carries: 9mm for a sidearm (sometimes the sidearm itself) or 5.56 for a
-	-- rifle, never the .22 a conduit's quiet pistol takes (owner, 2026-11-12)
+	-- rifle (sometimes the carbine itself), never the .22 a conduit's quiet pistol takes (owner, 2026-11-12)
 	Sentry = {
 		{ Pick = {
 			{ Weight = 0.65, Items = { { "Round9", 1, 8, 15 }, { "DutyPistol", 0.3, 1, 1 } } },
-			{ Weight = 0.35, Items = { { "Round556", 1, 10, 20 } } },
+			{ Weight = 0.35, Items = { { "Round556", 1, 15, 30 }, { "Carbine", 0.35, 1, 1 } } },
 		} },
 		{ "Scrap", 0.8, 1, 2 }, { "Ration", 0.45, 1, 1 }, { "Cloth", 0.4, 1, 2 }, { "Wire", 0.3, 1, 2 },
 		{ "Medkit", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 },
@@ -215,6 +228,7 @@ Items.LootTables = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 },
 		{ "PipeClub", 0.1, 1, 1 }, { "ScavHelm", 0.08, 1, 1 }, { "ScrapVest", 0.08, 1, 1 }, { "ScrapGreaves", 0.08, 1, 1 },
 		{ "ChemSniffer", 0.03, 1, 1 },
+		{ "Round762x39", 0.3, 6, 18 }, { "AK47", 0.05, 1, 1 }, -- the gun every scavenger can keep running
 	},
 }
 
