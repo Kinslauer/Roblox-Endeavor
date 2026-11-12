@@ -104,8 +104,28 @@ How to read it:
 - The world the conduits experience seems to run on the power the brain slaves make. Conduits and slaves live in
   symbiosis: once a conduit tried to free them, and lost the connection to his stack. [Andy 2026-11-12]
 - Players can go down to the shelters and the barrens. Something in the game leads them there, either an incentive
-  or the story. [Andy 2026-11-12] Not built yet. Limit from the canon: the way down is not Line 9 (it runs up only,
-  and nothing goes back down on it).
+  or the story. [Andy 2026-11-12] Limit from the canon: the way down is not Line 9 (it runs up only, and nothing
+  goes back down on it).
+
+**Canon (Endeavor v93, Claude's build of the way down; Andy chose "story and incentive")**
+- A service shaft on the Sumps plaza ("SERVICE . S4 . NO ENTRY", a winch, a red lamp, a hum through the grate)
+  drops to Barrens Hall 2 in Shelter 4: a pipe gallery, the hall, and the overseers' office. [Barrens]
+- In the hall the brain slaves stand at stations in rows: pale figures working cranks, each wired from the head into
+  a trunk cable, each with a screen reading its OUTPUT. Overseers patrol; the office console counts HANDS and
+  OUTPUT. The office stores hold implants and cells, more than anything in the city. [Barrens]
+- Unhooking a slave is never a clean win: the figure slumps, the lights of its row go out, the overseers hear it,
+  and the conduit's own link kicks back. It loses health, and an uploaded stack loses its upload ("> STACK . . . NO
+  CARRIER") until the conduit logs in at its computer again. [Barrens; fits the symbiosis above]
+- The hour reaches the barrens like everywhere outside the green pockets: every hour the slave is back at its crank.
+  [Barrens]
+- Signs down there name places (S4, Barrens, Hall 2), never a corporation (open question 2).
+
+**Hinted**
+- Fragment "Shift Card" (by the shaft head): a punch card for S4 . BARRENS . HALL 2, clocked in every hour, never
+  out. Fragment "Hands" (in the hall, after the card): "he came down to cut them loose. he got one. the lights went
+  out in both of them. he never found his way back in." (Andy's conduit who lost his stack.)
+- The Broker feels something under the Sumps plaza; the Fixer says the Sumps drain people who are curious; the
+  Dealer's best lenses "came up a shaft in the Sumps. I didn't ask whose they were."
 
 **Canon (already in the game, now explained by the Truth above)**
 - Line 9 comes up from below the city (the station is at SUBLEVEL 3), and nothing goes back down. [the arrival]
@@ -211,10 +231,12 @@ How to read it:
    Limit: no exit exists in the game; a conduit never gets further than the valley.
 7. Whether the world truly runs on the slaves' power ("seems to"), and what freeing them would do beyond cutting a
    stack's connection. (The symbiosis is now Truth.) Limit: freeing them is never a clean win for a conduit.
-8. How players get down to the shelters, and what draws them (an incentive or the story). (That they can is now
-   Truth.) Limit: not by Line 9.
+8. Whether there are other ways down, and what else the shelters hold (the corporations' own floors, the cloning
+   facilities). (One way down, the Sumps shaft to Barrens Hall 2, is now Canon.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: Endeavor v93, the way down: the Sumps shaft, Barrens Hall 2, unhooking, fragments "Shift Card" and
+  "Hands", three contact lines. Question 8 narrowed.
 - 2026-11-12: Andy: the conduits supply the Front; each can link into and supply as many recruits as it can afford.
 - 2026-11-12: Andy's answers to 7 and 8: the world seems to run on the brain slaves' power; conduits and slaves are
   symbiotic (a conduit who tried to free them lost the connection to his stack); players can go down to the shelters,

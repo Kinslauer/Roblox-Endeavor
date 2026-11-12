@@ -67,6 +67,11 @@ local ok, err = pcall(function()
 	Lifecycle.Init()
 	Landmarks.Init()
 	Population.Init()
+	-- the way down: the Sumps shaft and the barrens hall (isolated: the underground must not stop the city)
+	local barrensOk, barrensErr = pcall(require(Server.Barrens).Init)
+	if not barrensOk then
+		warn("[Barrens] failed to build:", barrensErr)
+	end
 	-- the world north of the wall: terrain, the route, the Reach and the ring sites. Isolated like
 	-- the arena: a bad voxel write must not keep the city from starting.
 	local frontierOk, frontierErr = pcall(Frontier.Init)

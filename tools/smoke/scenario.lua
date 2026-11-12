@@ -1559,6 +1559,82 @@ do
 	run(0.5)
 end
 
+do
+	-- the way down (server/Barrens.lua): the Sumps shaft, the barrens hall, unhooking, the hour
+	local BarrensS = M.mockEnv.__require(SSS.Server.Barrens)
+	local CycleS = M.mockEnv.__require(SSS.Server.Cycle)
+	local Cfg = M.mockEnv.__require(RS.Shared.Config)
+	local MS = M.mockEnv.__require(RS.Shared.Megacity)
+	local B = Cfg.Barrens
+	local lv = BarrensS.Level()
+	check("barrens: the hall is built with its stations, overseers and stores", lv ~= nil and #lv.Stations == B.Rows * B.PerRow and #lv.Guards == 4 and #lv.Stores == 3)
+	local headModel = BarrensS.HeadModel()
+	local d = MS.DistrictAt(B.Head)
+	check("barrens: the shaft head stands on the Sumps plaza", headModel ~= nil and headModel.Parent == workspace_ and d ~= nil and d.Style == "Sumps" and not MS.InSludge(B.Head + M.V3.new(0, 3, 0)))
+	local blocked = {}
+	for _, part in workspace_:GetDescendants() do
+		if part:IsA("BasePart") and not part:IsDescendantOf(headModel) and not (part.Parent and part.Parent:FindFirstChildOfClass("Humanoid")) and part.CanCollide ~= false and part.Size and part.Position then
+			local p, sz = part.Position, part.Size
+			if math.abs(p.X - B.Head.X) < 6 + sz.X / 2 and math.abs(p.Z - B.Head.Z) < 6 + sz.Z / 2 and p.Y + sz.Y / 2 > B.Head.Y + 0.5 and p.Y - sz.Y / 2 < B.Head.Y + 12 and sz.Y < 400 then
+				table.insert(blocked, part.Name)
+			end
+		end
+	end
+	check("barrens: nothing of the Sumps stands on the shaft head", #blocked == 0)
+	if #blocked > 0 then print("   ", table.concat(blocked, ", ")) end
+	local char = player.Character
+	local hum = char.Humanoid
+	hum.Health = hum.MaxHealth
+	char:PivotTo(M.CF.new(1000, 5, 0)) -- far away: refused
+	check("barrens: the shaft only answers at its head", BarrensS.Descend(player) == false)
+	char:PivotTo(M.CF.new(B.Head + M.V3.new(0, 3, -6)))
+	run(0.1)
+	headModel.Grate:FindFirstChildOfClass("ProximityPrompt").Triggered:Fire(player)
+	run(B.FadeSeconds + 0.3)
+	local below = char.HumanoidRootPart.Position
+	check("barrens: descending drops you at the shaft foot, inside a stealth level", BarrensS.Inside(player) and (below - lv.Foot.Position).Magnitude < 4 and player:GetAttribute("Stealth") == true and player:GetAttribute("Below") == true and Stealth.LevelOf(player) == lv.Model)
+	check("barrens: the air down there is its own", MS.AirAt(below) == "Under")
+	-- unhook one: the row goes dark, the link kicks back, an upload is lost
+	local data = PlayerData_.Get(player)
+	data.Knowledge = data.Knowledge or {}
+	data.Knowledge.Uploaded = true
+	local st = lv.Stations[1]
+	char:PivotTo(st.Stand * M.CF.new(0, 3, 3))
+	run(0.1)
+	local hp = hum.Health
+	check("barrens: unhooking a station takes", BarrensS.Unhook(player, st) == true)
+	local dark = true
+	for _, lamp in lv.Lamps do
+		if lamp:GetAttribute("Circuit") == st.Circuit and lamp:GetAttribute("Powered") ~= false then dark = false end
+	end
+	check("barrens: its row goes dark", dark)
+	check("barrens: the link kicks back and the upload is lost", hum.Health < hp and data.Knowledge.Uploaded == false and st.Prompt.Enabled == false)
+	check("barrens: the office console counts the hands", lv.Hands == #lv.Stations - 1)
+	check("barrens: a station is unhooked only once", BarrensS.Unhook(player, st) == false)
+	-- the hour puts it all back
+	CycleS.Run()
+	run(0.2)
+	local lit = true
+	for _, lamp in lv.Lamps do
+		if lamp:GetAttribute("Powered") == false then lit = false end
+	end
+	check("barrens: the hour rehooks the station, relights the row and refills the stores", st.Unhooked == nil and st.Prompt.Enabled and lit and lv.Hands == #lv.Stations and #lv.Stores == 3 and #lv.Guards == 4)
+	-- climbing out
+	char:PivotTo(lv.Foot)
+	run(0.1)
+	lv.ClimbPrompt.Triggered:Fire(player)
+	run(B.FadeSeconds + 0.3)
+	local up = char.HumanoidRootPart.Position
+	check("barrens: climbing comes out at the shaft head and leaves the stealth level", (up - B.Head).Magnitude < 14 and player:GetAttribute("Stealth") == nil and player:GetAttribute("Below") == nil)
+	-- the trail: the shaft card lies by the head, the second fragment down in the hall
+	local Clues_ = M.mockEnv.__require(RS.Shared.Clues)
+	check("barrens: two fragments point the way down", Clues_.Fragments.ShiftCard.Where == "Sumps" and Clues_.Fragments.Hands.Where == "Barrens")
+	data.Knowledge.Uploaded = true
+	hum.Health = hum.MaxHealth
+	char:PivotTo(M.CF.new(0, 5, 0))
+	run(0.5)
+end
+
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

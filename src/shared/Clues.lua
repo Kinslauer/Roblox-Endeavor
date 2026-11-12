@@ -8,7 +8,8 @@
 --              conduit who has read these can see or take it). Anomaly: "Static" (a glitching cube), "Echo"
 --              (a flickering silhouette), "Wrong" (a sign that reads wrong).
 --   Where      "City" (a district plaza edge), "Crossroads", "Scarp" (a switchback), "Trail" (a trail point),
---              "Site" (beside a site), "Reach" (inside the hedge), "Pocket" (in one of the city's green pockets). server/Clues.lua resolves them per layout.
+--              "Site" (beside a site), "Reach" (inside the hedge), "Pocket" (in one of the city's green pockets), "Sumps" (by the service shaft on the
+--              Sumps plaza), "Barrens" (down in the barrens hall). server/Clues.lua resolves them per layout.
 local Clues = {}
 
 Clues.Lines = {
@@ -19,6 +20,7 @@ Clues.Lines = {
 		{ "You asked me that last hour. You won't remember.", 1 },
 		{ "Do you ever count the lamps on the switchbacks? Count them twice.", 1 },
 		{ "New hardware came up Line 9 again. Forty crates. Never forty-one.", 1 },
+		{ "Put your hand flat on the Sumps plaza. Feel that? That's not the canals.", 1 },
 	},
 	Fixer = {
 		{ "Anything for the house, delivered. Credits up front. Don't ask where it comes from.", 3 },
@@ -26,6 +28,7 @@ Clues.Lines = {
 		{ "Same crack in the overpass. Same wreck under it. Every time. Funny, that.", 1 },
 		{ "Your hideout's the only thing out here that keeps. Ever wondered why?", 1 },
 		{ "Stand in the Garden on the hour sometime. Tell me what you didn't see.", 1 },
+		{ "Everything in the Sumps drains down. Water. Light. People, if they're curious.", 1 },
 	},
 	Dealer = {
 		{ "Cores, arms, lenses. Pulled from people who no longer need them. Credits only.", 3 },
@@ -33,6 +36,7 @@ Clues.Lines = {
 		{ "The Gatekeeper's been killed a hundred times. He doesn't know.", 1 },
 		{ "Stock refreshes on the hour. So does everything.", 1 },
 		{ "Recruits come back as hills. You come back as you. Somebody's paying for the difference.", 1 },
+		{ "Best lenses I ever stocked came up a shaft in the Sumps. I didn't ask whose they were.", 1 },
 	},
 }
 
@@ -81,6 +85,16 @@ Clues.Fragments = {
 		Name = "Fragment: Pressed", Anomaly = "Static", Where = "Pocket",
 		Text = "Two Line 9 tickets with a leaf pressed between them. Both stamped for the same hour; neither was punched. On the back of one, in pencil: 'here the hour doesn't turn.'",
 		Rule = { Every = 2, Needs = { "HourZero" } },
+	},
+	ShiftCard = {
+		Name = "Fragment: Shift Card", Anomaly = "Wrong", Where = "Sumps",
+		Text = "A punch card, soaked through: 'S4 . BARRENS . HALL 2'. Clocked in at hour zero. Clocked in again every hour after. Never once clocked out.",
+		Rule = {},
+	},
+	Hands = {
+		Name = "Fragment: Hands", Anomaly = "Echo", Where = "Barrens",
+		Text = "Scratched into a screen's casing at knee height: 'he came down to cut them loose. he got one. the lights went out in both of them. he never found his way back in.'",
+		Rule = { Every = 2, Needs = { "ShiftCard" } },
 	},
 	TheDoor = {
 		Name = "Fragment: The Door", Anomaly = "Echo", Where = "Site",

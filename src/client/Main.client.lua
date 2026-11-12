@@ -1468,6 +1468,16 @@ Remotes.World.OnClientEvent:Connect(function(kind, a, b, c, d, e)
 				white:Destroy()
 			end)
 		end)
+	elseif kind == "Shaft" then
+		-- the way down (server/Barrens.lua): black while the body is moved, then back
+		local black = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, ZIndex = 50 }, gui)
+		TweenService:Create(black, TweenInfo.new(tonumber(a) or 0.8), { BackgroundTransparency = 0 }):Play()
+		task.delay((tonumber(a) or 0.8) + 0.4, function()
+			TweenService:Create(black, TweenInfo.new(0.9), { BackgroundTransparency = 1 }):Play()
+			task.delay(1, function()
+				black:Destroy()
+			end)
+		end)
 	elseif kind == "Consigned" and typeof(a) == "Vector3" then
 		Sounds.Play("Unlatch", a) -- the crates open; the computer stands where they were
 	elseif kind == "Clues" and type(a) == "table" then
@@ -1754,7 +1764,7 @@ local function buildDevPanel()
 	addRow(devPanel, "Me", { { text = "Heal", fn = dev("Heal") }, { text = "Mats", fn = dev("Materials") }, { text = "Die", fn = dev("Kill"), color = Color3.fromRGB(140, 40, 40) } })
 	addRow(devPanel, "World", { { text = "Open", fn = dev("Open") } })
 	addRow(devPanel, "Train intro", { { text = "Replay", fn = dev("Intro") }, { text = "Leave", fn = dev("Intro", "Skip") } })
-	addRow(devPanel, "Go to", { { text = "Armory", fn = dev("Teleport", "Armory") }, { text = "Gate", fn = dev("Teleport", "RaidGate") } })
+	addRow(devPanel, "Go to", { { text = "Armory", fn = dev("Teleport", "Armory") }, { text = "Gate", fn = dev("Teleport", "RaidGate") }, { text = "Shaft", fn = dev("Teleport", "SumpShaft") } })
 	for _, d in { "Transit Hub", "Corp Plaza", "The Sprawl", "Blackout Zone" } do
 		addRow(devPanel, d, { { text = "Go", fn = dev("Teleport", "District_" .. d) }, { text = "Net", fn = dev("Teleport", "Terminal_" .. d) } })
 	end

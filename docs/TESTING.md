@@ -62,6 +62,34 @@ Replay the ride: F2 → "Train intro" → Replay.
 - [x] (replaced in round 2) The rider's poncho is a dark waxed cloth with a deep hood, no flat boxes; nothing pokes through it.
 - [x] (replaced in round 2) The pistol is the new one (black slide with grooves, suppressor) in the hand at the end of the ride.
 
+## Endeavor: the way down to the barrens (2026-11-12, Endeavor v93)
+Fastest way there: F2 → "Shaft" (next to Armory and Gate). The real way: the Sumps, south-east of the city, the
+middle island (the plaza with the water tower). Nothing marks it.
+- [ ] By the shaft on the Sumps plaza: a concrete collar with a rusted grate, a winch with a red lamp, a plate
+      "SERVICE . S4 . NO ENTRY". A low hum comes up through the grate.
+- [ ] Hold X "Descend": the screen goes black and you stand at the foot of a ladder in a dark shaft. The air turns
+      brown and close, and the light meter appears (it is a stealth level like the station).
+- [ ] East along the pipe gallery: an overseer stands at the far end looking your way. A grey fuse box on the left
+      wall cuts the hall's lamps (X "Cut").
+- [ ] The hall, "BARRENS . HALL 2": three rows of six pale figures, each at a crank with a screen that reads
+      OUTPUT 0.86 to 1.00 and changes every few seconds, a line from each head up into a cable along the ceiling.
+      Two overseers walk the aisles between the rows.
+- [ ] The office past the far end: a console reads "> BARRENS . HALL 2 / > HANDS 18/18 / > OUTPUT NOMINAL",
+      and two crates hold implants, arc cells, batteries and wire (more than a city cache). A third crate stands
+      at the gallery's hall end.
+- [ ] Take an overseer down and search him: rounds, arc cells, sometimes a baton or an implant.
+- [ ] Hold X "Unhook" at a figure: it slumps over its crank, its line and screen die, the two lamps of its row go
+      out, nearby overseers come to look, you lose some health, the screen drains for a moment and the top of the
+      screen says "> STACK . . . NO CARRIER". The console now reads HANDS 17/18, OUTPUT FALLING. If your stack was
+      uploaded, it no longer is: log in at your hideout computer again, or a death down here is final.
+- [ ] Die down there: you respawn up top as normal (it is a real death).
+- [ ] Hold X "Climb" at the ladder: black, then you stand on the plaza by the shaft.
+- [ ] Wait for the hour (or F2 → Cycle): the figure stands at its crank again, the row is lit, the overseers are
+      back and the crates are full.
+- [ ] The trail (over several hours): a "Shift Card" fragment lies near the shaft head; once read, a "Hands"
+      fragment can turn up in the hall. The Broker, the Fixer and the Dealer each have one new line about the
+      Sumps.
+
 ## Endeavor: station fixes (2026-11-12, Endeavor v92)
 Try it in the station (F2 → "Train intro" → Replay).
 - [ ] Left click with the Whisper: a pale tracer leaves the muzzle, the muzzle flashes, the hand kicks, dust jumps

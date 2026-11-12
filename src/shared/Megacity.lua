@@ -191,6 +191,9 @@ end
 -- The air profile name at a position (Config.Megacity.Air): a pocket's "Clean", a district's own,
 -- "Ash" in the frontier wastes, "City" in the core and the gaps.
 function Megacity.AirAt(position, frontierRegion)
+	if position.Y < -150 then
+		return "Under" -- the barrens under the city (server/Barrens.lua)
+	end
 	if Megacity.PocketAt(position) then
 		return "Clean"
 	end

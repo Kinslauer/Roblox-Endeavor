@@ -18,6 +18,7 @@ local CluesServer = require(script.Parent.CluesServer)
 local Contacts = require(script.Parent.Contacts)
 local Destruction = require(script.Parent.Destruction)
 local Frontier = require(script.Parent.Frontier)
+local Barrens = require(script.Parent.Barrens)
 local WorldPhase = require(script.Parent.WorldPhase)
 
 local Cycle = {}
@@ -52,6 +53,10 @@ function Cycle.Run()
 	Destruction.Reset()
 	local loose = clearLoose()
 	local stood = Frontier.StandDownAll()
+	local okB, errB = pcall(Barrens.Reset) -- the hour reaches the barrens too
+	if not okB then
+		warn("[Cycle] barrens reset failed:", errB)
+	end
 	local placed = Contacts.Place(rng)
 	local lines = {}
 	for id in Clues.Lines do

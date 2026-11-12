@@ -185,6 +185,18 @@ Items.LootTables = {
 		{ "Subsonic", 1, 2, 4 }, { "Scrap", 0.8, 1, 2 }, { "Ration", 0.45, 1, 1 }, { "Cloth", 0.4, 1, 2 }, { "Wire", 0.3, 1, 2 },
 		{ "Medkit", 0.15, 1, 1 }, { "ShockBaton", 0.08, 1, 1 },
 	},
+	-- the barrens under the Sumps (server/Barrens.lua): the stores of the hall, rich in implants and cells
+	Barrens = {
+		{ "ArcCell", 1, 10, 20 }, { "Battery", 0.9, 2, 4 }, { "Wire", 0.8, 3, 6 }, { "Medkit", 0.6, 1, 2 },
+		{ "ReflexOptic", 0.3, 1, 1 }, { "TargetingLens", 0.3, 1, 1 }, { "AudioPickup", 0.3, 1, 1 }, { "ChemSniffer", 0.3, 1, 1 },
+		{ "ServoArm", 0.3, 1, 1 }, { "ArcGauntlet", 0.25, 1, 1 }, { "NeuralCore", 0.3, 1, 1 }, { "OverclockCore", 0.2, 1, 1 },
+		{ "PlatedCore", 0.2, 1, 1 }, { "StriderLeg", 0.25, 1, 1 }, { "PistonLeg", 0.2, 1, 1 }, { "EchoArray", 0.2, 1, 1 }, { "BloodTracer", 0.2, 1, 1 },
+	},
+	-- the hall's overseers' pockets
+	Overseer = {
+		{ "Subsonic", 0.8, 2, 5 }, { "ArcCell", 0.7, 3, 8 }, { "Battery", 0.5, 1, 2 }, { "Medkit", 0.35, 1, 1 }, { "Ration", 0.4, 1, 1 },
+		{ "ShockBaton", 0.12, 1, 1 }, { "ReflexOptic", 0.06, 1, 1 }, { "NeuralCore", 0.05, 1, 1 },
+	},
 	Raider = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 },
 		{ "PipeClub", 0.1, 1, 1 }, { "ScavHelm", 0.08, 1, 1 }, { "ScrapVest", 0.08, 1, 1 }, { "ScrapGreaves", 0.08, 1, 1 },

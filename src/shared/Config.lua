@@ -35,6 +35,23 @@ Config.Tutorial = {
 -- Stealth (server/Stealth.lua, shared/Stealth.lua): light-level hiding, noise, guard awareness, takedowns.
 -- Exposure 0..1 = the level's ambient plus every lit StealthLight that can see you (falloff by distance, blocked by
 -- walls). A guard's sight range shrinks in the dark; crouching hides you more and silences your steps.
+-- The way down (server/Barrens.lua; canon docs/LORE.md "The corporations and the underground"): a service shaft in
+-- the Sumps plaza drops to a barrens hall under the city, where the brain slaves work their stations. One shared level.
+Config.Barrens = {
+	Enabled = true,
+	Head = Vector3.new(1105, 2, -1245), -- the shaft head on the Sumps plaza (ground top)
+	Origin = Vector3.new(6000, -300, 0), -- the level (floor of the shaft foot); above FallenPartsDestroyHeight (-500)
+	DescendHold = 1.5,
+	ClimbHold = 1.2,
+	FadeSeconds = 0.8, -- the client's black before the drop
+	Rows = 3, PerRow = 6, -- stations in the hall
+	UnhookHold = 2.5,
+	UnhookDamage = 30, -- the kick back through the conduit's own link
+	UnhookNoise = 40,
+	ScreenEvery = 2.5, -- seconds between output readings on the screens
+	Ambient = 0.05,
+}
+
 Config.Stealth = {
 	Tick = 0.1, -- guard brains and noise
 	ExposureTick = 0.2,
@@ -694,6 +711,7 @@ Config.Megacity = {
 		Toxic = { Density = 0.5, Offset = 0.3, Haze = 3.0, Glare = 0.15, Color = Color3.fromRGB(140, 160, 80), Decay = Color3.fromRGB(70, 90, 30), Tint = Color3.fromRGB(230, 255, 205), Saturation = -0.15, Motes = "Smut" },
 		Haze = { Density = 0.46, Offset = 0.32, Haze = 2.6, Glare = 0.2, Color = Color3.fromRGB(120, 110, 150), Decay = Color3.fromRGB(70, 50, 90), Tint = Color3.fromRGB(230, 232, 255), Saturation = -0.12 },
 		Ash = { Density = 0.4, Offset = 0.25, Haze = 2.4, Glare = 0.1, Color = Color3.fromRGB(140, 130, 120), Decay = Color3.fromRGB(80, 70, 66), Tint = Color3.fromRGB(240, 236, 230), Saturation = -0.3, Motes = "Ash" },
+		Under = { Density = 0.3, Offset = 0.1, Haze = 1.4, Glare = 0, Color = Color3.fromRGB(70, 60, 56), Decay = Color3.fromRGB(30, 26, 24), Tint = Color3.fromRGB(255, 226, 210), Saturation = -0.35, Motes = "Smut" },
 		Clean = { Density = 0.22, Offset = 0.15, Haze = 0.6, Glare = 0.3, Color = Color3.fromRGB(170, 210, 200), Decay = Color3.fromRGB(90, 130, 120), Tint = Color3.fromRGB(240, 255, 240), Saturation = 0.12, Motes = "Pollen" },
 	},
 	AirBlend = 2.5, -- seconds to blend from one air to the next

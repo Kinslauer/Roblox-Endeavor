@@ -29,6 +29,7 @@ local AMBIENT = {
 	Smog = { AmbCity = 0.15, AmbWind = 0.15, AmbIndustry = 0.4, AmbGarden = 0 },
 	Toxic = { AmbCity = 0.12, AmbWind = 0.25, AmbIndustry = 0.25, AmbGarden = 0 },
 	Ash = { AmbCity = 0.05, AmbWind = 0.35, AmbIndustry = 0.05, AmbGarden = 0 },
+	Under = { AmbCity = 0, AmbWind = 0, AmbIndustry = 0.5, AmbGarden = 0 },
 	Clean = { AmbCity = 0.06, AmbWind = 0.1, AmbIndustry = 0, AmbGarden = 0.35 },
 }
 

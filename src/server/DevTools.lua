@@ -61,6 +61,9 @@ function actions.Teleport(player, arg)
 			end
 		end
 	end
+	if arg == "SumpShaft" then
+		return teleport(player, Config.Barrens.Head + Vector3.new(0, 0, -8))
+	end
 	local site = tonumber(arg:match("^Site_(%d+)$"))
 	if site and Hideouts.Sites[site] then
 		return teleport(player, Hideouts.Sites[site].Position + Vector3.new(0, 4, 0))

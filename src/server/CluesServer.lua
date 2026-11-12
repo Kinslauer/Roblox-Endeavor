@@ -16,6 +16,7 @@ local SC = require(Shared.Clues)
 local PlayerData = require(script.Parent.Common.PlayerData)
 local City = require(script.Parent.City)
 local Terminal = require(script.Parent.Terminal)
+local Barrens = require(script.Parent.Barrens)
 
 local Clues = {}
 local live = {} -- id -> { Pickup, Anomaly }
@@ -54,6 +55,17 @@ local function spotFor(where, rng)
 		local s = F.Sites[rng:NextInteger(1, #F.Sites)]
 		local a = rng:NextNumber(0, math.pi * 2)
 		return s.Position + Vector3.new(math.cos(a) * 16, 0, math.sin(a) * 16)
+	elseif where == "Sumps" then
+		-- by the shaft head on the Sumps plaza
+		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(9, 16)
+		return Config.Barrens.Head + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+	elseif where == "Barrens" then
+		-- down in the hall (server/Barrens.lua); the spot carries its own floor height
+		local spot = Barrens.FragmentSpot(rng)
+		if spot then
+			return spot, spot.Y
+		end
+		return Config.Barrens.Head, nil
 	elseif where == "Pocket" then
 		local pk = Megacity.Pockets[rng:NextInteger(1, #Megacity.Pockets)]
 		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0.2, 0.55) * pk.Radius
@@ -68,8 +80,8 @@ local function needsList(def)
 	return table.concat((def.Rule and def.Rule.Needs) or {}, ",")
 end
 
-local function place(id, def, position)
-	local y = ground(position.X, position.Z)
+local function place(id, def, position, floor)
+	local y = floor or ground(position.X, position.Z)
 	local base = Vector3.new(position.X, y, position.Z)
 	local pickup = Instance.new("Part")
 	pickup.Name = "Fragment"

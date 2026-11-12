@@ -580,7 +580,7 @@ end
 --       Post (CFrame to stand at and face along), Torch (bool), Type (NPC type, default "Sentry"), Parent
 function Stealth.SpawnGuard(position, opts)
 	opts = opts or {}
-	local g = { aware = {}, seen = {}, state = "Patrol", stateAt = os.clock(), level = opts.Level, patrol = opts.Patrol, looks = opts.Looks,
+	local g = { loot = opts.Loot, aware = {}, seen = {}, state = "Patrol", stateAt = os.clock(), level = opts.Level, patrol = opts.Patrol, looks = opts.Looks,
 		wait = opts.Wait or 3, post = opts.Post, index = 1, waitUntil = 0, searchUntil = 0, lastSeenAt = 0, nav = { at = 0, movedAt = 0 } }
 	local model = NPCs.Spawn(opts.Type or "Sentry", position, {
 		Parent = opts.Parent or opts.Level,

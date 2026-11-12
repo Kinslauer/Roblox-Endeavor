@@ -355,6 +355,17 @@ Client tab screenshot, because Andy cannot read logs another way.
   teleports to Config.War.HomePlaceId. Stasis tanks carry "LINE 9 . STACK HARDWARE . nn/40" plates. Green pockets
   stand outside the hour: Cycle spares loose lootables inside them, the client skips the colour drain and most of the
   white-out there; fragment "Pressed" (Where = "Pocket"); one new hinting line per contact.
+- The way down (owner, 2026-11-12: "players should be able to go down there, either prompted by incentive or story";
+  chose "Build it: story and incentive"): `src/server/Barrens.lua` (Init from Main, isolated in a pcall; Reset from
+  Cycle.Run). The shaft head on the Sumps plaza (Config.Barrens.Head, prompt "Descend") -> one shared stealth level at
+  Config.Barrens.Origin (6000, -300, 0; keep above FallenPartsDestroyHeight -500): shaft foot ("Climb"), pipe gallery
+  with a "Hall" Breaker, the hall (Rows x PerRow stations: Rigs.Statue "Raider" in pale SmoothPlastic, crank, screen
+  readout, line into the trunk; circuits Row1..3), office (console HANDS/OUTPUT, stores from Items.LootTables.Barrens,
+  the gallery crate Overseer). Overseers = Stealth.SpawnGuard with opts.Loot "Overseer" (g.loot). Barrens.Unhook:
+  slump, row circuit off, Stealth.Noise, UnhookDamage, Knowledge.Uploaded = false ("> STACK . . . NO CARRIER"),
+  World "Flicker". Player attr `Below`; Leave on climb/death/new character/leave. Client World "Shaft" = fade to
+  black. Air "Under" (Megacity.AirAt below Y -150). Clues Where "Sumps"/"Barrens" (fragments ShiftCard, Hands; spots
+  may carry their own floor Y), one line per contact. F2 "Shaft". Tests: "barrens:" in scenario.lua.
 - Lore (owner, 2026-10-31; docs/DESIGN.md "The stack"): conduits upload their consciousness stack through the hideout
   computer (first log-in = initialization, `Knowledge.Uploaded`); every death is a reboot of the stack; on the Front the
   stack links to the recruit's; the rich uploaded and escaped the world. Mechanically: Knowledge survives permadeath only
@@ -433,6 +444,9 @@ Client tab screenshot, because Andy cannot read logs another way.
   The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
 
 ## State (2026-11-12)
+- Endeavor v93 (2026-11-12): the way down to the barrens (Sumps shaft, Barrens Hall 2, unhooking, the trail). Andy's
+  lore answers are all in docs/LORE.md. Unseen in game: the hall's look, the statues' height at the cranks, the
+  overseers' routes. Awaits Andy: docs/TESTING.md "Endeavor: the way down to the barrens".
 - Endeavor v92 (2026-11-12): station fixes after Andy's play of v86 ("handles INCREDIBLY well"): guards path-find,
   the Whisper shoots visibly and headshots count, every guard can be searched, the whole UI scales with the screen.
   Real server: start 12.6s, 0 warnings; routes found from every guard post to the fuse box, up the stairs and into
