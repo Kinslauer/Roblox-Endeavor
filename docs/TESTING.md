@@ -1154,7 +1154,7 @@ companions are plain parts for now.
 - [ ] Front: with thralls sent there, deploy a recruit. Up to two of them stand up at your base in your side's kit,
       walk toward the hill and shoot the other side. One that falls is gone for good ("> UNIT nnnn . LOST").
 
-### Endeavor: the gun in the hand and fingers on every body (2026-11-12, Endeavor vNEXT)
+### Endeavor: the gun in the hand and fingers on every body (2026-11-12, Endeavor v114)
 The Front's gun handling carried over to Endeavor, seen over the shoulder on your own gun and everyone else's.
 Nothing here was seen in game before publishing.
 - [ ] Fire the Duty Pistol, the Carbine or the AK-47: the slide (or the bolt carrier) snaps back and forward on every
@@ -1173,5 +1173,10 @@ Nothing here was seen in game before publishing.
 - [ ] In a guard or a two-handed swing, when your off hand comes to the weapon, its fingers close on the haft too.
 - [ ] With a gun: the trigger finger lies straight along the gun until you aim (RMB), then it goes to the trigger. A
       rifle's off hand closes round the handguard; during a reload it closes on the magazine.
+- [ ] Melee weapons now sit a little deeper in the hand (in the palm, where the fingers close), not out at the
+      fingertips. Check that swings and the guard still look right.
+- [ ] Known: pistols are still held from the top of the slide, out past the fingertips, with the grip along the
+      fingers (that is how their grip and the pistol arm poses were made). The fingers close as if on a grip. Fixing
+      it means re-seating the pistols and redoing the pistol arm poses: tell Claude if it bothers you.
 - [ ] Look for: fingers that sit in the wrong place on a big body (Brute, Warden), hands that look too big or too
       small for the sleeve, a gun that twists too far in the hand when it kicks, frame rate in a crowd.

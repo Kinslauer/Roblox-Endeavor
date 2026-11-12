@@ -828,7 +828,41 @@ Client tab screenshot, because Andy cannot read logs another way.
   the holding frame). Tests: "arms:", "thrall:", "companion:", "proxy:", "bay:" in scenario.lua (at the end), "make:"
   in client.lua, "thralls:" in war.lua. Not done: companion models are parts with no animation; NPCs do not attack
   companions; the drone and thralls on the Front are not seen by name; the invader's damage is the type's own.
+- The gun in the hand and fingers on every body (owner, 2026-11-12, of the Front's v40-v43 gun work: "Can anything
+  be gleamed from this for endeavor's side? They can also go first person, but it isnt a priority. I do think they
+  should also get fingers, therefore theyd also need them in third person. Your call, i really want the melee to
+  shine ... the particle effects sounds and everything else should be portable"). `src/shared/GunMotion.lua` and
+  `src/shared/Fingers.lua` moved from war/client (the Front's files there forward to them). GunMotion shape
+  `Manual` (a hand-racked gun: a shot does not cycle, the rack's Back mark throws the case) and `Marks` in Step's
+  answer. `src/client/GunFeel.lua` (Init and reach through `Handling.GunFeel`; Config.GunFeel): every body within
+  Range holding a gun (players + "NPC"-tagged) gets a GunMotion on its real HeldWeapon: pieces move by rewriting
+  the welds locally (each part's Weld.C0 to the first part, the first part through Grip.C1; `D = F * whole * m *
+  F^-1`, F = Grip.C1^-1 * PISTOL_TURN for whole pistols), whole-gun moves x WholeShare plus a spring kick per shot;
+  `Shot(char)` -> muzzle point (Main's "Bolt" tracer starts there; flash with a shadow light within ShadowWithin,
+  smoke puff), `Reload(char, seconds)` = MagOut (Keep) / MagIn / Rack or Release by Config.GunFeel.Reload shares of
+  the server's time, `Rack`, `Click`, `LeftGrip(char)`; an IKControl "GunFeelLeft" on the left arm, weighted by
+  the move; cases and dropped magazines in the camera. Sounds (tools/sounds/gunfeel.py): BrassTink, MagOut, MagIn,
+  SlideBack, SlideHome, ActionCycle, MagDrop, ShotTail; shots past FarSound are ShotDistant. `src/client/Hands.lua`
+  (`Handling.Hands`; Config.Hands): the nearest Max bodies within Range hide the skin piece "Hands_*" (attribute
+  `JointedHands`, first person keeps it hidden) and wear two 17-piece hands from ReplicatedStorage.ViewHands (the
+  Endeavor server clones Assets.FrontBodies.Hands there in the background), scaled by hand size (Reference = the
+  soldier's hand), placed with BulkMoveTo at render priority 2006. A hold is solved once per kind/side/aim/radius
+  against an analytic handle in the palm (`handleCast`), never by rays per body: Grip/Haft (melee, radius from the
+  weapon's `GripRadius`), Fist, Pistol/Rifle (index along the frame, on the trigger while `Aiming`), Support, Cup,
+  Mag, Pinch, Grab, Open; the off hand takes the haft's hold when its palm comes within OffHandReach of the weapon
+  line. Melee handles are seated in the palm: `HeldWeapons.MeleeGrip` (the Grip_ part's radius out from the palm
+  side at the palm's height, scaled to the hand, along -0.3 as before); verified on real Conduit/Brute/Raider
+  bodies: finger pieces sit on the handle's surface (0.175 for a 0.14 grip). Pistols are NOT re-seated: on the real
+  body their grip runs along the fingers and the slide sits past the fingertips (GRIPS.Pistol and the pistol arm
+  animations were made together); fixing that is re-seating plus redoing Aim_Pistol / Pistol_Ready /
+  Reload_Pistol. First person in Endeavor got nothing new (not a priority). Tests: "gunfeel:", "hands:" in
+  client.lua.
 ## State (2026-11-12)
+- Endeavor v114 + Front v45 (2026-11-12): the Front's gun handling on every gun in Endeavor and jointed fingers on
+  every body. Real server: start 7.1s, 0 warnings (Front 5.3s, 0 warnings); on real bodies the Duty Pistol slide
+  travels 0.46 back and home, the Carbine carrier 0.33, the Whisper does not cycle, magazines travel 1.2 and seat
+  exactly, the left arm's IK is used. Unseen in game: all of it. Awaits Andy: docs/TESTING.md "Endeavor: the gun in
+  the hand and fingers on every body".
 - Endeavor v112 + Front v44 (2026-11-12): things you make, round 7 and the last of the reference picks (the Breaker
   and Cable arms on K held, the Neural Shackle and the holding frame, thralls released / sent to the Front /
   escaping as invaders, dogs, cyberdogs, drones and hybrids, the proxy frame's humanoid drone, thralls fighting on
