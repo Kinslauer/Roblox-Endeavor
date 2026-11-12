@@ -67,6 +67,8 @@ local function attMult(w, key)
 	return m
 end
 
+Guns.AttMult = attMult
+
 local function busy(w, seconds)
 	w.Busy = math.max(w.Busy, os.clock()) + seconds
 end
@@ -206,7 +208,7 @@ end
 -- raycasting each segment, until it hits something or runs out of range.
 function Guns.Shoot(shooter, w, origin, dir, onHit)
 	local ammo = Firearms.Ammo[w.Def.Ammo]
-	local spreadDeg = (if w.Aiming then w.Def.AdsSpread else w.Def.Spread) * Firearms.SpreadMult(w.Parts) * (w.Steady or 1)
+	local spreadDeg = (if w.Aiming then w.Def.AdsSpread else w.Def.Spread) * Firearms.SpreadMult(w.Parts) * (w.Steady or 1) * attMult(w, "Spread")
 	local spread = math.rad(spreadDeg)
 	local yaw, pitch = rng:NextNumber(-spread, spread), rng:NextNumber(-spread, spread)
 	dir = (CFrame.lookAt(Vector3.zero, dir) * CFrame.Angles(pitch, yaw, 0)).LookVector

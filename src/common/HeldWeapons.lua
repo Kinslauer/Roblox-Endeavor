@@ -7,6 +7,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Assets = require(ReplicatedStorage.Shared.Assets)
+local GunParts = require(ReplicatedStorage.Shared.GunParts)
 local ModelAssets = require(script.Parent.ModelAssets)
 
 local HeldWeapons = {}
@@ -29,29 +30,71 @@ end
 
 -- Attaches the model for weaponId (an Assets.Weapons key) and returns it, or nil (fists, no
 -- asset, no hand). Replaces whatever was held before.
-function HeldWeapons.Attach(char, weaponId)
+-- Puts a gun together from its components (shared/GunParts): the receiver and the chosen barrel share the gun's
+-- origin, the muzzle device and the accessories go on the barrel's and the receiver's anchors. Every component
+-- carries a speck named Ref at its own origin. Returns a Model whose origin is the world origin, or nil if a
+-- component did not load.
+function HeldWeapons.Assemble(weaponId, attachments)
+	local pieces = GunParts.Pieces(weaponId, attachments)
+	if not pieces then
+		return nil
+	end
+	local holder = Instance.new("Model")
+	for _, piece in pieces do
+		local template = ModelAssets.Template(piece.Asset)
+		if not template then
+			holder:Destroy()
+			return nil
+		end
+		local clone = template:Clone()
+		local ref = if clone:IsA("BasePart") then nil else clone:FindFirstChild("Ref_Gunmetal", true)
+		local from = if ref then ref.Position elseif clone:IsA("Model") then clone:GetPivot().Position else clone.Position
+		local shift = (piece.At or Vector3.zero) - from
+		local parts = if clone:IsA("BasePart") then { clone } else clone:GetDescendants()
+		for _, p in parts do
+			if p:IsA("BasePart") and p ~= ref then
+				p.CFrame += shift
+				p:SetAttribute("Component", piece.Name)
+				p.Parent = holder
+			end
+		end
+		if clone.Parent == nil and not clone:IsA("BasePart") then
+			clone:Destroy()
+		end
+	end
+	return holder
+end
+
+function HeldWeapons.Attach(char, weaponId, attachments)
 	local held = char and char:FindFirstChild("HeldWeapon")
-	if held and held:GetAttribute("WeaponId") == weaponId then
+	local build = if weaponId and GunParts.Guns[weaponId] then GunParts.Key(weaponId, attachments) else ""
+	if held and held:GetAttribute("WeaponId") == weaponId and (held:GetAttribute("Build") or "") == build then
 		return held
 	end
 	HeldWeapons.Clear(char)
 	local entry = weaponId and Assets.Weapons[weaponId]
+	local spec = weaponId and GunParts.Guns[weaponId]
 	local hand = char and char:FindFirstChild("RightHand")
-	if not (entry and hand) then
+	if not ((entry or spec) and hand) then
 		return nil
 	end
-	local template = ModelAssets.Template(entry.Id)
-	if not template then
-		return nil
-	end
-	local model = template:Clone()
-	if model:IsA("BasePart") then
-		local holder = Instance.new("Model")
-		model.Parent = holder
-		model = holder
+	local model = spec and HeldWeapons.Assemble(weaponId, attachments)
+	local assembled = model ~= nil
+	if not model then
+		local template = entry and ModelAssets.Template(entry.Id)
+		if not template then
+			return nil
+		end
+		model = template:Clone()
+		if model:IsA("BasePart") then
+			local holder = Instance.new("Model")
+			model.Parent = holder
+			model = holder
+		end
 	end
 	model.Name = "HeldWeapon"
 	model:SetAttribute("WeaponId", weaponId)
+	model:SetAttribute("Build", build)
 	Assets.Dress(model)
 	local parts = {}
 	for _, p in model:GetDescendants() do
@@ -68,7 +111,7 @@ function HeldWeapons.Attach(char, weaponId)
 	-- to it with their authored offsets
 	local primary = parts[1]
 	model.PrimaryPart = primary
-	local origin = model:GetPivot()
+	local origin = if assembled then CFrame.new() else model:GetPivot()
 	for i = 2, #parts do
 		local weld = Instance.new("Weld")
 		weld.Part0, weld.Part1 = primary, parts[i]
@@ -78,7 +121,7 @@ function HeldWeapons.Attach(char, weaponId)
 	local grip = Instance.new("Weld")
 	grip.Name = "Grip"
 	grip.Part0, grip.Part1 = hand, primary
-	grip.C0 = GRIPS[entry.Grip or "Melee"] or GRIPS.Melee
+	grip.C0 = GRIPS[(if assembled then spec.Grip else entry.Grip) or "Melee"] or GRIPS.Melee
 	grip.C1 = origin:ToObjectSpace(primary.CFrame)
 	grip.Parent = primary
 	model.Parent = char

@@ -31,7 +31,17 @@ VARIANTS = {
     "Rifle16": dict(barrel=16.0, rail=10.0, chart=True, title="RIFLE  -  LOWER L1-L35, UPPER U1-U8, THE REST B1-B10"),
     "Rifle10": dict(barrel=10.5, rail=9.0, can=6.5, light=True),
     "Rifle20": dict(barrel=20.0, rail=13.0),
+    # the Front's M16A1, as components (no accessories built in)
+    "AR20": dict(barrel=20.0, rail=12.0), "AR16": dict(barrel=16.0, rail=10.0), "AR10": dict(barrel=10.5, rail=7.0),
 }
+
+# which component each moving group belongs to (gunparts.export_components)
+COMPONENTS = {"Upper": "Receiver", "Lower": "Receiver", "Charging": "Receiver", "Carrier": "Receiver", "Trigger": "Receiver",
+              "Stock": "Receiver", "Magazine": "Receiver", "Barrel": "Barrel", "Muzzle": "Muzzle"}
+
+def anchors(o):
+    BL, RL = o.get("barrel", 16.0), o.get("rail", 10.0)
+    return {"Muzzle": (0, 3.4 + BL, 0), "Optic": (0, -1.2, 0.92), "Under": (0, 3.4 + 0.3 + RL * 0.55, -0.78), "MuzzleEnd": (0, 3.4 + BL + 2.0, 0)}
 
 @platform("rifle", "Rifle", VARIANTS, origin=(0, OY, OZ))
 def build(o):

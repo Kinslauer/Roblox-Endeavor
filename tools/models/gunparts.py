@@ -22,7 +22,7 @@ from mathutils import Matrix, Vector
 
 K = 0.19                                     # studs per inch: a 1911 comes out 1.6 studs long, an AR carbine ~6.5
 PAL = {"Gunmetal": (0.05, 0.05, 0.055), "Polymer": (0.025, 0.025, 0.03), "GlassDark": (0.08, 0.1, 0.13),
-       "HideLeather": (0.2, 0.12, 0.07)}
+       "HideLeather": (0.2, 0.12, 0.07), "Wood": (0.22, 0.11, 0.05)}
 
 T = lambda x, y, z: Matrix.Translation((x, y, z))
 RX = lambda d: Matrix.Rotation(math.radians(d), 4, "X")
@@ -203,7 +203,10 @@ def platform(name, kind, variants, origin):
     """kind: "Pistol" or "Rifle" (the grip convention); origin: the inch point that becomes the model origin;
     variants: {variant: options}. The decorated builder takes options and returns [Part]."""
     def wrap(fn):
-        PLATFORMS[name] = dict(build=fn, kind=kind, variants=variants, origin=Vector(origin))
+        mod = sys.modules[fn.__module__]
+        # COMPONENTS {group: component} and anchors(opts) {name: inch point} make a platform swappable in game
+        PLATFORMS[name] = dict(build=fn, kind=kind, variants=variants, origin=Vector(origin),
+                               components=getattr(mod, "COMPONENTS", None), anchors=getattr(mod, "anchors", None))
         return fn
     return wrap
 
@@ -278,6 +281,45 @@ def export_game(name, objs):
         assert n < 20000, f"{o.name}: {n} tris"
     export_fbx(os.path.join(OUT, f"Gun_{name}.fbx"), objs)
     print("EXPORTED", name, len(objs), "parts", tris(objs), "tris", [o.name for o in objs])
+
+# ---------------------------------------------------------------- components (2026-11-12, Andy: "there can be swapped in
+# barrels of differing sizes, attachments, muzzle devices"): a gun leaves here as separate models the game puts
+# together. Receiver and Barrel keep the gun's origin (the grip), so they line up when placed on the same point; a
+# Muzzle device and every accessory has its own origin (the start of the threads, the mount) and goes on an anchor.
+# Anchors are written to Gun_<variant>.json in studs, in Roblox axes (x, up, forward) from the gun's origin.
+def export_components(pl, vname, opts, only=None):
+    import json
+    P = PLATFORMS[pl]
+    comp_of = P["components"]
+    anc = P["anchors"](opts) if P["anchors"] else {}
+    reset()
+    parts = [p for p in P["build"](opts) if not p.hidden and (only is None or comp_of.get(p.group, "Receiver") in only)]
+    objs = [p.make() for p in parts]
+    by = {}
+    for o in objs:
+        by.setdefault(comp_of.get(o["group"], "Receiver"), []).append(o)
+    done = {}
+    for comp, group in by.items():
+        own = Vector(anc["Muzzle"]) if comp == "Muzzle" else P["origin"]
+        game = to_game(group, "Rifle" if comp in ("Muzzle", "Acc") else P["kind"], own)
+        name = vname if comp == "Acc" else f"{vname}_{comp}"
+        # a speck at the component's origin: the game reads the origin from it (an upload's own pivot is not
+        # reliable for a single mesh) and then removes it
+        rb = bmesh.new()
+        bmesh.ops.create_cube(rb, size=0.02)
+        ref = obj_from_bmesh("Ref_Gunmetal", rb, mat("Gunmetal"))
+        ref.name = "Ref_Gunmetal"
+        game.append(ref)
+        export_game(name, game)
+        done[comp] = tris(game)
+        for g_ in game:
+            bpy.data.objects.remove(g_)
+    for o in objs:
+        bpy.data.objects.remove(o)
+    rel = {k: [round((v[0] - P["origin"].x) * K, 4), round((v[2] - P["origin"].z) * K, 4), round((v[1] - P["origin"].y) * K, 4)]
+           for k, v in anc.items()}
+    json.dump({"variant": vname, "anchors": rel, "tris": done}, open(os.path.join(OUT, f"Gun_{vname}.json"), "w"))
+    print("COMPONENTS", vname, done, rel)
 
 # ---------------------------------------------------------------- stills
 def _cam(at, look, ortho=None, lens=50):
@@ -408,7 +450,7 @@ def stills(name, objs, title, size=(1600, 1000)):
 def run(argv):
     import importlib
     sys.modules.setdefault("gunparts", sys.modules[__name__])
-    for mod in ("gun_hammer", "gun_striker", "gun_revolver", "gun_rifle"):
+    for mod in ("gun_hammer", "gun_striker", "gun_revolver", "gun_rifle", "gun_ak", "gun_garand", "gun_acc"):
         if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), mod + ".py")):
             importlib.import_module(mod)
     flags = {a for a in argv if a.startswith("--")}
@@ -424,6 +466,9 @@ def run(argv):
                 objs = build_parts(pl, opts)
                 print("PARTS", vname, len(objs), "parts", tris(objs), "tris")
                 stills(vname, objs, opts.get("title", vname))
+            if "--components" in flags:
+                only = next((set(f.split("=")[1].split(",")) for f in flags if f.startswith("--only=")), None)
+                export_components(pl, vname, opts, only)
             if "--export" in flags:
                 objs = build_parts(pl, opts)
                 game = to_game(objs, P["kind"], P["origin"])

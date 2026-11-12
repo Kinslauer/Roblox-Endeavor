@@ -204,7 +204,11 @@ Assets.Weapons = {
 	M14 = { Id = 95671280962993, Grip = "Rifle" },
 	Mosin = { Id = 75786990315304, Grip = "Rifle" },
 	Makarov = { Id = 132304088878022, Grip = "Rifle" },
-	M1911 = { Id = 79755833559332, Grip = "Rifle" },
+	M1911 = { Id = 134129735068524, Grip = "Pistol" }, -- Assets.GunKit.Hammer1911 (2026-11-12: the Front's guns come from the parts library)
+	Glock17 = { Id = 72220435844363, Grip = "Pistol" }, -- GunKit.Striker17
+	Revolver = { Id = 120759454158266, Grip = "Pistol" }, -- GunKit.Revolver4
+	-- AKM, AK47, M16A1, M14 and M1Garand are put together from components (shared/GunParts); the ids above them
+	-- here are the old one-piece models, used only if a component fails to load
 }
 
 -- The Front's battlefield props (see war/server/Battlefield.lua and Soldiers.lua), tools/models/front.py.

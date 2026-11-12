@@ -44,7 +44,7 @@ local function pushWeapon(player)
 	local held = soldiers[player]
 	if player.Character and held then
 		local w = held.Weapons[held.Active]
-		HeldWeapons.Attach(player.Character, w and w.Id)
+		HeldWeapons.Attach(player.Character, w and w.Id, w and w.Attachments)
 		local worn = {}
 		if held.Armor then
 			table.insert(worn, held.Armor.Id)
@@ -826,7 +826,7 @@ local function onFire(player, dir)
 			local dealt = Soldiers.Damage(model, damage, player, zone, pen, "Bullet")
 			Remotes.Weapon:FireAllClients("Impact", at, Vector3.yAxis, dealt > 0)
 		end)
-		Remotes.Weapon:FireClient(player, "Recoil", w.Def.Recoil[1] * Firearms.RecoilMult(w.Parts) * MV.Stance[s.Stance or "Stand"].Recoil, w.Def.Recoil[2] * MV.Stance[s.Stance or "Stand"].Recoil)
+		Remotes.Weapon:FireClient(player, "Recoil", w.Def.Recoil[1] * Firearms.RecoilMult(w.Parts) * MV.Stance[s.Stance or "Stand"].Recoil * Guns.AttMult(w, "Recoil"), w.Def.Recoil[2] * MV.Stance[s.Stance or "Stand"].Recoil)
 	elseif result ~= "busy" then
 		Remotes.Weapon:FireClient(player, "Click", result)
 	end

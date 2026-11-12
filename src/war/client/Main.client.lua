@@ -419,7 +419,7 @@ local function renderApp()
 	local lo = s.Loadout or {}
 	row(("Primary: %s   Sidearm: %s   Armor: %s   Helmet: %s"):format(lo.Primary or "-", lo.Sidearm or "-", lo.Armor or "-", lo.Helmet or "-"), {})
 	local atts = lo.Attachments or {}
-	row(("Optic: %s   Muzzle: %s   Grip: %s"):format(atts.Optic or "-", atts.Muzzle or "-", atts.Grip or "-"), {})
+	row(("Barrel: %s   Optic: %s   Muzzle: %s   Grip: %s"):format(atts.Barrel or "standard", atts.Optic or "-", atts.Muzzle or "-", atts.Grip or "-"), {})
 	row("-- LOCKER (X = put in next order, Fix = repair) --", {})
 	local ids = {}
 	for id in s.Locker do table.insert(ids, id) end
@@ -436,8 +436,9 @@ local function renderApp()
 				Remotes.WarOrder:FireServer(order)
 			end })
 		elseif item.Kind == "Attachment" then
-			table.insert(buttons, { text = "Mount", fn = function()
-				local a = table.clone(atts); a[item.Slot] = id
+			local mounted = atts[item.Slot] == id
+			table.insert(buttons, { text = if mounted then "Remove" else "Mount", fn = function()
+				local a = table.clone(atts); a[item.Slot] = if mounted then nil else id
 				Remotes.WarOrder:FireServer({ Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = a })
 			end })
 		elseif item.Kind == "Armor" then

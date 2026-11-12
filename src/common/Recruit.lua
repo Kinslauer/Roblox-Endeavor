@@ -126,7 +126,7 @@ function Recruit.Order(war, loadout)
 	end
 	if type(loadout.Attachments) == "table" and order.Primary then
 		local slots = Firearms.Defs[order.Primary].Slots
-		for _, slot in { "Optic", "Muzzle", "Grip" } do
+		for _, slot in { "Optic", "Muzzle", "Grip", "Barrel" } do
 			local id = loadout.Attachments[slot]
 			if id ~= nil then
 				if type(id) ~= "string" or not war.Locker[id] or not Firearms.Attachments[id] or Firearms.Attachments[id].Slot ~= slot or not table.find(slots, slot) then

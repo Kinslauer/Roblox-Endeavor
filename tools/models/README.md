@@ -22,6 +22,8 @@ The game loads them by asset ID (`src/shared/Assets.lua`) and falls back to gene
     $BLENDER -b --python tools/models/industry.py         # the megacity kit: smokestack, tank, cooling tower, pylon, blast furnace, junk pile, giant tree
     $BLENDER -b --python tools/models/train.py           # the realistic pass: Line 9 car, door leaf, the skinned live cloak (bones R<row>C<col> + Hood), on the texture library
     $BLENDER -b --python tools/models/gunparts.py -- <hammer|striker|revolver|rifle|all> [variant] --stills --export   # every gun part; charts -> out/chart_*.png, game models -> out/Gun_<Variant>.fbx
+    $BLENDER -b --python tools/models/gunparts.py -- <ak|garand|rifle|acc> <variant> --components [--only=Barrel,Muzzle]   # one FBX per component (out/Gun_<Variant>_<Component>.fbx) + anchors (out/Gun_<Variant>.json)
+    python3 tools/models/gunparts_lua.py   # anchors + uploaded ids -> src/shared/GunParts.lua
     $BLENDER -b --python tools/models/render_intro.py [-- shot ...]   # Cycles stills (aisle rider length outside pistol pistol_q kit cloak) -> out/render_*.png (CPU, ~1-2 min a shot)
     python3 tools/textures/gen.py && $BLENDER -b --python tools/textures/swatches.py   # the material library -> tools/textures/out
     python3 tools/models/preview.py out/X_preview.obj out/X.png   # software preview (Pillow), no OpenGL needed

@@ -36,7 +36,7 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (299 checks), `war` = Front (88), `warclient` = the Front client plays the first link's stages, the screen and the controls (25), `stress` = budgets under load (5), `client` = the
+  `scenario` = Endeavor end to end (316 checks), `war` = Front (101), `warclient` = the Front client plays the first link's stages, the screen and the controls (25), `stress` = budgets under load (5), `client` = the
   Endeavor client boots + movement, dodge, animation, guard, air and handling checks (44). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
@@ -457,6 +457,25 @@ Client tab screenshot, because Andy cannot read logs another way.
   Rigs.Statue, `Assets.FrontWorld.Calcified` = the soldier crawling / kneeling (figure.py `Figure.static`, statics=
   on the @figure). Front client: Skin.Start, first person shows every skin piece but HeadPiece ones.
   The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
+- Guns from components (owner, 2026-11-12: "The weapons should be made from the components we animated before, and
+  there can be swapped in barrels of differing sizes, attachments, muzzle devices etc. All the cold war era weapons
+  ... should be remade in game, like the glock, ak47, m1 garand"). A Front rifle is assembled in game, not uploaded
+  whole. Platforms `tools/models/gun_ak.py` (AK, AKShort, AKLong, AK47), `gun_garand.py` (Garand and M14, three
+  barrels each), `gun_rifle.py` (AR20/AR16/AR10), `gun_acc.py` (Suppressor, Compensator, ScopePSO, ScopeColt,
+  Foregrip); each has `COMPONENTS` (parts group -> Receiver/Barrel/Muzzle) and `anchors(o)` (Muzzle, Optic, Under,
+  MuzzleEnd). `gunparts.py --components [--only=]` writes one FBX per component (muzzle devices and accessories at
+  their own origin, plus a speck "Ref_Gunmetal" at the origin) and `out/Gun_<Variant>.json`; `gunparts_lua.py`
+  writes `src/shared/GunParts.lua` (`Guns[id] = { Grip, Receiver, Muzzle, Optic, Barrels = { Standard/Short/Long =
+  { Asset, Muzzle, Under, End } } }`, `Accessories`, `Pieces(gunId, attachments)`, `Key`, `MuzzleEnd`). Verified on a
+  real server: a component's pivot is the FBX origin, unrotated; Roblox (x, y, z) = Blender (x, z, y).
+  `HeldWeapons.Assemble(weaponId, attachments)` clones the pieces to their anchors; `HeldWeapons.Attach(char, id,
+  attachments)` uses it when GunParts has the gun (attribute `Build` = the key; one-piece `Assets.Weapons` model if a
+  component fails). Firearms: slot "Barrel" with `BarrelShort` / `BarrelLong` (Velocity, Spread, Recoil, Loudness
+  multipliers; `Guns.AttMult`), new Defs AK47, M1Garand (8 rounds, semi), Glock17, Revolver (6, semi; the pistols use
+  whole GunKit models: Front attachments only fit the primary). The app's attachment button reads "Remove" when
+  mounted. Still one-piece old models: SKS, Mosin, Makarov. Not done: the tracer still starts at the eye
+  (`GunParts.MuzzleEnd` is there for it); Endeavor still uses whole guns (add a `Weapons.Calibers` row when
+  component guns go there). Tests: "guns:" in war.lua.
 
 ## State (2026-11-12)
 - Endeavor v95 (2026-11-12): calibres and plate. The Whisper is a .22 (stopped by any plate, one round through
@@ -496,6 +515,9 @@ Client tab screenshot, because Andy cannot read logs another way.
   carrying bodies, the wall); v85 the same day: playtest fixes (pistol every ride, third person, quiet screen, cloak,
   takedown alignment). Awaits Andy's play-through: docs/TESTING.md "Endeavor: Metal Gear handling". Andy reported
   "the right click broke" on v79; no fault was found beyond first person not turning the body (fixed); asked what failed.
+- Front vNEXT (2026-11-12): guns built from components (AK, AR, Garand/M14 with three barrel lengths, muzzle devices,
+  scopes, foregrip), new AK-47, M1 Garand, Glock 17, service revolver. REALCHECK. Unseen in game: the grip of the new
+  models in the hands and in first person. Awaits Andy: docs/TESTING.md "Front: guns built from parts".
 - Front v26 (2026-11-11): clean screen, crouch/prone/dive/roll, lean and peek, quick and careful reload, binoculars
   with marking. Awaits Andy's play-through: docs/TESTING.md "Front: clean screen, stances, Metal Gear handling".
 - Endeavor v80 + Front v25 published (2026-11-10, the story joined up) and starting cleanly on real servers

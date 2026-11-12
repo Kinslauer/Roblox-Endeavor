@@ -435,6 +435,46 @@ do
 	check("mark: a figure in the glass is marked for the spotter's side", marks() == before + 1)
 	ahead:Destroy(); behind:Destroy()
 end
+-- guns from components (2026-11-12)
+do
+	as(g)
+	local GunParts = M.mockEnv.__require(RS.Shared.GunParts)
+	local HeldWeapons = M.mockEnv.__require(SSS.Server.Common.HeldWeapons)
+	local Recruit = M.mockEnv.__require(SSS.Server.Common.Recruit)
+	local Guns = M.mockEnv.__require(SSS.Server.Guns)
+	local whole = true
+	for id, gun in GunParts.Guns do
+		if not (Firearms.Defs[id] and table.find(Firearms.Defs[id].Slots, "Barrel") and gun.Receiver > 0 and gun.Muzzle > 0 and gun.Barrels.Standard and gun.Barrels.Short and gun.Barrels.Long) then whole = false end
+		for _, b in gun.Barrels do if not (b.Asset > 0 and b.Muzzle.Z > 1 and b.End.Z >= b.Muzzle.Z) then whole = false end end
+	end
+	check("guns: every component gun has a receiver, a muzzle device and three barrels, and takes a barrel in its order", whole)
+	local plain = GunParts.Pieces("AKM", {})
+	local built = GunParts.Pieces("AKM", { Barrel = { Id = "BarrelShort" }, Muzzle = { Id = "Suppressor" }, Optic = { Id = "PSO" }, Grip = { Id = "Foregrip" } })
+	local function piece(list, name) for _, p in list do if p.Name == name then return p end end end
+	check("guns: a bare rifle is receiver, standard barrel and its own muzzle device", #plain == 3 and piece(plain, "Barrel").Asset == GunParts.Guns.AKM.Barrels.Standard.Asset and piece(plain, "Muzzle").Asset == GunParts.Guns.AKM.Muzzle)
+	check("guns: a short barrel swaps the barrel and moves the muzzle device back", piece(built, "Barrel").Asset == GunParts.Guns.AKM.Barrels.Short.Asset and piece(built, "Muzzle").At.Z < piece(plain, "Muzzle").At.Z)
+	check("guns: suppressor, scope and foregrip go on the muzzle, the receiver top and under the handguard", #built == 5 and piece(built, "Muzzle").Asset == GunParts.Accessories.Suppressor.Asset and piece(built, "Optic").At == GunParts.Guns.AKM.Optic and piece(built, "Grip").At == GunParts.Guns.AKM.Barrels.Short.Under)
+	check("guns: each build has its own key", GunParts.Key("AKM", {}) ~= GunParts.Key("AKM", { Barrel = { Id = "BarrelLong" } }))
+	local model = HeldWeapons.Assemble("M16A1", { Barrel = { Id = "BarrelLong" }, Optic = { Id = "Colt3x" } })
+	local comps = {}
+	if model then for _, part in model:GetChildren() do comps[part:GetAttribute("Component") or "?"] = true end end
+	check("guns: the pieces are put together into one model", model ~= nil and comps.Receiver and comps.Barrel and comps.Muzzle and comps.Optic and not comps.Grip)
+	check("guns: a gun that is not made of components is left to its one-piece model", HeldWeapons.Assemble("Mosin", {}) == nil)
+	-- the numbers follow the barrel
+	local short = Guns.Make("AKM", 100, { Barrel = { Id = "BarrelShort" } })
+	local long = Guns.Make("AKM", 100, { Barrel = { Id = "BarrelLong" } })
+	check("guns: a short barrel scatters and kicks more, a long one less", Guns.AttMult(short, "Spread") > 1 and Guns.AttMult(long, "Spread") < 1 and Guns.AttMult(short, "Recoil") > Guns.AttMult(long, "Recoil") and Guns.AttMult(long, "Velocity") > 1)
+	-- ordering: the barrel is part of the order; the new guns are in the catalog
+	local war = M.mockEnv.__require(SSS.Server.Common.PlayerData).Get(g).War
+	for _, id in { "M16A1", "BarrelShort", "M1Garand", "Glock17", "Revolver", "Suppressor" } do war.Locker[id] = { count = 1, condition = 100 } end
+	check("guns: an order takes a barrel", Recruit.Order(war, { Primary = "M16A1", Sidearm = "Glock17", Attachments = { Barrel = "BarrelShort", Muzzle = "Suppressor" } }) == true and war.Loadout.Attachments.Barrel == "BarrelShort")
+	check("guns: a barrel does not go in the muzzle slot", Recruit.Order(war, { Primary = "M16A1", Attachments = { Muzzle = "BarrelShort" } }) == false)
+	check("guns: the Garand is a rifle, the revolver a sidearm", Recruit.Order(war, { Primary = "M1Garand", Sidearm = "Revolver" }) == true and Recruit.Order(war, { Primary = "Revolver" }) == false)
+	local cat = Recruit.Catalog()
+	check("guns: the shop lists the new guns and barrels", cat.AK47 ~= nil and cat.AK47.Faction == "Pact" and cat.M1Garand.Faction == "Union" and cat.Glock17 ~= nil and cat.Glock17.Faction == nil and cat.BarrelLong.Slot == "Barrel")
+	local rev = Guns.Make("Revolver", 100)
+	check("guns: the revolver has six and no safety", rev.Mode == "Semi" and rev.Mag + 1 == 6 and Guns.Trigger(rev) == "fired")
+end
 local probe = Intro.Probe(M.V3.new(0, 1500, 5000))
 check("intro: the probe builds and clears a cell and a simulation", type(probe) == "string" and probe:find("benches 5") ~= nil and workspace_:FindFirstChild("IntroCell_0") == nil)
 
