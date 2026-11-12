@@ -832,7 +832,8 @@ Client tab screenshot, because Andy cannot read logs another way.
 - Endeavor v112 + Front v44 (2026-11-12): things you make, round 7 and the last of the reference picks (the Breaker
   and Cable arms on K held, the Neural Shackle and the holding frame, thralls released / sent to the Front /
   escaping as invaders, dogs, cyberdogs, drones and hybrids, the proxy frame's humanoid drone, thralls fighting on
-  the Front). Awaits Andy: docs/TESTING.md "Endeavor and Front: things you make". All 7 rounds of
+  the Front). Real servers: Endeavor start 9.0s, Front 4.5s, 0 warnings; the three strays stand on the pockets'
+  ground; the Front builds a thrall's soldier body in Pact kit. Awaits Andy: docs/TESTING.md "Endeavor and Front: things you make". All 7 rounds of
   docs/Reference-Picks-Plan.md are built.
 - Endeavor v111 (2026-11-12; v110 the same round without the starting sky): world and money, round 6 of the reference picks (the hour's time of day and weather,
   parties, strongrooms and the S4 store cage, five party runs below the Sumps, generator fuel, timed crafting, the
