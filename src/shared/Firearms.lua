@@ -103,6 +103,30 @@ Firearms.Armor = {
 	Helmet = { Name = "Steel helmet", Protection = 0.3, Durability = 40, Weight = 1.5, Price = 250, Head = true },
 }
 
+-- Cybernetic limbs a conduit ships to its recruits (owner, 2026-11-12: "Cybernetics come shipped from conduits").
+-- One per limb. Group = the piece group of the body's CyberLimbs layer. An arm steadies the weapon (Spread), every
+-- limb takes some of the hurt out of limb hits (Limb). Numbers are first guesses.
+Firearms.Cyber = {
+	CyberArmL = { Name = "Cybernetic arm (left)", Group = "CyArmL", Price = 650, Spread = 0.92, Limb = 0.88 },
+	CyberArmR = { Name = "Cybernetic arm (right)", Group = "CyArmR", Price = 650, Spread = 0.92, Limb = 0.88 },
+	CyberLegL = { Name = "Cybernetic leg (left)", Group = "CyLegL", Price = 550, Limb = 0.85 },
+	CyberLegR = { Name = "Cybernetic leg (right)", Group = "CyLegR", Price = 550, Limb = 0.85 },
+}
+Firearms.CyberOrder = { "CyberArmL", "CyberArmR", "CyberLegL", "CyberLegR" }
+
+-- The combined effect of the limbs a recruit has: fitted = { [id] = { Condition } }. A wrecked limb (0%) gives nothing.
+function Firearms.CyberEffect(fitted)
+	local spread, limb = 1, 1
+	for id, piece in fitted or {} do
+		local def = Firearms.Cyber[id]
+		if def and (piece.Condition or 100) > 0 then
+			spread *= def.Spread or 1
+			limb *= def.Limb or 1
+		end
+	end
+	return { Spread = spread, Limb = limb }
+end
+
 -- Hit zone damage multipliers.
 Firearms.Zones = { Head = 2.5, Torso = 1.0, Limb = 0.6 }
 

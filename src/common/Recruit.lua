@@ -24,6 +24,9 @@ function Recruit.Catalog()
 	for id, def in Firearms.Armor do
 		out[id] = { Kind = "Armor", Name = def.Name, Price = def.Price }
 	end
+	for id, def in Firearms.Cyber do
+		out[id] = { Kind = "Cyber", Name = def.Name, Price = def.Price }
+	end
 	out.Ammo = { Kind = "Ammo", Name = "Ammunition (3 magazines)", Price = 60 }
 	out.Grenade = { Kind = "Grenade", Name = "Frag grenade", Price = 90 }
 	out.Medkit = { Kind = "Medkit", Name = "Field dressing", Price = 50 }
@@ -157,6 +160,18 @@ function Recruit.Order(war, loadout)
 			end
 		end
 	end
+	-- cybernetic limbs: { id = true }, each must be in the locker
+	if type(loadout.Cyber) == "table" then
+		for _, id in Firearms.CyberOrder do
+			if loadout.Cyber[id] == true then
+				if not war.Locker[id] then
+					return false
+				end
+				order.Cyber = order.Cyber or {}
+				order.Cyber[id] = true
+			end
+		end
+	end
 	war.Loadout = order
 	return true
 end
@@ -187,6 +202,16 @@ function Recruit.Deploy(war)
 			local condition = Recruit.LockerTake(war, id, 1)
 			if condition then
 				table.insert(kit.Spares, { Id = id, Condition = condition })
+			end
+		end
+	end
+	-- cybernetic limbs are fitted to the clone before it wakes
+	for _, id in Firearms.CyberOrder do
+		if order.Cyber and order.Cyber[id] then
+			local condition = Recruit.LockerTake(war, id, 1)
+			if condition then
+				kit.Cyber = kit.Cyber or {}
+				kit.Cyber[id] = { Id = id, Condition = condition }
 			end
 		end
 	end

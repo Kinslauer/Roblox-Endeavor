@@ -102,6 +102,13 @@ function Soldiers.Arm(player, kit, faction, opts)
 	for _, att in kit.Spares or {} do
 		table.insert(s.Spares, { Id = att.Id, Condition = att.Condition })
 	end
+	-- cybernetic limbs are part of the body, not a piece picked up in the barracks
+	if kit.Cyber then
+		s.Cyber = {}
+		for id, piece in kit.Cyber do
+			s.Cyber[id] = { Id = id, Condition = piece.Condition }
+		end
+	end
 	soldiers[player] = s
 	if opts.Pending then
 		s.Pending = {}
@@ -248,6 +255,9 @@ end
 
 -- ===== damage =====
 local function armorAbsorb(s, zone, damage, pen)
+	if zone == "Limb" and s.Cyber then
+		damage *= Firearms.CyberEffect(s.Cyber).Limb
+	end
 	local piece = if zone == "Head" then s.Helmet elseif zone == "Torso" then s.Armor else nil
 	if not piece or piece.Condition <= 0 then
 		return damage
@@ -330,6 +340,12 @@ local function dropBody(player, char, s)
 		local piece = s[slot]
 		if piece and not s.Issued[slot] then
 			table.insert(loot, { Id = piece.Id, Condition = math.max(0, piece.Condition - W.Death.ArmorDamage) })
+		end
+	end
+	for _, id in Firearms.CyberOrder do
+		local piece = s.Cyber and s.Cyber[id]
+		if piece then
+			table.insert(loot, { Id = id, Condition = math.max(0, piece.Condition - W.Death.ArmorDamage) })
 		end
 	end
 	if #loot == 0 then
@@ -486,6 +502,9 @@ local function standDown(player, s)
 		if piece and not s.Issued[slot] then
 			Recruit.LockerAdd(war, piece.Id, piece.Condition, 1)
 		end
+	end
+	for id, piece in s.Cyber or {} do
+		Recruit.LockerAdd(war, id, piece.Condition, 1)
 	end
 	if mags > 0 then
 		Recruit.LockerAdd(war, "Ammo", 100, mags)
@@ -900,7 +919,7 @@ local function onFire(player, dir)
 		local eye = Soldiers.Eye(player, ray)
 		local muzzle = eye + dir.Unit * 2
 		local stance = MV.Stance[s.Stance or "Stand"]
-		w.Steady = stance.Spread
+		w.Steady = stance.Spread * Firearms.CyberEffect(s.Cyber).Spread
 		local wall = workspace:Raycast(eye, muzzle - eye, ray)
 		if wall then
 			muzzle = wall.Position - dir.Unit * 0.3 -- muzzle against a wall: the round starts on your side of it

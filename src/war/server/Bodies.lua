@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterPlayer = game:GetService("StarterPlayer")
 
 local Assets = require(ReplicatedStorage.Shared.Assets)
+local Firearms = require(ReplicatedStorage.Shared.Firearms)
 local Rigs = require(script.Parent.Common.Rigs)
 local ModelAssets = require(script.Parent.Common.ModelAssets)
 local SurfaceLibrary = require(script.Parent.Common.SurfaceLibrary)
@@ -107,6 +108,12 @@ function Bodies.Wear(char, s)
 		return false
 	end
 	local on = Bodies.Look(s)
+	for id, piece in s.Cyber or {} do -- the limbs the conduit shipped
+		local def = Firearms.Cyber[id]
+		if def and piece and Rigs.Layer(char, "CyberLimbs") then
+			on[def.Group] = true
+		end
+	end
 	for name, value in char:GetAttributes() do -- groups switched on by Bodies.Augment
 		local group = name:match("^Group_(.+)$")
 		if group and value == true then

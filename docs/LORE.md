@@ -179,6 +179,8 @@ How to read it:
 - A clone leaves the tank bare but for a wrap. The barracks gives it the basic battle attire: undershirt, trousers,
   boots, its side's armband. Everything over that is kit the conduit shipped, and it can be stripped from the body.
   [Andy 2026-11-12]
+- Cybernetics on the Front come shipped from the conduits, like the rest of a recruit's kit. A clone wakes with the
+  limbs its conduit sent already fitted. [Andy 2026-11-12; the fitting before waking is Claude's]
 - Recruits die for good. Their gear drops damaged. Their bodies calcify where they fall, and the dead build the hills
   the war is fought over. [Andy 2026-11-10]
 - The conduit is not hurt by a recruit's death; it costs gear. The conduit can unlink at its own base or between
@@ -252,6 +254,7 @@ How to read it:
    facilities). (One way down, the Sumps shaft to Barrens Hall 2, is now Canon.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: Andy: cybernetics on the Front come shipped from conduits.
 - 2026-11-12: Andy: modern guns reach the Front by shipment; the Front's places stay 1970s.
 - 2026-11-12: Andy: realistic ammunition. Calibres (.22, 9mm, 5.56) shared between guns; the Whisper is a .22; the
   sentries carry 9mm or 5.56 and their helmets stop a .22.

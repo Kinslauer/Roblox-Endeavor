@@ -3,6 +3,17 @@
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
 report).
 
+## Front: cybernetic limbs shipped by the conduit (2026-11-12)
+- [ ] Open the recruit app (M on the Front, N in the city). The shop sells four cybernetic limbs: left and right
+      arm (650 credits), left and right leg (550). Buy one and press Fit on it in the locker: the order shows it
+      under "Cybernetics". Remove takes it off the order.
+- [ ] Deploy: the recruit has the metal limb in place of the flesh one, with no sleeve, glove or boot over it. In
+      first person you see the metal forearm and hand. A new recruit's first link shows it in the tank already.
+- [ ] A cybernetic arm makes shots group a little tighter. Any cybernetic limb makes arm and leg hits hurt a little
+      less. Say if either should be stronger, weaker or different.
+- [ ] Die with a limb fitted: the enemy who strips the body gets it, damaged. Unlink at your locker: it goes back
+      into your locker. Fix repairs it.
+
 ## Front: the realistic pass, round 6 (strippable soldiers) (2026-11-12)
 - [ ] First link (F2 skips stages in dev): in the tank you and the other clones are bare bodies with only a cloth
       wrap. When you land in the barracks you wear the basic battle attire: a sleeveless undershirt, trousers, boots

@@ -1623,12 +1623,21 @@ local function renderApp()
 	local lo, atts = s.Loadout or {}, (s.Loadout or {}).Attachments or {}
 	addRow(app, ("NEXT ORDER  Primary: %s  Sidearm: %s  Armor: %s  Helmet: %s"):format(lo.Primary or "-", lo.Sidearm or "-", lo.Armor or "-", lo.Helmet or "-"), {})
 	addRow(app, ("Optic: %s  Muzzle: %s  Grip: %s"):format(atts.Optic or "-", atts.Muzzle or "-", atts.Grip or "-"), {})
+	do
+		local limbs = {}
+		for _, id in Firearms.CyberOrder do
+			if lo.Cyber and lo.Cyber[id] then
+				table.insert(limbs, ((s.Catalog[id] and s.Catalog[id].Name or id):gsub("^Cybernetic ", "")))
+			end
+		end
+		addRow(app, "Cybernetics: " .. (if #limbs > 0 then table.concat(limbs, ", ") else "-"), {})
+	end
 	addRow(app, "-- LOCKER --", {})
 	local ids = {}
 	for id in s.Locker do table.insert(ids, id) end
 	table.sort(ids)
 	local function order(changes, attChanges)
-		local o = { Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = table.clone(atts) }
+		local o = { Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = table.clone(atts), Spares = lo.Spares, Cyber = table.clone(lo.Cyber or {}) }
 		for k, v in changes do o[k] = v end
 		for k, v in attChanges or {} do o.Attachments[k] = v end
 		Remotes.WarOrder:FireServer(o)
@@ -1641,6 +1650,12 @@ local function renderApp()
 			table.insert(buttons, { text = if pistol then "Sidearm" else "Primary", fn = function() order({ [if pistol then "Sidearm" else "Primary"] = id }) end })
 		elseif item.Kind == "Attachment" then
 			table.insert(buttons, { text = "Mount", fn = function() order({}, { [item.Slot] = id }) end })
+		elseif item.Kind == "Cyber" then
+			local fitted = lo.Cyber ~= nil and lo.Cyber[id] == true
+			table.insert(buttons, { text = if fitted then "Remove" else "Fit", fn = function()
+				local c = table.clone(lo.Cyber or {}); c[id] = if fitted then nil else true
+				order({ Cyber = c })
+			end })
 		elseif item.Kind == "Armor" then
 			local helmet = Firearms.Armor[id] and Firearms.Armor[id].Head
 			table.insert(buttons, { text = "Wear", fn = function() order({ [if helmet then "Helmet" else "Armor"] = id }) end })

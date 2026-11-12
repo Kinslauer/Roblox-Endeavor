@@ -448,6 +448,13 @@ local function renderApp()
 	local atts = lo.Attachments or {}
 	row(("Barrel: %s   Optic: %s   Muzzle: %s   Grip: %s"):format(atts.Barrel or "standard", atts.Optic or "-", atts.Muzzle or "-", atts.Grip or "-"), {})
 	row(("Carried spare parts (%d of %d): %s"):format(#(lo.Spares or {}), Firearms.MaxSpares, if #(lo.Spares or {}) > 0 then table.concat(lo.Spares, ", ") else "-"), {})
+	local limbs = {}
+	for _, id in Firearms.CyberOrder do
+		if lo.Cyber and lo.Cyber[id] then
+			table.insert(limbs, ((s.Catalog[id] and s.Catalog[id].Name or id):gsub("^Cybernetic ", "")))
+		end
+	end
+	row("Cybernetics: " .. (if #limbs > 0 then table.concat(limbs, ", ") else "-"), {})
 	row("-- LOCKER (X = put in next order, Fix = repair) --", {})
 	local ids = {}
 	for id in s.Locker do table.insert(ids, id) end
@@ -459,7 +466,7 @@ local function renderApp()
 		if item.Kind == "Weapon" then
 			local isPistol = item.Class == "Pistol"
 			table.insert(buttons, { text = if isPistol then "Sidearm" else "Primary", fn = function()
-				local order = { Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts, Spares = lo.Spares }
+				local order = { Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts, Spares = lo.Spares, Cyber = lo.Cyber }
 				order[if isPistol then "Sidearm" else "Primary"] = id
 				Remotes.WarOrder:FireServer(order)
 			end })
@@ -467,19 +474,25 @@ local function renderApp()
 			local mounted = atts[item.Slot] == id
 			table.insert(buttons, { text = if mounted then "Remove" else "Mount", fn = function()
 				local a = table.clone(atts); a[item.Slot] = if mounted then nil else id
-				Remotes.WarOrder:FireServer({ Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = a, Spares = lo.Spares })
+				Remotes.WarOrder:FireServer({ Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = a, Spares = lo.Spares, Cyber = lo.Cyber })
 			end })
 			-- a loose part in the pouch, to fit later (hold Y, then 1-4)
 			local carried = table.find(lo.Spares or {}, id)
 			table.insert(buttons, { text = if carried then "Leave" else "Carry", fn = function()
 				local sp = table.clone(lo.Spares or {})
 				if carried then table.remove(sp, carried) else table.insert(sp, id) end
-				Remotes.WarOrder:FireServer({ Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts, Spares = sp })
+				Remotes.WarOrder:FireServer({ Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts, Spares = sp, Cyber = lo.Cyber })
+			end })
+		elseif item.Kind == "Cyber" then
+			local fitted = lo.Cyber ~= nil and lo.Cyber[id] == true
+			table.insert(buttons, { text = if fitted then "Remove" else "Fit", fn = function()
+				local c = table.clone(lo.Cyber or {}); c[id] = if fitted then nil else true
+				Remotes.WarOrder:FireServer({ Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts, Spares = lo.Spares, Cyber = c })
 			end })
 		elseif item.Kind == "Armor" then
 			local isHelmet = Firearms.Armor[id] and Firearms.Armor[id].Head
 			table.insert(buttons, { text = "Wear", fn = function()
-				local order = { Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts, Spares = lo.Spares }
+				local order = { Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts, Spares = lo.Spares, Cyber = lo.Cyber }
 				order[if isHelmet then "Helmet" else "Armor"] = id
 				Remotes.WarOrder:FireServer(order)
 			end })

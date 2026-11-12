@@ -477,8 +477,12 @@ Client tab screenshot, because Andy cannot read logs another way.
   weights, so every layer carries an "Anchor" piece that attachSkin destroys. figure.py: `body`, `cut_regions`,
   `split_legs`, `under`, `singlet`, `anchor`, `cyber_arm/leg`, `heavy_armor`, a figure's `layers={kind: pieces}` and
   `looks`; figures.py `Union` (exports Recruit + UnionKit), `Pact` (PactKit), `Augment` (CyberLimbs, HeavyArmor).
-  No Front item gives cybernetic limbs or the heavy set yet: Bodies.Augment is the hook, where they come from is
-  Andy's call. Claude's choices, unconfirmed: the Kit-with-a-primary rule, the looks of both layers.
+  Cybernetic limbs (owner, 2026-11-12: "Cybernetics come shipped from conduits"): `Firearms.Cyber` (CyberArmL/R,
+  CyberLegL/R: Group, Price, Spread, Limb), `Firearms.CyberEffect(fitted)`; the recruit app sells them (Kind
+  "Cyber"), `Recruit.Order` takes `Cyber = { id = true }`, `Recruit.Deploy` -> `kit.Cyber`; Soldiers.Arm copies it
+  to `s.Cyber` (part of the body from the tank on, not a barracks piece), Bodies.Wear lays the CyberLimbs layer,
+  spread and Limb-zone damage use the effect, death loot / unlink / intro refund return the limbs. Both clients'
+  apps have Fit / Remove. The heavy set is still given by no item (Bodies.Augment is the hook; Andy's call). Claude's choices, unconfirmed: the Kit-with-a-primary rule, the looks of both layers.
   The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
 - Guns from components (owner, 2026-11-12: "The weapons should be made from the components we animated before, and
   there can be swapped in barrels of differing sizes, attachments, muzzle devices etc. All the cold war era weapons
@@ -534,6 +538,9 @@ Client tab screenshot, because Andy cannot read logs another way.
   the control room. Unseen in game: the UI at the new scale (blind change: watch for text that overflows its plate),
   the tracer and kick. Awaits Andy: docs/TESTING.md "Endeavor: station fixes". Andy has not yet seen v86 on the
   one-piece bodies.
+- Front v35 + Endeavor v99 (2026-11-12): cybernetic limbs shipped by the conduit (shop, order, body, effects,
+  loot). Awaits Andy: docs/TESTING.md "Front: cybernetic limbs shipped by the conduit". A fallen body does not show
+  its metal limbs yet.
 - Front v33 + Endeavor v98 (2026-11-12): realistic pass round 6, strippable soldiers (bare clone body in the tank,
   battle attire from the barracks, kit and armour as layers, looted bodies stay stripped, cybernetic limbs and a
   heavy armour set rigged but given by no item yet). Endeavor only shares Rigs/Skin/Assets. Real servers: Front start

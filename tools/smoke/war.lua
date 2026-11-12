@@ -518,6 +518,21 @@ do
 	local okAR, whyAR = Soldiers.FieldMod(g, "Barrel", "BarrelShort")
 	check("field: an AR barrel is changed in the field, and keeps its wear", okAR == true and ar.Weapons.Primary.Attachments.Barrel.Condition == 80 and M.mockEnv.__require(SSS.Server.Guns).Snapshot(ar.Weapons.Primary).Busy > 5)
 end
+do -- cybernetic limbs are shipped by the conduit: bought, fitted in the order, on the recruit, back in the locker
+	local Recruit = M.mockEnv.__require(SSS.Server.Common.Recruit)
+	local Firearms = M.mockEnv.__require(RS.Shared.Firearms)
+	local Bodies = M.mockEnv.__require(SSS.Server.Bodies)
+	local war = { Faction = "Union", Credits = 5000, Locker = {}, Deployments = 1 }
+	check("cyber: the shop sells the four limbs to both sides", Recruit.Buy(war, "CyberArmR") == true and Recruit.Buy(war, "CyberLegL") == true and Recruit.Catalog().CyberArmL.Kind == "Cyber")
+	check("cyber: only a limb in the locker can be fitted", Recruit.Order(war, { Cyber = { CyberArmL = true } }) == false and Recruit.Order(war, { Cyber = { CyberArmR = true, CyberLegL = true } }) == true)
+	local kit = Recruit.Deploy(war)
+	check("cyber: the limbs leave the locker with the recruit", kit.Cyber ~= nil and kit.Cyber.CyberArmR.Condition == 100 and kit.Cyber.CyberLegL ~= nil and war.Locker.CyberArmR == nil)
+	local fx = Firearms.CyberEffect(kit.Cyber)
+	check("cyber: an arm steadies the aim, limbs take less hurt, a wrecked one gives nothing", fx.Spread < 1 and fx.Limb < 1 and Firearms.CyberEffect({ CyberArmR = { Condition = 0 } }).Spread == 1)
+	local look = {}
+	local okWear = pcall(function() Bodies.Wear(u.Character, { Cyber = kit.Cyber }) end)
+	check("cyber: the body takes the limbs without error", okWear)
+end
 local probe = Intro.Probe(M.V3.new(0, 1500, 5000))
 check("intro: the probe builds and clears a cell and a simulation", type(probe) == "string" and probe:find("benches 5") ~= nil and workspace_:FindFirstChild("IntroCell_0") == nil)
 
