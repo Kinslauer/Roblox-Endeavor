@@ -707,7 +707,7 @@ do
 	check("rifle: long guns and pistols are guns, a club is not", W.IsGun(W.Defs.Carbine) and W.IsGun(W.Defs.M1Garand) and W.IsGun(W.Defs.Whisper) and not W.IsGun(W.Defs.PipeClub))
 	local gunId, atts, opts = W.Held("Carbine")
 	local _, option = GP.Barrel(gunId, atts)
-	check("rifle: the carbine is the AR parts with the carbine barrel, sized for the hands", gunId == "M16A1" and option == "Carbine" and opts.Scale < 1 and opts.Grip == "Shoulder"
+	check("rifle: the carbine is the flat-top AR parts with the 16 inch barrel, sized for the hands", gunId == "M4A1" and option == "Standard" and opts.Scale < 1 and opts.Grip == "Shoulder"
 		and GP.Pieces(gunId, atts)[2].Asset == GP.Guns.M16A1.Barrels.Carbine.Asset and W.Held("PipeClub") == "PipeClub")
 	check("rifle: the AK-47 and the Garand have their parts", GP.Guns[(W.Held("AK47"))] ~= nil and GP.Guns[(W.Held("M1Garand"))] ~= nil)
 	check("rifle: 7.62x51 goes through what stops a 5.56, and a .22 through nothing", W.Calibers["7.62x51"].Pen > W.Calibers["5.56"].Pen and W.Calibers["7.62x39"].Pen >= 2 and W.Calibers[".22"].Pen == 0)
@@ -716,7 +716,7 @@ do
 	local pcR = player.Character
 	local held = pcR:FindFirstChild("HeldWeapon")
 	check("rifle: the carbine is in the hands, thirty in the magazine", pcR:GetAttribute("Weapon") == "Carbine" and pcR:GetAttribute("MagSize") == 30 and pcR:GetAttribute("Mag") == 30
-		and (held == nil or held:GetAttribute("WeaponId") == "M16A1"))
+		and (held == nil or held:GetAttribute("WeaponId") == "M4A1"))
 	local rootR = pcR.HumanoidRootPart
 	local stood = rootR.CFrame
 	rootR.CFrame = M.CF.lookAt(stood.Position, stood.Position + (stood.Position - rc.HumanoidRootPart.Position) * M.V3.new(1, 0, 1)); run(0.1) -- muzzle away from the other player

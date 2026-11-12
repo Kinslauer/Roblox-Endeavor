@@ -337,8 +337,8 @@ Client tab screenshot, because Andy cannot read logs another way.
   Round762x51. Family "Rifle"; `Weapons.IsGun(def)` (Sidearm or Rifle) is the test for aim, reload and the gun camera,
   never `Family == "Sidearm"`. `def.Model = { Gun, Attachments, Scale, Grip }` + `Weapons.Held(id)` -> what
   `HeldWeapons.Attach(char, gunId, attachments, opts)` takes: the models are the Front thread's components
-  (shared/GunParts; the Carbine = M16A1 with `BarrelCarbine`, a BarrelOf row added in tools/models/
-  gunparts_template.lua), shrunk to Scale 0.5 in the hand (the parts are 0.19 studs to the inch, about twice body
+  (shared/GunParts; the Carbine = gun `M4A1`, the flat-top receiver with its Standard 16 inch barrel, since
+  Front v36 gave the M16A1 its own carry-handle receiver), shrunk to Scale 0.5 in the hand (the parts are 0.19 studs to the inch, about twice body
   scale; pistols are still that big) on GRIPS.Shoulder. That grip matrix and the arm angles of Rifle_Ready /
   Aim_Rifle / Reload_Rifle (tools/anims) were solved together by forward kinematics (shoulders 0.86 out): change them
   together. Real-server check on the real body: aiming, the bore is exactly ahead and level, the butt 0.34 from the
@@ -547,8 +547,8 @@ Client tab screenshot, because Andy cannot read logs another way.
   pistols (M9A3, M1911, M45, Five-seveN, Glock 17/18C/19X, USP, PL-15, Desert Eagle), revolvers, bolt actions.
 
 ## State (2026-11-12)
-- Endeavor v101 (2026-11-12): rifles. The 5.56 Carbine (AR parts), the AK-47 (7.62x39) and the M1 Garand (7.62x51)
-  with a two-handed hold, automatic fire on the first two. Real server: start 8.6s, 0 warnings; all three assemble
+- Endeavor v102 (2026-11-12): rifles. The 5.56 Carbine (AR parts), the AK-47 (7.62x39) and the M1 Garand (7.62x51)
+  with a two-handed hold, automatic fire on the first two. Real server: start 10.7s, 0 warnings; all three assemble
   (3.3, 3.4 and 4.1 studs long) and the aim pose lines the bore up dead ahead on the real body. Unseen in game: the
   hold and the reload in motion, the rifle behind a wall, the feel of automatic fire. Awaits Andy: docs/TESTING.md
   "Endeavor: rifles".

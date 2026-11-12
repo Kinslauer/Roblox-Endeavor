@@ -126,7 +126,7 @@ Weapons.Defs = {
 	-- parts are modelled 0.19 studs to the inch, twice a body's scale) and the grip the two-handed animations expect.
 	Carbine = {
 		Name = "Carbine", Family = "Rifle", ComboReset = 0.3, ComboCooldown = 0, ChargeBonus = 1, Caliber = "5.56", Noise = 120,
-		MagSize = 30, ReloadSeconds = 2.4, Auto = true, Model = { Gun = "M16A1", Attachments = { Barrel = "BarrelCarbine" }, Scale = 0.5, Grip = "Shoulder" },
+		MagSize = 30, ReloadSeconds = 2.4, Auto = true, Model = { Gun = "M4A1", Scale = 0.5, Grip = "Shoulder" },
 		Attacks = { frames(30, 8, 3, 2, 4, 260, { Ranged = true, Stamina = 2 }) },
 		Heavy = frames(30, 8, 3, 2, 4, 260, { Ranged = true, Stamina = 2 }),
 	},
