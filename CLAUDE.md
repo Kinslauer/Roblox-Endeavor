@@ -27,7 +27,7 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   `src/war/client` = the two clients (one LocalScript each).
 - Every client->server remote goes through `Net.On` (rate limit + arg types). Clients only send intent.
 - Entry points (`Main.server.lua`) wrap everything in pcall and print `STARTUP FAILED: ...` on error.
-- Docs: `README.md` (features + controls), `docs/DESIGN.md`, `docs/systems/destruction-and-salvage.md`,
+- Docs: `README.md` (features + controls), `docs/LORE.md` (the canon: check every addition against it), `docs/DESIGN.md`, `docs/systems/destruction-and-salvage.md`,
   `docs/maps/*.png` (generated top-down maps), `vendor/combat-system` (reference code the combat was ported from).
 
 ## How to work
@@ -91,6 +91,12 @@ Use plain words, and write in clear, understandable full sentences. Do not use a
 For Andy: describe what to try in the game (the key, the place, what should happen), not function names. End a
 round with the version number and the docs/TESTING.md lines to tick. When a bug needs logs, ask for an F9 Server or
 Client tab screenshot, because Andy cannot read logs another way.
+
+## The canon (owner, 2026-11-12: "every new addition consults the canon and anything outside is rejected or changed to fit")
+- `docs/LORE.md` is the story as it stands. Read it before adding any place, character, item, line of text or system
+  with a story reason. An addition that contradicts a Canon or Hinted line is changed to fit or dropped; the canon is
+  not quietly bent to fit it. New facts go into LORE.md in the same commit. Anything that answers one of its Open
+  questions needs Andy's word first.
 
 ## Decisions the user made (do not relitigate)
 - **Show, don't tell** (owner, 2026-10-31): no banner explains a system or the lore. Machine text is terse and

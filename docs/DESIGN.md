@@ -7,6 +7,8 @@
 4. **A living ruin.** A cyberpunk megacity that is wrecked but inhabited; events keep it unpredictable.
 
 ## The stack (lore that the systems run on; owner, 2026-10-31)
+The full canon is docs/LORE.md; it wins where this section is shorter or older.
+
 Conduits have to upload their consciousness to live the way they do: every life is a reboot of that upload. The upload
 happens once, through the **hideout computer**, and it is the first segment of initialization; from then on the computer
 runs on the conduit (their brain is its operating system), which is why its apps stay unlocked across deaths and why

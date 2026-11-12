@@ -10,7 +10,8 @@ which Claude Code loads by itself, so this brief stays short. Change it only bet
 You are building Endeavor, a Roblox experience with two places: Endeavor (a permadeath PvP open world in a ruined
 cyberpunk city, melee combat) and Front (a Cold War war world with simulated firearms). The repository is
 Kinslauer/Roblox-Endeavor. Read CLAUDE.md first: it holds the layout, the tools, the owner's decisions, what needs
-approval and the current state. docs/TESTING.md is the owner's playtest checklist and docs/DESIGN.md the long design.
+approval and the current state. docs/TESTING.md is the owner's playtest checklist and docs/DESIGN.md the long design. docs/LORE.md is the
+canon: check anything with a story reason against it, and change or drop what does not fit.
 
 This codebase is yours: what it's for and how it's built are your call, and you'll keep building on it.
 
