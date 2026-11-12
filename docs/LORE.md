@@ -101,6 +101,11 @@ How to read it:
   come from there. [Andy 2026-11-12; fits Line 9 and the tank plates]
 - The shelters also hold the barrens: halls where the corporations keep cybernetic brain slaves, wired to screens,
   making power with their own hands. [Andy 2026-11-12]
+- The world the conduits experience seems to run on the power the brain slaves make. Conduits and slaves live in
+  symbiosis: once a conduit tried to free them, and lost the connection to his stack. [Andy 2026-11-12]
+- Players can go down to the shelters and the barrens. Something in the game leads them there, either an incentive
+  or the story. [Andy 2026-11-12] Not built yet. Limit from the canon: the way down is not Line 9 (it runs up only,
+  and nothing goes back down on it).
 
 **Canon (already in the game, now explained by the Truth above)**
 - Line 9 comes up from below the city (the station is at SUBLEVEL 3), and nothing goes back down. [the arrival]
@@ -202,11 +207,15 @@ How to read it:
    is right. Limit: they stay rare, small and quiet; no text confirms the guess.
 6. What stops conduits from getting far enough, and what lies beyond. (That they try and always fail is now Truth.)
    Limit: no exit exists in the game; a conduit never gets further than the valley.
-7. Whether conduits have anything to do with the brain slaves in the barrens (are they connected, are they the same,
-   does a conduit's experience run on that power?). Limit: do not suggest an answer until Andy decides.
-8. Whether a player can ever reach the shelters or the barrens. Limit: no way down exists in the game yet.
+7. Whether the world truly runs on the slaves' power ("seems to"), and what freeing them would do beyond cutting a
+   stack's connection. (The symbiosis is now Truth.) Limit: freeing them is never a clean win for a conduit.
+8. How players get down to the shelters, and what draws them (an incentive or the story). (That they can is now
+   Truth.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: Andy's answers to 7 and 8: the world seems to run on the brain slaves' power; conduits and slaves are
+  symbiotic (a conduit who tried to free them lost the connection to his stack); players can go down to the shelters,
+  drawn by an incentive or the story. Questions 7 and 8 narrowed.
 - 2026-11-12: Andy's answers to 4, 5 and 6: the Front was forgotten by progress, looks as it has since the 1970s and
   gets everything by shipment; pockets grow and bloom and nullify the hour (maybe the old earth's connection is
   strongest there); conduits try to leave, find only routes into the Front, and every expedition beyond the city
