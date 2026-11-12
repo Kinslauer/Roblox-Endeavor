@@ -797,7 +797,7 @@ Client tab screenshot, because Andy cannot read logs another way.
   scenario.lua, "bay:" in client.lua. Not done: the Fuses can only be cut (not shot), runs give no Front reward, the
   exchange has no search or partial buys, the strongroom look is plain parts.
 ## State (2026-11-12)
-- Endeavor v110 (2026-11-12): world and money, round 6 of the reference picks (the hour's time of day and weather,
+- Endeavor v111 (2026-11-12; v110 the same round without the starting sky): world and money, round 6 of the reference picks (the hour's time of day and weather,
   parties, strongrooms and the S4 store cage, five party runs below the Sumps, generator fuel, timed crafting, the
   condenser, trust and swaps, the conduits' exchange, the Line 9 drop). Awaits Andy: docs/TESTING.md "Endeavor:
   world and money". Next: round 7 (things you make).

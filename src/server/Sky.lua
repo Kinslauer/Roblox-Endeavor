@@ -61,6 +61,11 @@ function Sky.Roll(rng)
 	return time, weather
 end
 
+-- the sky before the first hour (Main, round 6): the start time, clear
+function Sky.Init()
+	Sky.Apply(time, weather)
+end
+
 function Sky.Now()
 	return time, weather
 end

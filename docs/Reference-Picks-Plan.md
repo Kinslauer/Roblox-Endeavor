@@ -53,7 +53,7 @@ commit, the smoke tests, a real-server start check, a publish, and lines in docs
 5. **Builds** (Endeavor; built 2026-11-12, Endeavor v109): skill modifier chips, implant load and active implants, vows, a rolled trait per body, the
    empty body, grade trials, earnings carried until you extract to your bay, a hidden respec, skills that grow by
    doing, the stack slot (data and chips only) that survives death.
-6. **World and money** (Endeavor; built 2026-11-12, Endeavor v110): the hour picks a time of day (any order) and weather; party; party runs in the
+6. **World and money** (Endeavor; built 2026-11-12, Endeavor v111): the hour picks a time of day (any order) and weather; party; party runs in the
    shelters; keys and locked rooms; timed crafting and fuel; contact loyalty and swaps; player market (found-in-run
    items only); calling in a drop to a bay.
 7. **Things you make** (Endeavor, Front): the arm cybernetic built to be spent in one blow; the cable arm; trapping

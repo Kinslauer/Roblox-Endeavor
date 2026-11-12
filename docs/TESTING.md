@@ -1082,7 +1082,7 @@ Front:
 - [ ] Strip a fallen recruit (hold X): you also take its stack tag. Unlink at your locker: the tags are paid in
       credits.
 
-### Endeavor: world and money (2026-11-12, Endeavor v110)
+### Endeavor: world and money (2026-11-12, Endeavor v111)
 Round 6 of the reference picks. Nothing here was seen in game before publishing.
 - [ ] The hour: after each white-out the sky may change (dawn, day, dusk or night, often the next one in order, but
       sometimes any other) and so may the weather (clear, rain or fog). Rain falls around you and hides footsteps out
