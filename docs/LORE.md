@@ -190,6 +190,10 @@ How to read it:
 **Truth**
 - The Front has been forgotten by progress. It has looked the way it does now since the 1970s. Nothing is made
   there: everything on the Front (weapons, kit, tanks, recruits) arrived by shipment. [Andy 2026-11-12]
+- A recruit can change small parts of its gun in the field (a scope, a muzzle device, and a barrel where the pattern
+  has a quick change); every other change is a barracks job. Guns are known by their model designation, not by a
+  maker. [Andy 2026-11-12: "Front soldiers can do it on the fly with smaller attachments or quick change barrels.
+  But they can do everything at the barracks"]
 - The Front's guns are real Cold War patterns (AK, AR, Garand and M14, 1911, service revolver), and they come as
   parts: a locker order can fit a different barrel, muzzle device or sight to the same receiver. A few later arms
   (the Glock 17) are there too, and the Garands there are chambered in 7.62x51; like everything else they arrived by shipment, and neither side makes them.

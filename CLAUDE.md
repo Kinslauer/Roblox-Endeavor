@@ -36,7 +36,7 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (316 checks), `war` = Front (101), `warclient` = the Front client plays the first link's stages, the screen and the controls (25), `stress` = budgets under load (5), `client` = the
+  `scenario` = Endeavor end to end (321 checks), `war` = Front (112), `warclient` = the Front client plays the first link's stages, the screen and the controls (29), `stress` = budgets under load (5), `client` = the
   Endeavor client boots + movement, dodge, animation, guard, air and handling checks (44). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
@@ -117,7 +117,7 @@ Client tab screenshot, because Andy cannot read logs another way.
   L loadout, J attributes, O hideout, N recruit app, P helmetcam. With a gun out (owner, 2026-11-11): RMB aim, V sights, R reload,
   Q the wall (prone: roll); X close quarters (tap: takedown, throw or search a body; hold: neck grab or carry a body). Front: LMB fire, RMB aim, R reload (hold: keep the magazine), T rack/unjam, B selector, 1/2 switch,
   G frag, H dressing, Q/E lean (prone: roll), C crouch (hold: prone; sprinting: dive), Space up a stance / mantle,
-  Z binoculars, Y check weapon, K artillery, F dig, V sandbags, M app, U unlink.
+  Z binoculars, Y check weapon (held: 1-4 change the part in a slot), K artillery, F dig, V sandbags, M app, U unlink.
 
 - Movement (owner, 2026-11-03: "the platformer template has the movement i'd like"): `src/client/Movement.lua` is a
   port of Roblox's Platformer template (the user uploaded Platform.rbxl; read with the scratch `tools/rbxl.py` binary
@@ -499,6 +499,22 @@ Client tab screenshot, because Andy cannot read logs another way.
   mounted. Still one-piece old models: SKS, Mosin, Makarov. Not done: the tracer still starts at the eye
   (`GunParts.MuzzleEnd` is there for it); Endeavor still uses whole guns (add a `Weapons.Calibers` row when
   component guns go there). Tests: "guns:" in war.lua.
+- Gun families and field changes (owner, 2026-11-12: "every family of weapons has its own quirks but can be
+  relatively interchangeable. Front soldiers can do it on the fly with smaller attachments or quick change barrels.
+  But they can do everything at the barracks"; "the weapons are real, if they arent copyrighted we can use them,
+  then build our own attachments"; his list of wanted guns is tarkovforge.com/weapons, a list of real guns only:
+  that host is not on this environment's network allow list, and its models are another game's, never copied).
+  Firearms: Defs carry `Family` (AK: AKM, AK47; AR: M16A1; Garand: M14, M1Garand); `Firearms.Families[f].Field` =
+  slots a soldier may change away from the barracks (AK Optic/Muzzle; AR all four; Garand Muzzle; Other
+  Optic/Muzzle/Grip), `CanField(def, slot)`, `FieldSeconds`, `BarracksSeconds`, `MaxSpares` 4. Order:
+  `loadout.Spares` (ids; ones that do not fit or are not in the locker are left out) -> `kit.Spares` -> `s.Spares`
+  ({Id, Condition}; in the State kit table). `Soldiers.FieldMod(player, slot, id|nil)` (Remote "FieldMod"): primary
+  in hand, not busy, the part is a carried spare; barracks = within Config.War.BarracksReach of an own locker or
+  in the first link; swaps with the pouch, w.Busy, pushWeapon rebuilds the model; refusals go back as Weapon
+  "Refused"(Barracks/Busy/Missing) -> Hud.Flash. Spares drop damaged with the body and return on unlink / intro
+  abort. Client: `Hud.Fit` rows above the check panel (Hud.FitSlots = keys 1-4), Main `fieldMod`; app buttons
+  Carry / Leave. Display names are model designations ("G17", "3x scope"), no maker brands. Tests: "family:",
+  "spares:", "field:", "barracks:" in war.lua, "parts:" in warclient.lua.
 
 ## State (2026-11-12)
 - Endeavor v95 (2026-11-12): calibres and plate. The Whisper is a .22 (stopped by any plate, one round through
@@ -545,6 +561,9 @@ Client tab screenshot, because Andy cannot read logs another way.
   carrying bodies, the wall); v85 the same day: playtest fixes (pistol every ride, third person, quiet screen, cloak,
   takedown alignment). Awaits Andy's play-through: docs/TESTING.md "Endeavor: Metal Gear handling". Andy reported
   "the right click broke" on v79; no fault was found beyond first person not turning the body (fixed); asked what failed.
+- Front v32 (2026-11-12): gun families, carried spare parts, changing parts in the field (hold Y, 1-4) and
+  everything at the barracks. REALCHECK32 Awaits Andy: docs/TESTING.md "Front: gun families and changing parts in
+  the field". Next: more guns from Andy's list, family by family.
 - Front v31 (2026-11-12): guns built from components (AK, AR, Garand/M14 with three barrel lengths, muzzle devices,
   scopes, foregrip), new AK-47, M1 Garand, Glock 17, service revolver. Real server: start 3.0s, 0 warnings, all 5 rifles assemble in every barrel with suppressor, scope and foregrip. Unseen in game: the grip of the new
   models in the hands and in first person. Awaits Andy: docs/TESTING.md "Front: guns built from parts".

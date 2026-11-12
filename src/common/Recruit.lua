@@ -136,6 +136,27 @@ function Recruit.Order(war, loadout)
 			end
 		end
 	end
+	-- loose parts carried for swapping later: they must fit a slot of the primary
+	if type(loadout.Spares) == "table" and order.Primary then
+		local slots = Firearms.Defs[order.Primary].Slots
+		local wanted = { }
+		for _, id in order.Attachments do
+			wanted[id] = (wanted[id] or 0) + 1
+		end
+		order.Spares = {}
+		for i = 1, #loadout.Spares do
+			if #order.Spares >= Firearms.MaxSpares then
+				break
+			end
+			local id = loadout.Spares[i]
+			local def = type(id) == "string" and Firearms.Attachments[id]
+			-- one that does not fit (the primary changed) or is not there is left behind, not an error
+			if def and war.Locker[id] and table.find(slots, def.Slot) and (war.Locker[id].count or 0) > (wanted[id] or 0) then
+				wanted[id] = (wanted[id] or 0) + 1
+				table.insert(order.Spares, id)
+			end
+		end
+	end
 	war.Loadout = order
 	return true
 end
@@ -159,6 +180,13 @@ function Recruit.Deploy(war)
 			local condition = Recruit.LockerTake(war, id, 1)
 			if condition then
 				kit.Attachments[slot] = { Id = id, Condition = condition }
+			end
+		end
+		kit.Spares = {}
+		for _, id in order.Spares or {} do
+			local condition = Recruit.LockerTake(war, id, 1)
+			if condition then
+				table.insert(kit.Spares, { Id = id, Condition = condition })
 			end
 		end
 	end

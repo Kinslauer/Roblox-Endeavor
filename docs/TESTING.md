@@ -718,7 +718,7 @@ Controls and gunplay:
 
 ### Front: guns built from parts (2026-11-12, Front v31)
 Open the recruit app (M at the base, or the locker) and look at the weapons list.
-- [ ] New guns are in the list: AK-47 (Pact), M1 Garand (Union), Glock 17 and Service Revolver (both sides).
+- [ ] New guns are in the list: AK-47 (Pact), M1 Garand (Union), G17 (the Glock 17) and Service Revolver (both sides).
 - [ ] Deploy with an AKM, AK-47, M16A1, M14 or M1 Garand: the rifle in your hands is the new detailed model (separate
       receiver, barrel and muzzle device), it sits in the hands the right way round and the hands are on the grip.
 - [ ] The AK-47 has wood furniture and a plain muzzle nut; the AKM has the slanted muzzle brake.
@@ -731,6 +731,22 @@ Open the recruit app (M at the base, or the locker) and look at the weapons list
 - [ ] A mounted attachment's button reads "Remove"; pressing it takes the part off and the standard barrel returns.
 - [ ] The M1911, Glock 17 and Service Revolver (sidearm, key 2) show the new pistol models. The revolver holds 6.
 - [ ] SKS, Mosin and Makarov still show their old one-piece models (not rebuilt yet).
+
+### Front: gun families and changing parts in the field (2026-11-12, Front v32)
+- [ ] In the recruit app (M), each attachment in the locker has a "Carry" button. Carried parts show on the line
+      "Carried spare parts" (at most four). "Leave" takes one off the list. You need a second copy to both mount
+      and carry the same part.
+- [ ] Deployed with a rifle, hold Y: above the parts bars a small list shows what is fitted, one line per slot
+      (1 barrel, 2 optic, 3 muzzle, 4 grip). "+1" means you carry a spare for that slot. White = can be changed
+      right here, dim = only at the barracks.
+- [ ] Hold Y and press 2, 3 or 4 away from the base: the carried part goes on (the model changes), the old one goes
+      in the pouch, and you cannot fire for two or three seconds. With no spare for the slot, the fitted part comes off.
+- [ ] Each family has its own rule in the field. AK pattern (AKM, AK-47): scope and muzzle device. AR pattern
+      (M16A1): everything, also the barrel (about seven seconds). Garand pattern (M1 Garand, M14): muzzle device only.
+- [ ] Try a barracks-only change in the field (Y + 1 on an AK): the word BARRACKS flashes and nothing changes.
+- [ ] Stand near your own base locker (about 40 studs): every slot can be changed, and it takes one second.
+- [ ] Die: the carried spare parts are in your body's loot, damaged. Unlink: they go back in the locker.
+- [ ] The Glock shows as "G17" and the Union scope as "3x scope" (model names, no maker names).
 
 ## The story joined up (2026-11-10, new this round: Endeavor v80, Front v25)
 Play these on the published places (Studio's Play button cannot teleport between places).

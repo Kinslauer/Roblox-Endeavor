@@ -58,7 +58,8 @@ local function pushWeapon(player)
 	local s = soldiers[player]
 	if s then
 		Remotes.Weapon:FireClient(player, "State", Guns.Snapshot(s.Weapons[s.Active]), s.Active, { Grenades = s.Grenades, Medkits = s.Medkits, Sandbags = s.Sandbags,
-			Armor = s.Armor and { Id = s.Armor.Id, Condition = s.Armor.Condition }, Helmet = s.Helmet and { Id = s.Helmet.Id, Condition = s.Helmet.Condition } })
+			Armor = s.Armor and { Id = s.Armor.Id, Condition = s.Armor.Condition }, Helmet = s.Helmet and { Id = s.Helmet.Id, Condition = s.Helmet.Condition },
+			Spares = s.Spares })
 	end
 end
 
@@ -96,7 +97,11 @@ function Soldiers.Arm(player, kit, faction, opts)
 	local s = {
 		Kit = kit, Weapons = {}, Active = if kit.Primary then "Primary" else "Sidearm", Grenades = 0, Medkits = 0, Sandbags = 0,
 		Faction = faction, Protected = os.clock() + Config.SpawnProtection, Intro = opts.Intro == true, Issued = kit.Issued or {},
+		Spares = {},
 	}
+	for _, att in kit.Spares or {} do
+		table.insert(s.Spares, { Id = att.Id, Condition = att.Condition })
+	end
 	soldiers[player] = s
 	if opts.Pending then
 		s.Pending = {}
@@ -316,6 +321,11 @@ local function dropBody(player, char, s)
 			end
 		end
 	end
+	if not s.Issued.Primary then
+		for _, att in s.Spares or {} do
+			table.insert(loot, { Id = att.Id, Condition = math.max(0, att.Condition - W.Death.PartDamage) })
+		end
+	end
 	for _, slot in { "Armor", "Helmet" } do
 		local piece = s[slot]
 		if piece and not s.Issued[slot] then
@@ -465,6 +475,12 @@ local function standDown(player, s)
 			mags += #w.Spare
 		end
 	end
+	if not s.Issued.Primary then
+		for _, att in s.Spares or {} do
+			Recruit.LockerAdd(war, att.Id, att.Condition, 1)
+		end
+		s.Spares = {}
+	end
 	for _, slot in { "Armor", "Helmet" } do
 		local piece = s[slot]
 		if piece and not s.Issued[slot] then
@@ -497,6 +513,67 @@ local function nearOwnLocker(player, s)
 		end
 	end
 	return false
+end
+
+local function atBarracks(player, s)
+	if s.Intro then
+		return true -- the first link's barracks benches
+	end
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return false
+	end
+	for _, locker in Battlefield.Lockers do
+		local target = if locker:IsA("Model") then locker.PrimaryPart else locker
+		if target and locker:GetAttribute("Faction") == s.Faction and (target.Position - root.Position).Magnitude <= W.BarracksReach then
+			return true
+		end
+	end
+	return false
+end
+
+-- Change one part of the primary from the loose parts the recruit carries. `id` nil takes the part off.
+-- In the field only what the gun's family allows (Firearms.CanField); at the barracks every slot.
+-- Returns true, or false and why not ("Barracks", "Busy", "Missing", "Slot").
+function Soldiers.FieldMod(player, slot, id)
+	local s = soldiers[player]
+	local w = s and s.Weapons.Primary
+	if not w or s.Active ~= "Primary" or s.Pending then
+		return false, "Slot"
+	end
+	if not table.find(w.Def.Slots, slot) then
+		return false, "Slot"
+	end
+	if w.Reloading or os.clock() < w.Busy then
+		return false, "Busy"
+	end
+	local barracks = atBarracks(player, s)
+	if not barracks and not Firearms.CanField(w.Def, slot) then
+		return false, "Barracks"
+	end
+	local index
+	if id ~= nil then
+		for i, att in s.Spares do
+			local def = Firearms.Attachments[att.Id]
+			if att.Id == id and def and def.Slot == slot then
+				index = i
+				break
+			end
+		end
+		if not index then
+			return false, "Missing"
+		end
+	elseif not w.Attachments[slot] then
+		return false, "Missing"
+	end
+	local old = w.Attachments[slot]
+	w.Attachments[slot] = if index then table.remove(s.Spares, index) else nil
+	if old then
+		table.insert(s.Spares, old)
+	end
+	w.Busy = os.clock() + (if barracks then Firearms.BarracksSeconds else Firearms.FieldSeconds[slot] or 3)
+	pushWeapon(player)
+	return true
 end
 
 -- Returns true when the link is closing, or false and why not.
@@ -893,6 +970,12 @@ function Soldiers.Init()
 			task.delay(0.5, function() pushWeapon(player) end)
 			task.delay(2.5, function() pushWeapon(player) end)
 			task.delay(4.0, function() pushWeapon(player) end)
+		end
+	end)
+	Net.On("FieldMod", { rate = 3, burst = 4, args = { "string", "string?" } }, function(player, slot, id)
+		local ok, why = Soldiers.FieldMod(player, slot, id)
+		if not ok and why then
+			Remotes.Weapon:FireClient(player, "Refused", why)
 		end
 	end)
 	Net.On("Rack", { rate = 3, burst = 4 }, function(player)

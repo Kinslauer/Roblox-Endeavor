@@ -68,7 +68,7 @@ do
 	local UIS = game_:GetService("UserInputService")
 	local Enum_ = M.mockEnv.Enum
 	local sent = {}
-	for _, name in { "Stance", "Reload", "Lean", "Mark" } do
+	for _, name in { "Stance", "Reload", "Lean", "Mark", "FieldMod", "Switch" } do
 		RS.Remotes[name].OnServerEvent:Connect(function(_, a) table.insert(sent, { name, a }) end)
 	end
 	local function last(name) for i = #sent, 1, -1 do if sent[i][1] == name then return sent[i][2] end end return nil end
@@ -121,6 +121,21 @@ do
 	check("screen: a marked figure wears a mark", Hud.Marked(enemy) == true and pg:FindFirstChild("Mark") ~= nil)
 	run(9.5)
 	check("screen: the mark fades", Hud.Marked(enemy) == false)
+	-- the fitted parts: hold Y, 1-4 change a slot
+	RS.Remotes.Weapon.OnClientEvent:Fire("State", { Id = "AKM", Name = "AKM", Mode = "Auto", Chamber = true, BoltOpen = false, Jammed = false, Reloading = false, Mag = 24, MagSize = 30, Spare = 3,
+		Parts = { Receiver = 90, Barrel = 80, Bolt = 70, Magazine = 60, Stock = 50 }, Attachments = { Muzzle = { Id = "Suppressor", Condition = 100 } }, Busy = 0, Zoom = 1 }, "Primary",
+		{ Grenades = 2, Medkits = 1, Sandbags = 4, Spares = { { Id = "PSO", Condition = 100 } } })
+	run(0.1)
+	local before = count("Switch")
+	down("Y") run(0.1)
+	check("parts: the checked weapon lists what is fitted, short and plain", el.Fit.Visible == true and el.Fit:FindFirstChildWhichIsA("TextLabel") ~= nil)
+	down("Two") up("Two") run(0.1)
+	check("parts: Y and 2 fits the carried scope", last("FieldMod") == "Optic" and count("Switch") == before)
+	down("Three") up("Three") run(0.1)
+	check("parts: Y and 3 with no spare takes the suppressor off", last("FieldMod") == "Muzzle")
+	up("Y") run(0.1)
+	down("Two") up("Two") run(0.1)
+	check("parts: without Y, 2 still switches weapon", count("Switch") == before + 1 and el.Fit.Visible == false)
 end
 check("no client errors", #M.errors == 0)
 for _, e in M.errors do print(e) end

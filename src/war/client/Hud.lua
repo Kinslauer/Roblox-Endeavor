@@ -49,6 +49,9 @@ local function bar(props, parent)
 	return make("Frame", props, parent)
 end
 
+Hud.FitSlots = { "Barrel", "Optic", "Muzzle", "Grip" }
+local fitRows, fitAny = {}, false
+
 function Hud.Init(screenGui)
 	gui = screenGui
 
@@ -84,6 +87,17 @@ function Hud.Init(screenGui)
 		row.Fill = bar({ Size = UDim2.fromOffset(76, 2), Position = UDim2.fromOffset(52, y + 5) }, c)
 		row.Value = text({ Size = UDim2.fromOffset(28, 12), Position = UDim2.fromOffset(134, y), TextSize = 10, TextXAlignment = Enum.TextXAlignment.Right }, c)
 		partRows[name] = row
+	end
+
+	-- above it, while the weapon is checked: what is fitted in each slot, and the key that changes it
+	local f = make("Frame", { Size = UDim2.fromOffset(170, 64), Position = UDim2.new(1, -194, 1, -294), BackgroundColor3 = Color3.fromRGB(8, 10, 12), BackgroundTransparency = 0.35, BorderSizePixel = 0, Visible = false })
+	el.Fit = f
+	for i, slot in Hud.FitSlots do
+		local y = 6 + (i - 1) * 13
+		fitRows[slot] = {
+			Key = text({ Size = UDim2.fromOffset(60, 12), Position = UDim2.fromOffset(10, y), TextSize = 10, TextColor3 = DIM, TextXAlignment = Enum.TextXAlignment.Left }, f),
+			Value = text({ Size = UDim2.fromOffset(92, 12), Position = UDim2.fromOffset(68, y), TextSize = 10, TextXAlignment = Enum.TextXAlignment.Right }, f),
+		}
 	end
 
 	-- bottom left: health, stance, three items
@@ -129,6 +143,35 @@ end
 -- ===== weapon =====
 local function setCheck()
 	el.Check.Visible = checkHeld or os.clock() < (el.CheckUntil or 0)
+	el.Fit.Visible = el.Check.Visible and fitAny
+end
+
+-- The fitted parts of the primary: one line per slot the gun has. White = can be changed here and now
+-- (the key in front), dim = a barracks job. "+n" = loose parts carried for that slot.
+function Hud.Fit(weapon, kit, isPrimary)
+	fitAny = false
+	local def = weapon and Firearms.Defs[weapon.Id]
+	for i, slot in Hud.FitSlots do
+		local row = fitRows[slot]
+		local has = def ~= nil and isPrimary and table.find(def.Slots, slot) ~= nil
+		row.Key.Visible, row.Value.Visible = has, has
+		if has then
+			fitAny = true
+			local att = weapon.Attachments and weapon.Attachments[slot]
+			local name = att and Firearms.Attachments[att.Id] and Firearms.Attachments[att.Id].Name or (if slot == "Barrel" then "Standard" else "-")
+			local spare = 0
+			for _, s in (kit and kit.Spares) or {} do
+				local a = Firearms.Attachments[s.Id]
+				if a and a.Slot == slot then
+					spare += 1
+				end
+			end
+			row.Key.Text = ("%d %s%s"):format(i, slot:sub(1, 4):upper(), if spare > 0 then " +" .. spare else "")
+			row.Value.Text = name:upper():sub(1, 12)
+			row.Value.TextColor3 = if Firearms.CanField(def, slot) then WHITE else DIM
+		end
+	end
+	setCheck()
 end
 
 function Hud.Weapon(weapon, slotName, kit)

@@ -25,23 +25,23 @@ Firearms.Ammo = {
 -- Modes: which selector positions exist. RPM, Recoil (vertical, horizontal per shot), Spread
 -- (base cone in degrees, hip), ADS multiplier, Reload stages in seconds, Faction (shop side).
 Firearms.Defs = {
-	AKM = { Name = "AKM", Class = "Rifle", Ammo = "7.62x39", MagSize = 30, Modes = { "Safe", "Auto", "Semi" }, RPM = 600,
+	AKM = { Family = "AK", Name = "AKM", Class = "Rifle", Ammo = "7.62x39", MagSize = 30, Modes = { "Safe", "Auto", "Semi" }, RPM = 600,
 		Recoil = { 1.9, 0.9 }, Spread = 2.4, AdsSpread = 0.45, Ergonomics = 0.55, Weight = 3.5, Faction = "Pact", Price = 900,
 		Reload = { EjectMag = 0.6, InsertMag = 0.9, Rack = 0.5 }, Slots = { "Optic", "Muzzle", "Grip", "Barrel" } },
-	AK47 = { Name = "AK-47", Class = "Rifle", Ammo = "7.62x39", MagSize = 30, Modes = { "Safe", "Auto", "Semi" }, RPM = 600,
+	AK47 = { Family = "AK", Name = "AK-47", Class = "Rifle", Ammo = "7.62x39", MagSize = 30, Modes = { "Safe", "Auto", "Semi" }, RPM = 600,
 		Recoil = { 1.8, 0.9 }, Spread = 2.5, AdsSpread = 0.48, Ergonomics = 0.5, Weight = 3.9, Faction = "Pact", Price = 820,
 		Reload = { EjectMag = 0.6, InsertMag = 0.9, Rack = 0.5 }, Slots = { "Optic", "Muzzle", "Grip", "Barrel" } },
-	M16A1 = { Name = "M16A1", Class = "Rifle", Ammo = "5.56x45", MagSize = 20, Modes = { "Safe", "Semi", "Auto" }, RPM = 750,
+	M16A1 = { Family = "AR", Name = "M16A1", Class = "Rifle", Ammo = "5.56x45", MagSize = 20, Modes = { "Safe", "Semi", "Auto" }, RPM = 750,
 		Recoil = { 1.2, 0.6 }, Spread = 1.9, AdsSpread = 0.35, Ergonomics = 0.65, Weight = 3.0, Faction = "Union", Price = 950,
 		Reload = { EjectMag = 0.5, InsertMag = 0.8, Rack = 0.45 }, Slots = { "Optic", "Muzzle", "Grip", "Barrel" } },
 	SKS = { Name = "SKS", Class = "Carbine", Ammo = "7.62x39", MagSize = 10, Modes = { "Safe", "Semi" }, RPM = 400,
 		Recoil = { 1.6, 0.7 }, Spread = 1.8, AdsSpread = 0.3, Ergonomics = 0.6, Weight = 3.8, Faction = "Pact", Price = 500,
 		Reload = { EjectMag = 0.4, InsertMag = 1.4, Rack = 0.5 }, Slots = { "Optic" } },
-	M14 = { Name = "M14", Class = "Battle Rifle", Ammo = "7.62x51", MagSize = 20, Modes = { "Safe", "Semi", "Auto" }, RPM = 700,
+	M14 = { Family = "Garand", Name = "M14", Class = "Battle Rifle", Ammo = "7.62x51", MagSize = 20, Modes = { "Safe", "Semi", "Auto" }, RPM = 700,
 		Recoil = { 2.6, 1.1 }, Spread = 1.7, AdsSpread = 0.3, Ergonomics = 0.5, Weight = 4.1, Faction = "Union", Price = 1200,
 		Reload = { EjectMag = 0.6, InsertMag = 0.9, Rack = 0.5 }, Slots = { "Optic", "Muzzle", "Barrel" } },
 	-- eight rounds on an en-bloc clip: the whole clip goes in from the top
-	M1Garand = { Name = "M1 Garand", Class = "Battle Rifle", Ammo = "7.62x51", MagSize = 8, Modes = { "Safe", "Semi" }, RPM = 350,
+	M1Garand = { Family = "Garand", Name = "M1 Garand", Class = "Battle Rifle", Ammo = "7.62x51", MagSize = 8, Modes = { "Safe", "Semi" }, RPM = 350,
 		Recoil = { 2.8, 1.0 }, Spread = 1.5, AdsSpread = 0.25, Ergonomics = 0.5, Weight = 4.3, Faction = "Union", Price = 800,
 		Reload = { EjectMag = 0.2, InsertMag = 1.1, Rack = 0.3 }, Slots = { "Optic", "Muzzle", "Barrel" } },
 	Mosin = { Name = "Mosin-Nagant", Class = "Bolt Action", Ammo = "7.62x54R", MagSize = 5, Modes = { "Safe", "Semi" }, RPM = 40, BoltAction = true,
@@ -54,7 +54,7 @@ Firearms.Defs = {
 		Recoil = { 1.5, 0.6 }, Spread = 2.6, AdsSpread = 0.55, Ergonomics = 0.85, Weight = 1.1, Faction = "Union", Price = 300,
 		Reload = { EjectMag = 0.4, InsertMag = 0.6, Rack = 0.35 }, Slots = {} },
 	-- arrived by shipment, like everything on the Front; either side can order them
-	Glock17 = { Name = "Glock 17", Class = "Pistol", Ammo = "9x19", MagSize = 17, Modes = { "Safe", "Semi" }, RPM = 400,
+	Glock17 = { Name = "G17", Class = "Pistol", Ammo = "9x19", MagSize = 17, Modes = { "Safe", "Semi" }, RPM = 400,
 		Recoil = { 1.0, 0.5 }, Spread = 2.6, AdsSpread = 0.55, Ergonomics = 0.9, Weight = 0.7, Price = 450,
 		Reload = { EjectMag = 0.35, InsertMag = 0.55, Rack = 0.3 }, Slots = {} },
 	Revolver = { Name = "Service revolver", Class = "Pistol", Ammo = ".38", MagSize = 6, Modes = { "Semi" }, RPM = 180,
@@ -66,7 +66,7 @@ Firearms.Defs = {
 Firearms.Attachments = {
 	IronSights = { Name = "Iron sights", Slot = "Optic", Zoom = 1, Price = 0 },
 	PSO = { Name = "PSO-1 4x", Slot = "Optic", Zoom = 4, AdsTime = 0.15, Faction = "Pact", Price = 400 },
-	Colt3x = { Name = "Colt 3x scope", Slot = "Optic", Zoom = 3, AdsTime = 0.12, Faction = "Union", Price = 380 },
+	Colt3x = { Name = "3x scope", Slot = "Optic", Zoom = 3, AdsTime = 0.12, Faction = "Union", Price = 380 },
 	Suppressor = { Name = "Suppressor", Slot = "Muzzle", Loudness = 0.35, Velocity = 0.95, Recoil = 0.9, Price = 450 },
 	Compensator = { Name = "Compensator", Slot = "Muzzle", Recoil = 0.8, Loudness = 1.2, Price = 220 },
 	-- barrels: a different length is a different gun to shoot (shared/GunParts has the models)
@@ -74,6 +74,27 @@ Firearms.Attachments = {
 	BarrelLong = { Name = "Long barrel", Slot = "Barrel", Velocity = 1.08, Spread = 0.75, Recoil = 0.92, Ergonomics = -0.1, Price = 340 },
 	Foregrip = { Name = "Foregrip", Slot = "Grip", Recoil = 0.85, Ergonomics = 0.1, Price = 180 },
 }
+
+-- Families: guns of one pattern take each other's parts. Each has its own quirk for what a soldier can change
+-- away from the barracks (Field): small attachments everywhere they screw or clamp on, a barrel only where the
+-- pattern has a quick change. At the barracks every slot can be changed.
+Firearms.Families = {
+	AK = { Name = "AK pattern", Field = { "Optic", "Muzzle" } }, -- side-rail scope and threaded muzzle; the barrel is pressed in
+	AR = { Name = "AR pattern", Field = { "Optic", "Muzzle", "Grip", "Barrel" } }, -- two pins: the whole upper comes off
+	Garand = { Name = "Garand pattern", Field = { "Muzzle" } }, -- a scope needs a fitted mount, the barrel an armourer
+	Other = { Name = "", Field = { "Optic", "Muzzle", "Grip" } },
+}
+Firearms.FieldSeconds = { Optic = 2.5, Muzzle = 3, Grip = 2, Barrel = 7 } -- hands busy for this long in the field
+Firearms.BarracksSeconds = 1
+Firearms.MaxSpares = 4 -- loose parts a recruit carries for the primary
+
+function Firearms.FamilyOf(def)
+	return Firearms.Families[def and def.Family or "Other"] or Firearms.Families.Other
+end
+
+function Firearms.CanField(def, slot)
+	return def ~= nil and table.find(def.Slots, slot) ~= nil and table.find(Firearms.FamilyOf(def).Field, slot) ~= nil
+end
 
 -- Body armor for recruits: plates stop a share of bullet damage, pen eats into that.
 Firearms.Armor = {

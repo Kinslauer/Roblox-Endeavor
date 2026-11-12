@@ -201,7 +201,7 @@ profile (same ProfileService store, same universe). Code lives in `src/war/` and
   limbs x0.6); armor plates absorb damage by condition and penetration.
 - **Controls** (Metal Gear handling, first person): `LMB` fire · `RMB` sights · `R` quick reload (hold: keep the
   magazine) · `T` rack / clear jam · `B` selector · `1`/`2` weapon · `C` crouch (hold: prone; at a sprint: dive) ·
-  `Space` up a stance / over a ledge · `Z` binoculars (mark) · `Y` check weapon ·
+  `Space` up a stance / over a ledge · `Z` binoculars (mark) · `Y` check weapon (held: `1`-`4` change the part in that slot) ·
   `G` frag · `H` field dressing · `Q`/`E` lean, peek past cover (prone: roll) · `K` call artillery on your aim point (inside the hill, 2 min cooldown) ·
   `M` recruit app · `F` dig a foxhole (4s, stay still; a hit stops you) · `V` stack a low sandbag section (3 per
   deployment from the shop). Entrenching only works on open ground, away from buildings and other works; digging

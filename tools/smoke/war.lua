@@ -475,6 +475,49 @@ do
 	local rev = Guns.Make("Revolver", 100)
 	check("guns: the revolver has six and no safety", rev.Mode == "Semi" and rev.Mag + 1 == 6 and Guns.Trigger(rev) == "fired")
 end
+-- gun families and changing parts in the field (2026-11-12)
+do
+	as(g)
+	local Recruit = M.mockEnv.__require(SSS.Server.Common.Recruit)
+	local Soldiers = M.mockEnv.__require(SSS.Server.Soldiers)
+	local Battlefield = M.mockEnv.__require(SSS.Server.Battlefield)
+	local D = Firearms.Defs
+	check("family: guns of one pattern share a family", D.AKM.Family == "AK" and D.AK47.Family == "AK" and D.M14.Family == "Garand" and D.M1Garand.Family == "Garand" and D.M16A1.Family == "AR")
+	check("family: each pattern has its own field rule", Firearms.CanField(D.M16A1, "Barrel") and not Firearms.CanField(D.AKM, "Barrel") and Firearms.CanField(D.AKM, "Muzzle") and Firearms.CanField(D.AKM, "Optic") and not Firearms.CanField(D.M14, "Optic") and Firearms.CanField(D.M14, "Muzzle"))
+	local war = M.mockEnv.__require(SSS.Server.Common.PlayerData).Get(g).War
+	for _, id in { "AKM", "BarrelShort", "Suppressor", "Compensator", "PSO", "Foregrip" } do war.Locker[id] = { count = 1, condition = 100 } end
+	local okOrder = Recruit.Order(war, { Primary = "AKM", Attachments = { Muzzle = "Suppressor" }, Spares = { "Compensator", "BarrelShort", "Suppressor", "PSO", "Foregrip", "Nonsense" } })
+	check("spares: an order carries loose parts that fit, never the same single part twice, at most four", okOrder == true and #war.Loadout.Spares == 4 and not table.find(war.Loadout.Spares, "Suppressor") and not table.find(war.Loadout.Spares, "Nonsense"))
+	local kit = Recruit.Deploy(war)
+	check("spares: the kit takes them out of the locker", kit ~= nil and #kit.Spares == 4 and war.Locker.Compensator == nil and war.Locker.PSO == nil)
+	local faction = M.mockEnv.__require(SSS.Server.Factions).Of and M.mockEnv.__require(SSS.Server.Factions).Of(g) or "Pact"
+	local s = Soldiers.Arm(g, kit, faction)
+	local w = s.Weapons.Primary
+	local root = g.Character.HumanoidRootPart
+	local locker
+	for _, l in Battlefield.Lockers do if l:GetAttribute("Faction") == faction then locker = l end end
+	local lockerPos = locker and (if locker:IsA("Model") then locker.PrimaryPart.Position else locker.Position)
+	root.CFrame = M.CF.new(lockerPos + M.V3.new(0, 5000, 0))
+	local ok1 = Soldiers.FieldMod(g, "Muzzle", "Compensator")
+	check("field: a muzzle device is changed on the spot, and the old one goes in the pouch", ok1 == true and w.Attachments.Muzzle.Id == "Compensator" and #s.Spares == 4)
+	local okBusy, whyBusy = Soldiers.FieldMod(g, "Optic", "PSO")
+	check("field: the hands are busy while a part goes on", okBusy == false and whyBusy == "Busy")
+	w.Busy = 0
+	local okB, whyB = Soldiers.FieldMod(g, "Barrel", "BarrelShort")
+	check("field: an AK barrel is a barracks job", okB == false and whyB == "Barracks" and w.Attachments.Barrel == nil)
+	local okM, whyM = Soldiers.FieldMod(g, "Optic", "Colt3x")
+	check("field: a part that is not carried cannot be fitted", okM == false and whyM == "Missing")
+	root.CFrame = M.CF.new(lockerPos + M.V3.new(6, 0, 0))
+	check("barracks: by the locker the barrel can be changed", Soldiers.FieldMod(g, "Barrel", "BarrelShort") == true and w.Attachments.Barrel.Id == "BarrelShort")
+	w.Busy = 0
+	check("barracks: a part can be taken off again", Soldiers.FieldMod(g, "Barrel", nil) == true and w.Attachments.Barrel == nil and #s.Spares == 4)
+	w.Busy = 0
+	-- the AR's upper comes off anywhere
+	local ar = Soldiers.Arm(g, { Primary = { Id = "M16A1", Condition = 100 }, Attachments = {}, Spares = { { Id = "BarrelShort", Condition = 80 } } }, faction)
+	root.CFrame = M.CF.new(lockerPos + M.V3.new(0, 5000, 0))
+	local okAR, whyAR = Soldiers.FieldMod(g, "Barrel", "BarrelShort")
+	check("field: an AR barrel is changed in the field, and keeps its wear", okAR == true and ar.Weapons.Primary.Attachments.Barrel.Condition == 80 and M.mockEnv.__require(SSS.Server.Guns).Snapshot(ar.Weapons.Primary).Busy > 5)
+end
 local probe = Intro.Probe(M.V3.new(0, 1500, 5000))
 check("intro: the probe builds and clears a cell and a simulation", type(probe) == "string" and probe:find("benches 5") ~= nil and workspace_:FindFirstChild("IntroCell_0") == nil)
 

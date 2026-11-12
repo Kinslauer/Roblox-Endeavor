@@ -144,7 +144,29 @@ local recoilPitch, recoilYaw = 0, 0
 local stance = "Stand"
 local function describe()
 	Hud.Weapon(weapon, slotName, kit)
+	Hud.Fit(weapon, kit, slotName == "Primary")
 end
+-- With the weapon checked (Y held), 1-4 change the part in that slot: the next loose part carried for it goes
+-- on (the old one goes in the pouch); with none carried, the fitted part comes off.
+local checkHeld = false
+local function fieldMod(index)
+	local slot = Hud.FitSlots[index]
+	if not weapon or slotName ~= "Primary" or not slot then
+		return
+	end
+	for _, s in kit.Spares or {} do
+		local a = Firearms.Attachments[s.Id]
+		if a and a.Slot == slot then
+			Remotes.FieldMod:FireServer(slot, s.Id)
+			return
+		end
+	end
+	if weapon.Attachments and weapon.Attachments[slot] then
+		Remotes.FieldMod:FireServer(slot, nil)
+	end
+end
+local FIT_KEYS = { [Enum.KeyCode.One] = 1, [Enum.KeyCode.Two] = 2, [Enum.KeyCode.Three] = 3, [Enum.KeyCode.Four] = 4 }
+local REFUSED = { Barracks = "BARRACKS", Busy = "BUSY", Missing = "NO PART" }
 Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c, d)
 	if kind == "State" then
 		local wasReloading = weapon and weapon.Reloading
@@ -157,6 +179,10 @@ Remotes.Weapon.OnClientEvent:Connect(function(kind, a, b, c, d)
 			end
 		end
 		describe()
+	elseif kind == "Refused" then
+		if REFUSED[a] then
+			Hud.Flash(REFUSED[a])
+		end
 	elseif kind == "Recoil" then
 		recoilPitch += a * (if aiming then 0.7 else 1)
 		recoilYaw += (math.random() - 0.5) * 2 * b
@@ -421,6 +447,7 @@ local function renderApp()
 	row(("Primary: %s   Sidearm: %s   Armor: %s   Helmet: %s"):format(lo.Primary or "-", lo.Sidearm or "-", lo.Armor or "-", lo.Helmet or "-"), {})
 	local atts = lo.Attachments or {}
 	row(("Barrel: %s   Optic: %s   Muzzle: %s   Grip: %s"):format(atts.Barrel or "standard", atts.Optic or "-", atts.Muzzle or "-", atts.Grip or "-"), {})
+	row(("Carried spare parts (%d of %d): %s"):format(#(lo.Spares or {}), Firearms.MaxSpares, if #(lo.Spares or {}) > 0 then table.concat(lo.Spares, ", ") else "-"), {})
 	row("-- LOCKER (X = put in next order, Fix = repair) --", {})
 	local ids = {}
 	for id in s.Locker do table.insert(ids, id) end
@@ -432,7 +459,7 @@ local function renderApp()
 		if item.Kind == "Weapon" then
 			local isPistol = item.Class == "Pistol"
 			table.insert(buttons, { text = if isPistol then "Sidearm" else "Primary", fn = function()
-				local order = { Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts }
+				local order = { Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts, Spares = lo.Spares }
 				order[if isPistol then "Sidearm" else "Primary"] = id
 				Remotes.WarOrder:FireServer(order)
 			end })
@@ -440,12 +467,19 @@ local function renderApp()
 			local mounted = atts[item.Slot] == id
 			table.insert(buttons, { text = if mounted then "Remove" else "Mount", fn = function()
 				local a = table.clone(atts); a[item.Slot] = if mounted then nil else id
-				Remotes.WarOrder:FireServer({ Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = a })
+				Remotes.WarOrder:FireServer({ Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = a, Spares = lo.Spares })
+			end })
+			-- a loose part in the pouch, to fit later (hold Y, then 1-4)
+			local carried = table.find(lo.Spares or {}, id)
+			table.insert(buttons, { text = if carried then "Leave" else "Carry", fn = function()
+				local sp = table.clone(lo.Spares or {})
+				if carried then table.remove(sp, carried) else table.insert(sp, id) end
+				Remotes.WarOrder:FireServer({ Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts, Spares = sp })
 			end })
 		elseif item.Kind == "Armor" then
 			local isHelmet = Firearms.Armor[id] and Firearms.Armor[id].Head
 			table.insert(buttons, { text = "Wear", fn = function()
-				local order = { Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts }
+				local order = { Primary = lo.Primary, Sidearm = lo.Sidearm, Armor = lo.Armor, Helmet = lo.Helmet, Attachments = atts, Spares = lo.Spares }
 				order[if isHelmet then "Helmet" else "Armor"] = id
 				Remotes.WarOrder:FireServer(order)
 			end })
@@ -663,6 +697,8 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		if weapon and weapon.Jammed then Remotes.Unjam:FireServer() else Remotes.Rack:FireServer() end
 	elseif key == Enum.KeyCode.B then
 		Remotes.Mode:FireServer()
+	elseif checkHeld and FIT_KEYS[key] then
+		fieldMod(FIT_KEYS[key])
 	elseif key == Enum.KeyCode.One or key == Enum.KeyCode.Two then
 		Remotes.Switch:FireServer()
 	elseif key == Enum.KeyCode.G then
@@ -688,6 +724,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	elseif key == Enum.KeyCode.Z then
 		setBinos(true)
 	elseif key == Enum.KeyCode.Y then
+		checkHeld = true
 		Hud.Check(true)
 	elseif key == Enum.KeyCode.K then
 		-- artillery: on the point you are looking at
@@ -745,6 +782,7 @@ UserInputService.InputEnded:Connect(function(input)
 	elseif key == Enum.KeyCode.Z then
 		setBinos(false)
 	elseif key == Enum.KeyCode.Y then
+		checkHeld = false
 		Hud.Check(false)
 	end
 end)

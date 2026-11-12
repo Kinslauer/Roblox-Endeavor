@@ -400,6 +400,7 @@ Config.War = {
 	HomePlaceId = 120490278050491, -- Endeavor: where an unlinked conduit goes back to (war/server/Soldiers.lua Unlink)
 	UnlinkHold = 2.5, -- seconds holding X at the base locker to unlink
 	UnlinkReach = 14, -- studs from your own faction's locker
+	BarracksReach = 40, -- within this of your own locker every part of the gun can be changed
 	UnlinkCalm = 10, -- no unlinking within this many seconds of being hit
 	UnlinkSeconds = 2.5, -- the link closing before the teleport
 	Factions = { "Union", "Pact" },

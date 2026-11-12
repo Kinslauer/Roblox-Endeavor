@@ -141,6 +141,9 @@ local function refund(player, kit)
 		for _, att in kit.Attachments or {} do
 			Recruit.LockerAdd(war, att.Id, att.Condition, 1)
 		end
+		for _, att in kit.Spares or {} do
+			Recruit.LockerAdd(war, att.Id, att.Condition, 1)
+		end
 	end
 	local o = kit.Original or {}
 	if (o.Magazines or 0) > 0 then
