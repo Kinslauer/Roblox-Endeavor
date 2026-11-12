@@ -693,7 +693,7 @@ Client tab screenshot, because Andy cannot read logs another way.
 - Front v40 (2026-11-12): weapon animation made by code for every gun in the view (slide and carrier cycle, brass,
   lock back, the reload with the hand on the magazine, rack, check, draw, selector). Real server: the G17, M4A1, AKM
   and Garand copies have their moving pieces, the action runs its travel and comes home (M4A1 0.32 studs, G17 0.22),
-  the left hand stays within the arm's length through the reload; start and warnings in the commit. Unseen in game:
+  the left hand stays within the arm's length through the reload; start 3.2s, 0 warnings. Unseen in game:
   all of it. Awaits Andy: docs/TESTING.md "Front: weapon animation made by code".
 - Front v38 (2026-11-12): the gun floats in the view and kicks on springs, the round follows the bore, the arms
   reach for the gun, muzzle flash, both-eyes-open scopes. Real server (the module run there against all 8 guns on the real soldier): sights on the eye line, hands 1.3 to 2.1 from the shoulders (arm 2.26); start 3.3s, 0 warnings. Unseen in game: all of it (the arms and the
