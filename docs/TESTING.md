@@ -807,6 +807,27 @@ Open the recruit app (M at the base, or the locker) and look at the weapons list
 - [ ] Automatic (AKM, AK-47, AK-74, also M4A1 and M14): with B on AUTO, rounds keep leaving while LMB is held.
 
 
+### Front: weapon animation made by code (2026-11-12, Front v40)
+No animation here was drawn or recorded: every move is worked out by code each frame. Start with the G17 pistol and
+the M4A1 carbine; the other guns use the same moves. Nothing was seen in game before publishing: say what looks
+wrong, a short clip or a screenshot mid-reload helps most.
+- [ ] Draw a gun (deploy, or 1 / 2). It comes up from below and settles a little past its place.
+- [ ] Fire the G17. The slide snaps back and runs forward on every shot, the trigger moves, and a brass case flies
+      out to the right, spins, bounces once on the ground and lies there for a moment.
+- [ ] Fire the M4A1. The bolt carrier moves behind the ejection port on every shot and cases fly out.
+- [ ] Fire the last round of a magazine. The G17's slide stays back; the M4A1's bolt stays back.
+- [ ] Press R with rounds left. The gun tips, the left hand goes to the magazine, pulls it down and takes it away,
+      brings a fresh one up from the belt and pushes it in. The gun bumps when the magazine seats. The left hand
+      goes back to the gun.
+- [ ] Press R with the gun empty. The same, and then the left hand works the action: it pulls the M4A1's charging
+      handle back and lets it fly forward; on the G17 it pulls the slide back over the top and lets go.
+- [ ] Press T. The left hand racks the gun once.
+- [ ] Press B. The gun rocks a little as the thumb moves the selector.
+- [ ] Pull the trigger on an empty gun. The trigger moves and the gun twitches with the click.
+- [ ] Hold Y. The gun turns to show its right side while the check panel is up, and turns back when you let go.
+- [ ] M1 Garand: the reload pushes a clip in from the top, not a magazine from below.
+- [ ] Does the left hand ever stretch, bend the wrong way or pass through the gun? Say which gun and which move.
+
 ### Front: the gun floats and kicks (2026-11-12, Front v38)
 First step toward the feel of the helmet-camera shooter Andy named. Nothing here was seen in game before publishing:
 say what looks wrong, a screenshot of the first-person view helps most.

@@ -148,6 +148,10 @@ do
 	local body = M.newInstance("Part"); body.Name = "Receiver"; body.Size = M.V3.new(0.2, 0.4, 2.2); body.CFrame = M.CF.new(0, 1500, 1.1); body.Parent = held
 	local scope = M.newInstance("Part"); scope.Name = "Scope"; scope.Size = M.V3.new(0.2, 0.2, 0.6); scope.CFrame = M.CF.new(0, 1500.4, 0.3); scope:SetAttribute("Component", "Optic"); scope.Parent = held
 	local grip = M.newInstance("Weld"); grip.Name = "Grip"; grip.C0 = M.CF.new(0, -0.1, -0.3); grip.C1 = M.CF.new(0, 0, 1.1); grip.Part0, grip.Part1 = hand, body; grip.Parent = body
+	for name, v in { Carrier_Gunmetal = { M.V3.new(0.1, 0.1, 0.6), M.V3.new(0, 0.1, 0.9) }, Charging_Gunmetal = { M.V3.new(0.1, 0.04, 0.5), M.V3.new(0, 0.17, 0.6) },
+		Magazine_Polymer = { M.V3.new(0.1, 0.5, 0.2), M.V3.new(0, -0.4, 1.0) } } do
+		local p = M.newInstance("Part"); p.Name = name; p.Size = v[1]; p.CFrame = M.CF.new(0, 1500, 0) * M.CF.new(v[2].X, v[2].Y, v[2].Z); p.Parent = held
+	end
 	held.PrimaryPart = body
 	held.Parent = char
 	local sentDir
@@ -192,6 +196,67 @@ do
 	check("view gun: aimed, the firing hand is an arm's bend ahead of the eye and below the sights", math.abs(gripAt.Z + Config.WarMovement.ViewGun.Rifle.Grip) < 0.05 and gripAt.Y < -0.2)
 	UIS.InputEnded:Fire({ UserInputType = M.mockEnv.Enum.UserInputType.MouseButton2, KeyCode = M.mockEnv.Enum.KeyCode.Unknown }, false); run(1)
 	check("view gun: lowered again the scope is solid", copyScope.Transparency < 0.05)
+	-- animation made by code (2026-11-12): the gun's own pieces move, the off hand works them
+	do
+		local g = ViewGun.State().Gun
+		local function at(name) -- a piece of the copy, in the gun's own frame
+			local frame = ViewGun.State().View * M.CF.Angles(0, math.pi, 0)
+			for _, d in g.Model:GetDescendants() do
+				if d.Name == name then return frame:PointToObjectSpace(d.Position) end
+			end
+		end
+		local function leftAt()
+			return (g.AnchorRel * g.Left.CFrame).Position
+		end
+		local function state(over)
+			local w = { Id = "AKM", Name = "AKM", Mode = "Auto", Chamber = true, BoltOpen = false, Jammed = false, Reloading = false, Mag = 24, MagSize = 30, Spare = 3,
+				Parts = { Receiver = 90, Barrel = 80, Bolt = 70, Magazine = 60, Stock = 50 }, Attachments = {}, Busy = 0, Zoom = 1 }
+			for k, v in over or {} do w[k] = v end
+			if w.NoMag then w.Mag = nil end
+			RS.Remotes.Weapon.OnClientEvent:Fire("State", w, "Primary", { Grenades = 2, Medkits = 1, Sandbags = 4 })
+		end
+		state(); run(1)
+		local home, magHome = at("Carrier_Gunmetal"), at("Magazine_Polymer")
+		check("gun motion: at rest every piece is where it was built", g.Motion ~= nil and math.abs(home.Z - 0.9) < 0.01 and math.abs(magHome.Y + 0.4) < 0.01
+			and (leftAt() - g.LeftRest).Magnitude < 0.01)
+		RS.Remotes.Weapon.OnClientEvent:Fire("Recoil", 1, 0.5); run(1 / 30)
+		local thrown = at("Carrier_Gunmetal")
+		local case = cam:FindFirstChild("Case")
+		run(0.5)
+		check("gun motion: a shot throws the carrier back and it runs home", thrown.Z < home.Z - 0.1 and math.abs(at("Carrier_Gunmetal").Z - home.Z) < 0.005)
+		check("gun motion: a shot throws a case out of the port", case ~= nil)
+		run(3)
+		check("gun motion: the case is cleared away", cam:FindFirstChild("Case") == nil)
+		state({ Chamber = false, BoltOpen = true, Mag = 0 }); run(0.4)
+		check("gun motion: on the last round the action stays back", at("Carrier_Gunmetal").Z < home.Z - 0.25)
+		-- the reload: the magazine comes out with the hand on it, a fresh one goes in, the hand racks the gun
+		state({ Chamber = false, BoltOpen = true, NoMag = true, Reloading = true, Busy = 0.6 }); run(0.45)
+		local out, handOut = at("Magazine_Polymer"), leftAt()
+		check("gun motion: the magazine is pulled down out of the gun, the off hand on it", out.Y < magHome.Y - 0.3
+			and (handOut - (out + M.V3.new(0, -0.25, 0))).Magnitude < 0.2 and g.Motion:Playing("Reload"))
+		run(0.95)
+		check("gun motion: a fresh magazine is seated", (at("Magazine_Polymer") - magHome).Magnitude < 0.03)
+		run(0.42)
+		local pulled = at("Charging_Gunmetal")
+		check("gun motion: empty, the hand draws the charging handle back", pulled.Z < 0.6 - 0.15 and leftAt().Z < 0.5)
+		state({ Mag = 29 }); run(1)
+		check("gun motion: let go, the action is home, the hand back on the gun and the reload over", math.abs(at("Carrier_Gunmetal").Z - home.Z) < 0.005
+			and math.abs(at("Charging_Gunmetal").Z - 0.6) < 0.005 and (leftAt() - g.LeftRest).Magnitude < 0.01 and not g.Motion:Playing("Reload"))
+		-- the small moves
+		local function key(name, began)
+			(if began then UIS.InputBegan else UIS.InputEnded):Fire({ KeyCode = M.mockEnv.Enum.KeyCode[name], UserInputType = M.mockEnv.Enum.UserInputType.Keyboard }, false)
+		end
+		local function down(name) key(name, true) end
+		local function up(name) key(name, false) end
+		down("Y"); run(0.8)
+		local shown = ViewGun.Direction():Dot(cam.CFrame.LookVector)
+		up("Y"); run(1)
+		check("gun motion: checking the weapon turns it to show its side, then it comes back", shown < 0.95 and ViewGun.Direction():Dot(cam.CFrame.LookVector) > 0.999)
+		down("T"); up("T"); run(0.25)
+		local racking = g.Motion:Playing("Rack") and at("Carrier_Gunmetal").Z < home.Z - 0.1
+		run(1)
+		check("gun motion: T works the action by hand", racking and not g.Motion:Playing("Rack") and math.abs(at("Carrier_Gunmetal").Z - home.Z) < 0.005)
+	end
 	held:Destroy(); run(0.2)
 	check("view gun: no gun in the hand, none in the view", ViewGun.Shown() == false and ViewGun.Direction() == nil)
 end

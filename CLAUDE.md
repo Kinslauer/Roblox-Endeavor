@@ -36,7 +36,7 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (321 checks), `war` = Front (123), `warclient` = the Front client plays the first link's stages, the screen, the controls and the gun in the view (41), `stress` = budgets under load (5), `client` = the
+  `scenario` = Endeavor end to end (321 checks), `war` = Front (123), `warclient` = the Front client plays the first link's stages, the screen, the controls, the gun in the view and its code-made animation (52), `stress` = budgets under load (5), `client` = the
   Endeavor client boots + movement, dodge, animation, guard, air and handling checks (44). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
@@ -582,8 +582,26 @@ Client tab screenshot, because Andy cannot read logs another way.
   gun; left hand Position to the barrel's Under point, at most Reach ahead; poles on the root), targets are Attachments on the copy. Scope housings fade at the eye (`OpticFade`). Measured on the
   real soldier: shoulders (+-0.9, 1.56, 0) from the root, arm 2.26 long, and the camera's eye (root + 1.5) is at
   shoulder height while the head is at 2.29: the view may look out from the chest (not changed; ask Andy).
-  Not done (next steps, in order): the camera and lighting pass, layered gun sound, hand-made reload animation;
-  Endeavor. Tests: "view gun:" in warclient.lua.
+  Step 2, animation made by code (owner, 2026-11-12, of a demo on X that could not be opened here: "this is
+  incredible and was made with fable, meaning no hand drawn animations. We need this. Can you apply the same
+  principles fable used here for our weapons? Start with a pistol and carbine"). `src/war/client/GunMotion.lua` is
+  pure (no instances): key poses on a timeline joined by easing curves (`Curves`: seg, smooth, outBack, outCubic,
+  bump), told the gun's shape, answering each step `{ Parts = { group = move }, Left, LeftWeight, Pos, Rot, Brass }`
+  in the gun's own frame. `GunMotion.New(shape, T)`, `:Shot()`, `:Click()`, `:Start("Reload" { Eject, Insert, Rack }
+  | "Rack" | "Draw" | "Selector")`, `:Step(dt, { BoltOpen, Checking })`. ViewGun.build buckets the copy's parts by
+  the name before "_" (`MOVING`: Slide, Carrier, Charging, Magazine, Trigger; the gun models already have these as
+  separate MeshParts) and measures the shape from them (action length, magazine, ejection port, the handle the off
+  hand takes, TopFed for the Garand's clip); each step it sets those parts from the motion, moves the left hand's
+  IK target, and throws brass (plain Parts flown by hand: gravity, one bounce by raycast). The reload starts on the
+  snapshot's Reloading edge with the server's own stage times (Firearms Defs Reload), paced by the snapshot's Busy
+  (wear, quick and careful reloads); an empty gun adds the rack, which the server times after Reloading ends.
+  `ViewGun.Play("Rack"|"Selector"|"Click")` from Main (T, B, a dry trigger); Y held = the check pose. Tuning:
+  Config.WarMovement.GunMotion (Rifle / Pistol: Travel, CycleSeconds, Well, Pouch, poses). Guns with no such parts
+  (revolver, SKS, Mosin, Makarov) only get the whole-gun moves. Other players still see the old body poses. Tests:
+  "gun motion:" in warclient.lua. Rule: no hand-drawn or recorded weapon animation; new weapon moves go in GunMotion.
+  Not done (next steps, in order): the camera and lighting pass, layered gun sound; the revolver's cylinder and
+  hammer, a bolt for the Mosin; the same in Endeavor (told the train intro thread);
+  Tests: "view gun:" in warclient.lua.
 
 - Wounds (owner, 2026-11-12: ticked every row of the reference pick page; the build plan is
   docs/Reference-Picks-Plan.md, 7 rounds, this is round 1; ideas from Tarkov's health system, nothing copied).
@@ -672,6 +690,11 @@ Client tab screenshot, because Andy cannot read logs another way.
   carrying bodies, the wall); v85 the same day: playtest fixes (pistol every ride, third person, quiet screen, cloak,
   takedown alignment). Awaits Andy's play-through: docs/TESTING.md "Endeavor: Metal Gear handling". Andy reported
   "the right click broke" on v79; no fault was found beyond first person not turning the body (fixed); asked what failed.
+- Front v40 (2026-11-12): weapon animation made by code for every gun in the view (slide and carrier cycle, brass,
+  lock back, the reload with the hand on the magazine, rack, check, draw, selector). Real server: the G17, M4A1, AKM
+  and Garand copies have their moving pieces, the action runs its travel and comes home (M4A1 0.32 studs, G17 0.22),
+  the left hand stays within the arm's length through the reload; start and warnings in the commit. Unseen in game:
+  all of it. Awaits Andy: docs/TESTING.md "Front: weapon animation made by code".
 - Front v38 (2026-11-12): the gun floats in the view and kicks on springs, the round follows the bore, the arms
   reach for the gun, muzzle flash, both-eyes-open scopes. Real server (the module run there against all 8 guns on the real soldier): sights on the eye line, hands 1.3 to 2.1 from the shoulders (arm 2.26); start 3.3s, 0 warnings. Unseen in game: all of it (the arms and the
   position of the gun most of all). Awaits Andy: docs/TESTING.md "Front: the gun floats and kicks".

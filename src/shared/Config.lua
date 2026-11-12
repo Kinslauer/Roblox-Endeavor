@@ -538,7 +538,6 @@ Config.WarMovement = {
 		Pistol = { Grip = 1.7, Hip = Vector3.new(0.2, -0.3, 0.35), PullShare = 0.22, GripDrop = 0.62, BoreDrop = 0.12, Wrist = 12, Palm = 0.08 },
 		HipRoll = -5,
 		Carry = { Offset = Vector3.new(-0.16, -0.22, 0.12), Rotation = Vector3.new(-28, 38, 12) }, -- sprinting, binoculars: lowered across the body
-		Busy = { Position = Vector3.new(-0.06, -0.08, 0.05), Rotation = Vector3.new(14, 10, 26), Rate = 5, Pull = 0.35 }, -- reloading
 		AimRate = 14, PoseRate = 9,
 		Elbow = Vector3.new(1.6, -2.2, 0.4), -- where the elbows point, from the root (the left one mirrored)
 		-- the gun trails a turn: Gain = share of the turn it is left behind by, Hip / Aim = the most it may trail
@@ -551,6 +550,38 @@ Config.WarMovement = {
 		Camera = { Frequency = 6, Damping = 0.6, Rise = 18, Twist = 14, Roll = 10 }, -- the punch that comes back
 		OpticFade = 0.72, -- a scope's housing at the eye (both eyes open)
 		Flash = { Size = 0.45, Seconds = 0.045, Brightness = 4, Range = 18, Color = Color3.fromRGB(255, 214, 150) },
+	},
+	-- Weapon animation made by code (war/client/GunMotion.lua): key poses on a timeline joined by easing curves.
+	-- Positions are in the gun's own frame (studs: +X the gun's left, +Y up, +Z along the barrel), rotations are
+	-- degrees (pitch up, yaw left, roll: negative tips the top of the gun to the right).
+	GunMotion = {
+		Enabled = true,
+		Seconds = { Rack = 0.5, Draw = 0.45, Selector = 0.18 },
+		TriggerSeconds = 0.12, TriggerPull = 0.02,
+		Draw = { Position = Vector3.new(0.05, -0.9, -0.2), Rotation = Vector3.new(-48, -8, 10) }, -- where a drawn gun comes from
+		Selector = Vector3.new(1.4, 0, -3),
+		RackTug = 0.045, -- the whole gun pulled back with the handle
+		ReloadEase = 0.28, -- the gun coming back up after a reload
+		StripTug = 0.035, SeatBump = 0.045, SeatKick = 2.6, -- the magazine pulled out; pushed home (studs, degrees)
+		Brass = { Size = Vector3.new(0.035, 0.035, 0.1), Speed = 9, Up = 5, Back = 2.5, Spin = 28, Seconds = 2.2, Bounce = 0.35, Max = 14,
+			Color = Color3.fromRGB(196, 158, 84) },
+		-- Travel = how far the action runs, as a share of its own length; CycleSeconds = one shot's trip back and
+		-- home, CycleBack = the share of it going back; Well = the way a magazine leaves; Pouch = where the off hand
+		-- takes it; MagGrip / HandleGrip = the hand's centre from the magazine's foot / from the handle
+		Rifle = {
+			Travel = 0.5, CycleSeconds = 0.085, CycleBack = 0.35,
+			Check = { Position = Vector3.new(0.16, 0.1, -0.08), Rotation = Vector3.new(8, 32, -14) },
+			Reload = { Position = Vector3.new(0.1, 0.07, -0.05), Rotation = Vector3.new(13, 9, -24) },
+			RackRotation = Vector3.new(5, 5, -12), HandleGrip = Vector3.new(0.05, 0, -0.04),
+			Well = Vector3.new(0, -1, 0), Pouch = Vector3.new(0.45, -1.0, -0.6), MagGrip = Vector3.new(0.06, -0.05, 0),
+		},
+		Pistol = {
+			Travel = 0.3, CycleSeconds = 0.07, CycleBack = 0.35,
+			Check = { Position = Vector3.new(0.14, 0.1, -0.45), Rotation = Vector3.new(6, 38, -10) },
+			Reload = { Position = Vector3.new(0.14, 0.14, -0.5), Rotation = Vector3.new(24, 10, -30) },
+			RackRotation = Vector3.new(8, 14, -26), HandleGrip = Vector3.new(0.04, 0.03, 0),
+			Well = Vector3.new(0, -0.95, -0.31), Pouch = Vector3.new(0.3, -1.1, -1.1), MagGrip = Vector3.new(0.05, -0.05, 0),
+		},
 	},
 	CarefulReloadHold = 0.32, -- hold R this long: the half-used magazine goes back in the pouch
 	QuickReload = 0.8, -- time multipliers on the magazine change
