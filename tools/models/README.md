@@ -37,3 +37,10 @@ Rules that matter:
 - Weapons (`Wpn_*`): grip at the origin, business end along Blender +Y (pistols: grip along Y, barrel along +Z).
   Verified on a real server: the FBX import maps Blender +Y -> Roblox +Z and Blender +Z -> Roblox +Y.
   `server/HeldWeapons.lua` welds them into RightHand with `Assets.Weapons[id].Grip` picking the hand offset.
+
+## Characters: figure.py + figures.py (2026-11-12)
+`blender -b --python tools/models/figure.py -- <Name|all> [--stills] [--quick] [--export]`. One-piece skinned bodies:
+`figure.py` is the library (skeleton, lofted garments, weights, export, stills), `figures.py` holds one function per
+character. `--export` writes `out/Skin_<Name>.fbx` and `out/Rig_<Name>.fbx` and prints a `LUA <Name> Tints = ...` line
+for `Assets.Skins`. Upload both, put the ids in `Assets.Skins` and `Assets.Rigs`. The older `conduit.py`, `raider.py`,
+`enemies.py` and the Sentry block of `station.py` built the retired blocky rigs; they are kept for reference.

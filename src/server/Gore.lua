@@ -51,7 +51,7 @@ local function freezeCorpse(corpse)
 	for _, p in corpse:GetDescendants() do
 		if p:IsA("BasePart") then
 			p.Anchored = true
-			p.CanCollide = true
+			p.CanCollide = not p:GetAttribute("Skin")
 		end
 	end
 end
@@ -84,6 +84,36 @@ local function makeCorpse(model, violent)
 	if #parts == 0 then
 		corpse:Destroy()
 		return nil
+	end
+	-- A one-piece body (server/Rigs.lua): the limbs cloned above are its invisible stand-ins. A body that holds
+	-- together keeps its skin, which follows the cloned limbs on every client (shared/Skin.lua). A body blown apart
+	-- cannot (one mesh cannot be in five places), so its limbs show themselves instead.
+	local skin = model:FindFirstChild("Skin")
+	if skin and not violent then
+		local copy = skin:Clone()
+		local holder = copy:FindFirstChild("RootPart")
+		local hips = corpse:FindFirstChild("LowerTorso")
+		local old = holder and holder:FindFirstChild("SkinWeld")
+		if old then
+			old:Destroy()
+		end
+		if holder and hips then
+			local weld = Instance.new("WeldConstraint")
+			weld.Name = "SkinWeld"
+			weld.Part0, weld.Part1 = hips, holder
+			weld.Parent = holder
+			copy.Parent = corpse
+		else
+			copy:Destroy()
+			skin = nil
+		end
+	end
+	if skin and violent or (not skin and model:GetAttribute("Skinned")) then
+		for _, c in parts do
+			if c:GetAttribute("Proxy") then
+				c.Transparency = 0
+			end
+		end
 	end
 	-- a violent death (explosive / heavy) scatters limbs; otherwise the body holds together loosely
 	if violent then

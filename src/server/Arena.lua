@@ -289,7 +289,7 @@ local function buildArmory()
 	local k = 0
 	for typeName, id in Assets.Rigs do
 		if id ~= 0 then
-			local model, hum, root = Rigs.Build(id, typeName .. " (display)")
+			local model, hum, root = Rigs.Build(id, typeName .. " (display)", typeName)
 			if model then
 				k += 1
 				local pos = Vector3.new(44 + k * 8, floorY + 1 + hum.HipHeight + root.Size.Y / 2, 124)

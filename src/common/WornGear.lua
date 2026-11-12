@@ -17,6 +17,10 @@ local LIMBS = {
 	LeftLowerArm = { "LeftLowerArm" },
 }
 
+-- limb sizes the worn models were built around (tools/models/worn.py), as width, height, depth
+local AUTHORED = { Head = Vector3.new(1.2, 1.2, 1.2), UpperTorso = Vector3.new(2, 1.6, 1), UpperLeg = Vector3.new(1, 1.5, 1), LowerArm = Vector3.new(1, 1.2, 1) }
+local PAD = { Head = 1.5, Default = 1.3 }
+
 local function attach(char, limbName, entry, itemId)
 	local limb = char:FindFirstChild(limbName)
 	local template = limb and ModelAssets.Template(entry.Id)
@@ -44,11 +48,24 @@ local function attach(char, limbName, entry, itemId)
 		return
 	end
 	local origin = model:GetPivot()
+	-- The pieces were modelled for the old blocky limbs (AUTHORED). On a one-piece body (limbs marked Proxy, sized to
+	-- the real, slimmer body) each piece is squeezed to the limb it rides, with room for the clothing under it.
+	local scale
+	local authored = AUTHORED[limbName:gsub("^Left", ""):gsub("^Right", "")] or AUTHORED[limbName]
+	if limb:GetAttribute("Proxy") and authored then
+		local pad = PAD[limbName] or PAD.Default
+		scale = Vector3.new(limb.Size.X / authored.X * pad, limb.Size.Y / authored.Y * (if limbName == "Head" then pad else 1), limb.Size.Z / authored.Z * pad)
+	end
 	for _, p in parts do
+		local rel = origin:ToObjectSpace(p.CFrame)
+		if scale then
+			p.Size = p.Size * scale
+			rel = CFrame.new(rel.Position * scale) * rel.Rotation
+		end
 		local weld = Instance.new("Weld")
 		weld.Part0, weld.Part1 = limb, p
 		weld.C0 = CFrame.identity
-		weld.C1 = origin:ToObjectSpace(p.CFrame)
+		weld.C1 = rel
 		weld.Parent = p
 	end
 	model.PrimaryPart = parts[1]

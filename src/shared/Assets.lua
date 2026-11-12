@@ -129,15 +129,33 @@ Assets.Anims = {
 	Cover_Idle = 89904551118164,
 }
 
--- Character rigs (R15 limb meshes, see server/Rigs.lua): [npcType] = assetId
+-- Character rigs (see server/Rigs.lua): [npcType] = assetId. Since 2026-11-12 these are the plain, invisible limbs
+-- made by tools/models/figure.py (joints, hitboxes, what a violent death scatters); the body people see is the skin
+-- below. The old blocky bodies (conduit.py, raider.py, enemies.py, station.py) were 128592453586650 (Conduit),
+-- 106712459976546 (Raider), 89905917757019 (Brute), 117184966040084 (Shocker), 80181254073544 (Warden),
+-- 96318406423907 (Sentry).
 Assets.Rigs = {
-	Rival = 106712459976546, -- the raider mesh in other colours (NPCs.Types.Rival)
-	Conduit = 128592453586650, -- the player's body (v2 sculpted, 2026-11-04) (tools/models/conduit.py; server/Body.lua makes it the StarterCharacter)
-	Raider = 106712459976546,
-	Brute = 89905917757019,
-	Shocker = 117184966040084,
-	Warden = 80181254073544,
-	Sentry = 96318406423907, -- transit security in the arrival station (tools/models/station.py)
+	Rival = 78681752690687, -- the raider in other colours (NPCs.Types.Rival)
+	Conduit = 115965815211389, -- the player's body (server/Body.lua makes it the StarterCharacter)
+	Raider = 78681752690687,
+	Brute = 135898125228151,
+	Shocker = 74684713775243,
+	Warden = 70570830309045,
+	Sentry = 70378884781864, -- transit security in the arrival station
+}
+
+-- One-piece skinned bodies (tools/models/figure.py + figures.py): [rig kind] = { Id, Tints, Mats }. Tints = the
+-- colour each piece should be (Assets.Tint works out the multiplier for the neutral textures); the lists are printed
+-- by figure.py ("LUA <Name> Tints = ..."). Mats renames a piece's material for code that recolours by it
+-- (server/Body.lua paints ConduitJacket per life).
+Assets.Skins = {
+	Conduit = { Id = 107250598898245, Mats = { Coat_Techcloth = "ConduitJacket" }, Tints = { Trousers_Twill = Color3.fromRGB(33, 33, 37), Boots_HideLeather = Color3.fromRGB(158, 148, 140), Coat_Techcloth = Color3.fromRGB(43, 46, 54), LowerArms_Twill = Color3.fromRGB(26, 26, 29), Hands_HideLeather = Color3.fromRGB(158, 148, 140), Head_Twill = Color3.fromRGB(33, 33, 36), Hood_Techcloth = Color3.fromRGB(26, 26, 29), Plates_PlateSteel = Color3.fromRGB(76, 79, 87), Straps_HideLeather = Color3.fromRGB(158, 148, 140), LowerArmPlates_PlateSteel = Color3.fromRGB(76, 79, 87), Pouches_HideLeather = Color3.fromRGB(158, 148, 140) } },
+	Raider = { Id = 127425818791062, Tints = { Trousers_Twill = Color3.fromRGB(51, 48, 46), Boots_HideLeather = Color3.fromRGB(158, 148, 140), Coat_Techcloth = Color3.fromRGB(64, 51, 41), Head_Twill = Color3.fromRGB(33, 33, 36), Hood_Techcloth = Color3.fromRGB(41, 38, 43), Wrap_Gauze = Color3.fromRGB(128, 117, 97), Scrap_PlateSteel = Color3.fromRGB(107, 61, 38), Straps_HideLeather = Color3.fromRGB(153, 140, 128), Pouches_HideLeather = Color3.fromRGB(153, 140, 128) } },
+	Rival = { Id = 127425818791062, Tints = { Trousers_Twill = Color3.fromRGB(51, 48, 46), Boots_HideLeather = Color3.fromRGB(158, 148, 140), Coat_Techcloth = Color3.fromRGB(34, 40, 62), Head_Twill = Color3.fromRGB(33, 33, 36), Hood_Techcloth = Color3.fromRGB(41, 38, 43), Wrap_Gauze = Color3.fromRGB(128, 117, 97), Scrap_PlateSteel = Color3.fromRGB(107, 61, 38), Straps_HideLeather = Color3.fromRGB(153, 140, 128), Pouches_HideLeather = Color3.fromRGB(153, 140, 128) } },
+	Brute = { Id = 80409033921236, Tints = { Trousers_Twill = Color3.fromRGB(51, 48, 46), Boots_HideLeather = Color3.fromRGB(158, 148, 140), Coat_Techcloth = Color3.fromRGB(61, 51, 43), Head_Twill = Color3.fromRGB(33, 33, 36), Helmet_PlateSteel = Color3.fromRGB(76, 79, 84), Collar_PlateSteel = Color3.fromRGB(102, 59, 36), Plates_PlateSteel = Color3.fromRGB(76, 79, 84), Scrap_PlateSteel = Color3.fromRGB(102, 59, 36), Straps_HideLeather = Color3.fromRGB(140, 128, 117), Pipes_PlateSteel = Color3.fromRGB(102, 59, 36) } },
+	Shocker = { Id = 104823811581787, Tints = { Trousers_Twill = Color3.fromRGB(26, 26, 28), Boots_HideLeather = Color3.fromRGB(158, 148, 140), Coat_Techcloth = Color3.fromRGB(33, 31, 41), Head_Twill = Color3.fromRGB(33, 33, 36), Hood_Techcloth = Color3.fromRGB(20, 20, 26), Straps_HideLeather = Color3.fromRGB(128, 128, 128), Pack_PlateSteel = Color3.fromRGB(66, 69, 76) } },
+	Warden = { Id = 89938150254967, Tints = { Trousers_Twill = Color3.fromRGB(128, 18, 31), Boots_PlateSteel = Color3.fromRGB(128, 133, 143), Coat_Techcloth = Color3.fromRGB(128, 18, 31), LowerArms_Twill = Color3.fromRGB(51, 51, 56), Hands_PlateSteel = Color3.fromRGB(51, 51, 56), Head_Twill = Color3.fromRGB(33, 33, 36), Helmet_PlateSteel = Color3.fromRGB(128, 133, 143), Plates_PlateSteel = Color3.fromRGB(128, 133, 143), Tasset_PlateSteel = Color3.fromRGB(51, 51, 56), LowerArmPlates_PlateSteel = Color3.fromRGB(128, 133, 143), Straps_HideLeather = Color3.fromRGB(51, 51, 56), Cape_Techcloth = Color3.fromRGB(128, 18, 31) } },
+	Sentry = { Id = 115292944079963, Tints = { Trousers_Twill = Color3.fromRGB(51, 48, 46), Boots_HideLeather = Color3.fromRGB(76, 76, 76), Coat_Techcloth = Color3.fromRGB(33, 31, 38), LowerArms_Twill = Color3.fromRGB(33, 31, 38), Hands_HideLeather = Color3.fromRGB(76, 76, 76), Head_Twill = Color3.fromRGB(33, 33, 36), Helmet_PlateSteel = Color3.fromRGB(36, 36, 41), Plates_PlateSteel = Color3.fromRGB(71, 76, 84), Straps_HideLeather = Color3.fromRGB(76, 76, 76), Pouches_HideLeather = Color3.fromRGB(76, 76, 76), LowerArmPlates_PlateSteel = Color3.fromRGB(71, 76, 84) } },
 }
 
 -- The arrival (tools/models/station.py): the rider's cloak (origin = UpperTorso centre) and the train car shell.
@@ -402,6 +420,7 @@ Assets.Materials = {
 	RootBark = { Color = Color3.fromRGB(70, 52, 36), Material = Enum.Material.Wood, NoCollide = true },
 	Moss = { Color = Color3.fromRGB(70, 110, 52), Material = Enum.Material.Grass },
 	-- the Conduit body (server/Body.lua recolours these per life)
+	Proxy = { Color = Color3.fromRGB(34, 33, 36), Material = Enum.Material.Fabric }, -- the plain limbs under a skinned body
 	ConduitJacket = { Color = Color3.fromRGB(44, 46, 54), Material = Enum.Material.Fabric },
 	ConduitTrim = { Color = Color3.fromRGB(0, 215, 255), Material = Enum.Material.Neon },
 	ConduitVisor = { Color = Color3.fromRGB(0, 215, 255), Material = Enum.Material.Neon, Light = Color3.fromRGB(0, 215, 255) },
@@ -451,8 +470,40 @@ Assets.Surfaces = {
 	Waxcloth = { Id = 86046108044156, Tile = 2.5, Material = Enum.Material.Fabric, Color = Color3.fromRGB(45, 47, 40) },
 	HideLeather = { Id = 91466596182777, Tile = 1.5, Material = Enum.Material.Leather, Color = Color3.fromRGB(50, 36, 28) },
 	CarTrim = { Id = 113939627951069, Tile = 4, Material = Enum.Material.Metal, Color = Color3.fromRGB(30, 32, 34) },
+	-- characters (tools/models/figure.py). Base = the texture's mean brightness (linear): these are pale, neutral
+	-- textures made to be tinted per character (Assets.Tint), so one cloth dresses everybody.
+	Techcloth = { Id = 81964054183740, Tile = 2, Material = Enum.Material.Fabric, Color = Color3.fromRGB(120, 120, 120), Base = 0.42 },
+	Twill = { Id = 104454762397293, Tile = 1.5, Material = Enum.Material.Fabric, Color = Color3.fromRGB(110, 110, 112), Base = 0.36 },
+	Gauze = { Id = 130850579621389, Tile = 1.2, Material = Enum.Material.Fabric, Color = Color3.fromRGB(150, 140, 120), Base = 0.45 },
+	PlateSteel = { Id = 88687879872901, Tile = 2, Material = Enum.Material.Metal, Color = Color3.fromRGB(120, 120, 122), Base = 0.40 },
 }
 Assets.SurfaceFor = nil -- function(name) -> SurfaceAppearance template; set by common/SurfaceLibrary on the server
+
+-- Colours a part that wears a library texture. `color` is the look wanted; a neutral texture (Surfaces[name].Base)
+-- is multiplied up or down to reach it, any other texture is simply tinted by it.
+function Assets.Tint(part, color)
+	local name = part.Name:match("_(%w+)$")
+	local spec = name and Assets.Surfaces[name]
+	part.Color = color
+	local surface = part:FindFirstChildOfClass("SurfaceAppearance")
+	if not surface then
+		return
+	end
+	local tint = color
+	if spec and spec.Base then
+		local function lin(c)
+			return if c <= 0.04045 then c / 12.92 else ((c + 0.055) / 1.055) ^ 2.4
+		end
+		local function srgb(c)
+			c = math.clamp(c, 0, 1)
+			return if c <= 0.0031308 then c * 12.92 else 1.055 * c ^ (1 / 2.4) - 0.055
+		end
+		tint = Color3.new(srgb(lin(color.R) / spec.Base), srgb(lin(color.G) / spec.Base), srgb(lin(color.B) / spec.Base))
+	end
+	pcall(function()
+		surface.Color = tint
+	end)
+end
 
 -- Applies the named material to every part of a loaded model.
 function Assets.Dress(model)

@@ -371,9 +371,35 @@ Client tab screenshot, because Andy cannot read logs another way.
   `suppressor`, `weapon_light`. Variants -> `Assets.GunKit` (13 guns); Assets.Weapons.Whisper = GunKit.Whisper.
   Run `blender -b --python tools/models/gunparts.py -- <platform|all> [variant] --stills --export`; a full run takes
   ~7 min a variant (the Exact booleans), so run platforms in parallel processes.
+  Round 4, one-piece bodies (Andy, 2026-11-12: "use moon animator and blender to create better character models?
+  the ones right now look too blocky and disjointed"; Moon Animator is a Studio plugin and cannot run here, so
+  animations stay code-keyframed). `tools/models/figure.py` (library) + `figures.py` (Conduit, Raider, Brute, Shocker,
+  Warden, Sentry; BUILDS = the old rigs' measurements, re-proportioned by Skeleton to human joints at the same
+  height: shoulders 0.65x as wide, head 0.168 H, hips at 0.48 H). Soft garments = lofted solids fused by voxel remesh,
+  wrinkled, decimated; shells for hood/skirt/collar/cape; hard kit follows one bone. Weights are geometric (Weigher:
+  chains torso/arm/leg/head/skirt/cape, each vertex takes the chain of its nearest source solid, then smoothed), max 4.
+  One MeshPart per "<Piece>_<Material>"; one tint per piece (asserted). `--export` writes Skin_<Name>.fbx (meshes +
+  15 parentless bones named after the limbs, at the limb boxes' centres) and Rig_<Name>.fbx (15 plain limbs
+  "<Limb>_Proxy"); `--stills` renders front/back/action. The upload of a skinned multi-mesh FBX arrives as a Model
+  with "RootPart" holding the Bones, MeshParts jointed to it by Motor6D, an AnimationController and InitialPoses.
+  Game: `Assets.Rigs` = the proxy rigs, `Assets.Skins[kind] = { Id, Tints, Mats }`; `Rigs.Build(id, name, kind)` ->
+  attachSkin (moves the skin so its LowerTorso bone sits on the limb, ties each bone to the nearest limb: attributes
+  Limb + Rest, welds RootPart to LowerTorso, Model "Skin" tagged "Skin" inside the character, limbs Transparency 1 +
+  attribute Proxy, model attribute Skinned). `src/shared/Skin.lua` (client, started from Main): each render step
+  `bone.Transform = bone.CFrame^-1 * holder^-1 * limb.CFrame * Rest`, so anything that moves limbs moves the skin
+  (Animator, Joints.Pose, physics); every 3rd frame past 140 studs, never past 420. `Assets.Tint(part, color)` sets
+  SurfaceAppearance.Color (neutral textures Techcloth/Twill/Gauze/PlateSteel carry `Base`). Gore: a whole corpse keeps
+  a cloned skin, a scattered one shows its proxy limbs. WornGear squeezes pieces to Proxy limbs (AUTHORED sizes).
+  First person shows skin pieces named *LowerArm*/*Hand*. Not adapted yet: cybernetic limb art sits over the skinned
+  arm (the flesh cannot be hidden per limb), the Front still uses Roblox avatars, the intro cloak was draped on the
+  old wider body.
   The arrival thread owns poses, camera, controls and HUD; this pass owns models, textures and the car block in Subway.
 
-## State (2026-11-11)
+## State (2026-11-12)
+- Endeavor v90 (2026-11-12): realistic pass round 4, one-piece skinned bodies for the player and every enemy with
+  human proportions; real-server start 11.1s, 0 warnings; all 7 kinds skinned, 15 bones each, bones follow limbs with
+  0.000 error. Unseen in game (animation and rendering cannot be checked from Open Cloud): awaits Andy's look,
+  docs/TESTING.md "Endeavor: the realistic pass, round 4". Stills in /mnt/project-files/realistic-pass/round4.
 - Endeavor v88 (2026-11-11): realistic pass round 3, the gun parts library (Assets.GunKit, 13 guns; the Whisper is the
   hammer-fired railed suppressed build); start 6.1s, 0 warnings. Charts in /mnt/project-files/realistic-pass/round3.
   Only the Whisper is used in game so far; the other 12 wait for Andy's word on where they go.

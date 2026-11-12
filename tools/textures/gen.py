@@ -283,7 +283,66 @@ def CarLivery():
     col = col * tint * 0.9 + col * 0.1
     return col, height, strength, rough, metal
 
-MATERIALS = [CarBody, CarLivery, CarPanel, CarFloor, Moquette, SeatShell, Stainless, Underframe, Gunmetal, Polymer, Waxcloth, HideLeather, CarTrim]
+# ---- characters (tools/models/figure.py). The fabrics and the plate are pale and neutral on purpose: the game tints
+# them per character (SurfaceAppearance.Color multiplies the colour map), so one texture dresses everybody.
+def Techcloth():
+    """Jackets and coats: a tight synthetic plain weave, rubbed paler on the high spots."""
+    n = N
+    yy, xx = np.mgrid[0:n, 0:n]
+    weave = (np.sin(xx * math.pi / 2) * np.sin(yy * math.pi / 2)) * 0.5 + 0.5
+    rip = np.maximum((xx % 16 < 2), (yy % 16 < 2)).astype(float)
+    mottle = fbm(131, 300)
+    rub = np.clip(fbm(132, 180) - 0.58, 0, 1) * 2.2
+    col = rgb((0.42, 0.42, 0.42)) * (0.82 + 0.22 * mottle[..., None] + 0.08 * weave[..., None])
+    col = mix(col, rgb((0.62, 0.62, 0.60)), rub * 0.5)
+    height = weave * 0.4 + mottle * 0.6
+    rough = 0.62 + weave * 0.08 - rub * 0.12
+    return col, height, 2.6, rough, 0.0
+
+def Twill(seed=141):
+    """Trousers and undersleeves: heavy cotton twill, the diagonal rib plain to see, dusty in the folds."""
+    n = N
+    yy, xx = np.mgrid[0:n, 0:n]
+    rib = np.sin((xx + yy) * math.pi / 4) * 0.5 + 0.5
+    thread = band(seed, 1, 3)
+    mottle = fbm(seed + 1, 260)
+    dust = np.clip(fbm(seed + 2, 420) - 0.56, 0, 1) * 2
+    col = rgb((0.36, 0.36, 0.37)) * (0.78 + 0.26 * mottle[..., None] + 0.14 * rib[..., None])
+    col = mix(col, rgb((0.55, 0.52, 0.47)), dust * 0.55)
+    height = rib * 0.6 + thread * 0.35 + mottle * 0.4
+    rough = 0.74 + thread * 0.08 + dust * 0.1
+    return col, height, 3.0, rough, 0.0
+
+def Gauze():
+    """Wrappings round forearms, fists and faces: overlapping bands of loose-woven cloth, stained."""
+    n = N
+    yy, xx = np.mgrid[0:n, 0:n]
+    lean = (yy + xx * 0.125 + 14 * np.sin(xx * 2 * math.pi / n * 2)) % 128        # the wrap climbs a little as it goes round
+    edge = np.clip(1 - lean / 14.0, 0, 1)                                           # shadowed overlap at each band's edge
+    lift = np.clip(lean / 128.0, 0, 1)
+    weave = (np.sin(xx * math.pi / 3) * np.sin(yy * math.pi / 3)) * 0.5 + 0.5
+    stain = np.clip(fbm(151, 300) - 0.5, 0, 1) * 2
+    col = rgb((0.50, 0.46, 0.38)) * (0.8 + 0.2 * weave[..., None] + 0.12 * lift[..., None])
+    col = mix(col, rgb((0.20, 0.13, 0.08)), stain * 0.7)
+    col = col * (1 - 0.55 * edge[..., None])
+    height = lift * 0.9 + weave * 0.25 - edge * 0.6
+    rough = 0.86 - stain * 0.1
+    return col, height, 3.2, rough, 0.0
+
+def PlateSteel():
+    """Armour plate: steel under worn paint, chipped to bright metal along scratches and at knocks."""
+    grain = band(161, 2, 6)
+    wear = np.clip(scratches(162, 260, (10, 90), width=1.2) * 0.9 + (spots(163, 160, (2, 9)) > 0.35) * 0.9 + (fbm(164, 200) > 0.7) * 0.5, 0, 1)
+    grime = np.clip(fbm(165, 380) - 0.5, 0, 1) * 2
+    col = rgb((0.40, 0.40, 0.41)) * (0.85 + 0.25 * grain[..., None])
+    col = mix(col, rgb((0.16, 0.14, 0.12)), grime * 0.6)
+    col = mix(col, rgb((0.72, 0.72, 0.74)), wear * 0.85)
+    height = grain * 0.2 - wear * 0.55
+    rough = 0.55 + grime * 0.25 - wear * 0.25
+    return col, height, 2.0, rough, wear * 0.9 + 0.1
+
+MATERIALS = [CarBody, CarLivery, CarPanel, CarFloor, Moquette, SeatShell, Stainless, Underframe, Gunmetal, Polymer, Waxcloth, HideLeather, CarTrim,
+             Techcloth, Twill, Gauze, PlateSteel]
 
 if __name__ == "__main__":
     want = set(sys.argv[1:])

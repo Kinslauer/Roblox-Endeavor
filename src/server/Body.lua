@@ -21,7 +21,7 @@ function Body.Init()
 	if not id or id == 0 then
 		return false
 	end
-	local model, hum, root = Rigs.Build(id, "StarterCharacter")
+	local model, hum, root = Rigs.Build(id, "StarterCharacter", "Conduit")
 	if not model then
 		warn("[Body] the Conduit body did not build; players keep their avatars")
 		return false
@@ -68,6 +68,7 @@ function Body.Apply(player, char)
 			local mat = p:GetAttribute("Mat")
 			if mat == "ConduitJacket" then
 				p.Color = jacket
+				Assets.Tint(p, jacket)
 			elseif mat == "ConduitTrim" or mat == "ConduitVisor" then
 				p.Color = trim
 				local light = p:FindFirstChildOfClass("PointLight")

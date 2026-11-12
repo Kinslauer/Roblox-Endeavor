@@ -9,8 +9,104 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Assets = require(ReplicatedStorage.Shared.Assets)
 local ModelAssets = require(script.Parent.Common.ModelAssets)
 
+local CollectionService = game:GetService("CollectionService")
+
 local Rigs = {}
 local warned = {} -- asset ids already reported as unusable
+
+-- The skin: the body people see (tools/models/figure.py -> Assets.Skins[kind]). An uploaded skin is a Model holding
+-- "RootPart" with 15 Bones (one per limb, at the limb's centre) and skinned MeshParts jointed to it. It is lined up
+-- with the rig, each bone is tied to the limb nearest to it (attributes Limb and Rest; shared/Skin.lua makes the
+-- bone follow that limb on every client), and the rig's own limbs turn invisible: they stay as the joints, the
+-- hitboxes and what gear welds to. Returns true when the skin is on.
+local function attachSkin(model, limbs, kind)
+	local spec = Assets.Skins and Assets.Skins[kind]
+	local template = spec and spec.Id and spec.Id ~= 0 and ModelAssets.Template(spec.Id)
+	if not template then
+		return false
+	end
+	local skin = template:Clone()
+	local holder = skin:FindFirstChild("RootPart")
+	local bones, meshes = {}, {}
+	for _, d in skin:GetDescendants() do
+		if d:IsA("Bone") then
+			table.insert(bones, d)
+		elseif d:IsA("MeshPart") then
+			table.insert(meshes, d)
+		elseif d:IsA("AnimationController") or d:IsA("CFrameValue") or (d:IsA("Folder") and d.Name == "InitialPoses") then
+			d:Destroy()
+		end
+	end
+	local function world(bone)
+		local cf = bone.CFrame
+		local up = bone.Parent
+		while up and up:IsA("Bone") do
+			cf = up.CFrame * cf
+			up = up.Parent
+		end
+		return (if up and up:IsA("BasePart") then up.CFrame else CFrame.identity) * cf
+	end
+	local anchor
+	for _, b in bones do
+		if b.Name == "LowerTorso" then
+			anchor = b
+		end
+	end
+	if not (holder and anchor and #meshes > 0 and #bones >= 15) then
+		if not warned[spec.Id] then
+			warned[spec.Id] = true
+			warn("[Rigs] skin", kind, "is not a skinned body (bones", #bones, "meshes", #meshes, ") - keeping the plain rig")
+		end
+		skin:Destroy()
+		return false
+	end
+	Assets.Dress(skin)
+	-- skin and rig were modelled in the same space, so one move puts the skin's hip bone on the rig's hip limb
+	local move = limbs.LowerTorso.CFrame * world(anchor):Inverse()
+	for _, p in skin:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.CFrame = move * p.CFrame
+		end
+	end
+	for _, b in bones do
+		local at = world(b)
+		local best, bestDist
+		for _, limb in limbs do
+			local d = (limb.Position - at.Position).Magnitude
+			if not bestDist or d < bestDist then
+				best, bestDist = limb, d
+			end
+		end
+		b:SetAttribute("Limb", best.Name)
+		b:SetAttribute("Rest", best.CFrame:ToObjectSpace(at))
+	end
+	for _, p in skin:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, false, true
+			p:SetAttribute("Skin", true)
+			if p:IsA("MeshPart") then
+				local suffix = p.Name:match("_(%w+)$")
+				p:SetAttribute("Mat", (spec.Mats and spec.Mats[p.Name]) or suffix)
+				local tint = spec.Tints and spec.Tints[p.Name]
+				if tint then
+					Assets.Tint(p, tint)
+				end
+			end
+		end
+	end
+	local weld = Instance.new("WeldConstraint")
+	weld.Name = "SkinWeld"
+	weld.Part0, weld.Part1 = limbs.LowerTorso, holder
+	weld.Parent = holder
+	skin.Name = "Skin"
+	CollectionService:AddTag(skin, "Skin")
+	skin.Parent = model
+	for _, limb in limbs do
+		limb.Transparency = 1
+		limb:SetAttribute("Proxy", true)
+	end
+	return true
+end
 
 -- joint name -> parent part, child part, and where on the child the joint sits ("top" = child's top centre)
 local JOINTS = {
@@ -49,8 +145,9 @@ local function motor(name, parent, child, jointPos)
 	return m
 end
 
--- Builds a rigged character Model from an asset id. Returns model, humanoid, root or nil.
-function Rigs.Build(assetId, name)
+-- Builds a rigged character Model from an asset id. `kind` names the skin to dress it in (Assets.Skins); without one,
+-- or if the skin does not load, the rig's own limbs are the body. Returns model, humanoid, root or nil.
+function Rigs.Build(assetId, name, kind)
 	local template = ModelAssets.Template(assetId)
 	if not template then
 		return nil
@@ -156,6 +253,9 @@ function Rigs.Build(assetId, name)
 		weld.Part0, weld.Part1 = best, extra
 		weld.Parent = extra
 		extra.Massless = true
+	end
+	if kind then
+		model:SetAttribute("Skinned", attachSkin(model, limbs, kind))
 	end
 	for _, p in model:GetDescendants() do
 		if p:IsA("BasePart") then

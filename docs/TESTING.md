@@ -3,6 +3,22 @@
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
 report).
 
+## Endeavor: the realistic pass, round 4 (one-piece bodies) (2026-11-12)
+- [ ] Your character is one smooth figure with human proportions (narrower shoulders, smaller head, longer legs):
+      hooded long coat, respirator, lit visor, chest plate, gloves, boots. No gaps or separate blocks anywhere.
+- [ ] Walk, run, jump, roll, crouch, go prone, swing a weapon, block: elbows, knees, shoulders and hips fold like
+      sleeves and trouser legs, and the coat's skirt swings with the legs. Nothing is left behind or stretched.
+- [ ] Aim with a gun in first person (P, or V while aiming): you see your forearms and gloves, not the inside of
+      your body.
+- [ ] Enemies are one-piece too: Raider (hood, goggles, wrapped arms), Brute (plate, pipes, slit helmet), Shocker
+      (long coat, coil pack), Warden (plate, crest, red cape), station Sentry (helmet, vest). They walk and attack
+      without gaps at the joints.
+- [ ] A killed enemy lies as a whole body. One blown apart scatters as plain dark limbs.
+- [ ] Worn armour and helmets still sit on the body and are not far too big or too small.
+- [ ] The ride (F2 -> "Train intro" -> Replay): the rider sits on the bench, the cloak covers the new body, hands
+      reach the pistol. Say what is off (the body is slimmer than the one the ride was posed for).
+- [ ] Frame rate in a fight with many enemies is no worse than before.
+
 ## Endeavor: the realistic pass, round 3 (every gun part) (2026-11-11)
 - [ ] The pistol in the ride is the new hammer-fired one: a 1911-style frame and slide with rear grooves, an outside
       hammer, a grip safety, chequered grips, a rail under the front with a light, and a suppressor on a threaded

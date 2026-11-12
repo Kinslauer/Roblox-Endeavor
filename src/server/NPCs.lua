@@ -63,7 +63,7 @@ function NPCs.BuildRig(name, typeDef)
 	-- a Blender rig if one is uploaded for this type; the box rig otherwise
 	local rigId = Assets.Rigs[name]
 	if rigId and rigId ~= 0 then
-		local model, hum, root = Rigs.Build(rigId, name)
+		local model, hum, root = Rigs.Build(rigId, name, name)
 		if model then
 			hum.MaxHealth, hum.Health, hum.WalkSpeed = typeDef.Health or 100, typeDef.Health or 100, typeDef.Speed or 0
 			model:SetAttribute("Rigged", true)

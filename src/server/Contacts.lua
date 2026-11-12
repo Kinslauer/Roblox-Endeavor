@@ -71,7 +71,7 @@ function Contacts.Spots(id)
 end
 
 local function build(id, def)
-	local model, hum, root = Rigs.Build(Assets.Rigs.Raider, "Contact_" .. id)
+	local model, hum, root = Rigs.Build(Assets.Rigs.Raider, "Contact_" .. id, "Raider")
 	if not model then
 		-- a box body when the rig is not there
 		model = Instance.new("Model")

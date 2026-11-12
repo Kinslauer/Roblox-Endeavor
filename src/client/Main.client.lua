@@ -22,6 +22,7 @@ local Joints = require(Shared:WaitForChild("Joints"))
 local Swings = require(Shared:WaitForChild("Swings"))
 local Anims = require(Shared:WaitForChild("Anims")) -- the game's own keyframed animations (tools/anims)
 local Movement = require(script.Parent:WaitForChild("Movement"))
+require(Shared:WaitForChild("Skin")).Start() -- one-piece bodies follow their limbs (shared/Skin.lua)
 Movement.Start()
 require(script.Parent:WaitForChild("Air")).Start() -- smog, clean air in the green pockets, the toxic tint
 -- Sounds for combat events, played at the character they happened to.
@@ -1152,7 +1153,8 @@ local function ghost(char, seconds, color)
 		return
 	end
 	for _, part in char:GetChildren() do
-		if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and part.Transparency < 1 then
+		-- a skinned body's limbs are invisible stand-ins (attribute Proxy): they still give the ghost its shape
+		if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and (part.Transparency < 1 or part:GetAttribute("Proxy")) then
 			local copy = Instance.new("Part")
 			copy.Size, copy.CFrame, copy.Color, copy.Material, copy.Transparency = part.Size, part.CFrame, color, Enum.Material.ForceField, 0.4
 			copy.Anchored, copy.CanCollide, copy.CanQuery, copy.CanTouch = true, false, false, false
@@ -1521,6 +1523,13 @@ RunService.RenderStepped:Connect(function()
 			local handle = p:FindFirstChild("Handle")
 			if handle then
 				handle.LocalTransparencyModifier = 1
+			end
+		elseif p.Name == "Skin" then
+			-- the one-piece body: its forearm and hand pieces are separate meshes for exactly this
+			for _, m in p:GetChildren() do
+				if m:IsA("BasePart") then
+					m.LocalTransparencyModifier = if m.Name:find("LowerArm") or m.Name:find("Hand") then 0 else 1
+				end
 			end
 		end
 	end
