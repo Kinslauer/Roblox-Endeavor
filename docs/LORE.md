@@ -75,6 +75,13 @@ How to read it:
 - The hideout and the route north belong to the crew and outlive any one conduit. [Andy 2026-10-31]
 - Contacts, the computer's apps and fragments are learned by meeting people in the world. [Andy 2026-10-31]
 
+**Truth**
+- On death the stack keeps one slot of what it uploaded: data, valuable chips and information, never materials.
+  [Andy 2026-11-12: "data uploaded from the stack upon death is kept in an inventory slot"]
+- A conduit keeps what it finds only by bringing it home (extracting). [Andy 2026-11-12]
+- Conduits can build a humanoid drone and send it out on a run in their place. It has less health, needs armour,
+  is poor in melee and good with guns. [Andy 2026-11-12]
+
 ## Line 9 and the arrival (Claude's links, 2026-11-10; Andy may revise)
 
 **Canon**
@@ -112,6 +119,9 @@ How to read it:
 - Players can go down to the shelters and the barrens. Something in the game leads them there, either an incentive
   or the story. [Andy 2026-11-12] Limit from the canon: the way down is not Line 9 (it runs up only, and nothing
   goes back down on it).
+- Conduits can use the brain-slave tech themselves: to trap an enemy and enslave it for their own needs. A trapped
+  enemy can be released (and remembers), reprogrammed and sent to the Front to fight for its conduit, or it breaks
+  free and later finds the conduit out in the world as an invader. [Andy 2026-11-12]
 
 **Canon (Endeavor v94, Claude's build of the way down; Andy chose "story and incentive")**
 - A service shaft on the Sumps plaza ("SERVICE . S4 . NO ENTRY", a winch, a red lamp, a hum through the grate)
@@ -150,6 +160,10 @@ How to read it:
 - It shows itself: debris flickers, colour drains, a second of white. No countdown, no explanation. [Andy 2026-10-31]
 - The green pockets stand outside the hour: colour does not drain there, and what lies there is not cleared.
   [Claude 2026-11-10]
+
+**Truth**
+- Every hour the time of day changes. Sometimes it moves on naturally (dawn, midday, night), but it can come in any
+  order. [Andy 2026-11-12]
 
 **Truth**
 - In the green pockets grass grows, trees and flowers bloom, and the hour's effects are nullified, for reasons
@@ -257,6 +271,9 @@ How to read it:
    facilities). (One way down, the Sumps shaft to Barrens Hall 2, is now Canon.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: Andy's notes on the reference pick list (docs/Reference-Picks-Plan.md): the stack keeps a data slot
+  through death; finds are kept only by extracting; the hour changes the time of day in any order; conduits can use
+  brain-slave tech to trap enemies (release, reprogram for the Front, or they escape and invade); humanoid drones.
 - 2026-11-12: Andy: long guns. A 5.56 carbine (the sentries' rifle), the AK-47 in 7.62x39, the Garand in 7.62x51.
   Claude placed them: 7.62x39 with raiders, 7.62x51 with the valley's rival crews (Hinted, Andy has not confirmed).
 - 2026-11-12: Andy: cybernetics on the Front come shipped from conduits.
