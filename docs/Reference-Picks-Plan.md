@@ -56,7 +56,7 @@ commit, the smoke tests, a real-server start check, a publish, and lines in docs
 6. **World and money** (Endeavor; built 2026-11-12, Endeavor v111): the hour picks a time of day (any order) and weather; party; party runs in the
    shelters; keys and locked rooms; timed crafting and fuel; contact loyalty and swaps; player market (found-in-run
    items only); calling in a drop to a bay.
-7. **Things you make** (Endeavor, Front): the arm cybernetic built to be spent in one blow; the cable arm; trapping
+7. **Things you make** (Endeavor, Front; built 2026-11-12, Endeavor v112 + Front v44): the arm cybernetic built to be spent in one blow; the cable arm; trapping
    an enemy with slave tech (release, reprogram for the Front, or he escapes and invades you); companions (natural
    dog, cyberdog, drone, hybrid); the conduit's humanoid drone sent on a run in its place (less health, needs armour,
    weak in melee, good with guns).

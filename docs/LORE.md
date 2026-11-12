@@ -141,6 +141,18 @@ How to read it:
   enemy can be released (and remembers), reprogrammed and sent to the Front to fight for its conduit, or it breaks
   free and later finds the conduit out in the world as an invader. [Andy 2026-11-12]
 
+**Canon (Endeavor v112 + Front v44, round 7: the slave tech in a conduit's hands)**
+- A Neural Shackle takes a beaten body down the line to its conduit's holding frame, where it stands pale, as the
+  barrens' slaves do. It is given a unit number ("UNIT nnnn"), never its old name. [Thralls]
+- Released, it walks free and remembers: an hour later an unsigned crate comes up Line 9 to the bay. Reprogrammed,
+  it is written for the Front and fights beside its conduit's recruit, and dies for good like any recruit. Kept, it
+  may break out (a running generator holds the frame shut) and later hunts its conduit in the city, harder than it
+  was. [Thralls; the Truth above]
+- The conduit's humanoid drone: the body rests in the bay's proxy frame while the conduit runs the drone. A lost
+  drone costs what it carried, never the stack: the stack never left the bay. [Proxy; fits "The stack and death"]
+- Natural dogs live only in the green pockets, as all natural life does; the cyberdog, the drone and the hybrid are
+  made. [Companions; fits the pocket Truth]
+
 **Canon (Endeavor v94, Claude's build of the way down; Andy chose "story and incentive")**
 - A service shaft on the Sumps plaza ("SERVICE . S4 . NO ENTRY", a winch, a red lamp, a hum through the grate)
   drops to Barrens Hall 2 in Shelter 4: a pipe gallery, the hall, and the overseers' office. [Barrens]
@@ -306,6 +318,10 @@ How to read it:
    facilities). (One way down, the Sumps shaft to Barrens Hall 2, is now Canon.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: round 7, things you make (Endeavor v112 + Front v44): Andy's slave-tech Truth is now Canon (shackle,
+  holding frame, release that is remembered, reprogrammed for the Front, escape and invasion); thralls are given unit
+  numbers, not names (Claude). The humanoid drone and the companions; strays only in the green pockets. Nothing here
+  touches an open question (open question 7 stays open: shackling is not freeing).
 - 2026-11-12: round 6, world and money (Endeavor v111): the hour's time of day and weather are Canon (Andy's Truth);
   the green pockets keep their own sky (Claude). Strongrooms in the core districts and the S4 store open to keys and
   relock each hour. The work orders below the Sumps come from nobody named. The Fixer can send a Line 9 consignment

@@ -36,8 +36,8 @@ uploads, publishing. The kickoff prompt for a new session is `docs/prompts/fable
   Rojo 7.5.1 linux zip from github.com/rojo-rbx/rojo releases.
 - **Check code**: `luau-compile --text file.lua` and `luau-analyze file.lua` (ignore Unknown global/require/type noise).
 - **Smoke tests (no Roblox needed)**: `python3 tools/smoke/gen.py [tools/smoke/{scenario,war,stress,client}.lua] > /tmp/x.lua && luau /tmp/x.lua`.
-  `scenario` = Endeavor end to end (482 checks), `war` = Front (149), `warclient` = the Front client plays the first link's stages, the screen, the controls, the gun in the view, its code-made animation and the fingers (67), `stress` = budgets under load (5), `client` = the
-  Endeavor client boots + movement, dodge, animation, guard, air and handling checks (57). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
+  `scenario` = Endeavor end to end (510 checks), `war` = Front (151), `warclient` = the Front client plays the first link's stages, the screen, the controls, the gun in the view, its code-made animation and the fingers (67), `stress` = budgets under load (5), `client` = the
+  Endeavor client boots + movement, dodge, animation, guard, air and handling checks (60). They run the real scripts against a small mock of Roblox (`tools/smoke/mock_prelude.lua`);
   the mock is lenient about property names, so a real-Roblox error can still slip through.
 - **Real-server check**: Open Cloud Luau execution runs a script on a real server of the published place:
   `python3 tools/realserver/run_luau.py <placeId> script.lua` (POST `.../luau-execution-session-tasks`, poll, print
@@ -114,7 +114,7 @@ Client tab screenshot, because Andy cannot read logs another way.
 - Entrenching: foxholes and low sandbags only, on open ground.
 - Controls are the Cursed Gear layout: E flicker, F block/parry, Q dodge, X interact, M devour/app, R/Y/V skills,
   Z feint, G grab/throw, H drop, Shift sprint, C crouch (hold: prone; sprinting: dive), Space up a stance, B whistle, Tab inventory,
-  L loadout, J attributes, O hideout, N recruit app, P helmetcam, K the core implant's active. With a gun out (owner, 2026-11-11): RMB aim, V sights, R reload, T rack (single-shot guns),
+  L loadout, J attributes, O hideout, N recruit app, P helmetcam, K the core implant's active (held: the arm's). With a gun out (owner, 2026-11-11): RMB aim, V sights, R reload, T rack (single-shot guns),
   Q the wall (prone: roll); X close quarters (tap: takedown, throw or search a body; hold: neck grab or carry a body). Front: LMB fire, RMB aim, R the magazine's next step (out, then in; hold: the one coming out is kept), T the action (rack, release, unjam), B selector, 1/2 switch,
   G frag, H dressing, Q/E lean (prone: roll), C crouch (hold: prone; sprinting: dive), Space up a stance / mantle,
   Z binoculars, Y check weapon (held: 1-4 change the part in a slot), K artillery, F dig, V sandbags, M app, U unlink.
@@ -796,7 +796,44 @@ Client tab screenshot, because Andy cannot read logs another way.
   "party:", "keys:", "runs:", "fuel:", "craft:", "condenser:", "trust:", "swap:", "exchange:", "drop:" in
   scenario.lua, "bay:" in client.lua. Not done: the Fuses can only be cut (not shot), runs give no Front reward, the
   exchange has no search or partial buys, the strongroom look is plain parts.
+- Things you make (round 7 of docs/Reference-Picks-Plan.md, the last). Tuning `Config.Make` (Arm, Breaker, Cable,
+  Thrall incl. Front, Companion, Proxy). K: client/Build records KDown; a tap (< Make.Arm.Hold) fires Remote "Active"
+  on release, client/Make fires Remote "Arm"(camera look) once the hold passes it. `src/server/Arms.lua`: Cybernetics
+  pieces `BreakerArm` / `CableArm` (`ArmActive`; ImplantLibrary reuses the servo arm / gauntlet meshes); `ActiveOf`
+  (right arm first, not overloaded, condition > 0), `Fire` (Breaker: Combat.State(char).spendUntil/spendArm, which
+  Combat's strike spends on the first landed melee blow: x Mult, GuardBreak, Unblockable, launch, then `Arms.Spent`
+  sets data.Condition[id] = 0; Cable: raycast, CombatEvent "Cable"(char, point) to all, a body is stunned and pulled
+  (NPC velocity, a player's own client via World "Cable"), a wall pulls you), `Spent`. `src/server/Thralls.lua`:
+  item `Shackle` (Inventory.Use -> `Capture`: nearest `Shackleable` NPC within Reach, needs bay module `Holding`,
+  MaxKept; data.Hideout.Thralls {Type, Name "UNIT nnnn"}), `Draw` (Rigs.Statue per thrall in the model "HeldFigures"),
+  `Release` (h.Debts -> unsigned Barrens crate at site.LiftCFrame after DebtDelay hours), `Reprogram` (data.War.Thralls),
+  `Hour` from Cycle.Run (Escape / EscapePowered -> h.Invaders), `Invade` (NPCs.Spawn x InvaderHealth, attrs Invader +
+  Investigate, OnDied takes it off the list), a loop every InvadeEvery. Terminal State `Thralls`, `Invaders`; actions
+  Release / Reprogram. `src/server/Companions.lua`: data.Hideout.Companion {Kind, Name, Health}; part-built bodies
+  (`buildDog` Dog/Cyberdog/Hybrid with a Humanoid, `buildDrone` anchored); `Summon` on every CharacterAdded, `Keep`,
+  `Dismiss` (Remote "Companion"), `UseItem` (items Cyberdog, DroneShell; CyberGraft at site.AutonetAt turns a Dog into
+  a Hybrid), strays per Megacity pocket (`Tame` with a Ration), `think` (follow, leash, nearest NPC-tagged hostile
+  within Aggro, Bite / Shoot through Combat.Damage, Sniff -> World "Sniff"(parts)). Models carry attribute `Owner`:
+  Combat.applyDamage returns "none" between an owned model and its owner. `src/server/Proxy.lua`: bay module
+  `ProxyFrame` (X "Link / unlink"); `Link` / `Unlink` = `swap`: player attr `Proxy`, data.ProxyLinked, a pending spawn
+  CFrame read by `Lifecycle.Override` in placeFor, Lifecycle.Spawn, tint, Stats.Apply (MaxHealth x Health), statue
+  "Resting" in the bay; Items.Carry x Carry while linked; Combat melee x Melee, rounds x Gun, drift x Spread. Lifecycle
+  onDied(player, char) ignores a body that is no longer player.Character and asks `Proxy.Lost` first (drops the pack
+  as "Wrecked drone" remains, h.ProxyLost -> Rebuild cost, swap back; no permadeath). `Proxy.CombatLog` replaces the
+  combat-log wipe while linked. `Hideouts.Rebuild(player)`. Front: `src/war/server/Thralls.lua` (`Field` from the end
+  of Soldiers.Place: up to Front.Max soldier rigs in the side's kit with attrs Owner/Thrall/Faction, walk toward
+  Battlefield.Crest(Hill.Current()), shoot enemy-faction players in sight through Soldiers.Damage; death removes it
+  from data.War.Thralls; `Recall`, `Fielded`). Client `src/client/Make.lua` (Start from Main: the arm on K held, the
+  cable pull, the line, sniff highlights; `Rows` on the L panel: companion + Dismiss, proxy linked; `TerminalRows`:
+  the holding frame). Tests: "arms:", "thrall:", "companion:", "proxy:", "bay:" in scenario.lua (at the end), "make:"
+  in client.lua, "thralls:" in war.lua. Not done: companion models are parts with no animation; NPCs do not attack
+  companions; the drone and thralls on the Front are not seen by name; the invader's damage is the type's own.
 ## State (2026-11-12)
+- Endeavor v112 + Front v44 (2026-11-12): things you make, round 7 and the last of the reference picks (the Breaker
+  and Cable arms on K held, the Neural Shackle and the holding frame, thralls released / sent to the Front /
+  escaping as invaders, dogs, cyberdogs, drones and hybrids, the proxy frame's humanoid drone, thralls fighting on
+  the Front). Awaits Andy: docs/TESTING.md "Endeavor and Front: things you make". All 7 rounds of
+  docs/Reference-Picks-Plan.md are built.
 - Endeavor v111 (2026-11-12; v110 the same round without the starting sky): world and money, round 6 of the reference picks (the hour's time of day and weather,
   parties, strongrooms and the S4 store cage, five party runs below the Sumps, generator fuel, timed crafting, the
   condenser, trust and swaps, the conduits' exchange, the Line 9 drop). Awaits Andy: docs/TESTING.md "Endeavor:

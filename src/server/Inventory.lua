@@ -477,6 +477,15 @@ function Inventory.Use(player, itemId, direction)
 		end
 		return
 	end
+	-- round 7: a shackle on a beaten body (server/Thralls); a companion wakes from its frame (server/Companions)
+	if def and def.Shackle and hum and hum.Health > 0 and Inventory.Count(player, itemId) > 0 then
+		require(script.Parent.Thralls).Capture(player)
+		return
+	end
+	if def and def.Type == "Companion" and hum and hum.Health > 0 and Inventory.Count(player, itemId) > 0 then
+		require(script.Parent.Companions).UseItem(player, itemId, def)
+		return
+	end
 	if not (def and def.Type == "Consumable" and hum and hum.Health > 0) then
 		return
 	end

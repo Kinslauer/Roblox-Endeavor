@@ -222,6 +222,26 @@ local function build(site, h)
 			end
 		end)
 	end
+	if h.Modules.ProxyFrame then
+		-- round 7: the humanoid drone on its rack (server/Proxy)
+		local rack = part(model, { Name = "ProxyFrame", Size = Vector3.new(4, 7, 1), Position = c + Vector3.new(-6, GROUND_TOP + 4.5, 13), Color = Color3.fromRGB(54, 58, 64), Material = Enum.Material.DiamondPlate })
+		local rp = Instance.new("ProximityPrompt")
+		rp.ObjectText, rp.ActionText, rp.HoldDuration = "Proxy frame", "Link / unlink", 1.2
+		rp.MaxActivationDistance, rp.RequiresLineOfSight, rp.KeyboardKeyCode = 8, false, Enum.KeyCode.X
+		rp.Parent = rack
+		rp.Triggered:Connect(function(player)
+			if isMember(site, player) then
+				require(script.Parent.Proxy).Link(player)
+			end
+		end)
+	end
+	if h.Modules.Holding then
+		-- round 7: where shackled bodies are kept (server/Thralls)
+		part(model, { Name = "Holding", Size = Vector3.new(8, 7, 2), Position = c + Vector3.new(14, GROUND_TOP + 4.5, 12), Color = Color3.fromRGB(70, 66, 60), Material = Enum.Material.Metal, Transparency = 0.6 })
+		task.defer(function()
+			pcall(require(script.Parent.Thralls).Draw, site)
+		end)
+	end
 	if h.Modules.Condenser then
 		-- round 6: a still that pulls water and protein out of the air, real time, while you are away too
 		local still = part(model, { Name = "Condenser", Size = Vector3.new(3, 5, 3), Position = c + Vector3.new(6, GROUND_TOP + 3.5, 12), Color = Color3.fromRGB(110, 130, 120), Material = Enum.Material.Metal })
@@ -1060,6 +1080,17 @@ function Hideouts.AtBench(player, position)
 	return bench ~= nil and (bench.Position - position).Magnitude <= 12
 end
 Hideouts.SiteOf = siteOfPlayer
+
+-- Builds the bay's model again from its modules (tools and tests; build() clears the old one).
+function Hideouts.Rebuild(player)
+	local site = siteOfPlayer(player)
+	local owner = site and ownerPlayer(site)
+	local h = owner and hideoutOf(owner)
+	if h then
+		build(site, h)
+	end
+	return site
+end
 
 Hideouts.Sites = sites
 Hideouts.Restore = restore

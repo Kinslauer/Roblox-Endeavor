@@ -24,6 +24,8 @@ Hideout.Modules = {
 	Shelves = { Name = "Shelving", Desc = "Two more rows of vault grid per level, three levels. Build it again to add a level.", Cost = { Scrap = 20, SheetMetal = 6 }, Tier = 1, Levels = 3, RowsPerLevel = 2 },
 	Computer = { Name = "Computer", Desc = "A terminal with a stack reader. Its apps come online when you meet the people who run them.", Cost = { Battery = 4, Wire = 12, Glass = 3, SheetMetal = 4 }, Tier = 1 },
 	Condenser = { Name = "Condenser", Desc = "Pulls water and protein out of the air. A ration every quarter hour, while you are away too, until the tank is full.", Cost = { SheetMetal = 4, Pipe = 3, Glass = 2, Wire = 2 }, Tier = 1 },
+	ProxyFrame = { Name = "Proxy frame", Desc = "A humanoid drone on a rack. Link to it and send it out in your place; if it is lost, only what it carried is lost.", Cost = { SheetMetal = 10, Wire = 14, Battery = 5, Glass = 3, Pipe = 4 }, Tier = 2 },
+	Holding = { Name = "Holding frame", Desc = "Where shackled bodies are kept. A running generator keeps it shut.", Cost = { SheetMetal = 6, Wire = 8, Pipe = 4 }, Tier = 1 },
 	Medbay = { Name = "Medbay", Desc = "Slow healing while inside the compound.", Cost = { Cloth = 10, Wire = 4, Glass = 4 }, Tier = 2 },
 }
 Hideout.GateTier = { "Weak", "Standard", "Reinforced" } -- by workshop tier

@@ -76,6 +76,7 @@ local Handling = require(script.Parent:WaitForChild("Handling")) -- stances, aim
 local Style = require(script.Parent:WaitForChild("Style")) -- lock-on, two weapons, the combo count, knocked (client/Style.lua)
 Style.Start(gui)
 require(script.Parent:WaitForChild("Bay")).Start(gui) -- round 6: the party list, the work-order clock, dark bays
+require(script.Parent:WaitForChild("Make")).Start() -- round 7: K held fires the arm; the cable; a dog's nose
 require(script.Parent:WaitForChild("Build")).Start() -- round 5: K fires the core's active; the open book vow
 
 -- A safety net for everything built outside panel/addRow: buttons get the theme's shape, font and a hover;
@@ -921,6 +922,7 @@ local function renderLoadout()
 	BuildUI.Pack = lastInventory
 	BuildUI.Rows(loadoutPanel, addRow, loadout)
 	require(script.Parent:WaitForChild("Bay")).Rows(loadoutPanel, addRow) -- round 6: the party
+	require(script.Parent:WaitForChild("Make")).Rows(loadoutPanel, addRow) -- round 7: the companion, the drone
 end
 Remotes.LoadoutChanged.OnClientEvent:Connect(function(data)
 	loadout = data
@@ -1808,6 +1810,7 @@ renderTerminal = function(t)
 		end
 	end
 	require(script.Parent:WaitForChild("Bay")).TerminalRows(terminalPanel, addRow, t, send) -- round 6: trust, swaps, the exchange, the drop
+	require(script.Parent:WaitForChild("Make")).TerminalRows(terminalPanel, addRow, t, send) -- round 7: the holding frame
 end
 renderContainer = function()
 	clear(containerPanel)

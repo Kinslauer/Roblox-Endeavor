@@ -673,5 +673,23 @@ end
 local probe = Intro.Probe(M.V3.new(0, 1500, 5000))
 check("intro: the probe builds and clears a cell and a simulation", type(probe) == "string" and probe:find("benches 5") ~= nil and workspace_:FindFirstChild("IntroCell_0") == nil)
 
+-- round 7: reprogrammed thralls stand up beside their conduit's recruit and fight for its side
+do
+	local PDw = M.mockEnv.__require(SSS.Server.Common.PlayerData)
+	local ThrW = M.mockEnv.__require(SSS.Server.Thralls)
+	local SoldiersT = M.mockEnv.__require(SSS.Server.Soldiers)
+	local du = PDw.Get(u)
+	du.War.Thralls = { { Type = "Raider", Name = "UNIT 0002" }, { Type = "Brute", Name = "UNIT 0007" }, { Type = "Raider", Name = "UNIT 0009" } }
+	local okF = pcall(SoldiersT.Place, u)
+	local list = ThrW.Fielded(u)
+	check("thralls: placing the recruit fields up to two of its conduit's thralls", okF and #list == 2 and list[1].Model:GetAttribute("Owner") == u.UserId and list[1].Model:GetAttribute("Faction") == "Union")
+	for _ = 1, 30 do M.step(0.1) end
+	list[1].Hum:TakeDamage(1e5)
+	for _ = 1, 5 do M.step(0.1) end
+	check("thralls: a thrall that falls is gone for good", #du.War.Thralls == 2 and du.War.Thralls[1].Name == "UNIT 0007")
+	ThrW.Recall(u)
+	du.War.Thralls = nil
+end
+
 check("no script errors", #M.errors == 0)
 for _, e in M.errors do print(e) end

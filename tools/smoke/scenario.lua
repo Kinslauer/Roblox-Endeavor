@@ -2109,8 +2109,9 @@ do
 	local md = PlayerData_.Get(mate)
 	md.War.Credits = 1000
 	cr = pd.War.Credits
-	check("exchange: buying pays the seller and gives them reputation", row ~= nil and EcoS.Take(mate, row.Key) == true and InvS.Count(mate, "Splint") == 2 and pd.War.Credits == cr + row.Price and (pd.Hideout.Rep or 0) == 1)
-	check("exchange: a bought item is not found in a run", EcoS.Sellable(mate, "Splint") == 0 and EcoS.List(mate, "Splint:2:1") == false)
+	local splints0 = InvS.Count(mate, "Splint")
+	check("exchange: buying pays the seller and gives them reputation", row ~= nil and EcoS.Take(mate, row.Key) == true and InvS.Count(mate, "Splint") == splints0 + 2 and pd.War.Credits == cr + row.Price and (pd.Hideout.Rep or 0) == 1)
+	check("exchange: a bought item is not found in a run", EcoS.Sellable(mate, "Splint") == 0 and EcoS.List(mate, "Splint:1:1") == false)
 	-- the drop
 	pd.Hideout.DropAt = nil
 	cr = pd.War.Credits
@@ -2455,6 +2456,143 @@ do
 	run(8)
 	helper:Destroy()
 end
+
+-- things you make (round 7: the Breaker and Cable arms, slave tech, companions, the humanoid drone)
+do
+	as(player)
+	run(1)
+	mendMe()
+	local pd = PlayerData_.Get(player)
+	local Cfg = M.mockEnv.__require(RS.Shared.Config)
+	local MK = Cfg.Make
+	local ArmsS = M.mockEnv.__require(SSS.Server.Arms)
+	local ThrS = M.mockEnv.__require(SSS.Server.Thralls)
+	local CompS = M.mockEnv.__require(SSS.Server.Companions)
+	local ProxS = M.mockEnv.__require(SSS.Server.Proxy)
+	local InvS = M.mockEnv.__require(SSS.Server.Inventory)
+	local GearS = M.mockEnv.__require(SSS.Server.Gear)
+	local HideS = M.mockEnv.__require(SSS.Server.Hideouts)
+	local CombatS = M.mockEnv.__require(SSS.Server.Combat)
+	local NPCsS = M.mockEnv.__require(SSS.Server.NPCs)
+	local TermS = M.mockEnv.__require(SSS.Server.Terminal)
+	local ItemsS = M.mockEnv.__require(RS.Shared.Items)
+	local c = char()
+	c:PivotTo(M.CF.new(40, 5, 40))
+	run(Cfg.SpawnProtection + 0.3)
+	-- the Breaker arm
+	InvS.Add(player, "BreakerArm", 1)
+	pd.Cyber.RightArm = "BreakerArm"; GearS.Recompute(player)
+	check("arms: a Breaker arm fitted has an active", ArmsS.ActiveOf(player) == "Breaker")
+	local dummy = NPCsS.Spawn("Raider", root().Position + root().CFrame.LookVector * 3, { Parent = game_.Workspace })
+	local dh = dummy:FindFirstChildOfClass("Humanoid")
+	dh.MaxHealth, dh.Health = 5000, 5000
+	run(0.1)
+	local function swingAt()
+		dummy.HumanoidRootPart.CFrame = root().CFrame * M.CF.new(0, 0, -3)
+		local h0 = dh.Health
+		for _ = 1, 6 do
+			Remotes.Attack:FireServer(root().CFrame.LookVector); run(0.75)
+			if dh.Health < h0 then break end
+		end
+		return h0 - dh.Health
+	end
+	local plain = swingAt()
+	run(1.2)
+	check("arms: K held primes the arm", ArmsS.Fire(player, root().CFrame.LookVector) == true and CombatS.State(char()).spendUntil ~= nil)
+	local spent = swingAt()
+	check("arms: the next blow lands four times as hard and the arm is spent", plain > 0 and spent >= plain * 3 and pd.Condition.BreakerArm == 0 and ArmsS.ActiveOf(player) == nil)
+	-- the Cable arm
+	InvS.Add(player, "CableArm", 1)
+	pd.Cyber.RightArm = "CableArm"; GearS.Recompute(player)
+	run(MK.Breaker.Cooldown + 0.2)
+	local sawCable
+	check("arms: the cable fires along the aim", ArmsS.ActiveOf(player) == "Cable" and ArmsS.Fire(player, root().CFrame.LookVector) == true)
+	for _, e in M.FireLog do if e[1] == "CombatEvent" and e[3] == "Cable" then sawCable = true end end
+	check("arms: everyone sees the line; it waits before the next", sawCable == true and ArmsS.Fire(player, root().CFrame.LookVector) == false)
+	pd.Cyber.RightArm = nil; GearS.Recompute(player)
+	-- slave tech
+	local h = pd.Hideout
+	h.Modules.Holding, h.Modules.ProxyFrame = true, true
+	h.Tier = math.max(h.Tier, 2)
+	local site = HideS.Rebuild(player)
+	check("bay: the holding frame and the proxy frame stand in the bay", site ~= nil and site.Built:FindFirstChild("Holding") ~= nil and site.Built:FindFirstChild("ProxyFrame") ~= nil)
+	dh.Health = dh.MaxHealth
+	dummy.HumanoidRootPart.CFrame = root().CFrame * M.CF.new(0, 0, -3)
+	check("thrall: a fighting body cannot be shackled", ThrS.Shackleable(dummy) == false)
+	dh.Health = dh.MaxHealth * 0.2
+	InvS.Add(player, "Shackle", 1)
+	h.Thralls = nil
+	check("thrall: a beaten one is shackled and taken to the frame", ThrS.Capture(player) == true and #h.Thralls == 1 and dummy.Parent == nil and InvS.Count(player, "Shackle") == 0)
+	check("thrall: it stands in the holding frame", site.Built:FindFirstChild("HeldFigures") ~= nil and #site.Built.HeldFigures:GetChildren() == 1)
+	local st = TermS.State(player)
+	check("thrall: the computer lists it", st.Thralls and #st.Thralls == 1 and st.Thralls[1].Name == h.Thralls[1].Name)
+	h.Thralls = { { Type = "Raider", Name = "UNIT 0001" }, { Type = "Raider", Name = "UNIT 0002" }, { Type = "Raider", Name = "UNIT 0003" } }
+	h.Debts, h.Invaders = nil, nil
+	pd.War.Thralls = nil
+	check("thrall: released, it leaves a debt", ThrS.Release(player, 1) == true and #h.Thralls == 2 and #h.Debts == 1)
+	check("thrall: reprogrammed, it goes to the Front", ThrS.Reprogram(player, 1) == true and #h.Thralls == 1 and pd.War.Thralls[1].Name == "UNIT 0002")
+	local esc = MK.Thrall.Escape
+	MK.Thrall.Escape, MK.Thrall.EscapePowered = 1, 1
+	ThrS.Hour()
+	MK.Thrall.Escape, MK.Thrall.EscapePowered = esc, 0.04
+	local debtCrate
+	for _, d in workspace_:GetDescendants() do if d.Name == "Lootable" and d:GetAttribute("Label") == "Unsigned" then debtCrate = d end end
+	check("thrall: an hour later the released one's crate stands in the lift", debtCrate ~= nil and #h.Debts == 0)
+	check("thrall: a kept one broke out and became an invader", #h.Thralls == 0 and #h.Invaders == 1 and h.Invaders[1].Name == "UNIT 0003")
+	local inv = ThrS.Invade(player, h.Invaders[1])
+	check("thrall: the invader comes for its conduit, stronger", inv ~= nil and inv:GetAttribute("Invader") == "UNIT 0003" and inv:FindFirstChildOfClass("Humanoid").MaxHealth > 100 and ThrS.Hunting(player) == inv)
+	if inv then
+		CombatS.Damage(char(), inv, 1e5, { Unblockable = true })
+		run(1)
+	end
+	check("thrall: killed, it is off the list", #h.Invaders == 0 and ThrS.Hunting(player) == nil)
+	-- companions
+	CompS.Dismiss(player)
+	check("companion: three strays wait in the green pockets", (function() local n = 0 for _, s in CompS.Strays() do if s.Parent then n += 1 end end return n end)() == 3)
+	local stray
+	for _, s in CompS.Strays() do stray = s break end
+	InvS.Remove(player, "Ration", InvS.Count(player, "Ration"))
+	check("companion: a stray will not come without food", CompS.Tame(player, stray) == false)
+	InvS.Add(player, "Ration", 1)
+	check("companion: fed, the stray follows you", CompS.Tame(player, stray) == true and h.Companion.Kind == "Dog" and CompS.Get(player) ~= nil and stray.Parent == nil)
+	local dog = CompS.Get(player).Model
+	check("companion: it is yours and cannot hurt you", dog:GetAttribute("Owner") == player.UserId and CombatS.Damage(dog, char(), 20) == "none")
+	char():PivotTo(M.CF.new(400, 5, 400)); run(0.6)
+	check("companion: it keeps up", (dog.HumanoidRootPart.Position - root().Position).Magnitude < MK.Companion.Leash)
+	InvS.Add(player, "CyberGraft", 1)
+	check("companion: a graft needs the Autonet", CompS.UseItem(player, "CyberGraft", ItemsS.Defs.CyberGraft) == false and h.Companion.Kind == "Dog")
+	CompS.Dismiss(player)
+	InvS.Add(player, "DroneShell", 1)
+	InvS.Use(player, "DroneShell")
+	run(0.5)
+	local drone = CompS.Get(player)
+	check("companion: a drone shell from the pack wakes up at your shoulder", drone ~= nil and drone.Kind == "Drone" and InvS.Count(player, "DroneShell") == 0)
+	drone.Hum:TakeDamage(1e6)
+	run(0.5)
+	check("companion: a companion that dies is gone", CompS.Get(player) == nil and h.Companion == nil)
+	-- the humanoid drone
+	char():PivotTo(site.Built.ProxyFrame.CFrame * M.CF.new(0, 0, -3))
+	run(Cfg.SpawnProtection + 0.3)
+	InvS.Add(player, "Scrap", 5)
+	local carry0 = ItemsS.Carry(pd)
+	local hpConduit = GearS.Get(player).MaxHealth
+	local okLink = ProxS.Link(player)
+	run(Cfg.SpawnSettle + 0.5)
+	local drc = player.Character
+	check("proxy: linking wakes you in the drone at the frame", okLink == true and player:GetAttribute("Proxy") == true and drc:GetAttribute("Proxy") == true
+		and site.Built:FindFirstChild("Resting") ~= nil)
+	check("proxy: the drone has less health and a bigger back", drc.Humanoid.MaxHealth < hpConduit and ItemsS.Carry(pd) > carry0)
+	local level0 = pd.Level
+	drc.Humanoid:TakeDamage(1e6)
+	run(4)
+	local wreck
+	for _, d in workspace_:GetDescendants() do if d.Name == "Lootable" and d:GetAttribute("Label") == "Wrecked drone" then wreck = d end end
+	check("proxy: a lost drone drops what it carried, and the conduit wakes in its body", wreck ~= nil and player:GetAttribute("Proxy") == nil and player.Character ~= drc
+		and InvS.Count(player, "Scrap") == 0 and pd.Level == level0 and h.ProxyLost == true)
+	check("proxy: the wrecked drone needs parts before the next link", ProxS.Link(player) == false)
+	run(1)
+end
+
 
 check("no script errors", #M.errors == 0)
 print("errors:", #M.errors)

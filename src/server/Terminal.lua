@@ -172,7 +172,12 @@ function Terminal.State(player)
 	local okE, econ = pcall(function()
 		return economy().State(player)
 	end)
-	return { Economy = okE and econ or nil, Grade = BuildRules.GradeName(k.Grade), Vows = vows, Carried = { Xp = carriedXp, Credits = carriedCr }, Uploaded = k.Uploaded == true, Apps = apps, Contracts = contracts, House = house, Market = market, Archive = archive, Credits = data.War.Credits or 0, Completed = k.Completed or 0, MaxActive = T.MaxActive,
+	-- round 7: the holding frame (server/Thralls)
+	local thralls = {}
+	for i, th in data.Hideout.Thralls or {} do
+		table.insert(thralls, { Index = i, Name = th.Name, Type = th.Type })
+	end
+	return { Thralls = thralls, Invaders = #(data.Hideout.Invaders or {}), Economy = okE and econ or nil, Grade = BuildRules.GradeName(k.Grade), Vows = vows, Carried = { Xp = carriedXp, Credits = carriedCr }, Uploaded = k.Uploaded == true, Apps = apps, Contracts = contracts, House = house, Market = market, Archive = archive, Credits = data.War.Credits or 0, Completed = k.Completed or 0, MaxActive = T.MaxActive,
 		Locked = { RAIDS = "find the Broker", HOUSE = "find the Fixer", MARKET = "find the Dealer" } }
 end
 
@@ -421,6 +426,16 @@ function Terminal.Init()
 		end
 		local fn = ({ Accept = Terminal.Accept, Abandon = Terminal.Abandon, Order = Terminal.Order, Buy = Terminal.Buy,
 			Swap = econ("Swap"), List = econ("List"), Unlist = econ("Unlist"), Take = econ("Take"), Drop = econ("Drop"),
+			Release = function(p, a)
+				local ok = require(script.Parent.Thralls).Release(p, a)
+				Terminal.Push(p)
+				return ok
+			end,
+			Reprogram = function(p, a)
+				local ok = require(script.Parent.Thralls).Reprogram(p, a)
+				Terminal.Push(p)
+				return ok
+			end,
 			Vow = function(p, id)
 				local ok = builds().Swear(p, id)
 				Terminal.Push(p)

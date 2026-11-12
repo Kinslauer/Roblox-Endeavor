@@ -58,6 +58,9 @@ function Cycle.Run()
 	pcall(function()
 		require(script.Parent.Keys).Reset()
 	end)
+	pcall(function()
+		require(script.Parent.Thralls).Hour() -- round 7: kept bodies may break out; released ones' debts come due
+	end)
 	local loose = clearLoose()
 	local stood = Frontier.StandDownAll()
 	local okB, errB = pcall(Barrens.Reset) -- the hour reaches the barrens too

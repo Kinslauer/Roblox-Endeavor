@@ -217,6 +217,9 @@ function Soldiers.Place(player, opts)
 	pushWeapon(player)
 	pushApp(player)
 	Remotes.Soldier:FireClient(player, "Deployed", s.Faction, s.Kit.Conscript == true)
+	pcall(function()
+		require(script.Parent.Thralls).Field(player) -- round 7: reprogrammed thralls stand up beside the recruit
+	end)
 end
 
 function Soldiers.Spawn(player)

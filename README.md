@@ -40,6 +40,7 @@ With a gun: `T` also clears a jam (a double feed needs `R`), `R` on a full magaz
 Stealth: `3` throw a bolt (a noise where it lands) · `X` by a locker: hide / step out · `E` with a guard in a neck hold: question him (once).
 Builds: `K` fire the core implant's active (Neural Core: Quicken, Overclock Core: Spike) · loadout (`L`) shows the body's batch, grade, implant load, carried pay, chips and the stack slot.
 World and money: loadout (`L`) invites nearby conduits to a party (up to 4; no friendly fire) · X on a locked STRONGROOM / S4 STORE door with its key · the WORK ORDERS board below the Sumps starts a party run · X on the generator loads a fuel can · weapons, armour and cybernetics take time at the bench · the computer shows trust, swaps, the exchange (found-in-run items only) and the LINE 9 DROP.
+Things you make: `K` tap = the core implant, `K` held = the arm (Breaker Arm: one blow four times as hard, then the arm is spent; Cable Arm: drag a body to you or pull yourself to a wall) · Use a Neural Shackle by a beaten enemy (needs the Holding frame; Release / Front on the computer) · feed a stray dog in a green pocket, or Use a Cyberdog Frame / Drone Shell / Cyber Graft · X on the Proxy frame links to the humanoid drone.
 
 ## Flickering cursed energy (Black Flash)
 Tap `E` just *before* your swing connects (within ~0.28s). A well-timed flick boosts that hit (x1.25) and starts a chain;

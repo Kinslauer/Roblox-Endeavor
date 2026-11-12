@@ -306,6 +306,28 @@ do
 	end)
 	check("builds: the open book readout runs without error", okStep and #M.errors == 0)
 end
+-- things you make (round 7): K held fires the arm, the cable pull, the companion and holding-frame rows
+do
+	local MakeC = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.Make)
+	local BuildC = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.Build)
+	BuildC.KDown = M.mockEnv.os.clock() - 1
+	for _ = 1, 3 do M.step(1 / 30) end
+	check("make: K held past the threshold fires the arm once", BuildC.ArmFired == true)
+	BuildC.KDown, BuildC.ArmFired = nil, nil
+	local World = game_:GetService("ReplicatedStorage").Remotes.World
+	local okPull = pcall(function()
+		World.OnClientEvent:Fire("Cable", player.Character.HumanoidRootPart.Position + M.V3.new(0, 0, -30))
+		for _ = 1, 5 do M.step(1 / 30) end
+		World.OnClientEvent:Fire("Sniff", {})
+	end)
+	check("make: the cable pulls this body", okPull and player.Character.HumanoidRootPart.AssemblyLinearVelocity.Magnitude > 20)
+	local rows = {}
+	local okRows = pcall(function()
+		MakeC.TerminalRows({}, function(_, text) table.insert(rows, text) end, { Thralls = { { Index = 1, Name = "UNIT 4471", Type = "Raider" } }, Invaders = 1 }, function() return function() end end)
+	end)
+	local text = table.concat(rows, "|")
+	check("make: the computer lists the holding frame and who is out", okRows and text:find("UNIT 4471", 1, true) ~= nil and text:find("1 OUT", 1, true) ~= nil and #M.errors == 0)
+end
 -- world and money (round 6): the party list, the invite, the run clock, the computer's economy rows
 do
 	local BayC = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.Bay)

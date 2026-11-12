@@ -45,6 +45,9 @@ Terminal.Market = {
 	{ Id = "BreathChip", Price = 700, Loyalty = 2 }, { Id = "MirrorChip", Price = 1000, Loyalty = 3 }, { Id = "ArcChip", Price = 1000, Loyalty = 3 },
 	{ Id = "Round9AP", Price = 120, Count = 15, Loyalty = 2 },
 	{ Id = "ShelterKey", Price = 400, Loyalty = 4 },
+	-- round 7
+	{ Id = "Shackle", Price = 300, Loyalty = 2 }, { Id = "CyberGraft", Price = 700, Loyalty = 2 }, { Id = "Cyberdog", Price = 1600, Loyalty = 3 },
+	{ Id = "CableArm", Price = 950, Loyalty = 2 }, { Id = "BreakerArm", Price = 850, Loyalty = 2 },
 }
 
 -- Swaps (round 6): goods for goods, no credits. Each needs a level of the contact's trust and earns Points of it.

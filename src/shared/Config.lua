@@ -222,7 +222,7 @@ Config.Implants = {
 		ReflexOptic = Color3.fromRGB(255, 170, 60), TargetingLens = Color3.fromRGB(255, 60, 60), AudioPickup = Color3.fromRGB(90, 220, 200),
 		EchoArray = Color3.fromRGB(120, 160, 255), ChemSniffer = Color3.fromRGB(170, 230, 80), BloodTracer = Color3.fromRGB(200, 30, 40),
 		NeuralCore = Color3.fromRGB(140, 120, 255), OverclockCore = Color3.fromRGB(255, 90, 30), PlatedCore = Color3.fromRGB(200, 200, 190),
-		ServoArm = Color3.fromRGB(255, 190, 90), ArcGauntlet = Color3.fromRGB(80, 200, 255), StriderLeg = Color3.fromRGB(120, 255, 170), PistonLeg = Color3.fromRGB(255, 220, 120),
+		ServoArm = Color3.fromRGB(255, 190, 90), ArcGauntlet = Color3.fromRGB(80, 200, 255), BreakerArm = Color3.fromRGB(255, 70, 40), CableArm = Color3.fromRGB(230, 230, 120), StriderLeg = Color3.fromRGB(120, 255, 170), PistonLeg = Color3.fromRGB(255, 220, 120),
 	},
 	DefaultAccent = Color3.fromRGB(80, 200, 255),
 }
@@ -999,6 +999,39 @@ Config.World = {
 	Exchange = { Fee = 0.1, Slots = 2, SlotsPerRep = 5, MaxSlots = 6, Mults = { 1, 1.5, 2 },
 		Values = { Material = 6, Ammo = 2, Consumable = 25, Weapon = 160, Armor = 130, Cybernetic = 320, Chip = 420, Data = 110, Pack = 90 } },
 	Drop = { Price = 250, Delay = 40, Cooldown = 600 },
+}
+
+-- Round 7 of docs/Reference-Picks-Plan.md, things you make (server/Arms, Thralls, Companions, Proxy).
+Config.Make = {
+	Arm = { Hold = 0.35 }, -- K held this long fires the arm's active (a tap stays the core's)
+	-- the Breaker arm: the next melee blow within Window lands Mult times as hard, through any guard, and the arm
+	-- breaks (condition 0) until it is repaired at the bench
+	Breaker = { Window = 6, Mult = 4, Knockback = 70, Stun = 1.6, Cooldown = 4 },
+	-- the Cable arm: a line to where you aim. A body is dragged to you; a wall pulls you to it.
+	Cable = { Range = 70, Cooldown = 5, Speed = 95, Stun = 0.9, PullSeconds = 0.45, Hold = 4 },
+	Thrall = {
+		Below = 0.3, -- a body under this share of its health (or down, asleep, held) can be shackled
+		Reach = 7, MaxKept = 3,
+		Escape = 0.2, EscapePowered = 0.04, -- the chance each hour that a kept one breaks out (a running generator holds the frame)
+		InvadeEvery = 25, InvadeChance = 0.12, InvadeRange = { 45, 70 }, InvaderHealth = 1.6, InvaderDamage = 1.3,
+		DebtDelay = 1, -- hours until a released one's debt arrives at the bay's lift
+		-- on the Front (src/war/server/Thralls): reprogrammed ones fight beside their conduit's recruit
+		Front = { Max = 2, Health = 100, Damage = 20, FireSeconds = 1.6, Accuracy = 0.35, Range = 150, Hold = 30 },
+	},
+	Companion = {
+		Follow = 7, Leash = 90, Aggro = 38, Think = 0.2, SniffEvery = 6, Sniff = 55,
+		Kinds = {
+			Dog = { Name = "Dog", Health = 90, Damage = 9, Speed = 22, Bite = 1.1, Sniff = true },
+			Cyberdog = { Name = "Cyberdog", Health = 170, Damage = 13, Speed = 24, Bite = 1.0, Resist = 0.3, Shock = 0.6 },
+			Drone = { Name = "Drone", Health = 60, Damage = 7, Speed = 26, Shoot = 1.4, Range = 45, Fly = 6 },
+			Hybrid = { Name = "Hybrid", Health = 130, Damage = 10, Speed = 23, Bite = 1.1, Sniff = true, Shoot = 2.2, Range = 35 },
+		},
+		StrayRespawn = 600,
+	},
+	-- the humanoid drone a conduit sends on a run in its place: less health, weak hands, steady with a gun, a big
+	-- back; its loss costs what it carried, never the stack
+	Proxy = { Health = 0.6, Melee = 0.5, Gun = 1.2, Spread = 0.7, Carry = 1.7, Tint = Color3.fromRGB(96, 100, 108),
+		Rebuild = { SheetMetal = 4, Wire = 6, Battery = 2 } },
 }
 
 return Config

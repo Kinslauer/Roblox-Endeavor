@@ -24,6 +24,10 @@ ImplantLibrary.Meshes = {
 	TargetingLens = { { "Body", 137169954176648, 107686318955076 } },
 }
 
+-- round 7: the Breaker arm wears the servo arm's shell, the Cable arm the gauntlet's
+ImplantLibrary.Meshes.BreakerArm = ImplantLibrary.Meshes.ServoArm
+ImplantLibrary.Meshes.CableArm = ImplantLibrary.Meshes.ArcGauntlet
+
 ImplantLibrary.Built = 0
 
 function ImplantLibrary.Init()

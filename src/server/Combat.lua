@@ -550,6 +550,11 @@ local function applyDamage(attacker, victim, amount, opts)
 	if ap and vp and require(script.Parent.Party).Allies(ap, vp) then
 		return "none" -- a party does not hurt its own (round 6)
 	end
+	-- round 7: a companion or thrall never hurts its conduit, nor the conduit it
+	local ao, vo = attacker:GetAttribute("Owner"), victim:GetAttribute("Owner")
+	if (ao and vp and ao == vp.UserId) or (vo and ap and vo == ap.UserId) then
+		return "none"
+	end
 	if victim:GetAttribute("Contact") then
 		return "none" -- contacts cannot be hurt
 	end
@@ -717,6 +722,10 @@ local function pulse(char, spec, mods, seen, tracer)
 	if not spec.Ranged and Players:GetPlayerFromCharacter(char) then
 		damage *= WoundService.Effects(char).Melee -- an arm out or broken swings weaker
 	end
+	if char:GetAttribute("Proxy") then
+		-- round 7: the humanoid drone's hands are weak, its aim is steady (server/Proxy)
+		damage *= if spec.Ranged then Config.Make.Proxy.Gun else Config.Make.Proxy.Melee
+	end
 
 	local function strike(model, contact)
 		seen[model] = true
@@ -742,7 +751,26 @@ local function pulse(char, spec, mods, seen, tracer)
 				hitDamage = damage * F.DamageMult[flick.level]
 			end
 		end
+		-- round 7: the Breaker arm spends itself on the first melee blow that lands in its window (server/Arms)
+		local spent
+		if not spec.Ranged and s.spendUntil and os.clock() < s.spendUntil then
+			local B = Config.Make.Breaker
+			hitOpts = table.clone(hitOpts)
+			hitDamage *= B.Mult
+			hitOpts.GuardBreak, hitOpts.Unblockable, hitOpts.Launches = true, true, true
+			hitOpts.Knockback = math.max(hitOpts.Knockback or 0, B.Knockback)
+			hitOpts.Stun = math.max(hitOpts.Stun or 0, B.Stun)
+			spent = s.spendArm
+			s.spendUntil, s.spendArm = nil, nil
+			fx("BlackFlash", model)
+		end
 		local result = Combat.Damage(char, model, hitDamage, hitOpts)
+		if spent then
+			local owner = Players:GetPlayerFromCharacter(char)
+			if owner then
+				require(script.Parent.Arms).Spent(owner, spent)
+			end
+		end
 		if flick and not flick.resolved then
 			if result == "hit" or result == "guardbreak" then
 				flick.resolved = true
@@ -818,6 +846,9 @@ local function pulse(char, spec, mods, seen, tracer)
 			shake += (hot - G.Heat.Hot) / (1 - G.Heat.Hot) * G.Heat.Spread
 		end
 		shake += (char:GetAttribute("ArmFatigue") or 0) * G.Fatigue.Drift
+		if char:GetAttribute("Proxy") then
+			shake *= Config.Make.Proxy.Spread -- round 7: the drone holds a gun steady
+		end
 		if shake > 0 then
 			-- pain, a broken or dead arm: the muzzle drifts (common/WoundService)
 			local r = math.rad(shake)

@@ -1121,3 +1121,35 @@ Round 6 of the reference picks. Nothing here was seen in game before publishing.
       reputation (more slots at 5 and 10). Bought or crafted items can never be listed. Pull takes a listing back.
 - [ ] LINE 9 DROP (on the computer, needs the Fixer): pay 250 credits and 40 seconds later a consignment crate stands
       in your bay's freight lift ("> LINE 9 . BAY nn . ARRIVED"). Once every 10 minutes.
+
+### Endeavor and Front: things you make (2026-11-12, Endeavor v112 + Front v44)
+Round 7 of the reference picks, the last one. Nothing here was seen in game before publishing. The bodies of the
+companions are plain parts for now.
+- [ ] K: a tap still fires the core implant. Holding K (about a third of a second) fires an arm instead.
+- [ ] Breaker Arm (bench, or the Dealer at trust 2): hold K, then hit someone within 6 seconds. That one blow lands
+      four times as hard, through any guard, and throws them. "> BREAKER ARM . SPENT": the arm now gives nothing
+      until you repair it at your bench.
+- [ ] Cable Arm (bench, or the Dealer at trust 2): hold K and aim. A yellow line shoots out up to 70 studs. If it
+      hits a body, that body is dragged to you and stunned. If it hits a wall or the ground, you are pulled there.
+      It waits 5 seconds before the next.
+- [ ] Neural Shackle (barrens stores, the Dealer, or the bench). Build the Holding frame module in your bay first.
+      Beat an enemy down (under a third of its health, or knock it down, put it to sleep or hold it), then Use the
+      shackle next to it: "> SHACKLED . UNIT nnnn". It now stands pale in the holding frame. Three at most.
+- [ ] On the computer, HOLDING FRAME lists each one. Release: an hour later an unsigned crate stands in your bay's
+      freight lift. Front: it goes to the war world (see the last line).
+- [ ] Each hour a kept one may break out ("> HOLDING FRAME . OPEN"), less often while your generator runs. Later,
+      out in the city, it comes for you, tougher than before. Kill it and it is off the list.
+- [ ] Dog: a stray stands in each green pocket. With a ration in the pack, hold X "Feed": it follows you, fights what
+      is near you, and every few seconds containers near you glow for a moment.
+- [ ] Cyberdog (the Dealer, trust 3): Use the frame from the pack. Tougher, and its bite shocks. Drone (Drone Shell,
+      made at the bench): Use it; it flies at your shoulder and shoots. Hybrid: with a dog, Use a Cyber Graft
+      (the Dealer) next to your bay's Autonet: the dog gets a gun on its back.
+- [ ] One companion at a time. It comes back with your next body after a death, but if it dies it is gone. The
+      loadout panel (L) shows it with Dismiss.
+- [ ] Proxy frame (a workshop-tier bay module): hold X on it. Your body rests in the frame and you wake in a grey
+      drone beside it, with the same pack. It has less health, hits weakly in melee, shoots straighter and harder,
+      and carries much more. Hold X on the frame again to come back. If the drone dies, what it carried drops where
+      it fell ("Wrecked drone"), you wake in your own body at the frame with nothing lost but that, and the drone
+      needs 4 Sheet Metal, 6 Wire and 2 Batteries before the next link.
+- [ ] Front: with thralls sent there, deploy a recruit. Up to two of them stand up at your base in your side's kit,
+      walk toward the hill and shoot the other side. One that falls is gone for good ("> UNIT nnnn . LOST").

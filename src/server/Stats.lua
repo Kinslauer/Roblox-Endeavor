@@ -21,8 +21,10 @@ function Stats.Apply(player, fill)
 	if not hum or not PlayerData.Get(player) then
 		return
 	end
-	hum.MaxHealth = d.MaxHealth
-	hum.Health = if fill then d.MaxHealth else math.min(hum.Health, d.MaxHealth)
+	-- round 7: the humanoid drone has less to lose (server/Proxy)
+	local maxHealth = if player:GetAttribute("Proxy") then math.floor(d.MaxHealth * Config.Make.Proxy.Health) else d.MaxHealth
+	hum.MaxHealth = maxHealth
+	hum.Health = if fill then maxHealth else math.min(hum.Health, maxHealth)
 	-- Walk speed is recomputed here from everything that affects it, so no system can erase
 	-- another's modifier: held-chunk weight (Destruction) and stun (Combat).
 	local holdClass = char:GetAttribute("HoldClass")

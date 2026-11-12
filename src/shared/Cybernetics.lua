@@ -46,6 +46,9 @@ Cybernetics.Pieces = {
 	PlatedCore = { Name = "Plated Core", Slot = "Core", Stats = { Fortitude = 3 }, LoadCap = 3, Posture = 20, Resist = { Physical = 0.06 }, Speed = -0.03, Tags = { "Cyber" } },
 	-- Arms
 	ServoArm = { Name = "Servo Arm", Slot = "Arm", Stats = { Strength = 3 }, FlashBonus = 0.3, Lift = 1, Tags = { "Cyber" } },
+	-- round 7: arms built for one thing (server/Arms; K held fires them)
+	BreakerArm = { Name = "Breaker Arm", Slot = "Arm", Load = 2, Stats = { Strength = 2 }, ArmActive = "Breaker", Tags = { "Cyber" } },
+	CableArm = { Name = "Cable Arm", Slot = "Arm", Load = 2, Stats = { Agility = 1 }, ArmActive = "Cable", Tags = { "Cyber" } },
 	ArcGauntlet = { Name = "Arc Gauntlet", Slot = "Arm", Load = 3, Stats = { Intelligence = 2 }, Resist = { Arc = 0.1 }, ChargeGain = 0.2, Tags = { "Cyber", "Conduit" } },
 	-- Legs
 	StriderLeg = { Name = "Strider Leg", Slot = "Leg", Stats = { Agility = 1 }, Speed = 0.05, Tags = { "Cyber" } },

@@ -206,7 +206,17 @@ function Build.Start()
 			return
 		end
 		if input.KeyCode == Enum.KeyCode.K then
-			Remotes.Active:FireServer()
+			Build.KDown = os.clock() -- round 7 (client/Make): a tap fires the core, a hold the arm
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(input)
+		if input.KeyCode == Enum.KeyCode.K and Build.KDown then
+			local held = os.clock() - Build.KDown
+			Build.KDown = nil
+			if held < Config.Make.Arm.Hold and not Build.ArmFired then
+				Remotes.Active:FireServer()
+			end
+			Build.ArmFired = nil
 		end
 	end)
 	RunService.Heartbeat:Connect(Build.Step)

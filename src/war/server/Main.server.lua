@@ -22,6 +22,10 @@ local ok, err = pcall(function()
 	Intro.Init() -- before Soldiers.Init: the first deployment of a new recruit is the stasis tank intro
 	Soldiers.Init()
 	require(Server.Common.WoundService).Start() -- bleeding, pain fading, hard landings (shared/Wounds)
+	local thrOk, thrErr = pcall(require(Server.Thralls).Init) -- round 7: reprogrammed thralls fight beside their conduit
+	if not thrOk then
+		warn("[Thralls] failed:", thrErr)
+	end
 end)
 if not ok then
 	warn(("=============================\nFRONT STARTUP FAILED: %s\n============================="):format(tostring(err)))

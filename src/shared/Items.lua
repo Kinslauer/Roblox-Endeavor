@@ -69,6 +69,11 @@ Items.Defs = {
 	ShelterKey = { Name = "S4 Store Key", Type = "Key" },
 	FuelCan = { Name = "Fuel Can", Type = "Material", Fuel = true },
 	CageCell = { Name = "Cage Cell", Type = "Material" },
+	-- round 7 (things you make): slave tech, companions (server/Thralls, server/Companions)
+	Shackle = { Name = "Neural Shackle", Type = "Tool", Shackle = true },
+	Cyberdog = { Name = "Cyberdog Frame", Type = "Companion", Companion = "Cyberdog" },
+	DroneShell = { Name = "Drone Shell", Type = "Companion", Companion = "Drone" },
+	CyberGraft = { Name = "Cyber Graft", Type = "Companion", Graft = true },
 	Manifest = { Name = "Line 9 Manifest", Type = "Material", Size = { 1, 1 }, Weight = 0.05, Stack = 1 },
 }
 
@@ -96,6 +101,10 @@ local SHAPES = {
 	Round22Sleep = { Size = { 1, 1 }, Weight = 0.04, Stack = 50 },
 	Bolt = { Size = { 1, 1 }, Weight = 0.15, Stack = 10 },
 	FuelCan = { Size = { 1, 2 }, Weight = 2.5, Stack = 2 },
+	Shackle = { Size = { 1, 1 }, Weight = 0.6, Stack = 3 },
+	Cyberdog = { Size = { 2, 2 }, Weight = 6, Stack = 1 },
+	DroneShell = { Size = { 2, 1 }, Weight = 3, Stack = 1 },
+	CyberGraft = { Size = { 1, 1 }, Weight = 0.8, Stack = 1 },
 	CageCell = { Size = { 1, 1 }, Weight = 1.5, Stack = 3 },
 	SootPoncho = { Size = { 2, 2 }, Weight = 0.8 },
 	SentryUniform = { Size = { 2, 2 }, Weight = 1.2 },
@@ -170,7 +179,8 @@ end
 function Items.Carry(profile)
 	local pack = profile.Pack and profile.Pack ~= "" and Items.Defs[profile.Pack]
 	local level = if pack and profile.Upgrades then (profile.Upgrades[profile.Pack] or 0) else 0
-	return if pack and pack.Carry then pack.Carry + level * Config.Inventory.CarryPerPackLevel else Config.Inventory.PocketCarry
+	local carry = if pack and pack.Carry then pack.Carry + level * Config.Inventory.CarryPerPackLevel else Config.Inventory.PocketCarry
+	return if profile.ProxyLinked and Config.Make then carry * Config.Make.Proxy.Carry else carry -- round 7: the drone's back
 end
 -- footprint after rotation (rot 1 swaps width and height)
 function Items.Footprint(id, rot)
@@ -228,6 +238,10 @@ Items.Recipes = {
 	SignPlating = { Output = "SignPlating", Count = 1, Inputs = { SheetMetal = 3, Cloth = 1 } },
 	ArcHood = { Output = "ArcHood", Count = 1, Inputs = { Wire = 4, Cloth = 2 } },
 	ServoGreaves = { Output = "ServoGreaves", Count = 1, Inputs = { Wire = 5, Scrap = 4 } },
+	Shackle = { Output = "Shackle", Count = 1, Inputs = { Wire = 4, Battery = 1, Glass = 1 } },
+	DroneShell = { Output = "DroneShell", Count = 1, Inputs = { Battery = 3, Wire = 6, SheetMetal = 2, Glass = 1 } },
+	CableArm = { Output = "CableArm", Count = 1, Inputs = { Wire = 10, Pipe = 3, Scrap = 6, Battery = 1 } },
+	BreakerArm = { Output = "BreakerArm", Count = 1, Inputs = { Scrap = 14, SheetMetal = 4, Pipe = 2, Battery = 2 } },
 	ConduitHarness = { Output = "ConduitHarness", Count = 1, Inputs = { Wire = 8, Scrap = 6, Cloth = 3 } },
 }
 
@@ -302,7 +316,7 @@ Items.LootTables = {
 		{ "Round9", 0.8, 4, 10 }, { "Round9AP", 0.2, 3, 8 }, { "ArcCell", 0.7, 3, 8 }, { "Battery", 0.5, 1, 2 }, { "Medkit", 0.35, 1, 1 }, { "Ration", 0.4, 1, 1 },
 		{ "ShockBaton", 0.12, 1, 1 }, { "ReflexOptic", 0.06, 1, 1 }, { "NeuralCore", 0.05, 1, 1 },
 		{ "Round22Sleep", 0.25, 3, 6 }, { "SentryUniform", 0.08, 1, 1 },
-		{ "DataShard", 0.3, 1, 1 }, { "MirrorChip", 0.04, 1, 1 }, { "HookChip", 0.04, 1, 1 }, { "ShelterKey", 0.1, 1, 1 },
+		{ "DataShard", 0.3, 1, 1 }, { "MirrorChip", 0.04, 1, 1 }, { "HookChip", 0.04, 1, 1 }, { "ShelterKey", 0.1, 1, 1 }, { "Shackle", 0.15, 1, 1 },
 	},
 	Raider = {
 		{ "Scrap", 0.9, 1, 3 }, { "Cloth", 0.5, 1, 2 }, { "Wire", 0.35, 1, 2 }, { "Ration", 0.3, 1, 1 }, { "Bandage", 0.3, 1, 1 },

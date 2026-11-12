@@ -20,7 +20,13 @@ local WorldPhase = require(script.Parent.WorldPhase)
 
 local Lifecycle = {}
 
-local function onDied(player)
+local function onDied(player, char)
+	if char and player.Character ~= char then
+		return -- round 7: a body already replaced (a link to or from the drone, server/Proxy) ends with no consequence
+	end
+	if player:GetAttribute("Proxy") and require(script.Parent.Proxy).Lost(player, player.Character) then
+		return -- the drone was lost, not the conduit: it wakes in its frame
+	end
 	if Tutorial.Active(player) then
 		task.wait(2) -- caught in the station: back to the last checkpoint, nothing lost
 	elseif WorldPhase.IsOpen() then
@@ -55,6 +61,10 @@ local fromFront = {} -- player -> true until the first spawn after arriving from
 local function placeFor(player)
 	if not WorldPhase.IsOpen() then
 		return WorldPhase.GetSpawnCFrame(player), "City" -- the prologue's plots; Emerge places them again
+	end
+	local override = Lifecycle.Override and Lifecycle.Override(player) -- round 7: the drone's frame (server/Proxy)
+	if override then
+		return override, "Proxy"
 	end
 	if fromFront[player] then
 		fromFront[player] = nil
@@ -139,7 +149,7 @@ function Lifecycle.Spawn(player)
 	end
 	Quests.Push(player)
 	hum.Died:Once(function()
-		onDied(player)
+		onDied(player, char)
 	end)
 end
 
@@ -158,7 +168,9 @@ local function onPlayerAdded(player)
 end
 
 local function onPlayerRemoving(player)
-	if WorldPhase.IsOpen() and Config.CombatLogPunish and Combat.InCombat(player) then
+	if player:GetAttribute("Proxy") then
+		pcall(require(script.Parent.Proxy).CombatLog, player) -- a drone quitting a fight loses what it carried, not the stack
+	elseif WorldPhase.IsOpen() and Config.CombatLogPunish and Combat.InCombat(player) then
 		Permadeath.CombatLog(player) -- wipes the data before ProfileService saves it on release
 	end
 	Tutorial.Release(player)

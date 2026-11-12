@@ -99,7 +99,7 @@ local ok, err = pcall(function()
 		warn("[Builds] failed:", buildsErr)
 	end
 	-- world and money (round 6): parties, keys and locked rooms, party runs below the Sumps, the bay economy
-	for _, name in { "Sky", "Party", "Keys", "Runs", "Economy" } do
+	for _, name in { "Sky", "Party", "Keys", "Runs", "Economy", "Arms", "Thralls", "Companions", "Proxy" } do
 		local okW, errW = pcall(function()
 			require(Server[name]).Init()
 		end)
