@@ -163,6 +163,8 @@ How to read it:
 **Truth**
 - The Front has been forgotten by progress. It has looked the way it does now since the 1970s. Nothing is made
   there: everything on the Front (weapons, kit, tanks, recruits) arrived by shipment. [Andy 2026-11-12]
+- The conduits supply the Front. Each conduit can link into, and supply, as many recruits as it can afford.
+  [Andy 2026-11-12; fits the recruit locker, where a conduit orders recruits and kit with its own credits]
 
 **Hinted**
 - The war is managed, not fought to be won. Fragment "Front Dispatch", stamped by both factions: "Ticket scales reset
@@ -200,8 +202,8 @@ How to read it:
 2. Which corporations, by name, and who signs as the withheld consignee. (That corporations run Line 9 and fund the
    Front is now Truth.) Limit: nobody in the city can name them yet.
 3. Where "up" goes, and what the departed rich became. Limit: no one who left is ever met.
-4. Who ships to the Front, how, and why it was left in the 1970s. (That it is forgotten by progress and supplied
-   only by shipment is now Truth.) Limit: the two worlds must stay visibly different eras; nothing modern reaches
+4. How shipments reach the Front, and why it was left in the 1970s. (That it is forgotten by progress, supplied
+   only by shipment, and that the conduits supply it, is now Truth.) Limit: the two worlds must stay visibly different eras; nothing modern reaches
    the Front.
 5. What the green pockets really are, and whether Andy's guess (the connection to the old earth is strongest there)
    is right. Limit: they stay rare, small and quiet; no text confirms the guess.
@@ -213,6 +215,7 @@ How to read it:
    Truth.) Limit: not by Line 9.
 
 ## Change log
+- 2026-11-12: Andy: the conduits supply the Front; each can link into and supply as many recruits as it can afford.
 - 2026-11-12: Andy's answers to 7 and 8: the world seems to run on the brain slaves' power; conduits and slaves are
   symbiotic (a conduit who tried to free them lost the connection to his stack); players can go down to the shelters,
   drawn by an incentive or the story. Questions 7 and 8 narrowed.
