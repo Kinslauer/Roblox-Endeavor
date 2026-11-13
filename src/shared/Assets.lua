@@ -108,8 +108,8 @@ Assets.Anims = {
 	Intro_Seated = 117858725061961,
 	Intro_Stand = 106629137625017,
 	Intro_CloakToss = 130150410671633,
-	Intro_Draw = 125541503895515,
-	Intro_Rack = 77242835230836,
+	Intro_Draw = 128112239674852,
+	Intro_Rack = 104303564446122,
 	-- Metal Gear handling (2026-11-11): prone, the pistol, hands up, CQC, the wall
 	Prone_Idle = 99254683617405,
 	Prone_Crawl = 93255193883909,
@@ -118,9 +118,9 @@ Assets.Anims = {
 	Rifle_Ready = 73218657444853,
 	Aim_Rifle = 123778705669365,
 	Reload_Rifle = 124676858383066,
-	Pistol_Ready = 106650486186059,
-	Aim_Pistol = 88182789208588,
-	Reload_Pistol = 76268295993088,
+	Pistol_Ready = 86762919139050,
+	Aim_Pistol = 89194078829770,
+	Reload_Pistol = 140353059622291,
 	HandsUp = 107954558883133,
 	Takedown_Throw = 137070777628766,
 	Takedown_ThrowVictim = 113920668067731,
@@ -129,7 +129,7 @@ Assets.Anims = {
 	Hold = 96501380522226,
 	Held = 112742222259734,
 	Carry = 75410357814439,
-	Cover_Idle = 89904551118164,
+	Cover_Idle = 91326331770227,
 }
 
 -- Character rigs (see server/Rigs.lua): [npcType] = assetId. Since 2026-11-12 these are the plain, invisible limbs

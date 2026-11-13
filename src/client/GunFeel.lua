@@ -72,7 +72,7 @@ local function build(char, held)
 	if not (def and Weapons.IsGun(def)) then
 		return nil
 	end
-	local turn = if math.abs(grip.C0.UpVector.Y) < 0.5 then PISTOL_TURN else I
+	local turn = if held:GetAttribute("BarrelY") or math.abs(grip.C0.UpVector.Y) < 0.5 then PISTOL_TURN else I
 	local F = grip.C1:Inverse() * turn -- the gun's frame in the first part's space
 	local Finv = F:Inverse()
 	local entries = {}

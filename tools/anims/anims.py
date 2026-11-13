@@ -464,7 +464,9 @@ INTRO_CLOAK = dict(length=1.9, loop=False, priority="Action2", keys=[
             "LeftUpperArm": (-4, 0, -14), "LeftLowerArm": (16, 0, 0)}, "CubicV2", "InOut"),
     (1.9, {"UpperTorso": (-2, 0, 0), "Head": (6, 0, 0), "RightUpperArm": (4, 0, 6), "RightLowerArm": (12, 0, 0), "LeftUpperArm": (4, 0, -6), "LeftLowerArm": (12, 0, 0)}, "Linear", "InOut"),
 ])
-_READY = {"RightUpperArm": (52, 0, -14), "RightLowerArm": (78, 0, 0), "RightHand": (0, 0, 0), "UpperTorso": (-4, 8, 0), "Head": (2, -8, 0)}
+# The pistol is held by its grip (common/HeldWeapons.HandgunGrip); the arm angles from here down to Cover_Idle were
+# solved by inverse kinematics on the real Conduit body for that grip (2026-11-13): change them together.
+_READY = {"RightUpperArm": (39, 16, 0), "RightLowerArm": (72, -8, 0), "RightHand": (-36, -9, 21), "UpperTorso": (-4, 8, 0), "Head": (2, -8, 0)}
 INTRO_DRAW = dict(length=6.0, loop=False, priority="Action2", keys=[
     (0.0, {"RightUpperArm": (4, 0, 6), "RightLowerArm": (12, 0, 0)}, "CubicV2", "InOut"),
     (0.36, {"RightUpperArm": (-24, 0, 12), "RightLowerArm": (38, 0, 0), "UpperTorso": (-4, -10, -3), "Head": (-10, -16, 0)}, "Cubic", "In"),  # to the holster
@@ -472,12 +474,12 @@ INTRO_DRAW = dict(length=6.0, loop=False, priority="Action2", keys=[
     (0.85, _READY, "CubicV2", "InOut"),                                                                                                  # up in front of the chest
     (6.0, _READY, "Linear", "InOut"),
 ])
-_OVER = {"LeftUpperArm": (46, 0, 38), "LeftLowerArm": (84, 0, 0), "LeftHand": (0, 0, 0), "Head": (-10, -8, 0)}
+_OVER = {"LeftUpperArm": (105, -29, 40), "LeftLowerArm": (1, -36, 0), "LeftHand": (61, 2, 18), "Head": (-10, -8, 0)}
 INTRO_RACK = dict(length=1.3, loop=False, priority="Action3", keys=[
     (0.0, {"LeftUpperArm": (4, 0, -6), "LeftLowerArm": (12, 0, 0)}, "CubicV2", "InOut"),
     (0.42, _OVER, "Cubic", "In"),                                                                         # the hand comes over the slide
-    (0.55, merge(_OVER, {"LeftUpperArm": (34, 0, 40), "LeftLowerArm": (100, 0, 0)}), "Cubic", "Out"),     # back
-    (0.66, merge(_OVER, {"LeftUpperArm": (36, 0, 14), "LeftLowerArm": (80, 0, 0)}), "CubicV2", "InOut"),   # let go: it runs home
+    (0.55, merge(_OVER, {"LeftUpperArm": (107, -27, 42), "LeftLowerArm": (1, -36, 0), "LeftHand": (58, 2, 18)}), "Cubic", "Out"),     # back
+    (0.66, merge(_OVER, {"LeftUpperArm": (91, -43, 28), "LeftLowerArm": (49, -16, 0), "LeftHand": (33, 3, 20)}), "CubicV2", "InOut"),   # let go: it runs home
     (1.3, {"LeftUpperArm": (4, 0, -6), "LeftLowerArm": (12, 0, 0), "Head": (6, 0, 0)}, "Linear", "InOut"),
 ])
 
@@ -510,23 +512,28 @@ def prone_roll(sign):
 PRONE_ROLL_L, PRONE_ROLL_R = prone_roll(-1), prone_roll(1)
 
 # The pistol, arms only (the legs and body are whatever the stance is doing).
-PISTOL_READY = dict(length=2.4, loop=True, priority="Action", keys=[   # low ready, two hands, at the chest
-    (0.0, {"RightUpperArm": (28, 0, -50), "RightLowerArm": (72, 0, 0), "RightHand": (0, 0, 0), "LeftUpperArm": (34, 0, 55), "LeftLowerArm": (80, 0, 0)}, "CubicV2", "InOut"),
-    (1.2, {"RightUpperArm": (30, 0, -50), "RightLowerArm": (70, 0, 0), "RightHand": (0, 0, 0), "LeftUpperArm": (36, 0, 55), "LeftLowerArm": (78, 0, 0)}, "CubicV2", "InOut"),
-    (2.4, {"RightUpperArm": (28, 0, -50), "RightLowerArm": (72, 0, 0), "RightHand": (0, 0, 0), "LeftUpperArm": (34, 0, 55), "LeftLowerArm": (80, 0, 0)}, "Linear", "InOut"),
+_P_READY = {"RightUpperArm": (53, 21, -13), "RightLowerArm": (44, -12, 0), "RightHand": (-24, -6, 24),
+            "LeftUpperArm": (70, -15, 22), "LeftLowerArm": (15, 40, 0), "LeftHand": (-44, 14, -24)}
+PISTOL_READY = dict(length=2.4, loop=True, priority="Action", keys=[   # low ready: both hands, arms long, muzzle 20 degrees down
+    (0.0, _P_READY, "CubicV2", "InOut"),
+    (1.2, merge(_P_READY, {"RightLowerArm": (46, -12, 0), "RightHand": (-25, -6, 24), "LeftUpperArm": (69, -16, 22), "LeftLowerArm": (18, 40, 0)}), "CubicV2", "InOut"),
+    (2.4, _P_READY, "Linear", "InOut"),
 ])
-_AIM = {"UpperTorso": (-2, -8, 0), "Head": (0, 8, 0), "RightUpperArm": (88, 0, -28), "RightLowerArm": (6, 0, 0), "RightHand": (0, 0, 0),
-        "LeftUpperArm": (84, 0, 44), "LeftLowerArm": (8, 0, 0)}
+# aimed: the grip at chin height 1.95 ahead, the bore level and dead ahead, the off hand wrapped over the firing hand
+_AIM = {"UpperTorso": (-2, -6, 0), "Head": (0, 6, 0), "RightUpperArm": (104, 11, -23), "RightLowerArm": (8, -12, 0), "RightHand": (-17, -4, 18),
+        "LeftUpperArm": (99, -7, 17), "LeftLowerArm": (19, 36, 0), "LeftHand": (-56, 19, -30)}
 AIM_PISTOL = dict(length=2.0, loop=True, priority="Action2", keys=[
-    (0.0, _AIM, "CubicV2", "InOut"), (1.0, merge(_AIM, {"RightUpperArm": (89, 0, -28), "LeftUpperArm": (85, 0, 44)}), "CubicV2", "InOut"), (2.0, _AIM, "Linear", "InOut"),
+    (0.0, _AIM, "CubicV2", "InOut"), (1.0, merge(_AIM, {"RightUpperArm": (105, 10, -23), "RightLowerArm": (6, -12, 0), "RightHand": (-16, -4, 18)}), "CubicV2", "InOut"), (2.0, _AIM, "Linear", "InOut"),
 ])
+# the reload: the gun up by the chest, turned in and canted so the well faces the off hand
+_P_RELOAD = {"RightUpperArm": (32, 24, -8), "RightLowerArm": (117, -20, 0), "RightHand": (-35, -10, 24), "Head": (10, -10, 0)}
 RELOAD_PISTOL = dict(length=1.5, loop=False, priority="Action3", keys=[
-    (0.0, {"RightUpperArm": (28, 0, -50), "RightLowerArm": (72, 0, 0), "LeftUpperArm": (34, 0, 55), "LeftLowerArm": (80, 0, 0)}, "CubicV2", "InOut"),
-    (0.25, {"RightUpperArm": (46, 0, -6), "RightLowerArm": (104, 0, 0), "RightHand": (0, 0, -30), "LeftUpperArm": (-8, 0, -8), "LeftLowerArm": (46, 0, 0), "Head": (10, -10, 0)}, "CubicV2", "InOut"),  # gun up and canted, hand to the belt
-    (0.6, {"RightUpperArm": (46, 0, -6), "RightLowerArm": (104, 0, 0), "RightHand": (0, 0, -30), "LeftUpperArm": (-12, 0, -10), "LeftLowerArm": (30, 0, 0), "Head": (10, -10, 0)}, "CubicV2", "InOut"),
-    (0.9, {"RightUpperArm": (46, 0, -6), "RightLowerArm": (104, 0, 0), "RightHand": (0, 0, -30), "LeftUpperArm": (40, 0, 34), "LeftLowerArm": (108, 0, 0), "Head": (10, -10, 0)}, "Cubic", "In"),  # the magazine goes in
-    (1.05, {"RightUpperArm": (48, 0, -6), "RightLowerArm": (108, 0, 0), "RightHand": (0, 0, -20), "LeftUpperArm": (46, 0, 34), "LeftLowerArm": (112, 0, 0), "Head": (8, -8, 0)}, "CubicV2", "InOut"),
-    (1.5, {"RightUpperArm": (28, 0, -50), "RightLowerArm": (72, 0, 0), "LeftUpperArm": (34, 0, 55), "LeftLowerArm": (80, 0, 0)}, "Linear", "InOut"),
+    (0.0, _P_READY, "CubicV2", "InOut"),
+    (0.25, merge(_P_RELOAD, {"LeftUpperArm": (-8, 0, -8), "LeftLowerArm": (46, 0, 0), "LeftHand": (0, 0, 0)}), "CubicV2", "InOut"),   # hand to the belt
+    (0.6, merge(_P_RELOAD, {"LeftUpperArm": (-12, 0, -10), "LeftLowerArm": (30, 0, 0), "LeftHand": (0, 0, 0)}), "CubicV2", "InOut"),
+    (0.9, merge(_P_RELOAD, {"LeftUpperArm": (95, -75, 31), "LeftLowerArm": (73, -120, 0), "LeftHand": (-60, -6, -84)}), "Cubic", "In"),  # palm under the magazine
+    (1.05, merge(_P_RELOAD, {"LeftUpperArm": (99, -74, 33), "LeftLowerArm": (72, -120, 0), "LeftHand": (-59, -6, -83), "Head": (8, -8, 0)}), "CubicV2", "InOut"),  # driven home
+    (1.5, _P_READY, "Linear", "InOut"),
 ])
 # A long gun in two hands (owner, 2026-11-12: the 5.56 carbine, the AK-47, the Garand). The right hand has the
 # grip, the left hand the handguard. The angles were solved by forward kinematics on the skinned body (shoulders
@@ -622,7 +629,7 @@ CARRY = dict(length=2.0, loop=True, priority="Action", keys=[
 ])
 # Back to a wall, the pistol up by the right shoulder.
 _COVER = {"LowerTorso": (0, 0, 0, 0, -0.12, 0.2), "UpperTorso": (5, 0, 0), "Head": (-4, 0, 0),
-          "RightUpperArm": (18, 0, -4), "RightLowerArm": (132, 0, 0), "RightHand": (0, 0, 0), "LeftUpperArm": (6, 0, -10), "LeftLowerArm": (24, 0, 0),
+          "RightUpperArm": (13, 15, 7), "RightLowerArm": (116, 20, 0), "RightHand": (20, 8, 24), "LeftUpperArm": (6, 0, -10), "LeftLowerArm": (24, 0, 0),
           "LeftUpperLeg": (14, 0, -6), "LeftLowerLeg": (-22, 0, 0), "RightUpperLeg": (10, 0, 6), "RightLowerLeg": (-18, 0, 0)}
 COVER_IDLE = dict(length=2.6, loop=True, priority="Action", keys=[
     (0.0, _COVER, "CubicV2", "InOut"), (1.3, merge(_COVER, {"UpperTorso": (6, 0, 0), "Head": (-4, 6, 0)}), "CubicV2", "InOut"), (2.6, _COVER, "Linear", "InOut"),

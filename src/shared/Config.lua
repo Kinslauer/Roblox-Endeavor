@@ -970,7 +970,7 @@ Config.Hands = {
 		Grip = { Radius = 0.07, Tilt = 18 }, -- a blade's or a baton's grip
 		Haft = { Radius = 0.085, Tilt = 14 }, -- a hammer's or a spear's
 		Fist = { Radius = 0.026, Tilt = 10 },
-		Pistol = { Radius = 0.08, Tilt = 16, Trigger = true },
+		Pistol = { Radius = 0.07, Tilt = 16, Trigger = true }, -- HeldWeapons.HandgunGrip lays the grip on this same handle
 		Rifle = { Radius = 0.075, Tilt = 16, Trigger = true },
 		Support = { Radius = 0.1, Tilt = 4 },
 		Cup = { Radius = 0.12, Tilt = 0 },

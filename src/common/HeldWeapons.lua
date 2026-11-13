@@ -16,6 +16,7 @@ local GRIPS = {
 	-- weapon +Z -> hand forward (-Z), grip centre in the palm
 	Melee = CFrame.new(0, -0.2, -0.3) * CFrame.Angles(0, math.pi, 0),
 	-- barrel (+Y) -> forward, grip (-Z) -> down the hand
+	-- (the Front's whole pistols; Endeavor's are laid in the palm by HandgunGrip, opts Grip "Handgun")
 	Pistol = CFrame.new(0, -0.1, 0) * CFrame.Angles(-math.pi / 2, 0, 0),
 	-- firearms: barrel (+Z) -> forward, grip in the palm, held a little high so the sights sit near eye line
 	Rifle = CFrame.new(0, -0.1, -0.3) * CFrame.Angles(0, math.pi, 0),
@@ -95,6 +96,61 @@ function HeldWeapons.MeleeGrip(model, origin, hand)
 	return CFrame.new(-(PALM_HALF * s + 0.004 + radius), hand.Size.Y / 2 + PALM_Y * s, -0.3) * CFrame.Angles(0, math.pi, 0), radius
 end
 
+-- A whole pistol (authored barrel +Y, top +Z) laid in the palm the way a hand holds one (owner, 2026-11-12: "fix
+-- this please", of pistols held from the top of the slide): the grip's axis runs across the palm from the heel by the
+-- little finger to the root of the first finger (HANDGUN_TILT from straight across, the same handle client/Hands
+-- closes the fingers round), the grip raked HANDGUN_RAKE back from square to the bore, so the bore runs along the
+-- fingers' line with a straight wrist and sits above the hand. The grip's centre = the part named Grip_/Grips_ (else
+-- the magazine) goes on the palm cylinder's centre. The arm poses Aim_Pistol / Pistol_Ready / Reload_Pistol /
+-- Cover_Idle / Intro_Draw / Intro_Rack (tools/anims) were solved by inverse kinematics on the real body for this
+-- matrix: change them together. nil when the model has no grip part.
+local HANDGUN_TILT, HANDGUN_RAKE = math.rad(16), math.rad(18)
+function HeldWeapons.HandgunGrip(model, origin, hand)
+	local grip, mag, top
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") then
+			local group = string.split(p.Name, "_")[1]
+			if group == "Grip" or group == "Grips" then
+				grip = grip or p
+			elseif group == "Magazine" or group == "Cell" then
+				mag = mag or p
+			elseif group == "Slide" or group == "Barrel" then
+				top = top or p
+			end
+		end
+	end
+	grip = grip or mag
+	if not grip then
+		return nil
+	end
+	local rel = origin:ToObjectSpace(grip.CFrame)
+	local half = grip.Size / 2
+	local function ext(axis)
+		return math.abs(rel.RightVector:Dot(axis)) * half.X + math.abs(rel.UpVector:Dot(axis)) * half.Y + math.abs(rel.LookVector:Dot(axis)) * half.Z
+	end
+	local radius = (ext(Vector3.xAxis) + ext(Vector3.yAxis)) / 2
+	-- which way is up on this model: from the grip to the slide or barrel (+Z on every pistol so far)
+	local upSign = 1
+	if top and origin:ToObjectSpace(top.CFrame).Position.Z < rel.Position.Z then
+		upSign = -1
+	end
+	local t, a = HANDGUN_TILT, HANDGUN_RAKE
+	local g = Vector3.new(0, -math.sin(t), -math.cos(t)) -- the grip's axis, bottom to top, in the hand
+	local f = Vector3.new(0, -math.cos(a - t), -math.sin(a - t)) -- the bore
+	local u = ((g - f * math.sin(a)) / math.cos(a)).Unit
+	local right = f:Cross(u)
+	-- model X -> right, model Y (bore) -> f, model Z (top) -> u
+	local turn = CFrame.fromMatrix(Vector3.zero, right * upSign, f, u * upSign)
+	local s = math.clamp((hand.Size.Y / REF_Y + hand.Size.X / REF_X) / 2, 0.6, 2.2)
+	local palm = Vector3.new(-(PALM_HALF * s + 0.004 + radius), hand.Size.Y / 2 + PALM_Y * s, 0)
+	-- Attach's Grip weld puts the first part at hand * C0 * C1:Inverse() with C1 = that part in the origin's frame,
+	-- which lays the origin at C0 * C1^-2 rather than at C0 (every older grip was tuned on the real body around that);
+	-- the two C1s here undo it, so the origin really is where this places it (client/GunFeel measures the gun's frame
+	-- as primary * C1:Inverse(), the same place)
+	local c1 = if model.PrimaryPart then origin:ToObjectSpace(model.PrimaryPart.CFrame) else CFrame.new()
+	return CFrame.new(palm) * turn * CFrame.new(-rel.Position) * c1 * c1, radius
+end
+
 -- opts (optional): Grip = a GRIPS name instead of the model's own, Scale = the size in the hand (1 = as modelled),
 -- Name / Part / C0 = carry it somewhere else (Endeavor's Kit: "StowedWeapon" on a torso or leg, C0 the mount).
 function HeldWeapons.Attach(char, weaponId, attachments, opts)
@@ -162,8 +218,19 @@ function HeldWeapons.Attach(char, weaponId, attachments, opts)
 	grip.Name = "Grip"
 	grip.Part0, grip.Part1 = hand, primary
 	local gripName = (opts and opts.Grip) or (if assembled then spec.Grip else entry.Grip) or "Melee"
-	grip.C0 = (opts and opts.C0) or (gripName == "Melee" and HeldWeapons.MeleeGrip(model, origin, hand)) or GRIPS[gripName] or GRIPS.Melee
+	grip.C0 = (opts and opts.C0)
+		or (gripName == "Melee" and HeldWeapons.MeleeGrip(model, origin, hand))
+		or (gripName == "Handgun" and HeldWeapons.HandgunGrip(model, origin, hand))
+		or GRIPS[gripName]
+		or GRIPS.Melee
 	grip.C1 = origin:ToObjectSpace(primary.CFrame)
+	if gripName == "Handgun" or gripName == "Pistol" then
+		model:SetAttribute("BarrelY", true) -- authored barrel +Y, top +Z (client/GunFeel turns its frame by this)
+	end
+	if gripName == "Handgun" and not (opts and opts.C0) then
+		local _, radius = HeldWeapons.HandgunGrip(model, origin, hand)
+		model:SetAttribute("GripRadius", radius)
+	end
 	if gripName == "Melee" and not (opts and opts.C0) then
 		local _, radius = HeldWeapons.MeleeGrip(model, origin, hand)
 		model:SetAttribute("GripRadius", radius) -- how thick the handle is: the fingers close round this

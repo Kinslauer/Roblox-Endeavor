@@ -93,7 +93,7 @@ Weapons.Defs = {
 		Heavy = frames(44, 28, 36, 12, 36, 9, { Hyperarmor = true, Knockback = 60, Stamina = 30 }),
 	},
 	ArcPistol = {
-		Name = "Arc Pistol", Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.3, ChargeBonus = 3, Ammo = "ArcCell",
+		Name = "Arc Pistol", Model = { Grip = "Handgun", Scale = 0.45 }, Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.3, ChargeBonus = 3, Ammo = "ArcCell",
 		Attacks = {
 			frames(9, 3, 5, 3, 17, 90, { Type = "Arc", Ranged = true, Stamina = 8 }),
 		},
@@ -103,7 +103,7 @@ Weapons.Defs = {
 	-- carries, server/Stealth; anything without one is loud) and that only hurts where it finds flesh: any plate
 	-- stops it. Made for putting lights out and for the one clean shot.
 	Whisper = {
-		Name = "Whisper", Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.25, ChargeBonus = 1, Caliber = ".22", Noise = 7,
+		Name = "Whisper", Model = { Grip = "Handgun", Scale = 0.45 }, Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.25, ChargeBonus = 1, Caliber = ".22", Noise = 7,
 		MagSize = 7, ReloadSeconds = 1.5, Action = "Single", RackSeconds = 0.55, -- the slide is locked for quiet: racked by hand (T) after every round
 		Attacks = {
 			frames(12, 4, 6, 3, 19, 120, { Ranged = true, Stamina = 4 }),
@@ -112,7 +112,7 @@ Weapons.Defs = {
 	},
 	-- station security's sidearm: 9mm, fifteen in the magazine, and everyone on the floor hears it
 	DutyPistol = {
-		Name = "Duty Pistol", Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.2, ChargeBonus = 1, Caliber = "9mm", Noise = 75,
+		Name = "Duty Pistol", Model = { Grip = "Handgun", Scale = 0.45 }, Family = "Sidearm", ComboReset = 0.5, ComboCooldown = 0.2, ChargeBonus = 1, Caliber = "9mm", Noise = 75,
 		MagSize = 15, ReloadSeconds = 1.8,
 		Attacks = {
 			frames(24, 8, 5, 3, 13, 150, { Ranged = true, Stamina = 5 }),

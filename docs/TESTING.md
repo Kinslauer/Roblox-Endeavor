@@ -1175,8 +1175,22 @@ Nothing here was seen in game before publishing.
       rifle's off hand closes round the handguard; during a reload it closes on the magazine.
 - [ ] Melee weapons now sit a little deeper in the hand (in the palm, where the fingers close), not out at the
       fingertips. Check that swings and the guard still look right.
-- [ ] Known: pistols are still held from the top of the slide, out past the fingertips, with the grip along the
-      fingers (that is how their grip and the pistol arm poses were made). The fingers close as if on a grip. Fixing
-      it means re-seating the pistols and redoing the pistol arm poses: tell Claude if it bothers you.
+- [x] ~~Known: pistols held from the top of the slide~~: fixed in Endeavor v116 (next section).
 - [ ] Look for: fingers that sit in the wrong place on a big body (Brute, Warden), hands that look too big or too
       small for the sleeve, a gun that twists too far in the hand when it kicks, frame rate in a crowd.
+
+## Endeavor: pistols held by the grip (2026-11-13, Endeavor v116)
+Andy: "fix this please" (of pistols held from the top of the slide). Try with the Whisper (the starting kit), the Duty
+Pistol and the Arc Pistol, in third person.
+- [ ] The pistol sits in the hand by its grip: the grip across the palm, the fingers round it, the slide above the
+      hand and the barrel pointing on along the line of the forearm. It is smaller than before (about life size).
+- [ ] Gun out, not aiming: both hands hold it low in front, arms long, the muzzle a little down.
+- [ ] Aiming (right mouse): both arms out, the off hand wrapped over the firing hand, the gun at chin height and
+      pointing straight where you look. Shots still go where the dot is.
+- [ ] Reload (R): the gun comes up by the chest, turned in, and the off hand goes to the belt and then up under the
+      grip to push the magazine in.
+- [ ] Rack the Whisper (T): the off hand comes over the top of the slide and pulls it back.
+- [ ] Back to a wall (Q with a pistol): the pistol is held up by the right shoulder, muzzle up.
+- [ ] The train ride: the draw from the holster ends with the pistol low in front, and the rack looks right.
+- [ ] Other players and guards holding pistols look the same.
+- [ ] Look for: a hand that bends too far at the wrist, an off hand that does not meet the gun, the pistol too small.

@@ -852,12 +852,21 @@ Client tab screenshot, because Andy cannot read logs another way.
   Mag, Pinch, Grab, Open; the off hand takes the haft's hold when its palm comes within OffHandReach of the weapon
   line. Melee handles are seated in the palm: `HeldWeapons.MeleeGrip` (the Grip_ part's radius out from the palm
   side at the palm's height, scaled to the hand, along -0.3 as before); verified on real Conduit/Brute/Raider
-  bodies: finger pieces sit on the handle's surface (0.175 for a 0.14 grip). Pistols are NOT re-seated: on the real
-  body their grip runs along the fingers and the slide sits past the fingertips (GRIPS.Pistol and the pistol arm
-  animations were made together); fixing that is re-seating plus redoing Aim_Pistol / Pistol_Ready /
-  Reload_Pistol. First person in Endeavor got nothing new (not a priority). Tests: "gunfeel:", "hands:" in
+  bodies: finger pieces sit on the handle's surface (0.175 for a 0.14 grip). Pistols held by the grip (owner, 2026-11-13: "fix this please"):
+  Endeavor's pistols (Weapons `Model = { Grip = "Handgun", Scale = 0.45 }`) are laid in the palm by
+  `HeldWeapons.HandgunGrip` (the Grip_/Grips_ part, else the magazine, on the palm cylinder that client/Hands closes
+  round: axis across the palm tilted 16, grip raked 18, the bore along the fingers' line). Attach's Grip weld puts
+  the origin at C0 * C1^-2, not C0 (every older grip was tuned around that), so HandgunGrip multiplies by C1 twice.
+  The model attribute `BarrelY` tells GunFeel the frame. Pistol_Ready, Aim_Pistol, Reload_Pistol, Cover_Idle,
+  Intro_Draw and Intro_Rack were re-solved by analytic arm IK on the real body for that grip (scratch solver: the
+  body's joint offsets dumped from a real server, numpy FK, elbow swivel and forearm twist chosen for the straightest
+  wrist): change them with the grip. Real server: aiming, the bore is level and dead ahead (0.6 degrees); the grip
+  centre sits on the palm; the right fingers rest 0.00-0.07 from the frame. The Front's pistols keep GRIPS.Pistol. First person in Endeavor got nothing new (not a priority). Tests: "gunfeel:", "hands:" in
   client.lua.
-## State (2026-11-12)
+## State (2026-11-13)
+- Endeavor v116 (2026-11-13): pistols held by the grip at life size, with new low-ready, aim, reload, wall, draw
+  and rack arm poses. Real server: start 10.0s, 0 warnings; checks above. Unseen in game: all of it in motion.
+  Awaits Andy: docs/TESTING.md "Endeavor: pistols held by the grip".
 - Endeavor v114 + Front v45 (2026-11-12): the Front's gun handling on every gun in Endeavor and jointed fingers on
   every body. Real server: start 7.1s, 0 warnings (Front 5.3s, 0 warnings); on real bodies the Duty Pistol slide
   travels 0.46 back and home, the Carbine carrier 0.33, the Whisper does not cycle, magazines travel 1.2 and seat

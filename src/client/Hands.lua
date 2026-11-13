@@ -207,11 +207,8 @@ local function choose(char, b)
 	end
 	if def and Weapons.IsGun(def) and held then
 		right = if def.Family == "Rifle" then "Rifle" else "Pistol"
-		if def.Family == "Rifle" then
-			left = "Support"
-		elseif aim then
-			left = "Cup"
-		end
+		-- both hands on every gun now: a pistol's off hand wraps the firing hand at the ready and aimed alike
+		left = if def.Family == "Rifle" then "Support" else "Cup"
 		local busy = GunFeel and GunFeel.LeftGrip(char)
 		if busy == "Mag" then
 			left = "Mag"
