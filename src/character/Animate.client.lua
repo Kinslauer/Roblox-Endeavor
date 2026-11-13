@@ -24,7 +24,7 @@ end)
 -- because its arm holds were tuned over those and the server poses its crouch and prone
 local STOCK = char:GetAttribute("StockAnimations") == true
 local OWN = (ok and not STOCK) and Assets.Anims or {}
-for _, name in { "Idle", "Walk", "Run" } do
+for _, name in { "Idle", "Walk", "Jog", "Run" } do
 	if OWN[name] and OWN[name] ~= 0 then
 		IDS[name] = "rbxassetid://" .. tostring(OWN[name])
 	end
@@ -68,14 +68,20 @@ local function play(name, fade, speed)
 	end
 end
 
-local RUN_FROM = 18 -- studs/s: above this the run plays instead of the walk
+-- Studs a second each cycle's planted foot covers at playback speed 1 (`python3 tools/anims/anims.py --speeds`),
+-- so the feet keep pace with the ground at any speed; and where one gait hands over to the next.
+local PACE = { Walk = 4.7, Jog = 15.1, Run = 25.5, CrouchWalk = 3.0 }
+local JOG_FROM, RUN_FROM = 8, 19
+local OWN_GAIT = tracks.Jog ~= nil and OWN.Jog ~= nil
 local state = "Idle"
 local lastSpeed = 0
+local backward = false
 local function ground(speed)
 	lastSpeed = speed
 	if state ~= "Running" then
 		return
 	end
+	local dir = if backward then -1 else 1 -- moving backward plays the same cycle in reverse
 	if char:GetAttribute("Stance") == "Prone" and tracks.ProneIdle then
 		if speed < 0.3 then
 			play("ProneIdle", 0.25)
@@ -86,16 +92,39 @@ local function ground(speed)
 		if speed < 0.5 then
 			play("CrouchIdle", 0.2)
 		else
-			play("CrouchWalk", 0.15, math.clamp(speed / 6, 0.5, 2))
+			play("CrouchWalk", 0.15, dir * math.clamp(speed / PACE.CrouchWalk, 0.5, 2.4))
 		end
 	elseif speed < 0.5 then
 		play("Idle", 0.2)
-	elseif speed < RUN_FROM then
-		play("Walk", 0.15, math.clamp(speed / 7, 0.5, 2.2)) -- the cycle covers ~4.5 studs/s at speed 1
+	elseif not OWN_GAIT then
+		-- Roblox's own cycles (the Front's soldier, or before the game's are uploaded)
+		if speed < 18 then
+			play("Walk", 0.15, math.clamp(speed / 7, 0.5, 2.2))
+		else
+			play("Run", 0.15, math.clamp(speed / 11.5, 0.8, 2.2))
+		end
+	elseif speed < JOG_FROM then
+		play("Walk", 0.2, dir * math.clamp(speed / PACE.Walk, 0.5, 1.8))
+	elseif speed < RUN_FROM or backward then
+		play("Jog", 0.2, dir * math.clamp(speed / PACE.Jog, 0.6, 1.5))
 	else
-		play("Run", 0.15, math.clamp(speed / 11.5, 0.8, 2.2)) -- ~11.5 studs/s at speed 1
+		play("Run", 0.2, math.clamp(speed / PACE.Run, 0.7, 1.3))
 	end
 end
+-- which way the feet go: backward when the body moves against its facing (aiming or locked on); the hips turn
+-- into a sideways move in client/Movement
+task.spawn(function()
+	local root = char:WaitForChild("HumanoidRootPart", 10)
+	while root and char.Parent do
+		local move = hum.MoveDirection
+		local back = move.Magnitude > 0.1 and root.CFrame.LookVector:Dot(move) < -0.35
+		if back ~= backward then
+			backward = back
+			ground(lastSpeed)
+		end
+		task.wait(0.1)
+	end
+end)
 hum.Running:Connect(ground)
 char:GetAttributeChangedSignal("Crouched"):Connect(function()
 	ground(lastSpeed)

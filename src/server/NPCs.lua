@@ -543,6 +543,7 @@ function NPCs.Spawn(typeName, position, opts)
 							Combat.AddBuff(model, "Hyperarmor", 0, def.Telegraph + 0.2)
 						end
 						nav.stop()
+						basic.Damage = def.Damage * (model:GetAttribute("LimbDamage") or 1) -- an arm broken or lost (server/Dismember)
 						strike(target, basic)
 						lastAttack = os.clock()
 					elseif canAttack then

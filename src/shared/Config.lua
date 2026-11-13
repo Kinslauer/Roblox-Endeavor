@@ -117,7 +117,9 @@ Config.Stealth = {
 			-- into a wall faster than Slam.Speed: hurt, down for longer, and loud. Into another guard: both go down.
 			Slam = { Speed = 16, Damage = 45, DownMult = 2, Noise = 16 } }, -- Fall/Side = where he lands (the animation's last key)
 		Hold = { Seconds = 12, SpeedMult = 0.45, Gap = 0.95, Press = 0.3 }, -- he breaks free after Seconds; Press = how long X is held to grab
-		Carry = { Reach = 5, SpeedMult = 0.6, Offset = CFrame.new(0.75, 1.75, 0.15) },
+		-- dragging a body by the collar: Ahead = studs in front of you the hands hold it, Collar = from the hands to his
+		-- hips, Length = from the hands to his feet (the body trails that far)
+		Carry = { Reach = 5, SpeedMult = 0.75, Ahead = 1.2, Collar = 1.7, Length = 4.8 },
 	},
 	-- The wall (Q with a gun out): back to it; hold RMB at its end to lean out and aim.
 	Cover = { Reach = 3.2, Stand = 1.05, Step = 1.9, SpeedMult = 0.5, EdgeProbe = 2.2 },
@@ -414,6 +416,21 @@ Config.Destruction = {
 	GoreLevel = "Restricted", -- "Moderate" | "Restricted" (design doc section 9). The content label itself is set in the Creator Dashboard.
 }
 
+-- Limbs that break and come off (server/Dismember, client/Limbs). Sever / Break: the share of the body's max health one
+-- blow has to take, landing directly on an arm or a leg, by kind of blow. Blades take limbs; blunt weapons break them
+-- and only the heaviest blow takes one; bullets only break.
+Config.Dismember = {
+	Direct = 0.4, -- studs from the limb's box the contact may be (and nearer to it than to the trunk)
+	Sever = { Cut = 0.22, Blast = 0.3, Blunt = 0.55 },
+	Break = { Blunt = 0.16, Blast = 0.18, Bullet = 0.3, Cut = 0.6 },
+	KillBonus = 1.4, -- the blow that kills counts for this much more
+	MaxHealth = 400, -- bodies with more health than this keep their limbs (Wardens)
+	ArmDamage = 0.55, BrokenArm = 0.75, -- an enemy's damage with an arm lost / broken
+	LegSpeed = 0.45, BrokenLeg = 0.65, -- an enemy's speed with a leg lost / broken
+	Bleed = { PerSecond = 0.025, Seconds = 14 }, -- share of max health a stump costs an enemy each second
+	Piece = { Life = 45, Speed = 13, Lift = 15, Spin = 14, Color = Color3.fromRGB(38, 36, 40) },
+	Limp = { Arm = 0.85, Leg = 0.55 }, -- client: how much of the animation a broken arm ignores / a broken leg keeps
+}
 Config.Gore = {
 	BodyCap = 60, -- persistent corpses per server; oldest cleared first
 	PoolCap = 80, -- blood pools per client
@@ -756,7 +773,7 @@ Config.Movement = {
 	WallCheckRadius = 1,
 	StunBounceSpeed = 25, StunBounceHeight = 3, StunForceFactor = 1500, RecoverTime = 0.5,
 	-- lean into movement (degrees)
-	LeanRoll = 15, LeanPitch = 5, LeanSpeed = 10,
+	LeanRoll = 15, LeanPitch = 5, LeanSpeed = 10, HipTurn = 62, -- HipTurn: degrees the hips turn into a sideways move
 	AnimFade = 0.1,
 	-- Roblox's own animations from the Platformer template
 	Anims = {
@@ -888,7 +905,7 @@ Config.Wounds = {
 	Concussion = { Seconds = 9, Radius = 1.6 }, -- blast radius multiple that still concusses
 	Painkiller = 150, -- seconds pain does not show and broken legs carry you at walking pace
 	Surgery = { Floor = 1, MaxShare = 0.6 }, -- a dead limb back at 1 hp, its max cut to 60% for this life
-	Lost = { Blast = 0.5, Cut = 0.15 }, -- chance a limb already out is lost to one more such hit (Endeavor only)
+	Lost = { Blast = 0.5, Cut = 0.3, Blunt = 0.03 }, -- chance a limb already out is lost to one more such hit (Endeavor only)
 	ScarMin = 14, -- a cut this big leaves a scar for the life
 	MaxScars = 10,
 	Hunger = { Start = 100, PerMinute = 2.2, Low = 20, StaminaRegenLow = 0.6, StarveDamage = 0.25 },

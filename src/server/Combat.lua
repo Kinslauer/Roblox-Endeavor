@@ -624,6 +624,15 @@ local function applyDamage(attacker, victim, amount, opts)
 	if vp and amount >= vhum.Health and not victim:GetAttribute("Knocked") and require(script.Parent.Knock).Try(victim, attacker) then
 		amount = math.max(0, vhum.Health - 1)
 	end
+	if not vp and amount > 0 and Combat.LimbHit then
+		-- an enemy's arm or leg struck directly and hard enough breaks or comes off (server/Dismember); before the
+		-- damage, so a blow that kills leaves the corpse without the limb it took
+		local aroot = attacker:FindFirstChild("HumanoidRootPart")
+		local vroot = victim:FindFirstChild("HumanoidRootPart")
+		Combat.LimbHit(victim, { Amount = amount, At = opts.HitAt or opts.ContactPoint, Killed = amount >= vhum.Health,
+			Kind = opts.WoundKind or WoundService.KindOf(nil, opts.Type, false),
+			Direction = opts.ContactDir or (aroot and vroot and (vroot.Position - aroot.Position) * Vector3.new(1, 0, 1)) or nil })
+	end
 	vhum:TakeDamage(amount)
 	victim:SetAttribute("LastHitType", opts.Type or "Physical")
 	if vp and amount > 0 then

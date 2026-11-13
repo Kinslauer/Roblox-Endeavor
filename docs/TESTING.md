@@ -3,6 +3,31 @@
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
 report).
 
+## Endeavor: walking, heavy swings, the drag, and limbs that break or come off (2026-11-13)
+- [ ] Walk slowly (thumbstick half way, or while aiming): a slow walk with feet that land where the ground moves.
+      At normal speed: a jog. Shift: a sprint with a longer stride. The feet should not slide or flutter.
+- [ ] Walk backward while aiming (RMB, then S): the legs step backward, they do not run forward in place.
+- [ ] Walk sideways while aiming (A or D): the hips turn into the step and the chest stays on the target.
+- [ ] Stand still: the arms hang a little bent, the feet are on the floor.
+- [ ] Swing the pipe or the blade (LMB): the body coils back first, the elbow bends in the wind-up, the arm is
+      thrown out along the arc of the blade, and it carries past the end before it comes back.
+- [ ] A heavy attack (hold LMB) coils further and follows through further than a light one.
+- [ ] Swing the sledge or the spear: both hands are on the haft through the swing.
+- [ ] Hold F with a weapon: the weapon is held across the body with a bent elbow and the off hand braces it.
+- [ ] Knock a guard down (takedown or throw). Hold X on him: you crouch, grab his collar and drag him along the
+      floor behind you. He trails where you walked. You cannot stand up while you hold him.
+- [ ] While you hold him, press X: his pockets open. Press G: you let go and he stays where he lies.
+- [ ] Hit an enemy's arm or leg hard with a blade (a heavy attack on a common enemy): the limb comes off at the
+      elbow or the knee, falls to the floor as its own piece, and the stump bleeds. A light cut does not do it.
+- [ ] Hit the chest or the head as hard as you like: no limb comes off.
+- [ ] Hit an arm or leg with the pipe or the sledge: it breaks (a crack, the arm hangs loose or the leg drags)
+      much sooner than a blade breaks it, and it almost never comes off.
+- [ ] An enemy with a broken or lost arm hits weaker; one without the right arm drops the weapon. An enemy with a
+      broken or lost leg is slow and hops.
+- [ ] Kill enemies any way, also with a grenade: the body stays in one piece (less any limb it lost). Nobody
+      bursts into parts any more.
+- [ ] Look at a lost limb's stump. If armour, a boot or a glove sticks out of it, say which enemy.
+
 ## Endeavor: the new body moves, and the throw has speed (2026-11-12)
 - [ ] Your character and the guards now move: idle, walk, run, crouch, prone, swings and takedowns all show on the
       one-piece body. Nobody stays folded in one pose. (Same fix on the Front's soldiers.)

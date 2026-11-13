@@ -473,9 +473,25 @@ local function onStepped(_, dt)
 				pitch = math.clamp(rel.Z / hum.WalkSpeed, -1, 1) * math.rad(M.LeanPitch)
 				roll = -math.clamp(rel.X / hum.WalkSpeed, -1, 1) * math.rad(M.LeanRoll)
 			end
-			local cur = (leans[joint] or CFrame.identity):Lerp(CFrame.Angles(pitch, 0, roll), math.min(dt * M.LeanSpeed, 1))
+			-- the hips turn into a sideways move and the chest turns back to the front, so strafing is the same
+			-- stride set at an angle, not a forward run sliding sideways (backward: the stride plays in reverse)
+			local yaw = 0
+			local flat = Vector3.new(rel.X, 0, rel.Z)
+			if flat.Magnitude > 2 and hum.WalkSpeed > 0 and not char:GetAttribute("Crouched") then
+				local a = math.atan2(rel.X, -rel.Z) -- 0 ahead, positive to the right
+				if math.abs(a) > math.rad(110) then
+					a = if a > 0 then a - math.pi else a + math.pi
+				end
+				yaw = -math.clamp(a, -math.rad(M.HipTurn), math.rad(M.HipTurn)) * math.clamp(flat.Magnitude / 8, 0, 1)
+			end
+			local cur = (leans[joint] or CFrame.identity):Lerp(CFrame.Angles(pitch, yaw, roll), math.min(dt * M.LeanSpeed, 1))
 			leans[joint] = cur
 			joint.Transform = cur * joint.Transform
+			local waist = char:FindFirstChild("UpperTorso") and char.UpperTorso:FindFirstChild("Waist")
+			if Joints.IsJoint(waist) then
+				local _, y = cur:ToEulerAnglesYXZ()
+				waist.Transform = CFrame.Angles(0, -y * 0.85, 0) * waist.Transform
+			end
 		end
 	end
 end

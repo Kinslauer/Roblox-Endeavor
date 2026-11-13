@@ -40,6 +40,27 @@ local function bind(skin)
 	end
 end
 
+-- A limb that has come off (server/Dismember marks the forearm and hand, or the shin and foot, `Severed`): the mesh
+-- cannot be cut, so that part of it is folded away inside the upper limb, the forearm doubled back along the upper
+-- arm and the hand laid in its middle. What shows is the upper limb ending at the joint (a cap closes it).
+local FOLD = {
+	LeftLowerArm = { "LeftUpperArm" }, RightLowerArm = { "RightUpperArm" }, LeftLowerLeg = { "LeftUpperLeg" }, RightLowerLeg = { "RightUpperLeg" },
+	LeftHand = { "LeftUpperArm", true }, RightHand = { "RightUpperArm", true }, LeftFoot = { "LeftUpperLeg", true, true }, RightFoot = { "RightUpperLeg", true, true },
+}
+local HALF_TURN, QUARTER = CFrame.Angles(math.pi, 0, 0), CFrame.Angles(math.pi / 2, 0, 0)
+local function folded(rig, limb)
+	local f = FOLD[limb.Name]
+	local parent = f and rig:FindFirstChild(f[1])
+	if not parent then
+		return limb.CFrame
+	end
+	if f[2] then
+		return parent.CFrame * (if f[3] then QUARTER else CFrame.identity) -- the end piece, in the middle of the upper limb
+	end
+	return parent.CFrame * CFrame.new(0, (limb.Size.Y - parent.Size.Y) / 2, 0) * HALF_TURN
+end
+Skin.Folded = folded
+
 local function update(body, rig)
 	local inverse = body.Holder.CFrame:Inverse()
 	for _, b in body.Bones do
@@ -49,7 +70,8 @@ local function update(body, rig)
 			b[5] = limb
 		end
 		if limb then
-			b[1].Transform = b[2] * (inverse * limb.CFrame) * b[3]
+			local at = if FOLD[b[4]] and limb:GetAttribute("Severed") then folded(rig, limb) else limb.CFrame
+			b[1].Transform = b[2] * (inverse * at) * b[3]
 		end
 	end
 end

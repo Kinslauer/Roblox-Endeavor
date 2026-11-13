@@ -31,7 +31,7 @@ local function body(name, faction, cf)
 			Rigs.Dress(m, { Attire = true, Kit = true, Helmet = true })
 			m:PivotTo(cf + Vector3.new(0, h.HipHeight - 2, 0))
 			m.Parent = workspace
-			Rigs.Animate(m, h)
+			Rigs.Animate(m, h, true)
 		end
 		return m, h, r
 	end)

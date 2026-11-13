@@ -308,7 +308,7 @@ local function wantArms(char)
 	if char:GetAttribute("Takedown") or char:GetAttribute("Cutscene") or char:GetAttribute("Reloading") then
 		return nil
 	elseif char:GetAttribute("Carrying") then
-		return "Carry"
+		return if Anims.Has("Drag") then "Drag" else "Carry"
 	elseif char:GetAttribute("NeckHold") then
 		return "Hold"
 	elseif Handling.Stance() == "Prone" or not Handling.GunOut() then

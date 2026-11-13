@@ -482,12 +482,17 @@ function Rigs.Statue(kind, cf, parent, opts)
 end
 
 -- Idle/walk animation playback for an NPC humanoid (server-side Animator works for NPCs).
-function Rigs.Animate(model, hum)
+function Rigs.Animate(model, hum, stock)
 	local animator = hum:FindFirstChildOfClass("Animator") or Instance.new("Animator", hum) -- created in Build; this is a fallback
 	local tracks = {}
-	for name, id in Rigs.Animations do
+	-- the game's own stance and gaits (tools/anims, made on the one-piece body's proportions) when uploaded;
+	-- Roblox's stock cycles otherwise
+	local own = Assets.Anims or {}
+	local ids = { Idle = own.Idle, Walk = own.Walk, Jog = own.Jog }
+	local ownGait = not stock and ids.Idle and ids.Walk and ids.Jog and ids.Jog ~= 0
+	for name, id in (if ownGait then ids else Rigs.Animations) do
 		local anim = Instance.new("Animation")
-		anim.AnimationId = id
+		anim.AnimationId = if typeof(id) == "number" then "rbxassetid://" .. id else id
 		local ok, track = pcall(function()
 			return animator:LoadAnimation(anim)
 		end)
@@ -498,20 +503,32 @@ function Rigs.Animate(model, hum)
 	if not tracks.Idle then
 		return
 	end
+	tracks.Idle.Priority = Enum.AnimationPriority.Idle
 	tracks.Idle:Play()
-	local walking = false
+	local current
 	hum.Running:Connect(function(speed)
-		local moving = speed > 0.5
-		if moving ~= walking then
-			walking = moving
-			if moving then
-				if tracks.Walk then
-					tracks.Walk:Play()
-					tracks.Walk:AdjustSpeed(math.clamp(speed / 16, 0.6, 1.6))
-				end
-			elseif tracks.Walk then
-				tracks.Walk:Stop()
+		local want, pace
+		if speed > 0.5 then
+			if ownGait and speed >= 8 then
+				want, pace = tracks.Jog, math.clamp(speed / 15.1, 0.6, 1.5)
+			elseif ownGait then
+				want, pace = tracks.Walk, math.clamp(speed / 4.7, 0.5, 1.8)
+			else
+				want, pace = tracks.Walk, math.clamp(speed / 16, 0.6, 1.6)
 			end
+		end
+		if want ~= current then
+			if current then
+				current:Stop(0.2)
+			end
+			current = want
+			if want then
+				want.Priority = Enum.AnimationPriority.Movement
+				want:Play(0.2)
+			end
+		end
+		if want then
+			want:AdjustSpeed(pace)
 		end
 	end)
 end

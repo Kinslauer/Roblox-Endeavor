@@ -17,6 +17,7 @@ V3.__index = function(t, k)
 end
 function V3.new(x, y, z) return setmetatable({X = x or 0, Y = y or 0, Z = z or 0}, V3) end
 V3.zero = V3.new(0,0,0)
+V3.one = V3.new(1,1,1); V3.xAxis = V3.new(1,0,0); V3.yAxis = V3.new(0,1,0); V3.zAxis = V3.new(0,0,1)
 V3.yAxis = V3.new(0,1,0)
 local function isV3(v) return getmetatable(v) == V3 end
 V3.__add = function(a, b) return V3.new(a.X+b.X, a.Y+b.Y, a.Z+b.Z) end
@@ -37,6 +38,9 @@ CF.__index = function(t, k)
 	if k == "LookVector" then return V3.new(-t.r[3], -t.r[6], -t.r[9]) end
 	if k == "RightVector" then return V3.new(t.r[1], t.r[4], t.r[7]) end
 	if k == "UpVector" then return V3.new(t.r[2], t.r[5], t.r[8]) end
+	if k == "XVector" then return V3.new(t.r[1], t.r[4], t.r[7]) end
+	if k == "YVector" then return V3.new(t.r[2], t.r[5], t.r[8]) end
+	if k == "ZVector" then return V3.new(t.r[3], t.r[6], t.r[9]) end
 	if k == "Rotation" then return setmetatable({Position = V3.new(0,0,0), r = t.r}, CF) end
 	return CF[k]
 end

@@ -278,14 +278,22 @@ do
 	check("cqc: he flies the way you look, with real speed", flew.Magnitude > 4 and flew.Z < -3)
 	root().CFrame = M.CF.new(ga.HumanoidRootPart.Position + M.V3.new(2, 2, 0)); run(0.15)
 	check("cqc: thrown, he is down but not for good", Stealth.StateOf(ga) == "Down" and ga:GetAttribute("Downed") == true and char():GetAttribute("Takedown") == nil)
-	-- his body: on the shoulder, moved, put down
+	-- his body: grabbed by the collar and dragged, searched from the grab, let go
 	Remotes.Cqc:FireServer("Carry", ga); run(0.2)
-	check("carry: the body is on your shoulder and you are slow", char():GetAttribute("Carrying") == true and Stealth.Carrying(player) == ga and hum.WalkSpeed < walk * 0.7)
-	root().CFrame = M.CF.lookAt(O + M.V3.new(-2, 3, -6), O + M.V3.new(-2, 3, -16)); run(0.2)
-	check("carry: it goes where you go", (ga.HumanoidRootPart.Position - root().Position).Magnitude < 3)
+	check("drag: you have him by the collar, low and slow", char():GetAttribute("Carrying") == true and Stealth.Carrying(player) == ga and hum.WalkSpeed < walk * 0.7
+		and char():GetAttribute("Stance") == "Crouch")
+	Remotes.Stance:FireServer("Stand"); run(0.1)
+	check("drag: you cannot stand up with a body in your hands", char():GetAttribute("Stance") == "Crouch")
+	root().CFrame = M.CF.lookAt(O + M.V3.new(-2, 3, -6), O + M.V3.new(-2, 3, -16)); run(0.3)
+	local trail = (ga.HumanoidRootPart.Position - root().Position) * M.V3.new(1, 0, 1)
+	check("drag: the body comes with you along the floor", trail.Magnitude < 5.5 and trail.Magnitude > 1 and math.abs(ga.HumanoidRootPart.CFrame.UpVector.Y) < 0.2
+		and ga.HumanoidRootPart.Position.Y < root().Position.Y)
+	local dragged = ga.HumanoidRootPart.Position
+	Remotes.Cqc:FireServer("Search", ga); run(0.2)
+	check("drag: his pockets open from the grab", ga.HumanoidRootPart:GetAttribute("ContainerKey") ~= nil and Stealth.Carrying(player) == ga)
 	Remotes.Cqc:FireServer("Drop"); run(0.2)
-	check("carry: put down in front of you", char():GetAttribute("Carrying") == nil and Stealth.Carrying(player) == nil and Stealth.StateOf(ga) == "Down"
-		and ((ga.HumanoidRootPart.Position - root().Position) * M.V3.new(1, 0, 1)).Magnitude < 2.5 and math.abs(ga.HumanoidRootPart.CFrame.UpVector.Y) < 0.2)
+	check("drag: let go, he stays where he lay", char():GetAttribute("Carrying") == nil and Stealth.Carrying(player) == nil and Stealth.StateOf(ga) == "Down"
+		and (ga.HumanoidRootPart.Position - dragged).Magnitude < 0.5 and math.abs(ga.HumanoidRootPart.CFrame.UpVector.Y) < 0.2)
 	-- his pockets: every guard can be searched, in the station too
 	local LootS = M.mockEnv.__require(SSS.Server.Loot)
 	local nine0, five0 = Inventory0.Count(player, "Round9"), Inventory0.Count(player, "Round556")
@@ -2595,6 +2603,74 @@ do
 		and InvS.Count(player, "Scrap") == 0 and pd.Level == level0 and h.ProxyLost == true)
 	check("proxy: the wrecked drone needs parts before the next link", ProxS.Link(player) == false)
 	run(1)
+end
+
+
+-- ===== limbs break and come off; nothing bursts (server/Dismember) =====
+do
+	local DisS = M.mockEnv.__require(SSS.Server.Dismember)
+	local GoreS = M.mockEnv.__require(SSS.Server.Gore)
+	local DC = ConfigM.Dismember
+	local function body(at, health)
+		local m = M.newInstance("Model"); m.Name = "LimbDummy"
+		local function part(name, x, y, sx, sy)
+			local p = M.newInstance("Part"); p.Name = name; p.Size = M.V3.new(sx, sy, 1); p.CFrame = M.CF.new(at + M.V3.new(x, y, 0)); p.Parent = m; return p
+		end
+		part("HumanoidRootPart", 0, 3, 2, 2); part("LowerTorso", 0, 2.6, 2, 0.8); part("UpperTorso", 0, 3.8, 2, 1.6); part("Head", 0, 5.2, 1.2, 1.2)
+		for _, side in { { "Left", -1 }, { "Right", 1 } } do
+			part(side[1] .. "UpperArm", 1.5 * side[2], 4, 1, 1.2); part(side[1] .. "LowerArm", 1.5 * side[2], 2.9, 1, 1); part(side[1] .. "Hand", 1.5 * side[2], 2.2, 1, 0.4)
+			part(side[1] .. "UpperLeg", 0.5 * side[2], 1.6, 1, 1.2); part(side[1] .. "LowerLeg", 0.5 * side[2], 0.7, 1, 1); part(side[1] .. "Foot", 0.5 * side[2], 0.1, 1, 0.3)
+		end
+		local h = M.newInstance("Humanoid"); h.MaxHealth = health; h.Health = health; h.WalkSpeed = 16; h.Parent = m
+		m.PrimaryPart = m.HumanoidRootPart
+		m.Parent = workspace_
+		return m, h
+	end
+	local at = M.V3.new(3000, 400, 900)
+	local m, h = body(at, 100)
+	local armR, armL, legL, chest = at + M.V3.new(1.5, 2.9, 0), at + M.V3.new(-1.5, 2.9, 0), at + M.V3.new(-0.5, 0.7, 0), at + M.V3.new(0, 3.8, 0)
+	check("limbs: a point on the forearm is the arm, a point on the chest is no limb", DisS.LimbAt(m, armR) == "ArmR" and DisS.LimbAt(m, legL) == "LegL" and DisS.LimbAt(m, chest) == nil)
+	check("limbs: a hard cut to the chest takes nothing off", DisS.Hit(m, { Amount = 90, At = chest, Kind = "Cut" }) == nil)
+	check("limbs: a light cut to the arm takes nothing off", DisS.Hit(m, { Amount = DC.Sever.Cut * 100 - 4, At = armR, Kind = "Cut" }) == nil and m:GetAttribute("Lost_ArmR") == nil)
+	local blunt = DC.Sever.Cut * 100 + 5
+	local r1, p1 = DisS.Hit(m, { Amount = blunt, At = armL, Kind = "Blunt" })
+	check("limbs: the blow that a blade would sever with only breaks under a blunt weapon", r1 == "Break" and p1 == "ArmL" and m:GetAttribute("Broken_ArmL") == true and m:GetAttribute("Lost_ArmL") == nil)
+	check("limbs: a blunt weapon breaks sooner than a blade does", DC.Break.Blunt < DC.Break.Cut and DC.Sever.Blunt > DC.Sever.Cut * 2)
+	check("limbs: a broken arm hits weaker", (m:GetAttribute("LimbDamage") or 1) < 1)
+	local r2, p2 = DisS.Hit(m, { Amount = blunt, At = armR, Kind = "Cut", Direction = M.V3.new(1, 0, 0) })
+	local piece
+	for _, c in workspace_:FindFirstChild("Gore"):GetChildren() do if c.Name == "SeveredLimb" then piece = c end end
+	check("limbs: a hard cut to the arm takes it off at the elbow", r2 == "Sever" and p2 == "ArmR" and m:GetAttribute("Lost_ArmR") == true
+		and m.RightLowerArm:GetAttribute("Severed") == true and m.RightHand:GetAttribute("Severed") == true and m.RightUpperArm:GetAttribute("Severed") == nil)
+	check("limbs: the piece falls as its own thing, and the stump is capped", piece ~= nil and m.RightUpperArm:FindFirstChild("Stump") ~= nil)
+	check("limbs: the same limb cannot come off twice", DisS.Hit(m, { Amount = 90, At = armR, Kind = "Cut" }) == nil)
+	local speed0 = h.WalkSpeed
+	DisS.Hit(m, { Amount = blunt, At = legL, Kind = "Cut" }); run(1.2)
+	check("limbs: a lost leg slows him and he bleeds", m:GetAttribute("Lost_LegL") == true and h.WalkSpeed < speed0 and h.Health < 100)
+	-- the corpse keeps the loss and stays in one piece
+	local gore = workspace_:FindFirstChild("Gore")
+	local before = {}
+	for _, c in gore:GetChildren() do before[c] = true end
+	m:SetAttribute("LastHitType", "Explosive")
+	h.Health = 0
+	GoreS.OnDied(m); run(0.5)
+	local corpse, loose = nil, 0
+	for _, c in gore:GetChildren() do
+		if not before[c] then
+			if c.Name == "Corpse" then corpse = c elseif c.Name ~= "SeveredLimb" then loose += 1 end
+		end
+	end
+	check("limbs: no body bursts; even a blast leaves one corpse", corpse ~= nil)
+	check("limbs: the corpse is missing what the body lost", corpse ~= nil and corpse:GetAttribute("Lost_ArmR") == true and corpse:GetAttribute("Lost_LegL") == true)
+	-- through the fight: a blade's contact point on the arm
+	local m2, h2 = body(at + M.V3.new(20, 0, 0), 100)
+	CS:AddTag(m2, "NPC")
+	local hit2 = at + M.V3.new(20 + 1.5, 2.9, 0)
+	Combat.Damage(char(), m2, 60, { ContactPoint = hit2, WoundKind = "Cut", Unblockable = true })
+	check("limbs: in a fight, the blade's contact point decides", m2:GetAttribute("Lost_ArmR") == true or m2:GetAttribute("Broken_ArmR") == true)
+	local big = body(at + M.V3.new(40, 0, 0), DC.MaxHealth + 100)
+	check("limbs: the big ones keep their limbs", DisS.Hit(big, { Amount = 900, At = at + M.V3.new(41.5, 2.9, 0), Kind = "Cut" }) == nil)
+	m2:Destroy(); big:Destroy(); m:Destroy()
 end
 
 

@@ -130,27 +130,52 @@ check("anims: parry, guard break and the guard play", playedId("Parry", mark) an
 -- the guard: with a weapon in hand the arms are driven (weapon across the front, off hand bracing it) and turn
 -- toward an incoming swing; letting go of F relaxes them
 do
-	local function joint(name) local j = M.newInstance("Motor6D"); j.Name = name; j.C0 = M.CF.new(); j.Parent = char; return j end
-	local rs, ls, rw = joint("RightShoulder"), joint("LeftShoulder"), joint("RightWrist")
-	joint("RightElbow"); joint("LeftElbow")
+	-- a small arm rig: the shoulders hang off the root, the arms are solved to the guard every step (client/ArmIK)
+	local ArmIK = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.ArmIK)
+	local function joint(name, at)
+		local j = M.newInstance("Motor6D"); j.Name = name; j.C0 = M.CF.new(at); j.C1 = M.CF.new(); j.Transform = M.CF.new()
+		j.Part0 = root; j.Parent = char; return j
+	end
+	local rs, ls = joint("RightShoulder", M.V3.new(0.86, 1.5, 0)), joint("LeftShoulder", M.V3.new(-0.86, 1.5, 0))
+	local re = joint("RightElbow", M.V3.new(0, -1, 0)); joint("LeftElbow", M.V3.new(0, -1, 0))
+	joint("RightWrist", M.V3.new(0, -0.9, 0)); joint("LeftWrist", M.V3.new(0, -0.9, 0))
 	local held = M.newInstance("Model"); held.Name = "HeldWeapon"; held.Parent = char
-	char:SetAttribute("Blocking", false); M.step(1/30)
+	char:SetAttribute("Blocking", false)
+	for _ = 1, 40 do M.step(1/30) end
 	char:SetAttribute("Blocking", true)
 	for _ = 1, 10 do M.step(1/30) end
 	local DOWN = M.V3.new(0, -1, 0)
 	local function angle(cf) return math.acos(math.clamp(cf:VectorToWorldSpace(DOWN):Dot(DOWN), -1, 1)) end -- how far the limb is lifted
-	check("guard: the weapon arm is raised into the guard", angle(rs.C0) > 0.5)
-	check("guard: the off hand comes up to brace it", angle(ls.C0) > 0.5)
+	check("guard: the weapon arm is solved up into the guard", ArmIK.Active(char, "Right") and angle(rs.Transform) > 0.5)
+	check("guard: the off hand comes up to brace it", ArmIK.Active(char, "Left") and angle(ls.Transform) > 0.5)
+	check("guard: the elbow is bent, not locked", angle(re.Transform) > 0.3)
 	-- an enemy winding up a slash off to the right: the guard swings toward it
 	local foe = M.newInstance("Model"); foe.Name = "Foe"
 	local froot = M.newInstance("Part"); froot.Name = "HumanoidRootPart"; froot.Parent = foe
 	local fh = M.newInstance("Humanoid"); fh.Parent = foe
 	froot.CFrame = M.CF.lookAt(root.Position + M.V3.new(5, 0, -3), root.Position)
 	foe.Parent = workspace_
-	local before = rs.C0:VectorToWorldSpace(DOWN)
+	local before = rs.Transform:VectorToWorldSpace(DOWN)
 	CE.OnClientEvent:Fire("Swing", foe, "Light", "SlashL", 0.5, 0.2, 0.9, 6)
 	for _ = 1, 8 do M.step(1/30) end
-	check("guard: turns toward the blade coming in", (rs.C0:VectorToWorldSpace(DOWN) - before).Magnitude > 0.05)
+	check("guard: turns toward the blade coming in", (rs.Transform:VectorToWorldSpace(DOWN) - before).Magnitude > 0.05)
+	-- the swing: the hand is put on the traced blade's grip, the elbow coiled in the wind-up
+	char:SetAttribute("Blocking", false)
+	for _ = 1, 12 do M.step(1/30) end
+	check("guard: let go, the arms go back to the animation", not ArmIK.Active(char, "Right") and not ArmIK.Active(char, "Left"))
+	CE.OnClientEvent:Fire("Swing", char, "Light", "SlashR", 0.3, 0.2, 0.8, 6)
+	for _ = 1, 6 do M.step(1/30) end
+	local coil = angle(re.Transform)
+	check("swing: the arm is driven to the blade's grip", ArmIK.Active(char, "Right"))
+	for _ = 1, 6 do M.step(1/30) end
+	check("swing: coiled in the wind-up, thrown out in the strike", coil > angle(re.Transform) + 0.15)
+	for _ = 1, 40 do M.step(1/30) end
+	check("swing: after it the arm is handed back", not ArmIK.Active(char, "Right"))
+	local S0, G0 = M.V3.new(0, 0, 0), M.V3.new(0, -1, -1)
+	local E0 = ArmIK.Solve(S0, G0, 1, 0.9, M.V3.new(0.5, -0.7, 0.4))
+	check("arm: the solved elbow keeps both bone lengths", math.abs((E0 - S0).Magnitude - 1) < 1e-3 and math.abs((G0 - E0).Magnitude - 0.9) < 1e-3)
+	char:SetAttribute("Blocking", true)
+	for _ = 1, 3 do M.step(1/30) end
 	char:SetAttribute("Blocking", false)
 	for _ = 1, 3 do M.step(1/30) end
 	check("guard: released, the arms are let go", not Anims.Track(char, "Block").IsPlaying)

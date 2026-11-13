@@ -133,6 +133,15 @@ local ok, err = pcall(function()
 	if not medOk then
 		warn("[Medicine] failed:", medErr)
 	end
+	-- limbs that break and come off (after Medicine: it wraps the wounds' events)
+	local limbOk, limbErr = pcall(function()
+		local Dismember = require(Server.Dismember)
+		Dismember.Init()
+		require(Server.Combat).LimbHit = Dismember.Hit
+	end)
+	if not limbOk then
+		warn("[Dismember] failed:", limbErr)
+	end
 end)
 if not ok then
 	warn(("=============================\nENDEAVOR STARTUP FAILED: %s\n============================="):format(tostring(err)))

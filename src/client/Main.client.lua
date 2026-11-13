@@ -77,6 +77,7 @@ local Style = require(script.Parent:WaitForChild("Style")) -- lock-on, two weapo
 Style.Start(gui)
 require(script.Parent:WaitForChild("Bay")).Start(gui) -- round 6: the party list, the work-order clock, dark bays
 require(script.Parent:WaitForChild("Make")).Start() -- round 7: K held fires the arm; the cable; a dog's nose
+require(script.Parent:WaitForChild("Limbs")).Start() -- limbs that break and come off: blood, the reaction, the limp
 require(script.Parent:WaitForChild("Build")).Start() -- round 5: K fires the core's active; the open book vow
 
 -- A safety net for everything built outside panel/addRow: buttons get the theme's shape, font and a hover;
@@ -2227,6 +2228,8 @@ end
 local swinging = setmetatable({}, { __mode = "k" }) -- char -> state
 local swingFx, endSwing
 do
+local ArmIK = require(script.Parent:WaitForChild("ArmIK"))
+ArmIK.Start()
 local DOWN = Vector3.new(0, -1, 0)
 local function armTo(dirTorso)
 	local d = dirTorso.Unit
@@ -2241,18 +2244,30 @@ local REST_YAW, REST_PITCH = 12, -75
 local function lerpN(a, b, f)
 	return a + (b - a) * f
 end
-local function swingPose(char, yaw, pitch, twist, lean, bodyAnimated)
+-- The arms of a swing (client/ArmIK): the right hand is put on the traced blade's base from the real shoulder, the
+-- elbow bent, the weapon turned so its tip is the traced tip. `pull` < 1 draws the hand in toward the shoulder (the
+-- chambered wind-up; the strike throws it out to full reach). Two-handed weapons take the off hand along the haft.
+local TWO_HAND = { Hammer = -0.62, Spear = 0.95 }
+local function swingPose(char, yaw, pitch, twist, lean, bodyAnimated, st, pull)
 	local twistRad = math.rad(-twist)
-	local dirRoot = Vector3.new(math.sin(math.rad(yaw)) * math.cos(math.rad(pitch)), math.sin(math.rad(pitch)), -math.cos(math.rad(yaw)) * math.cos(math.rad(pitch)))
-	local dirTorso = CFrame.Angles(0, -twistRad, 0):VectorToWorldSpace(dirRoot)
-	Joints.Set(char, "RightShoulder", armTo(dirTorso))
-	Joints.Set(char, "RightElbow", CFrame.identity)
-	Joints.Set(char, "RightWrist", CFrame.Angles(math.rad(-90), 0, 0)) -- the weapon in line with the arm
+	local dir = Vector3.new(math.sin(math.rad(yaw)) * math.cos(math.rad(pitch)), math.sin(math.rad(pitch)), -math.cos(math.rad(yaw)) * math.cos(math.rad(pitch)))
+	local scale = (st and st.scale) or Swings.ScaleOf(char)
+	local shoulder = Swings.ShoulderOffset * scale
+	local hand = shoulder + dir * (Swings.HandReach * scale * (pull or 1))
+	local tip = shoulder + dir * math.max(((st and st.range) or 6) * scale, Swings.HandReach * scale + 1)
+	local aim = (tip - hand).Unit
+	ArmIK.Hold(char, "Right", hand, aim)
+	local two = st and st.twoHand
+	if two then
+		ArmIK.Hold(char, "Left", hand + aim * (two * scale), nil, { Optional = true })
+	end
 	if bodyAnimated then
 		return -- the Swing_<shape> animation turns the torso, steps the legs and swings the off arm
 	end
 	Joints.Set(char, "Waist", CFrame.Angles(math.rad(lean), twistRad, 0))
-	Joints.Set(char, "LeftShoulder", CFrame.Angles(math.rad(25 + twist * 0.3), 0, math.rad(-12)))
+	if not two then
+		Joints.Set(char, "LeftShoulder", CFrame.Angles(math.rad(25 + twist * 0.3), 0, math.rad(-12)))
+	end
 end
 local function trailSegment(from, to, heavy)
 	local length = (to - from).Magnitude
@@ -2373,22 +2388,18 @@ RunService.RenderStepped:Connect(function(dt)
 		local shoulderR = Swings.ShoulderOffset * scale
 		local shoulderL = Vector3.new(-shoulderR.X, shoulderR.Y, shoulderR.Z)
 		if char:FindFirstChild("HeldWeapon") then
-			local arm = armTo(g.hand - shoulderR)
-			Joints.Set(char, "RightShoulder", arm)
-			Joints.Set(char, "RightElbow", CFrame.identity)
-			-- the weapon leaves the fist along hand -Z: turn the wrist so it runs along the guard line
-			Joints.Set(char, "RightWrist", rotFromTo(FWD, arm:VectorToObjectSpace(g.blade)))
-			-- the off hand braces the blade a little way up from the grip
-			local brace = g.hand + g.blade * (0.9 * scale)
-			Joints.Set(char, "LeftShoulder", armTo(brace - shoulderL))
-			Joints.Set(char, "LeftElbow", CFrame.identity)
+			-- the weapon runs along the guard line from the right hand; the off hand braces it a little way up
+			ArmIK.Hold(char, "Right", g.hand, g.blade, { Pole = Vector3.new(0.7, -0.6, 0.2) })
+			ArmIK.Hold(char, "Left", g.hand + g.blade * (0.9 * scale), nil, { Optional = true, Pole = Vector3.new(-0.7, -0.6, 0.2) })
 		else
 			-- fists: forearms up in front of the face, leaning toward the threat
-			local lean = CFrame.Angles(0, math.rad(-yaw * 0.4), 0)
-			Joints.Set(char, "RightShoulder", lean * CFrame.Angles(math.rad(if high then 95 else 70), 0, math.rad(-25)))
-			Joints.Set(char, "LeftShoulder", lean * CFrame.Angles(math.rad(if high then 95 else 70), 0, math.rad(25)))
-			Joints.Set(char, "RightElbow", CFrame.Angles(math.rad(75), 0, 0))
-			Joints.Set(char, "LeftElbow", CFrame.Angles(math.rad(75), 0, 0))
+			local r = math.rad(yaw * 0.4)
+			local y = (if high then 2.2 else 1.85) * scale
+			local function at(x)
+				return Vector3.new((x * math.cos(r) + 0.95 * math.sin(r)) * scale, y, (x * math.sin(r) - 0.95 * math.cos(r)) * scale)
+			end
+			ArmIK.Hold(char, "Right", at(0.3), Vector3.new(0, 1, -0.15), { Pole = Vector3.new(0.5, -0.85, 0) })
+			ArmIK.Hold(char, "Left", at(-0.3), Vector3.new(0, 1, -0.15), { Pole = Vector3.new(-0.5, -0.85, 0) })
 		end
 	end
 end)
@@ -2422,8 +2433,9 @@ RunService.RenderStepped:Connect(function()
 		if e < st.windup then
 			-- wind-up: from rest to past the start of the arc (the coil), torso turned with it
 			local w = 1 - (1 - e / math.max(st.windup, 1e-3)) ^ 3
-			local cy, cp = sy + (sy - my) * 0.25, sp + (sp - mp) * 0.25
-			swingPose(char, lerpN(REST_YAW, cy, w), lerpN(REST_PITCH, cp, w), cy * 0.4 * w, -6 * w, st.body)
+			local coil = if st.heavy then 0.42 else 0.3
+			local cy, cp = sy + (sy - my) * coil, sp + (sp - mp) * coil
+			swingPose(char, lerpN(REST_YAW, cy, w), lerpN(REST_PITCH, cp, w), cy * 0.4 * w, -6 * w, st.body, st, lerpN(0.92, st.chamber, w))
 		elseif e < st.windup + st.active then
 			-- the strike: the arc itself, the torso uncoiling through it, weight forward
 			local u = (e - st.windup) / st.active
@@ -2440,7 +2452,8 @@ RunService.RenderStepped:Connect(function()
 				end
 			end
 			local y, p = Swings.Angles(st.shape, u)
-			swingPose(char, y, p, lerpN(sy * 0.4, ey * 0.4, u), lerpN(-6, 10, u), st.body)
+			local out = math.clamp(u / 0.55, 0, 1)
+			swingPose(char, y, p, lerpN(sy * 0.4, ey * 0.4, u), lerpN(-6, 10, u), st.body, st, lerpN(st.chamber, 1, out * out * (3 - 2 * out)))
 			local _, tip = Swings.Blade(root.CFrame, st.shape, u, st.range * st.scale, st.scale)
 			if st.lastTip then
 				trailSegment(st.lastTip, tip, st.heavy)
@@ -2449,11 +2462,11 @@ RunService.RenderStepped:Connect(function()
 		elseif e < st.finish then
 			-- follow-through: carries past the end of the arc, then settles back to rest
 			local r = (e - st.windup - st.active) / math.max(st.finish - st.windup - st.active, 1e-3)
-			local over = math.sin(math.min(r * 2, 1) * math.pi / 2) * 0.18
+			local over = math.sin(math.min(r * 2, 1) * math.pi / 2) * (if st.heavy then 0.34 else 0.24)
 			local fy, fp = ey + (ey - my) * over, ep + (ep - mp) * over
 			local back = math.clamp((r - 0.35) / 0.65, 0, 1)
 			back = back * back * (3 - 2 * back)
-			swingPose(char, lerpN(fy, REST_YAW, back), lerpN(fp, REST_PITCH, back), lerpN(ey * 0.4, 0, back), lerpN(10, 0, back), st.body)
+			swingPose(char, lerpN(fy, REST_YAW, back), lerpN(fp, REST_PITCH, back), lerpN(ey * 0.4, 0, back), lerpN(10, 0, back), st.body, st, lerpN(1, 0.9, back))
 		else
 			endSwing(char, false)
 		end
@@ -2488,6 +2501,10 @@ swingFx = function(char, label, shape, windup, active, finish, range)
 			active = tonumber(active) or 0.15, finish = math.max(tonumber(finish) or 0.6, (tonumber(windup) or 0.2) + (tonumber(active) or 0.15) + 0.15),
 			range = tonumber(range) or 7, scale = Swings.ScaleOf(char), heavy = heavy }
 		local st = swinging[char]
+		local wdef = Weapons.Defs[char:GetAttribute("Weapon") or ""]
+		local family = wdef and wdef.Family
+		st.chamber = if Swings.Shapes[shape] and Swings.Shapes[shape].Thrust then 0.5 else 0.66 -- how far the hand is drawn in for the wind-up
+		st.twoHand = TWO_HAND[family] or (if heavy and family ~= "Fists" and family ~= nil then -0.42 else nil)
 		st.body = Anims.Has("Swing_" .. shape) -- the body is animated (here or, for other players, by their client)
 		Anims.StopPrefix(char, "Swing_", 0.05)
 		Anims.Stop(char, "Recoil", 0.05)

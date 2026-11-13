@@ -175,7 +175,7 @@ local function figure(sim, cf, color, health, name)
 			hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 			hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 			model.Parent = sim.Folder
-			Rigs.Animate(model, hum)
+			Rigs.Animate(model, hum, true)
 			return model, hum, root
 		elseif model then
 			model:Destroy()

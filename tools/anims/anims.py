@@ -42,6 +42,10 @@ def mirror(p):
         out[other] = (v[0], -v[1], -v[2], -v[3], v[4], v[5])
     return out
 
+def full(v):
+    v = list(v) + [0] * (6 - len(v))
+    return v
+
 def merge(*ps):
     out = {}
     for p in ps:
@@ -53,19 +57,31 @@ STANCE = {  # fighting stance: knees soft, left foot forward, guard hand up, tor
     "LowerTorso": (0, -8, 0, 0, -0.18, 0), "UpperTorso": (-4, 4, 0), "Head": (2, 4, 0),
     "LeftUpperLeg": (16, 8, -4), "LeftLowerLeg": (-18, 0, 0), "LeftFoot": (4, 0, 0),
     "RightUpperLeg": (-6, 8, 6), "RightLowerLeg": (-16, 0, 0), "RightFoot": (12, 0, 0),
-    "LeftUpperArm": (35, 0, -14), "LeftLowerArm": (55, 0, 0),
-    "RightUpperArm": (18, 0, 10), "RightLowerArm": (30, 0, 0),
+    "LeftUpperArm": (20, 0, -9), "LeftLowerArm": (50, 0, 0),
+    "RightUpperArm": (10, 0, 8), "RightLowerArm": (28, 0, 0),
 }
 SWING_REST = merge(STANCE, {k: (0, 0, 0) for k in RIGHT_ARM})
 
+def _scaled(pose, k, parts=("LowerTorso", "UpperTorso")):
+    """The pose with the turn and lean of the hips and chest pushed k times further (the overshoot of a blow)."""
+    out = dict(pose)
+    for part in parts:
+        if part in pose:
+            v = full(pose[part])
+            out[part] = (v[0] * k, v[1] * k, v[2] * k, v[3], v[4], v[5] * k)
+    return out
+
 def swing(coil, mid, end, heavy_drop=0.0):
-    """A swing body: rest -> coil (wind-up) -> mid -> end (strike) -> rest."""
-    return dict(length=1.0, loop=False, priority="Action", keys=[
-        (0.0, SWING_REST, "CubicV2", "InOut"),
-        (0.4, merge(SWING_REST, coil), "Cubic", "In"),
+    """A swing body: rest -> coil (wind-up, reached early and sunk into) -> mid -> end (strike) -> past the end
+    (the weight carries through) -> held -> rest. The arms are not here: the client solves them (client/ArmIK)."""
+    return dict(length=1.0, loop=False, priority="Action", ground=True, keys=[
+        (0.0, SWING_REST, "Cubic", "Out"),
+        (0.26, merge(SWING_REST, coil), "CubicV2", "InOut"),
+        (0.4, merge(SWING_REST, _scaled(coil, 1.12)), "Cubic", "In"),
         (0.5, merge(SWING_REST, mid), "Linear", "InOut"),
         (0.6, merge(SWING_REST, end), "Cubic", "Out"),
-        (0.75, merge(SWING_REST, end), "CubicV2", "InOut"),  # hold the follow-through a moment
+        (0.68, merge(SWING_REST, _scaled(end, 1.14)), "CubicV2", "InOut"),
+        (0.82, merge(SWING_REST, end), "CubicV2", "InOut"),  # hold the follow-through a moment
         (1.0, SWING_REST, "Linear", "InOut"),
     ])
 
@@ -232,7 +248,7 @@ ARMS_FREE = {k: (0, 0, 0) for k in ("LeftUpperArm", "LeftLowerArm", "LeftHand", 
 GUARD = merge(ARMS_FREE, {"LowerTorso": (0, -6, 0, 0, -0.28, 0.05), "UpperTorso": (-8, 6, 0), "Head": (6, -4, 0),
          "LeftUpperLeg": (18, 6, -6), "LeftLowerLeg": (-26, 0, 0), "LeftFoot": (8, 0, 0),
          "RightUpperLeg": (-10, 6, 6), "RightLowerLeg": (-24, 0, 0), "RightFoot": (16, 0, 0)})
-BLOCK = dict(length=1.6, loop=True, priority="Action", keys=[
+BLOCK = dict(length=1.6, loop=True, priority="Action", ground=True, keys=[
     (0.0, GUARD, "CubicV2", "InOut"),
     (0.8, merge(GUARD, {"UpperTorso": (-6, 6, 0), "LowerTorso": (0, -6, 0, 0, -0.25, 0.05)}), "CubicV2", "InOut"),
     (1.6, GUARD, "Linear", "InOut"),
@@ -253,35 +269,57 @@ BLOCK_HIT = dict(length=0.35, loop=False, priority="Action", keys=[
 ])
 
 # idle fighting stance with breathing and a slow weight shift
-IDLE = dict(length=2.4, loop=True, priority="Idle", keys=[
+IDLE = dict(length=2.4, loop=True, priority="Idle", ground=True, keys=[
     (0.0, STANCE, "CubicV2", "InOut"),
     (1.2, merge(STANCE, {"LowerTorso": (0, -6, 0, 0, -0.21, 0), "UpperTorso": (-2, 4, 0), "Head": (0, 6, 0),
-                         "LeftUpperArm": (37, 0, -14), "RightUpperArm": (20, 0, 10)}), "CubicV2", "InOut"),
+                         "LeftUpperArm": (22, 0, -9), "RightUpperArm": (12, 0, 8)}), "CubicV2", "InOut"),
     (2.4, STANCE, "Linear", "InOut"),
 ])
 
-def cycle(length, stride, knee, tuck, arm, elbow, lean, bob, twist):
-    """Run/walk cycle: left contact, passing, right contact, passing."""
-    contact = {"LowerTorso": (0, twist, 0, 0, -bob, 0), "UpperTorso": (-lean, -twist * 1.6, 0), "Head": (lean * 0.6, twist * 0.6, 0),
-               "LeftUpperLeg": (stride, 0, 0), "LeftLowerLeg": (-knee, 0, 0), "LeftFoot": (-8, 0, 0),
-               "RightUpperLeg": (-stride * 0.8, 0, 0), "RightLowerLeg": (-knee * 1.6, 0, 0), "RightFoot": (20, 0, 0),
-               "RightUpperArm": (arm, 0, 6), "RightLowerArm": (elbow * 1.3, 0, 0),
-               "LeftUpperArm": (-arm * 0.8, 0, -6), "LeftLowerArm": (elbow * 0.7, 0, 0)}
-    passing = {"LowerTorso": (0, 0, 0, 0, bob * 0.6, 0), "UpperTorso": (-lean, 0, 0), "Head": (lean * 0.6, 0, 0),
-               "LeftUpperLeg": (-stride * 0.15, 0, 0), "LeftLowerLeg": (-knee * 0.8, 0, 0),
-               "RightUpperLeg": (stride * 0.45, 0, 0), "RightLowerLeg": (-tuck, 0, 0), "RightFoot": (-10, 0, 0),
-               "RightUpperArm": (arm * 0.1, 0, 6), "RightLowerArm": (elbow, 0, 0),
-               "LeftUpperArm": (arm * 0.1, 0, -6), "LeftLowerArm": (elbow, 0, 0)}
-    return dict(length=length, loop=True, priority="Movement", keys=[
-        (0.0, contact, "CubicV2", "InOut"),
-        (length * 0.25, passing, "CubicV2", "InOut"),
-        (length * 0.5, mirror(contact), "CubicV2", "InOut"),
-        (length * 0.75, mirror(passing), "CubicV2", "InOut"),
-        (length, contact, "Linear", "InOut"),
-    ])
+def _sm(u):
+    u = max(0.0, min(1.0, u))
+    return u * u * (3 - 2 * u)
 
-RUN = cycle(0.5, stride=50, knee=16, tuck=100, arm=55, elbow=75, lean=15, bob=0.2, twist=9)  # ~11.5 studs/s at speed 1
-WALK = cycle(0.9, stride=30, knee=8, tuck=55, arm=26, elbow=22, lean=4, bob=0.1, twist=5)  # ~4.5 studs/s at speed 1
+def _leg(p, stride, back, soft, tuck, push, duty=0.5):
+    """One leg at phase p (0 = heel strike ahead, 0.5 = toe-off behind, then the swing): hip, knee, foot degrees.
+    Through the stance the hip turns at a steady rate, so the planted foot moves back at the body's speed."""
+    p = p % 1.0
+    if p < duty:
+        s = p / duty
+        hip = stride + (-stride * back - stride) * s
+        knee = -(soft + 10 * math.sin(math.pi * _sm(s / 0.35)) * (1 - _sm((s - 0.35) / 0.3)) + push * _sm((s - 0.7) / 0.3))
+        foot = -(hip + knee) + 12 * (1 - _sm(s / 0.14)) - 22 * _sm((s - 0.68) / 0.32)
+    else:
+        s = (p - duty) / (1 - duty)
+        hip = -stride * back + (stride + stride * back) * _sm(s * 1.08)
+        knee = -(soft + push * (1 - _sm(s / 0.5)) + tuck * math.sin(math.pi * min(1.0, s * 1.12)) ** 1.3)
+        flat0 = -(-stride * back - (soft + push)) - 22
+        flat1 = -(stride - soft) + 12
+        foot = flat0 + (flat1 - flat0) * _sm(s)
+    return hip, knee, foot
+
+def gait(length, stride, back=0.85, soft=6, tuck=50, push=22, arm=24, elbow=18, bend=14, lean=4, twist=5, sway=2, duty=0.5, hands=True, n=12):
+    """A walk / jog / run cycle from one leg function; tools at the bottom ground every key on the floor."""
+    keys = []
+    for i in range(n + 1):
+        ph = (i % n) / n
+        rh, rk, rf = _leg(ph, stride, back, soft, tuck, push, duty)
+        lh, lk, lf = _leg(ph + 0.5, stride, back, soft, tuck, push, duty)
+        c = math.cos(2 * math.pi * ph)            # +1 as the right heel strikes
+        sn = math.sin(2 * math.pi * ph)
+        pose = {"LowerTorso": (0, twist * c, sway * sn, 0, 0, 0), "UpperTorso": (-lean, -twist * 1.7 * c, -sway * 1.2 * sn), "Head": (lean * 0.7, twist * 0.7 * c, 0),
+                "RightUpperLeg": (rh, 0, 0), "RightLowerLeg": (rk, 0, 0), "RightFoot": (rf, 0, 0),
+                "LeftUpperLeg": (lh, 0, 0), "LeftLowerLeg": (lk, 0, 0), "LeftFoot": (lf, 0, 0)}
+        if hands:
+            pose.update({"RightUpperArm": (-arm * c - 4, 0, 5), "RightLowerArm": (elbow + bend * (1 - c) / 2, 0, 0),
+                         "LeftUpperArm": (arm * c - 4, 0, -5), "LeftLowerArm": (elbow + bend * (1 + c) / 2, 0, 0)})
+        keys.append((length * i / n, pose, "Linear", "InOut"))
+    return dict(length=length, loop=True, priority="Movement", keys=keys, ground=True, duty=duty)
+
+# Speeds (studs a second at playback speed 1) are printed by `anims.py --speeds`; character/Animate divides by them.
+WALK = gait(0.95, stride=27, duty=0.56, soft=5, tuck=42, push=18, arm=18, elbow=14, bend=10, lean=3, twist=5, sway=2)
+JOG = gait(0.62, stride=40, back=0.8, duty=0.36, n=16, soft=14, tuck=78, push=26, arm=38, elbow=62, bend=22, lean=9, twist=8, sway=1.5)
+RUN = gait(0.5, stride=50, back=0.8, duty=0.3, n=16, soft=18, tuck=104, push=30, arm=56, elbow=78, bend=20, lean=16, twist=10, sway=1)
 
 # the armoured dash (Q to the side or back when not in light gear): a heavy push off one leg, guard kept up,
 # the body sinking under the weight and catching itself
@@ -308,7 +346,7 @@ CROUCH = {"LowerTorso": (0, -6, 0, 0, -1.0, 0), "UpperTorso": (-26, 4, 0), "Head
           "LeftUpperLeg": (70, 6, -4), "LeftLowerLeg": (-115, 0, 0), "LeftFoot": (10, 0, 0),
           "RightUpperLeg": (35, 6, 6), "RightLowerLeg": (-115, 0, 0), "RightFoot": (42, 0, 0),
           "LeftUpperArm": (42, 0, -12), "LeftLowerArm": (60, 0, 0), "RightUpperArm": (30, 0, 10), "RightLowerArm": (45, 0, 0)}
-CROUCH_IDLE = dict(length=2.8, loop=True, priority="Idle", keys=[
+CROUCH_IDLE = dict(length=2.8, loop=True, priority="Idle", ground=True, keys=[
     (0.0, CROUCH, "CubicV2", "InOut"),
     (1.4, merge(CROUCH, {"LowerTorso": (0, -4, 0, 0, -1.04, 0), "UpperTorso": (-24, 2, 0), "Head": (20, 8, 0)}), "CubicV2", "InOut"),
     (2.8, CROUCH, "Linear", "InOut"),
@@ -323,7 +361,7 @@ def crouch_cycle(length):
                           "LeftUpperLeg": (60, 0, 0), "LeftLowerLeg": (-118, 0, 0), "LeftFoot": (30, 0, 0),
                           "RightUpperLeg": (78, 0, 0), "RightLowerLeg": (-140, 0, 0), "RightFoot": (20, 0, 0),
                           "RightUpperArm": (26, 0, 8), "RightLowerArm": (55, 0, 0), "LeftUpperArm": (26, 0, -8), "LeftLowerArm": (55, 0, 0)})
-    return dict(length=length, loop=True, priority="Movement", keys=[
+    return dict(length=length, loop=True, priority="Movement", ground=True, keys=[
         (0.0, contact, "CubicV2", "InOut"), (length * 0.25, passing, "CubicV2", "InOut"),
         (length * 0.5, mirror(contact), "CubicV2", "InOut"), (length * 0.75, mirror(passing), "CubicV2", "InOut"),
         (length, contact, "Linear", "InOut"),
@@ -629,6 +667,44 @@ _CARRY = {"UpperTorso": (-8, 0, -4), "Head": (4, 8, 0), "RightUpperArm": (150, 0
 CARRY = dict(length=2.0, loop=True, priority="Action", keys=[
     (0.0, _CARRY, "CubicV2", "InOut"), (1.0, merge(_CARRY, {"UpperTorso": (-9, 0, -3)}), "CubicV2", "InOut"), (2.0, _CARRY, "Linear", "InOut"),
 ])
+# Dragging a body by the collar (2026-11-13, replaces the shoulder carry): bent low over it from the crouch, both
+# arms down to the floor ahead. Arms and chest only: the crouch's own idle and walk move the legs underneath.
+_DRAG = {"UpperTorso": (-52, 0, 0), "Head": (38, 0, 0), "RightUpperArm": (62, 0, -6), "RightLowerArm": (8, 0, 0), "RightHand": (0, 0, 0),
+         "LeftUpperArm": (62, 0, 6), "LeftLowerArm": (8, 0, 0), "LeftHand": (0, 0, 0)}
+DRAG = dict(length=1.6, loop=True, priority="Action", keys=[
+    (0.0, _DRAG, "CubicV2", "InOut"), (0.8, merge(_DRAG, {"UpperTorso": (-49, 0, 0), "RightUpperArm": (58, 0, -6), "LeftUpperArm": (58, 0, 6)}), "CubicV2", "InOut"), (1.6, _DRAG, "Linear", "InOut"),
+])
+# A limb comes off (2026-11-13; server/Dismember, client/Limbs). The arm: the body is wrenched round after it, the
+# other hand goes to the stump, the knees give, then it straightens bent over the wound. The leg: down onto that knee,
+# a hand to the floor, then up again on the other leg. Written for the right side; the left is the mirror.
+_LOSE_ARM_HIT = {"LowerTorso": (4, -26, 6, 0.15, -0.3, 0.25), "UpperTorso": (10, -34, 10), "Head": (-16, 30, -8),
+                 "RightUpperArm": (-30, 0, 38), "RightLowerArm": (10, 0, 0), "LeftUpperArm": (40, 0, -30), "LeftLowerArm": (50, 0, 0),
+                 "LeftUpperLeg": (24, 0, -8), "LeftLowerLeg": (-40, 0, 0), "RightUpperLeg": (-12, 0, 10), "RightLowerLeg": (-34, 0, 0), "RightFoot": (20, 0, 0)}
+_LOSE_ARM_HOLD = {"LowerTorso": (-6, 10, 0, 0, -0.5, 0), "UpperTorso": (-26, 14, -8), "Head": (22, -6, 0),
+                  "RightUpperArm": (14, 0, 4), "RightLowerArm": (20, 0, 0), "LeftUpperArm": (34, -58, -6), "LeftLowerArm": (96, 0, 0),
+                  "LeftUpperLeg": (38, 0, -6), "LeftLowerLeg": (-56, 0, 0), "LeftFoot": (10, 0, 0), "RightUpperLeg": (10, 0, 6), "RightLowerLeg": (-48, 0, 0), "RightFoot": (30, 0, 0)}
+_LOSE_ARM_END = {"LowerTorso": (0, 4, 0, 0, -0.2, 0), "UpperTorso": (-14, 8, -4), "Head": (10, -4, 0),
+                 "RightUpperArm": (8, 0, 4), "RightLowerArm": (16, 0, 0), "LeftUpperArm": (30, -54, -6), "LeftLowerArm": (100, 0, 0),
+                 "LeftUpperLeg": (16, 0, -5), "LeftLowerLeg": (-22, 0, 0), "RightUpperLeg": (-4, 0, 6), "RightLowerLeg": (-18, 0, 0), "RightFoot": (12, 0, 0)}
+LOSE_ARM_R = dict(length=1.5, loop=False, priority="Action2", ground=True, keys=[
+    (0.0, STANCE, "Cubic", "Out"), (0.1, _LOSE_ARM_HIT, "CubicV2", "InOut"), (0.45, _LOSE_ARM_HOLD, "CubicV2", "InOut"),
+    (0.95, merge(_LOSE_ARM_HOLD, {"UpperTorso": (-30, 12, -8), "Head": (26, -6, 0)}), "CubicV2", "InOut"), (1.5, _LOSE_ARM_END, "Linear", "InOut"),
+])
+LOSE_ARM_L = dict(LOSE_ARM_R, keys=[(t, mirror(p) if p is not STANCE else STANCE, st, d) for t, p, st, d in LOSE_ARM_R["keys"]])
+_LOSE_LEG_HIT = {"LowerTorso": (6, -10, -8, 0.1, -0.5, 0.1), "UpperTorso": (8, -12, -10), "Head": (-12, 10, 0),
+                 "RightUpperLeg": (-10, 0, 14), "RightLowerLeg": (-60, 0, 0), "LeftUpperLeg": (30, 0, -6), "LeftLowerLeg": (-50, 0, 0),
+                 "RightUpperArm": (30, 0, 50), "RightLowerArm": (30, 0, 0), "LeftUpperArm": (40, 0, -46), "LeftLowerArm": (30, 0, 0)}
+_LOSE_LEG_KNEEL = {"LowerTorso": (-14, 0, -6, 0, -1.3, 0), "UpperTorso": (-34, 0, -6), "Head": (30, 0, 0),
+                   "RightUpperLeg": (4, 0, 4), "RightLowerLeg": (-96, 0, 0), "LeftUpperLeg": (98, 0, -8), "LeftLowerLeg": (-104, 0, 0), "LeftFoot": (10, 0, 0),
+                   "RightUpperArm": (58, 0, 14), "RightLowerArm": (10, 0, 0), "LeftUpperArm": (44, 0, -10), "LeftLowerArm": (70, 0, 0)}
+_LOSE_LEG_END = {"LowerTorso": (0, 0, -5, 0, -0.25, 0), "UpperTorso": (-12, 0, -6), "Head": (8, 0, 0),
+                 "RightUpperLeg": (6, 0, 6), "RightLowerLeg": (-30, 0, 0), "LeftUpperLeg": (14, 0, -6), "LeftLowerLeg": (-22, 0, 0),
+                 "RightUpperArm": (18, 0, 26), "RightLowerArm": (30, 0, 0), "LeftUpperArm": (22, 0, -22), "LeftLowerArm": (36, 0, 0)}
+LOSE_LEG_R = dict(length=1.8, loop=False, priority="Action2", keys=[
+    (0.0, STANCE, "Cubic", "Out"), (0.12, _LOSE_LEG_HIT, "CubicV2", "InOut"), (0.5, _LOSE_LEG_KNEEL, "CubicV2", "InOut"),
+    (1.1, merge(_LOSE_LEG_KNEEL, {"UpperTorso": (-38, 0, -6)}), "CubicV2", "InOut"), (1.8, _LOSE_LEG_END, "Linear", "InOut"),
+])
+LOSE_LEG_L = dict(LOSE_LEG_R, keys=[(t, mirror(p) if p is not STANCE else STANCE, st, d) for t, p, st, d in LOSE_LEG_R["keys"]])
 # Back to a wall, the pistol up by the right shoulder.
 _COVER = {"LowerTorso": (0, 0, 0, 0, -0.12, 0.2), "UpperTorso": (5, 0, 0), "Head": (-4, 0, 0),
           "RightUpperArm": (13, 15, 7), "RightLowerArm": (116, 20, 0), "RightHand": (20, 8, 24), "LeftUpperArm": (6, 0, -10), "LeftLowerArm": (24, 0, 0),
@@ -642,12 +718,12 @@ ANIMS = {
     "Rifle_Ready": RIFLE_READY, "Aim_Rifle": AIM_RIFLE, "Reload_Rifle": RELOAD_RIFLE,
     "Pistol_Ready": PISTOL_READY, "Aim_Pistol": AIM_PISTOL, "Reload_Pistol": RELOAD_PISTOL, "HandsUp": HANDS_UP,
     "Takedown_Throw": TAKEDOWN_THROW, "Takedown_ThrowVictim": TAKEDOWN_THROW_VICTIM, "Takedown_Shove": TAKEDOWN_SHOVE,
-    "Takedown_ShoveVictim": TAKEDOWN_SHOVE_VICTIM, "Hold": HOLD, "Held": HELD, "Carry": CARRY, "Cover_Idle": COVER_IDLE,
+    "Takedown_ShoveVictim": TAKEDOWN_SHOVE_VICTIM, "Hold": HOLD, "Held": HELD, "Carry": CARRY, "Drag": DRAG, "Lose_ArmR": LOSE_ARM_R, "Lose_ArmL": LOSE_ARM_L, "Lose_LegR": LOSE_LEG_R, "Lose_LegL": LOSE_LEG_L, "Cover_Idle": COVER_IDLE,
     "Swing_SlashR": SLASH_R, "Swing_SlashL": SLASH_L, "Swing_Overhead": OVERHEAD, "Swing_Diagonal": DIAGONAL,
     "Swing_Uppercut": UPPERCUT, "Swing_Thrust": THRUST, "Swing_Jab": JAB,
     "Hit_Front": HIT_FRONT, "Hit_Left": HIT_LEFT, "Hit_Right": HIT_RIGHT, "Hit_High": HIT_HIGH,
     "Stagger": STAGGER, "Recoil": RECOIL, "Block": BLOCK, "Parry": PARRY, "Hit_Heavy": HIT_HEAVY, "Block_Hit": BLOCK_HIT,
-    "Idle": IDLE, "Walk": WALK, "Run": RUN,
+    "Idle": IDLE, "Walk": WALK, "Jog": JOG, "Run": RUN,
     "Step_Left": STEP_LEFT, "Step_Right": STEP_RIGHT, "Step_Back": STEP_BACK,
     "Crouch_Idle": CROUCH_IDLE, "Crouch_Walk": CROUCH_WALK, "Downed": DOWNED,
     "Takedown_Rear": TAKEDOWN_REAR, "Takedown_RearVictim": TAKEDOWN_REAR_VICTIM, "Takedown_Drop": TAKEDOWN_DROP,
@@ -671,10 +747,6 @@ def mm(a, b):
 
 def mv(a, v):
     return [sum(a[i][k] * v[k] for k in range(3)) for i in range(3)]
-
-def full(v):
-    v = list(v) + [0] * (6 - len(v))
-    return v
 
 # ---------- rbxmx ----------
 def cf_xml(v):
@@ -717,15 +789,18 @@ def write_rbxmx(name, a, path):
     open(path, "w").write("\n".join(out))
 
 # ---------- stick-figure preview (forward kinematics on the Conduit's proportions) ----------
-JOINT_AT = {  # where each part's joint to its parent sits at rest (studs, root at the LowerTorso centre)
-    "LowerTorso": (0, 0, 0), "UpperTorso": (0, 0.35, 0), "Head": (0, 1.85, 0),
-    "LeftUpperArm": (-1.31, 1.63, 0), "LeftLowerArm": (-1.31, 0.63, 0), "LeftHand": (-1.31, -0.32, 0),
-    "RightUpperArm": (1.31, 1.63, 0), "RightLowerArm": (1.31, 0.63, 0), "RightHand": (1.31, -0.32, 0),
-    "LeftUpperLeg": (-0.48, -0.35, 0), "LeftLowerLeg": (-0.48, -1.4, 0), "LeftFoot": (-0.48, -2.4, 0),
-    "RightUpperLeg": (0.48, -0.35, 0), "RightLowerLeg": (0.48, -1.4, 0), "RightFoot": (0.48, -2.4, 0),
+JOINT_AT = {  # where each part's joint to its parent sits at rest (studs, root at the LowerTorso centre): the one-piece
+    # Conduit (tools/models/figure.py Skeleton, H 5.94), joints where common/Rigs.lua puts them
+    "LowerTorso": (0, 0, 0), "UpperTorso": (0, 0.327, 0), "Head": (0, 1.764, 0),
+    "LeftUpperArm": (-0.858, 1.544, 0), "LeftLowerArm": (-0.858, 0.487, 0), "LeftHand": (-0.858, -0.416, 0),
+    "RightUpperArm": (0.858, 1.544, 0), "RightLowerArm": (0.858, 0.487, 0), "RightHand": (0.858, -0.416, 0),
+    "LeftUpperLeg": (-0.341, -0.327, 0), "LeftLowerLeg": (-0.341, -1.574, 0), "LeftFoot": (-0.341, -2.798, -0.16),
+    "RightUpperLeg": (0.341, -0.327, 0), "RightLowerLeg": (0.341, -1.574, 0), "RightFoot": (0.341, -2.798, -0.16),
 }
-TIP = {"Head": (0, 3.05, 0), "LeftHand": (-1.31, -0.74, 0), "RightHand": (1.31, -0.74, 0),
-       "LeftFoot": (-0.48, -2.82, -0.6), "RightFoot": (0.48, -2.82, -0.6), "UpperTorso": (0, 1.85, 0)}
+FLOOR = -3.178
+TIP = {"Head": (0, 2.762, 0), "LeftHand": (-0.858, -0.974, 0), "RightHand": (0.858, -0.974, 0),
+       "LeftFoot": (-0.341, FLOOR, -0.62), "RightFoot": (0.341, FLOOR, -0.62), "UpperTorso": (0, 1.764, 0)}
+HEEL = {"LeftFoot": (-0.341, FLOOR, 0.30), "RightFoot": (0.341, FLOOR, 0.30)}
 
 def fk(pose):
     world = {"HumanoidRootPart": ([[1, 0, 0], [0, 1, 0], [0, 0, 1]], [0, 0, 0])}
@@ -744,7 +819,37 @@ def fk(pose):
         if part in TIP:
             t = TIP[part]
             pts[part + "_tip"] = [a + b for a, b in zip(mv(R, [t[i] - j[i] for i in range(3)]), o)]
+        if part in HEEL:
+            t = HEEL[part]
+            pts[part + "_heel"] = [a + b for a, b in zip(mv(R, [t[i] - j[i] for i in range(3)]), o)]
     return pts
+
+def lowest(pose):
+    pts = fk(pose)
+    return min(pts[k][1] for k in ("LeftFoot_tip", "RightFoot_tip", "LeftFoot_heel", "RightFoot_heel"))
+
+def grounded(a):
+    """Every key's hips are moved so the lower foot stands on the floor (a["ground"])."""
+    keys = []
+    for t, pose, style, direction in a["keys"]:
+        v = full(pose.get("LowerTorso", (0, 0, 0)))
+        v[4] = 0
+        flat = dict(pose, LowerTorso=tuple(v))
+        v[4] = FLOOR - lowest(flat)
+        keys.append((t, dict(pose, LowerTorso=tuple(v)), style, direction))
+    return dict(a, keys=keys)
+
+def speed_of(a):
+    """Studs a second the planted foot pushes the body at playback speed 1: one stance's sweep over its time."""
+    keys = a["keys"]
+    back = 0.0
+    for (t0, p0, _, _), (t1, p1, _, _) in zip(keys, keys[1:]):
+        back += max(0.0, fk(p1)["RightFoot"][2] - fk(p0)["RightFoot"][2])
+    return back / (a.get("duty", 0.5) * a["length"])
+
+for _n, _a in list(ANIMS.items()):
+    if _a.get("ground"):
+        ANIMS[_n] = grounded(_a)
 
 BONES = [("LowerTorso", "UpperTorso"), ("UpperTorso", "UpperTorso_tip"), ("UpperTorso_tip", "Head_tip"),
          ("LeftUpperArm", "LeftLowerArm"), ("LeftLowerArm", "LeftHand"), ("LeftHand", "LeftHand_tip"),
@@ -804,6 +909,11 @@ def upload(name, path):
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
+    if "--speeds" in sys.argv:
+        for name, a in ANIMS.items():
+            if a.get("ground"):
+                print(name, "%.1f" % speed_of(a))
+        sys.exit(0)
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     names = args or list(ANIMS)
     for name in names:

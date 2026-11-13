@@ -1273,7 +1273,10 @@ function Stealth.Release(player, how, aim)
 	return true
 end
 
--- X held over a body: it goes on your shoulder (slow, no sprint). X or G puts it down in front of you.
+-- X held over a body: you crouch and take it by the collar (owner, 2026-11-13: "instead of a carry the player
+-- should grab just like snake in metal gear, and loot them from there or drag them along"). It stays on the floor and
+-- trails behind your hands as you move (slow, no sprint, no standing up); X goes through its pockets from the grab,
+-- G lets go where it lies.
 function Stealth.Carry(player, model)
 	local g = typeof(model) == "Instance" and guards[model]
 	local char = player.Character
@@ -1283,14 +1286,16 @@ function Stealth.Carry(player, model)
 		or (g.root.Position - root.Position).Magnitude > Q.Carry.Reach then
 		return false
 	end
-	g.carriedBy = player
-	carries[player] = g
-	if char:GetAttribute("Crouched") then
-		Stealth.SetCrouch(player, false)
-	end
 	if char:GetAttribute("Sprinting") then
 		Combat.SetSprint(player, false)
 	end
+	Stealth.SetStance(player, "Crouch")
+	g.carriedBy = player
+	carries[player] = g
+	-- where his feet are now: the body trails from the hands toward them
+	local up = g.root.CFrame.UpVector * Vector3.new(1, 0, 1)
+	up = if up.Magnitude > 0.1 then up.Unit else Vector3.new(0, 0, -1)
+	g.dragTail = g.root.Position - up * (Q.Carry.Length - Q.Carry.Collar)
 	char:SetAttribute("Carrying", true)
 	require(script.Parent.Stats).Apply(player)
 	Remotes.World:FireAllClients("Carry", char, g.model, true)
@@ -1303,7 +1308,8 @@ function Stealth.Search(player, model)
 	local g = typeof(model) == "Instance" and guards[model]
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
-	if not (g and root) or g.state ~= "Down" or g.carriedBy or not handsFree(char) or (g.root.Position - root.Position).Magnitude > Q.Carry.Reach + 1 then
+	local mine = g and g.carriedBy == player -- from the grab: the hands are on him already
+	if not (g and root) or g.state ~= "Down" or (g.carriedBy and not mine) or not (mine or handsFree(char)) or (g.root.Position - root.Position).Magnitude > Q.Carry.Reach + 1 then
 		return false
 	end
 	if not g.pockets then
@@ -1334,11 +1340,11 @@ function Stealth.DropBody(player)
 			require(script.Parent.Stats).Apply(player)
 		end
 	end
+	g.dragTail = nil
 	if g.model.Parent then
-		local look = if root then root.CFrame.LookVector * Vector3.new(1, 0, 1) else Vector3.new(0, 0, -1)
-		look = if look.Magnitude > 0.1 then look.Unit else Vector3.new(0, 0, -1)
-		local at = if root then root.Position + look * 1.8 else g.root.Position
-		layDown(g, at, yawOf(look))
+		-- let go: he stays where he was dragged to
+		local up = g.root.CFrame.UpVector * Vector3.new(1, 0, 1)
+		layDown(g, g.root.Position - Vector3.new(0, 0.7, 0), yawOf(if up.Magnitude > 0.1 then up.Unit else Vector3.new(0, 0, -1)))
 		if g.wakeAt then
 			g.wakeAt = math.max(g.wakeAt, os.clock() + 4)
 		end
@@ -1375,7 +1381,20 @@ local function followHands(now)
 		if not (root and hum and hum.Health > 0 and g.model.Parent) then
 			Stealth.DropBody(player)
 		else
-			g.root.CFrame = root.CFrame * Q.Carry.Offset * CFrame.Angles(0, math.pi, 0) * CFrame.Angles(-math.pi / 2, 0, 0)
+			-- the collar is at your hands, on the floor in front of you; the feet trail where they were, pulled along
+			local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+			look = if look.Magnitude > 0.1 then look.Unit else Vector3.new(0, 0, -1)
+			local hands = root.Position + look * Q.Carry.Ahead
+			local tail = g.dragTail or (hands + look * Q.Carry.Length)
+			local toHands = (hands - tail) * Vector3.new(1, 0, 1)
+			toHands = if toHands.Magnitude > 0.05 then toHands.Unit else -look
+			tail = hands - toHands * Q.Carry.Length
+			local at = hands - toHands * Q.Carry.Collar
+			rayParams.FilterDescendantsInstances = { g.model, char }
+			local hit = workspace:Raycast(Vector3.new(at.X, root.Position.Y + 1, at.Z), Vector3.new(0, -12, 0), rayParams)
+			local floor = if hit then hit.Position.Y else g.root.Position.Y - 0.7
+			g.dragTail = Vector3.new(tail.X, floor, tail.Z)
+			g.model:PivotTo(CFrame.new(at.X, floor + 0.7, at.Z) * CFrame.Angles(0, yawOf(toHands), 0) * CFrame.Angles(-math.pi / 2, 0, 0))
 		end
 	end
 	for _, g in guards do
@@ -1669,6 +1688,9 @@ function Stealth.SetStance(player, stance)
 	end
 	if stance ~= "Stand" and (char:GetAttribute("NeckHold") or char:GetAttribute("Carrying") or char:GetAttribute("Takedown")) then
 		return
+	end
+	if stance ~= "Crouch" and char:GetAttribute("Carrying") then
+		return -- a body is dragged from a crouch: let go of it first
 	end
 	if (char:GetAttribute("Stance") or "Stand") ~= stance then
 		char:SetAttribute("Stance", stance)

@@ -863,7 +863,46 @@ Client tab screenshot, because Andy cannot read logs another way.
   wrist): change them with the grip. Real server: aiming, the bore is level and dead ahead (0.6 degrees); the grip
   centre sits on the palm; the right fingers rest 0.00-0.07 from the frame. The Front's pistols keep GRIPS.Pistol. First person in Endeavor got nothing new (not a priority). Tests: "gunfeel:", "hands:" in
   client.lua.
+- Gait, weighted swings, the drag, limbs (owner, 2026-11-13, from two Studio clips: "all the attack animations are
+  broken and so are the walking, the take down looks good, but instead of a carry the player should grab just like
+  snake in metal gear, and loot them from there or drag them along. instead of gibbing like the characters do, limbs
+  should specifically fall off, and only when impacted directly by enough of a damaging hit. blunt weapons break more
+  often and dismember less ... the combat swinging needs more weight"; Devil May Cry clips as a reference for weight,
+  ideas only). Pose previewer: `blender -b tools/models/out/Skin_Conduit.blend --python tools/anims/preview.py --
+  <outdir> Walk@0,0.12 Swing_SlashR ...` renders any anims.py animation on the real skin (Cycles CPU; env W, H,
+  SCALE, SAMPLES, BACK, SWING=light|heavy[,twoHandOffset] draws the IK arms and the weapon); look at poses there
+  before uploading. Gait: anims.py `gait()` (stance/swing leg curves, `grounded` puts the lowest foot on the floor;
+  `--speeds` prints studs/s at speed 1: Walk 4.7, Jog 15.1, Run 25.5, Crouch_Walk 3.0). `character/Animate` picks
+  Walk / Jog (from 8) / Run (from 19) and plays each at speed / its pace, negative when moving backward; Movement
+  turns the hips into a sideways move (Config.Movement.HipTurn). `Rigs.Animate(model, hum, stock)` gives NPCs the
+  same Idle/Walk/Jog (Front callers pass stock = true). Arms: `src/client/ArmIK.lua` (`Hold(char, side, grip, aim,
+  {Pole, Optional, Weight})` every frame in root space; two-bone solve from the real shoulder written to the joints'
+  Transform on Stepped, fades back to the animation). Rule: swing and guard arms go through ArmIK, never C0 offsets.
+  Main `swingPose` puts the right hand on the traced blade's grip (left hand on the haft for Hammer, Spear and heavy
+  attacks), with a chambered elbow in the wind-up and overshoot after the strike; Swing_* body animations coil at
+  0.26-0.4 and overshoot at 0.68. Drag: `Stealth.Carry` is a collar drag (forced crouch, body trails on the floor
+  behind the hands: Config.Stealth.Cqc.Carry Ahead/Collar/Length; `Search` works on the body you hold; `DropBody`
+  leaves it where it lies; arm animation "Drag"). Limbs: `src/server/Dismember.lua` (Config.Dismember): a blow counts
+  only when its contact point is on an arm or leg (`LimbAt`); share of max health >= Sever[kind] takes it off at the
+  elbow / knee, >= Break[kind] breaks it (Cut severs at 0.22, Blunt at 0.55; Blunt breaks at 0.16, Cut at 0.6);
+  `Combat.LimbHit` hook before TakeDamage (enemies only; players' limbs stay with WoundService, which calls in for
+  the look); attributes `Lost_<part>` / `Broken_<part>` / `Severed_<part>`, limb parts `Severed`; shared/Skin folds a
+  severed limb's bone inside the upper limb (the one-piece mesh cannot be cut); falling "SeveredLimb" piece, "Stump"
+  cap; enemy `LimbDamage` (NPCs strike) / `LimbSpeed`, bleed. Gore never scatters a body now (a blast takes 1-2
+  limbs). `src/client/Limbs.lua`: blood, Lose_* reactions, the hanging broken arm, the hop. The head never comes
+  off. Not done: a wider swing trail, a carry pose for a melee weapon at rest, a player's weapon when the right arm
+  is lost, players seeing their own stump in first person. Tests: "drag:", "limbs:" in scenario.lua, "guard:",
+  "swing:", "arm:" in client.lua.
 ## State (2026-11-13)
+- Endeavor v121 + Front v48 (2026-11-13): Andy's second look at the one-piece body (it animates now): new walk / jog
+  / run, backward and sideways steps, swing and guard arms solved by ArmIK with coil and follow-through, the carry
+  became a collar drag with search from the grab, limbs break or come off on direct hits and no body bursts (block
+  "Gait, weighted swings, the drag, limbs" above). Real servers: Endeavor start 7.0s, Front 5.0s, 0 warnings; on real
+  Raider and Sentry bodies a chest hit takes nothing, a blunt arm hit breaks, a cut takes the arm and the leg off,
+  the piece and the stump cap are made, the weapon goes with the right hand. Unseen in game: all of it in motion,
+  most of all the ArmIK arms against the live animation and the folded limb inside the stump. The scenario check
+  "exchange: banked at home, it can be listed for a fee" fails in about one run in six (not looked into). Awaits
+  Andy: docs/TESTING.md "Endeavor: walking, heavy swings, the drag, and limbs that break or come off".
 - Endeavor v119 + Front v47 (2026-11-13): Andy's first play on the one-piece body: "the model had no animations, so
   he was crouching the entire time". Likely cause (not seen, no screenshot arrived): the skin's bones are named after
   the limbs, so the character's Animator wrote animation poses into them after Skin's render-step write. Skin.lua now

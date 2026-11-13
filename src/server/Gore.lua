@@ -88,6 +88,7 @@ local function makeCorpse(model, violent)
 	-- A one-piece body (server/Rigs.lua): the limbs cloned above are its invisible stand-ins. A body that holds
 	-- together keeps its skin, which follows the cloned limbs on every client (shared/Skin.lua). A body blown apart
 	-- cannot (one mesh cannot be in five places), so its limbs show themselves instead.
+	require(script.Parent.Dismember).CopyTo(model, corpse)
 	local skin = model:FindFirstChild("Skin")
 	if skin and not violent then
 		local copy = skin:Clone()
@@ -167,9 +168,17 @@ function Gore.OnDied(model)
 	if not restricted() then
 		return
 	end
-	local hitType = model:GetAttribute("LastHitType")
-	local violent = hitType == "Explosive" or hitType == "Heavy"
-	makeCorpse(model, violent)
+	-- No body bursts apart any more (owner, 2026-11-13): a limb comes off only where a blow took it (server/
+	-- Dismember), and the corpse keeps what the body had lost. A blast takes the limbs nearest to it first.
+	if model:GetAttribute("LastHitType") == "Explosive" and not model:GetAttribute("Contact") then
+		local Dismember = require(script.Parent.Dismember)
+		local parts = { "ArmL", "ArmR", "LegL", "LegR" }
+		for _ = 1, math.random(1, 2) do
+			local part = table.remove(parts, math.random(#parts))
+			Dismember.Sever(model, part, Vector3.new(math.random() - 0.5, 0, math.random() - 0.5))
+		end
+	end
+	makeCorpse(model, false)
 end
 
 function Gore.Init()

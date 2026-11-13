@@ -185,7 +185,9 @@ local function findOffer()
 	if char:GetAttribute("NeckHold") then
 		return { mode = "Hold", asked = asked[Stealth.HeldGuard or false] == true }
 	elseif char:GetAttribute("Carrying") then
-		return { mode = "Carry" }
+		local dragged = Stealth.DraggedGuard
+		local droot = dragged and dragged:FindFirstChild("HumanoidRootPart")
+		return { mode = "Carry", emptied = droot ~= nil and droot:GetAttribute("Looted") == true }
 	end
 	if not player:GetAttribute("Stealth") then
 		return nil
@@ -227,11 +229,11 @@ local function drawOffer()
 	local _, char = myRoot()
 	if offer.mode then
 		prompt.Adornee = char and (char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart"))
-		promptWord.Text = if offer.mode == "Hold" then (if offer.asked then "CHOKE  .  G THROW" else "CHOKE  .  G THROW  .  E TALK") else "PUT DOWN"
+		promptWord.Text = if offer.mode == "Hold" then (if offer.asked then "CHOKE  .  G THROW" else "CHOKE  .  G THROW  .  E TALK") else (if offer.emptied then "G LET GO" else "SEARCH  .  G LET GO")
 	else
 		prompt.Adornee = offer.guard:FindFirstChild("UpperTorso") or offer.guard:FindFirstChild("HumanoidRootPart")
 		local tap = offer.tap and (WORDS[offer.tap] or "TAKEDOWN")
-		local hold = offer.hold and (if offer.hold == "Carry" then "CARRY" else "GRAB")
+		local hold = offer.hold and (if offer.hold == "Carry" then "DRAG" else "GRAB")
 		promptWord.Text = if tap and hold then tap .. "  .  HOLD: " .. hold elseif tap then tap else "HOLD: " .. hold
 	end
 	prompt.Enabled = true
@@ -469,6 +471,9 @@ function Stealth.World(kind, a, b, c, d, e)
 			end
 		end
 	elseif kind == "Carry" then
+		if a == mine then
+			Stealth.DraggedGuard = if c then b else nil
+		end
 		if typeof(b) == "Instance" then
 			Sounds.Play("ImpactFlesh", b:FindFirstChild("HumanoidRootPart"), { Volume = 0.25 })
 		end
@@ -536,7 +541,12 @@ function Stealth.Key(key)
 		if offer.mode == "Hold" then
 			Remotes.Cqc:FireServer("Choke")
 		elseif offer.mode == "Carry" then
-			Remotes.Cqc:FireServer("Drop")
+			-- from the grab: X goes through his pockets (G lets go; X does too once they are empty)
+			if offer.emptied or not Stealth.DraggedGuard then
+				Remotes.Cqc:FireServer("Drop")
+			else
+				Remotes.Cqc:FireServer("Search", Stealth.DraggedGuard)
+			end
 		elseif not offer.hold then
 			tapX(offer) -- nothing to hold for: act on the press
 		else
