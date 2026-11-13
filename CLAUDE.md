@@ -864,7 +864,7 @@ Client tab screenshot, because Andy cannot read logs another way.
   centre sits on the palm; the right fingers rest 0.00-0.07 from the frame. The Front's pistols keep GRIPS.Pistol. First person in Endeavor got nothing new (not a priority). Tests: "gunfeel:", "hands:" in
   client.lua.
 ## State (2026-11-13)
-- Endeavor v__E + Front v__F (2026-11-13): Andy's first play on the one-piece body: "the model had no animations, so
+- Endeavor v119 + Front v47 (2026-11-13): Andy's first play on the one-piece body: "the model had no animations, so
   he was crouching the entire time". Likely cause (not seen, no screenshot arrived): the skin's bones are named after
   the limbs, so the character's Animator wrote animation poses into them after Skin's render-step write. Skin.lua now
   also sets the bones on RunService.Stepped (after the animation step). Bones cannot be renamed (the mesh binds them
