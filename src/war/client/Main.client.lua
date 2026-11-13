@@ -92,6 +92,10 @@ end
 
 -- ===== first person, always =====
 player.CameraMode = Enum.CameraMode.LockFirstPerson
+-- skin pieces the owner sees, by the start of the piece's name: forearms, hands and legs (the whole flesh arm when no
+-- coat is worn). "Trousers" (the hips) is not "TrouserL" / "TrouserR" (the legs).
+local FIRST_PERSON_LIMBS = { "LowerArm", "ArmL", "ArmR", "Hand", "Glove", "CyArm", "Leg", "TrouserL", "TrouserR", "Boot", "Sole", "Foot", "CyLeg" }
+local firstPersonShows = {}
 RunService.RenderStepped:Connect(function()
 	local char = player.Character
 	if not char then
@@ -102,12 +106,36 @@ RunService.RenderStepped:Connect(function()
 			p.LocalTransparencyModifier = 0
 		end
 	end
-	-- the one-piece body: everything but what sits on the head (the camera looks out from inside the helmet)
+	local cam = workspace.CurrentCamera
+	local jointed = cam and { L = cam:FindFirstChild("ViewHandLeft") ~= nil, R = cam:FindFirstChild("ViewHandRight") ~= nil }
+	-- the one-piece body: only the limbs show. The eye sits inside the chest and collar, so the coat, the torso and
+	-- everything worn on them or on the head would fill the view from the inside (Andy, 2026-11-13: "my fpv is
+	-- covered with the model").
 	for _, layer in char:GetChildren() do
 		if layer:IsA("Model") and layer:GetAttribute("Kind") then -- the body and every layer over it
 			for _, p in layer:GetChildren() do
 				if p:IsA("BasePart") then
-					p.LocalTransparencyModifier = if p:GetAttribute("HeadPiece") then 1 else 0
+					local shown = firstPersonShows[p.Name]
+					if shown == nil then
+						local piece = string.split(p.Name, "_")[1]
+						shown = false
+						for _, prefix in FIRST_PERSON_LIMBS do
+							if piece:sub(1, #prefix) == prefix then
+								shown = true
+								break
+							end
+						end
+						firstPersonShows[p.Name] = shown
+					end
+					if shown and jointed then
+						-- a jointed hand is drawn on this wrist (Fingers.lua): the body's mitten hand stays hidden
+						local piece = string.split(p.Name, "_")[1]
+						local side = piece:match("^Hand([LR])$") or piece:match("^Glove([LR])$") or piece:match("^CyArm([LR])Hand$")
+						if side and jointed[side] then
+							shown = false
+						end
+					end
+					p.LocalTransparencyModifier = if shown and not p:GetAttribute("HeadPiece") then 0 else 1
 				end
 			end
 		end

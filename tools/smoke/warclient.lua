@@ -154,7 +154,15 @@ do
 	viewHands.Parent = RS
 	local skin = M.newInstance("Model"); skin.Name = "Skin"; skin:SetAttribute("Kind", "Recruit")
 	local ownHand = M.newInstance("Part"); ownHand.Name = "HandR_Flesh"; ownHand.Transparency = 0; ownHand.Parent = skin
+	local ownCoat = M.newInstance("Part"); ownCoat.Name = "Coat_Twill"; ownCoat.Transparency = 0; ownCoat.Parent = skin
+	local ownSleeve = M.newInstance("Part"); ownSleeve.Name = "LowerArmR_Twill"; ownSleeve.Transparency = 0; ownSleeve.Parent = skin
+	local ownHips = M.newInstance("Part"); ownHips.Name = "Trousers_Twill"; ownHips.Transparency = 0; ownHips.Parent = skin
+	local ownLeg = M.newInstance("Part"); ownLeg.Name = "TrouserL_Twill"; ownLeg.Transparency = 0; ownLeg.Parent = skin
+	local ownBand = M.newInstance("Part"); ownBand.Name = "Armband_Twill"; ownBand.Transparency = 0; ownBand.Parent = skin
 	skin.Parent = char
+	run(0.1)
+	check("view: the owner sees the body's forearms and legs, never the coat, hips or what the chest wears", ownCoat.LocalTransparencyModifier == 1
+		and ownHips.LocalTransparencyModifier == 1 and ownBand.LocalTransparencyModifier == 1 and ownSleeve.LocalTransparencyModifier == 0 and ownLeg.LocalTransparencyModifier == 0)
 	local held = M.newInstance("Model"); held.Name = "HeldWeapon"
 	held:SetAttribute("WeaponId", "AKM"); held:SetAttribute("Build", "Standard|||")
 	local hand = M.newInstance("Part"); hand.Name = "RightHand"; hand.Parent = char

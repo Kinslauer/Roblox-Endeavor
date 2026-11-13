@@ -962,6 +962,11 @@ Client tab screenshot, because Andy cannot read logs another way.
   carrying bodies, the wall); v85 the same day: playtest fixes (pistol every ride, third person, quiet screen, cloak,
   takedown alignment). Awaits Andy's play-through: docs/TESTING.md "Endeavor: Metal Gear handling". Andy reported
   "the right click broke" on v79; no fault was found beyond first person not turning the body (fixed); asked what failed.
+- Front v45 (2026-11-13): the first-person view was filled by the inside of the coat (Andy: "my fpv is covered
+  with the model"). The owner now sees only limb pieces of the own body (Main.client FIRST_PERSON_LIMBS: forearms,
+  hands, legs; never the coat, torso, hips or chest gear); with a coat on, the upper arms are not drawn. The eye
+  is still at shoulder height (root + 1.5), not moved. Awaits Andy: docs/TESTING.md "Front: the view is no longer
+  covered by the body".
 - Front v43 (2026-11-12): jointed fingers on the first-person hands, closed on the gun by code (CLAUDE.md "The
   gun in the view", step 4). Unseen in game: all of it; the hand frames are guesses checked only by drawings from
   real-server numbers. Real server: start 4.3s, 0 warnings, ReplicatedStorage.ViewHands holds 51 dressed pieces.

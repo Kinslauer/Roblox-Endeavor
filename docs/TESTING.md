@@ -807,6 +807,13 @@ Open the recruit app (M at the base, or the locker) and look at the weapons list
 - [ ] Automatic (AKM, AK-47, AK-74, also M4A1 and M14): with B on AUTO, rounds keep leaving while LMB is held.
 
 
+### Front: the view is no longer covered by the body (2026-11-13, Front v45)
+Andy's report on v43/v44: the first-person view was filled by the inside of the coat.
+- [ ] Deploy on the Front, with and without the coat. The view is clear. Looking down you see your forearms, hands
+      and legs, and no chest, collar or coat.
+- [ ] Crouch, go prone, lean with Q and E. Nothing of the body covers the view.
+- [ ] With the coat on, do the forearms look cut off at the elbow at the edge of the screen? Say so if it shows.
+
 ### Front: fingers (2026-11-12, Front v43)
 The hands in the first-person view now have a thumb and four fingers with three joints each. No pose is drawn by
 hand: each finger closes until it touches the gun. Nothing was seen in game before publishing, so say what looks
