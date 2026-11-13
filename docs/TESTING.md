@@ -819,8 +819,8 @@ Open the recruit app (M at the base, or the locker) and look at the weapons list
 - [ ] Automatic (AKM, AK-47, AK-74, also M4A1 and M14): with B on AUTO, rounds keep leaving while LMB is held.
 
 
-### Front: the view is no longer covered by the body (2026-11-13, Front v45)
-Andy's report on v43/v44: the first-person view was filled by the inside of the coat.
+### Front: the view is no longer covered by the body (2026-11-13, Front v47)
+Andy's report: the first-person view was filled by the inside of the coat.
 - [ ] Deploy on the Front, with and without the coat. The view is clear. Looking down you see your forearms, hands
       and legs, and no chest, collar or coat.
 - [ ] Crouch, go prone, lean with Q and E. Nothing of the body covers the view.
