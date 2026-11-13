@@ -270,9 +270,13 @@ do
 	local tap, hold = Rules.Cqc(root().CFrame, ga.HumanoidRootPart.CFrame, Stealth.StateOf(ga), {})
 	check("cqc: in front of him X is a throw, with no hold on offer", tap == "Throw" and hold == nil)
 	Remotes.Aim:FireServer(false)
-	Remotes.Cqc:FireServer("Throw", ga); run(0.2)
+	local thrownFrom = ga.HumanoidRootPart.Position
+	Remotes.Cqc:FireServer("Throw", ga, M.V3.new(0, 0, -1)); run(0.2)
 	check("cqc: the throw has you both", char():GetAttribute("Takedown") == "Throw" and root().Anchored == true)
-	run(1.3)
+	run(1.6)
+	local flew = (ga.HumanoidRootPart.Position - thrownFrom) * M.V3.new(1, 0, 1)
+	check("cqc: he flies the way you look, with real speed", flew.Magnitude > 4 and flew.Z < -3)
+	root().CFrame = M.CF.new(ga.HumanoidRootPart.Position + M.V3.new(2, 2, 0)); run(0.15)
 	check("cqc: thrown, he is down but not for good", Stealth.StateOf(ga) == "Down" and ga:GetAttribute("Downed") == true and char():GetAttribute("Takedown") == nil)
 	-- his body: on the shoulder, moved, put down
 	Remotes.Cqc:FireServer("Carry", ga); run(0.2)

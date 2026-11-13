@@ -864,6 +864,16 @@ Client tab screenshot, because Andy cannot read logs another way.
   centre sits on the palm; the right fingers rest 0.00-0.07 from the frame. The Front's pistols keep GRIPS.Pistol. First person in Endeavor got nothing new (not a priority). Tests: "gunfeel:", "hands:" in
   client.lua.
 ## State (2026-11-13)
+- Endeavor v__E + Front v__F (2026-11-13): Andy's first play on the one-piece body: "the model had no animations, so
+  he was crouching the entire time". Likely cause (not seen, no screenshot arrived): the skin's bones are named after
+  the limbs, so the character's Animator wrote animation poses into them after Skin's render-step write. Skin.lua now
+  also sets the bones on RunService.Stepped (after the animation step). Bones cannot be renamed (the mesh binds them
+  by name). The seated pose was refitted to the new legs (_SEAT in anims.py). The throw has flight: Config.Stealth.
+  Cqc.Throw Release/Speed/Lift/Radius/Slam; Stealth.Throw(player, model, fromHold, aim) sweeps a Spherecast along an
+  arc the way the camera looks (Cqc remote's third argument), a wall faster than Slam.Speed hurts and doubles the
+  time down (World "Slam"), another guard goes down too. Awaits Andy: docs/TESTING.md "Endeavor: the new body moves,
+  and the throw has speed". If the body still does not move, get an F9 Client screenshot; the next thing to try is
+  holding the skin outside the character model, away from its Animator.
 - Endeavor v116 (2026-11-13): pistols held by the grip at life size, with new low-ready, aim, reload, wall, draw
   and rack arm poses. Real server: start 10.0s, 0 warnings; checks above. Unseen in game: all of it in motion.
   Awaits Andy: docs/TESTING.md "Endeavor: pistols held by the grip".

@@ -1031,7 +1031,7 @@ end
 
 -- X tapped in front of or beside a guard (any state but down), or G with him in a neck hold (`fromHold`): he goes
 -- over and down hard. Not a kill and not quiet: he is out for Cqc.Throw.Down seconds, then gets up and searches.
-function Stealth.Throw(player, model, fromHold)
+function Stealth.Throw(player, model, fromHold, aim)
 	local g = typeof(model) == "Instance" and guards[model]
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -1069,6 +1069,82 @@ function Stealth.Throw(player, model, fromHold)
 	end
 	Combat.GrantIFrames(char, seconds + T.IFrames)
 	Combat.SetBusy(char, seconds)
+	-- the way he flies once he is let go: where the thrower looks, else straight away from the thrower
+	local fly = if fromHold then dir else -dir
+	if typeof(aim) == "Vector3" then
+		local flat = aim * Vector3.new(1, 0, 1)
+		if flat.Magnitude > 0.1 and flat.Magnitude == flat.Magnitude then
+			fly = flat.Unit
+		end
+	end
+	local flight = { at = gpos, done = false }
+	task.delay(seconds * Q.Throw.Release, function()
+		local ok, err = pcall(function()
+			local skip = { char, g.model }
+			local params = RaycastParams.new()
+			params.FilterType = Enum.RaycastFilterType.Exclude
+			params.FilterDescendantsInstances = skip
+			local pos = groot.Position
+			local vel = fly * Q.Throw.Speed + Vector3.new(0, Q.Throw.Lift, 0)
+			local gravity = Vector3.new(0, -workspace.Gravity, 0)
+			local under = workspace:Raycast(pos, Vector3.new(0, -30, 0), params)
+			local floorY = if under then under.Position.Y else pos.Y - 3
+			local t = 0
+			while t < Q.Throw.MaxSeconds and g.model.Parent and groot.Parent do
+				local dt = RunService.Heartbeat:Wait()
+				dt = math.clamp(dt, 1 / 240, 1 / 20)
+				t += dt
+				local nextVel = vel + gravity * dt
+				local move = (vel + nextVel) / 2 * dt
+				local hit = workspace:Spherecast(pos, Q.Throw.Radius, move, params)
+				if hit then
+					pos += move.Unit * math.max(hit.Distance - 0.05, 0)
+					local other
+					for m, og in guards do
+						if og ~= g and hit.Instance:IsDescendantOf(m) then
+							other = og
+							break
+						end
+					end
+					local flatSpeed = (vel * Vector3.new(1, 0, 1)).Magnitude
+					if other then
+						-- into another guard: he goes down with him
+						flight.hit = "Guard"
+						if other.state ~= "Down" and not other.busy and other.hum.Health > 0 then
+							halt(other)
+							other.target = nil
+							setState(other, "Down")
+							layDown(other, other.root.Position, yawOf(fly))
+							other.wakeAt = os.clock() + Q.Throw.Down
+							Stealth.TakenDown:Fire(player, other.model, "Thrown")
+						end
+						Remotes.World:FireAllClients("Slam", pos, hit.Normal, other.model)
+						break
+					elseif hit.Normal.Y > 0.6 then
+						break -- the floor
+					else
+						if flatSpeed >= Q.Throw.Slam.Speed then
+							flight.hit = "Wall"
+							flight.normal = hit.Normal
+							Remotes.World:FireAllClients("Slam", hit.Position, hit.Normal, g.model)
+						end
+						break -- a wall: he drops at its foot
+					end
+				end
+				pos += move
+				vel = nextVel
+				if pos.Y - Q.Throw.Radius <= floorY and vel.Y < 0 then
+					break -- down to the level he was thrown from
+				end
+				groot.CFrame = groot.CFrame.Rotation + pos
+			end
+			flight.at = pos
+		end)
+		if not ok then
+			warn("[Stealth] throw flight:", err)
+		end
+		flight.done = true
+	end)
 	local kind = if fromHold then "Shove" else "Throw"
 	char:SetAttribute("Takedown", kind)
 	if char:GetAttribute("Crouched") then
@@ -1082,13 +1158,25 @@ function Stealth.Throw(player, model, fromHold)
 		if char.Parent then
 			char:SetAttribute("Takedown", nil)
 		end
+		-- he is still in the air: the thrower is free, he lands when the flight ends
+		local waited = 0
+		while not flight.done and waited < Q.Throw.MaxSeconds + 0.5 do
+			waited += task.wait()
+		end
+		if g.model.Parent and g.hum.Health > 0 and flight.hit == "Wall" then
+			g.hum:TakeDamage(Q.Throw.Slam.Damage) -- still busy: a wound here does not wake him
+		end
 		g.busy = false
 		if g.model.Parent and g.hum.Health > 0 then
 			setState(g, "Down")
-			local right = Vector3.new(-dir.Z, 0, dir.X) -- his right when he faces `dir`
-			layDown(g, gpos + dir * Q.Throw.Fall + right * side, yawOf(dir))
-			g.wakeAt = os.clock() + Q.Throw.Down
-			Stealth.Noise(gpos, Q.Throw.Noise, "Takedown", player)
+			local slam = flight.hit == "Wall"
+			local at = flight.at
+			if slam and flight.normal then
+				at += flight.normal * Vector3.new(1, 0, 1) * 1.2 -- at the wall's foot, not in it
+			end
+			layDown(g, at, yawOf(fly))
+			g.wakeAt = os.clock() + Q.Throw.Down * (if slam then Q.Throw.Slam.DownMult else 1)
+			Stealth.Noise(at, if slam then Q.Throw.Slam.Noise else Q.Throw.Noise, "Takedown", player)
 			Stealth.TakenDown:Fire(player, g.model, kind)
 		end
 	end)
@@ -1152,7 +1240,7 @@ function Stealth.Grab(player, model)
 end
 
 -- how: "Choke" (he stays down) | "Throw" (down for a while) | "Break" (he is loose and has you)
-function Stealth.Release(player, how)
+function Stealth.Release(player, how, aim)
 	local g = holds[player]
 	if not g then
 		return false
@@ -1176,7 +1264,7 @@ function Stealth.Release(player, how)
 	if how == "Choke" then
 		done = Stealth.Takedown(player, g.model, true)
 	elseif how == "Throw" then
-		done = Stealth.Throw(player, g.model, true)
+		done = Stealth.Throw(player, g.model, true, aim)
 	end
 	if not done then
 		g.root.Anchored = false
@@ -1686,15 +1774,15 @@ function Stealth.Init()
 	Net.On("Crouch", { rate = 4, burst = 6, args = { "boolean" } }, Stealth.SetCrouch)
 	Net.On("Stance", { rate = 6, burst = 8, args = { "string" } }, Stealth.SetStance)
 	Net.On("Aim", { rate = 8, burst = 10, args = { "boolean" } }, Stealth.SetAim)
-	Net.On("Cqc", { rate = 4, burst = 6, args = { "string", "instance?" } }, function(player, what, model)
+	Net.On("Cqc", { rate = 4, burst = 6, args = { "string", "instance?", "vector?" } }, function(player, what, model, aim)
 		if model ~= nil and typeof(model) ~= "Instance" then
 			return
 		end
 		if what == "Throw" then
 			if holds[player] then
-				Stealth.Release(player, "Throw")
+				Stealth.Release(player, "Throw", aim)
 			else
-				Stealth.Throw(player, model)
+				Stealth.Throw(player, model, false, aim)
 			end
 		elseif what == "Grab" then
 			Stealth.Grab(player, model)

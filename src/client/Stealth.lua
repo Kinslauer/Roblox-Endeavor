@@ -480,6 +480,11 @@ function Stealth.World(kind, a, b, c, d, e)
 		burst(a, Color3.fromRGB(150, 210, 255), 40, 26)
 	elseif kind == "Whistle" then
 		Sounds.Play("Whistle", a, { Volume = 0.7 })
+	elseif kind == "Slam" then
+		-- (position, normal, body): a thrown guard meets a wall or another guard
+		Sounds.Play("ImpactFlesh", a, { Volume = 1, Pitch = 0.75 })
+		Sounds.Play("BreakMetal", a, { Volume = 0.35, Pitch = 0.6 })
+		burst(a, Color3.fromRGB(200, 196, 188), 10, 10)
 	elseif kind == "Reflex" then
 		Stealth.Reflex(a, b)
 	elseif kind == "Clatter" then
@@ -515,7 +520,7 @@ local function tapX(o)
 	if o.tap == "Search" then
 		Remotes.Cqc:FireServer("Search", o.guard)
 	elseif o.tap == "Throw" then
-		Remotes.Cqc:FireServer("Throw", o.guard)
+		Remotes.Cqc:FireServer("Throw", o.guard, workspace.CurrentCamera.CFrame.LookVector)
 	elseif o.tap then
 		Remotes.Takedown:FireServer(o.guard)
 	end
@@ -546,7 +551,7 @@ function Stealth.Key(key)
 		end
 		return true
 	elseif key == Enum.KeyCode.G and offer and offer.mode then
-		Remotes.Cqc:FireServer(if offer.mode == "Hold" then "Throw" else "Drop")
+		Remotes.Cqc:FireServer(if offer.mode == "Hold" then "Throw" else "Drop", nil, workspace.CurrentCamera.CFrame.LookVector)
 		return true
 	elseif key == Enum.KeyCode.E and offer and offer.mode == "Hold" and not offer.asked then
 		Remotes.Cqc:FireServer("Question") -- he talks (once)

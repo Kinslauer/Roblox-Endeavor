@@ -430,9 +430,11 @@ DOWNED = dict(length=2.0, loop=True, priority="Action", keys=[(0.0, _DOWN, "Line
 
 # ---------- the train (client/Intro.lua): seated on the bench under a cloak, up, cloak off, pistol out, slide racked ----------
 # The root stands in front of the seat at standing height (car-local (-3.75, 3, 12)); sitting is the hips 1.4 back
-# and 1.11 down from it, which puts the hip centre 0.39 over the cushion (top y 1.5).
-_SEAT = {"LowerTorso": (0, 0, 0, 0, -1.11, 1.4), "UpperTorso": (-14, 0, 0), "Head": (-24, 0, 0),
-         "LeftUpperLeg": (86, 0, -8), "LeftLowerLeg": (-84, 0, 0), "RightUpperLeg": (86, 0, 8), "RightLowerLeg": (-84, 0, 0),
+# and 0.88 down from it. On the one-piece Conduit (figures.py: hip joint 0.33 under the root, thigh 0.295 thick,
+# thigh 1.25 long, knee to sole 1.60) that rests the thigh's underside on the cushion (top y 1.5) with the soles on
+# the floor; the old 1.11 sank the new, longer-legged body 0.23 into the seat.
+_SEAT = {"LowerTorso": (0, 0, 0, 0, -0.88, 1.4), "UpperTorso": (-14, 0, 0), "Head": (-24, 0, 0),
+         "LeftUpperLeg": (82, 0, -8), "LeftLowerLeg": (-82, 0, 0), "RightUpperLeg": (82, 0, 8), "RightLowerLeg": (-82, 0, 0),
          "LeftUpperArm": (36, 0, 8), "LeftLowerArm": (52, 0, 0), "RightUpperArm": (36, 0, -8), "RightLowerArm": (52, 0, 0)}
 INTRO_SEATED = dict(length=3.2, loop=True, priority="Action", keys=[  # the car rocks him a little
     (0.0, _SEAT, "CubicV2", "InOut"),

@@ -109,7 +109,13 @@ Config.Stealth = {
 	-- CQC on X. Tap in front or beside: a throw (he is out for Down seconds, then gets up and searches).
 	-- Hold behind: a neck hold you can walk with; X chokes him out (he stays down), G throws him down.
 	Cqc = {
-		Throw = { Reach = 5, Seconds = 1.1, Down = 25, Noise = 9, Stand = 1.5, Fall = 1.4, Side = 1.3 }, -- Fall/Side = where he lands (the animation's last key)
+		Throw = { Reach = 5, Seconds = 1.1, Down = 25, Noise = 9, Stand = 1.5, Fall = 1.4, Side = 1.3,
+			-- he leaves your hands with real speed, the way you look (owner, 2026-11-12: "the throw should have some
+			-- real velocity, i tried to throw a guard into the wall and he fell to the floor"). Release = the share
+			-- of Seconds at which he is let go; Speed / Lift in studs a second; Radius = his body in the sweep.
+			Release = 0.55, Speed = 44, Lift = 9, Radius = 0.9, MaxSeconds = 1.2,
+			-- into a wall faster than Slam.Speed: hurt, down for longer, and loud. Into another guard: both go down.
+			Slam = { Speed = 16, Damage = 45, DownMult = 2, Noise = 16 } }, -- Fall/Side = where he lands (the animation's last key)
 		Hold = { Seconds = 12, SpeedMult = 0.45, Gap = 0.95, Press = 0.3 }, -- he breaks free after Seconds; Press = how long X is held to grab
 		Carry = { Reach = 5, SpeedMult = 0.6, Offset = CFrame.new(0.75, 1.75, 0.15) },
 	},

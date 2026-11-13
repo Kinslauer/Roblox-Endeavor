@@ -103,6 +103,21 @@ function Skin.Start()
 	end)
 	local K = Skin.Tuning
 	-- last in the render step, so the limbs have been posed by everything else first
+	-- The bones are named after the limbs (the mesh finds its bones by name, so they cannot be renamed), and the
+	-- character's Animator also drives anything named like a limb: it wrote each playing animation's joint turn
+	-- straight into these bones after the render step, so the body sat in a half-folded pose and never followed
+	-- its limbs (Andy, 2026-11-12: "the model had no animations, so he was crouching the entire time"). The
+	-- animation step runs before Stepped, so the bones are also set there, after the Animator has written.
+	RunService.Stepped:Connect(function()
+		local camera = workspace.CurrentCamera
+		local eye = camera and camera.CFrame.Position
+		for skin, body in bodies do
+			local rig = skin.Parent
+			if rig and skin:IsDescendantOf(workspace) and (not eye or (body.Holder.Position - eye).Magnitude < K.Far) then
+				update(body, rig)
+			end
+		end
+	end)
 	RunService:BindToRenderStep("SkinFollow", 2005, function() -- Enum.RenderPriority.Last is 2000
 		frame += 1
 		local camera = workspace.CurrentCamera

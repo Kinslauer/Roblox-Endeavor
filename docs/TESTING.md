@@ -3,6 +3,18 @@
 Grows as features land. Tick what works, note what doesn't (an F9 → Client/Server tab screenshot is the most useful
 report).
 
+## Endeavor: the new body moves, and the throw has speed (2026-11-12)
+- [ ] Your character and the guards now move: idle, walk, run, crouch, prone, swings and takedowns all show on the
+      one-piece body. Nobody stays folded in one pose. (Same fix on the Front's soldiers.)
+- [ ] The train ride: you sit on the bench with your thighs on the cushion and your feet on the floor. The car does
+      not cut through your body. If it still does, say where (seat, wall, cloak).
+- [ ] Throw a guard (tap X in front of him, or G with him in a neck hold): he leaves your hands fast and flies
+      about 10 studs the way your camera looks.
+- [ ] Throw him at a wall: he hits it with a thud and dust, drops at its foot, is hurt and stays down twice as long.
+      It is loud, so nearby guards hear it.
+- [ ] Throw him into another guard: both go down.
+- [ ] During the throw your hands are on him. If they miss, say where they are (too high, too wide, too short).
+
 ## Front: cybernetic limbs shipped by the conduit (2026-11-12)
 - [ ] Open the recruit app (M on the Front, N in the city). The shop sells four cybernetic limbs: left and right
       arm (650 credits), left and right leg (550). Buy one and press Fit on it in the locker: the order shows it
