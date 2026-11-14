@@ -212,6 +212,21 @@ do
 	check("action: T racks the next round in", char():GetAttribute("Chambered") == true and char():GetAttribute("Mag") == 6)
 	Remotes.Attack:FireServer(root().CFrame.LookVector); run(0.8)
 	check("action: racked, it fires again", char():GetAttribute("Mag") == 5 and char():GetAttribute("Chambered") == false)
+	do -- the round goes where the reticle is: up and off to the side of the facing, from the shoulder
+		Remotes.Rack:FireServer(); run(0.9)
+		local aim = (root().CFrame.LookVector + root().CFrame.RightVector * 0.4 + M.V3.new(0, 0.35, 0)).Unit
+		local from = root().Position + M.V3.new(0, 1.2, 0)
+		local logA = #M.FireLog
+		Remotes.Attack:FireServer(aim); run(0.8)
+		local endAt
+		for i = logA + 1, #M.FireLog do
+			local e = M.FireLog[i]
+			if e[1] == "CombatEvent" and e[3] == "Bolt" then endAt = e[5] end
+		end
+		local off = endAt and ((endAt - from).Unit - aim).Magnitude
+		print("AIMTEST", endAt, from, aim, off)
+		check("gun: the round flies along the aim from the shoulder", off ~= nil and off < 0.01)
+	end
 	Remotes.Rack:FireServer(); run(0.9)
 	Inventory0.Add(player, "Round22", 1, true); Combat.ResetMags(player); run(0.1)
 	Remotes.Attack:FireServer(root().CFrame.LookVector); run(0.8)

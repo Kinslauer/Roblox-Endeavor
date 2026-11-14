@@ -490,6 +490,77 @@ function Handling.Init(options)
 		end
 		driveArms()
 	end)
+	-- The gun points where the reticle is (Andy, 2026-11-14: the Whisper's shots "did NOT go to the crosshair ... it
+	-- was drawn incorrectly"). The aim poses hold the bore level and straight ahead, so looking up or down left the
+	-- gun level while the round went to the reticle: the tracer left the muzzle at an angle to the barrel. While a
+	-- gun is aimed the upper body now bends at the waist to the pitch from the gun to what the reticle is on (the
+	-- own body from the camera; other bodies from the pitch the server last took from their shots, attribute
+	-- AimPitch), written into the Waist joint after the animation step, like the movement lean.
+	local PITCH = AIM.Pitch
+	local bent = setmetatable({}, { __mode = "k" })
+	local function ownPitch(char, root)
+		local cam = workspace.CurrentCamera
+		if not cam then
+			return 0
+		end
+		local look = cam.CFrame.LookVector
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { char, cam }
+		local hit = workspace:Raycast(cam.CFrame.Position, look * 400, params)
+		local point = if hit then hit.Position else cam.CFrame.Position + look * 400
+		local dir = point - (root.Position + Vector3.new(0, PITCH.GunHeight, 0))
+		if dir.Magnitude < 3 then
+			dir = look
+		end
+		return math.asin(math.clamp(dir.Unit.Y, -1, 1))
+	end
+	RunService.Stepped:Connect(function(_, dt)
+		for _, p in Players:GetPlayers() do
+			local char = p.Character
+			local root = char and char:FindFirstChild("HumanoidRootPart")
+			local upper = char and char:FindFirstChild("UpperTorso")
+			local waist = upper and upper:FindFirstChild("Waist")
+			if root and waist and (waist:IsA("Motor6D") or waist:IsA("AnimationConstraint")) then
+				local want = 0
+				local def = Weapons.Defs[char:GetAttribute("Weapon") or ""]
+				if Weapons.IsGun(def) and not char:GetAttribute("Takedown") and not char:GetAttribute("Cutscene") then
+					if p == player then
+						if aiming and not Handling.HoldsFacing() then
+							want = ownPitch(char, root)
+						end
+					elseif char:GetAttribute("Aiming") then
+						want = math.rad(tonumber(char:GetAttribute("AimPitch")) or 0)
+					end
+				end
+				local max = math.rad(PITCH.Max)
+				want = math.clamp(want, -max, max)
+				local b = bent[char]
+				if not b then
+					b = { cur = 0 }
+					bent[char] = b
+				end
+				-- the animation writes the joint each step; where nothing animates it, take our own last bend off first
+				local base = waist.Transform
+				if b.wrote and base == b.wrote then
+					base = b.turn:Inverse() * base
+				end
+				b.cur += (want - b.cur) * math.min(1, dt * PITCH.Rate)
+				if math.abs(b.cur) > 1e-3 or b.wrote then
+					-- about the body's own left-right line (the hips may be turned into a sideways step under it)
+					local lower = waist.Part0 or (waist:IsA("AnimationConstraint") and waist.Attachment0 and waist.Attachment0.Parent)
+					local c0 = if waist:IsA("Motor6D") then waist.C0 else (waist.Attachment0 and waist.Attachment0.CFrame or CFrame.identity)
+					local axis = Vector3.new(1, 0, 0)
+					if lower and lower:IsA("BasePart") then
+						axis = (lower.CFrame * c0):VectorToObjectSpace(root.CFrame.RightVector)
+					end
+					b.turn = CFrame.fromAxisAngle(axis, b.cur)
+					waist.Transform = b.turn * base
+					b.wrote = if math.abs(b.cur) > 1e-3 then waist.Transform else nil
+				end
+			end
+		end
+	end)
 	local lastStance = "Stand"
 	local function bind(char)
 		aiming, sights, cover, cHeld, push, arms = false, false, nil, nil, nil, nil

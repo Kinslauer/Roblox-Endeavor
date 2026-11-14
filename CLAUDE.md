@@ -916,6 +916,17 @@ Client tab screenshot, because Andy cannot read logs another way.
   scenario.lua, "first person:", "flick:" in client.lua. Unseen in game: all of it; the eye and rest-hold numbers
   come from real-server measurements of the body, not from a look.
 ## State (2026-11-13)
+- Endeavor v126 (2026-11-14): Andy: the Whisper's shots "did NOT go to the crosshair ... it was drawn incorrectly".
+  The server's round already follows the camera's aim from the shoulder (scenario check "gun: the round flies along
+  the aim from the shoulder") and the tracer starts at the real muzzle (real server). What was wrong: the aim poses
+  hold the bore level, so a pitched camera sent the tracer off at an angle from the barrel; the reticle sat half the
+  top bar low (its ScreenGui did not ignore the inset; it has its own layer "ConduitReticle" now); GunFeel's flash
+  and smoke went backward (the gun frame's barrel is +Z, LookVector is back). Now while a gun is aimed client/
+  Handling bends the Waist (Transform, after the animation step, about the root's right axis) to the pitch from
+  Config.Stealth.Aim.Pitch.GunHeight above the root to what the reticle is on; other bodies use attribute AimPitch
+  (degrees, set by Combat setAim from each shot's aim) while their `Aiming` is on. Likely also part of Andy's view:
+  he played before v124, when no animation played, so the gun hung at the side. Awaits Andy: docs/TESTING.md
+  "Endeavor: shots go where the crosshair is".
 - Endeavor v124 + Front v49 (2026-11-14): Andy's Studio play closed after the shaft with "AnimationTrack limit of 64 tracks exceeded for
   'Kinslauer'" on every Play (idle and walk included). Roblox refuses to play on an Animator that holds more than 64
   loaded tracks; the player's body had loaded ~60 of the game's animations (shared/Anims cached them forever) plus

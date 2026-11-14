@@ -1071,6 +1071,15 @@ end
 local reticle = make("Frame", { Name = "Reticle", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, Visible = false })
 local reticleParts = {}
 do
+	-- the camera aims at the middle of the whole screen; the HUD layer starts under Roblox's top bar, so its middle is
+	-- half the bar lower. The reticle gets its own layer that covers the whole screen.
+	local layer = Instance.new("ScreenGui")
+	layer.Name, layer.ResetOnSpawn, layer.IgnoreGuiInset = "ConduitReticle", false, true
+	layer.Parent = gui.Parent
+	Kit.Attach(layer)
+	reticle.Parent = layer
+end
+do
 	local R = HUD.Reticle
 	for _, d in { { Vector2.new(0, -1), UDim2.fromOffset(R.Thickness, R.Size) }, { Vector2.new(0, 1), UDim2.fromOffset(R.Thickness, R.Size) }, { Vector2.new(-1, 0), UDim2.fromOffset(R.Size, R.Thickness) }, { Vector2.new(1, 0), UDim2.fromOffset(R.Size, R.Thickness) } } do
 		local tick = make("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), BorderSizePixel = 0, BackgroundColor3 = R.Color, Size = d[2] }, reticle)

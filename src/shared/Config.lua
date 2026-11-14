@@ -103,7 +103,10 @@ Config.Stealth = {
 		CameraDrop = { Crouch = -1.3, Prone = -2.3 },
 	},
 	-- Aiming a gun (hold RMB): slower, tighter, over the shoulder; V looks down the sights.
-	Aim = { SpeedMult = 0.55, Distance = 4.5, Fov = 55, SightFov = 48, ShoulderOffset = Vector3.new(1.6, 0.55, 0) },
+	Aim = { SpeedMult = 0.55, Distance = 4.5, Fov = 55, SightFov = 48, ShoulderOffset = Vector3.new(1.6, 0.55, 0),
+		-- the upper body bends at the waist so the gun points at what the reticle is on (degrees; Rate = how fast it follows,
+		-- GunHeight = where the gun sits above the root while aiming)
+		Pitch = { Max = 55, Rate = 18, GunHeight = 1.8 } },
 	-- A guard that has not made you and finds a gun on him up close freezes with his hands up.
 	HoldUp = { Range = 13, Cone = 14, Keep = 5, Grace = 0.35 }, -- studs, degrees off your aim, seconds he stays frozen after the gun leaves him, seconds on him first
 	-- CQC on X. Tap in front or beside: a throw (he is out for Down seconds, then gets up and searches).

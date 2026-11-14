@@ -244,6 +244,33 @@ do
 	down(nil, "UserInputType.MouseButton2"); wait(0.3)
 	check("handling: with a gun RMB aims (no heavy), in over the shoulder", Handling.Aiming() and last("Aim") == true and #sent.Heavy == heavies
 		and math.abs(hum.CameraOffset.X - ConfigC.Stealth.Aim.ShoulderOffset.X) < 0.01 and Anims.Track(char, "Aim_Pistol").IsPlaying)
+	do -- the gun follows the reticle up: the upper body bends at the waist (Andy, 2026-11-14: shots "did NOT go to the crosshair")
+		local cam = workspace_.CurrentCamera
+		if not char:FindFirstChild("UpperTorso") then
+			local upper = M.newInstance("Part"); upper.Name = "UpperTorso"; upper.Parent = char
+			local w = M.newInstance("Motor6D"); w.Name = "Waist"; w.Transform = M.CF.new(); w.Parent = upper
+		end
+		-- the Animator writes every joint each step (the idle keys the waist): before Stepped, as in Roblox
+		local animStep = game_:GetService("RunService").RenderStepped:Connect(function()
+			char.UpperTorso.Waist.Transform = M.CF.new()
+		end)
+		local keep = cam.CFrame
+		local rootPos = char.HumanoidRootPart.Position
+		local eye = rootPos + M.V3.new(1.6, 2, 4.5)
+		local look = M.V3.new(0, math.sin(math.rad(30)), -math.cos(math.rad(30)))
+		local moving = hum.MoveDirection
+		hum.MoveDirection = M.V3.new(0, 0, 0) -- standing (a sideways step turns the hips under it)
+		cam.CFrame = M.CF.lookAt(eye, eye + look)
+		wait(0.5)
+		local waist = char.UpperTorso:FindFirstChild("Waist")
+		local up = waist.Transform.LookVector.Y
+		-- where the reticle is (nothing in the way up there) seen from the gun
+		local want = ((cam.CFrame.Position + cam.CFrame.LookVector * 400) - (char.HumanoidRootPart.Position + M.V3.new(0, ConfigC.Stealth.Aim.Pitch.GunHeight, 0))).Unit.Y
+		check("aim: looking up with a gun aimed bends the body up to the reticle", math.abs(up - want) < 0.03)
+		cam.CFrame = keep
+		animStep:Disconnect()
+		hum.MoveDirection = moving
+	end
 	down("KeyCode.V"); wait(0.2)
 	check("handling: V goes down the sights", Handling.Sights() and player.CameraMaxZoomDistance == 0.5)
 	down("KeyCode.R"); wait(0.1)

@@ -336,7 +336,7 @@ end
 -- ===== the muzzle =====
 local function flash(g, gunWorld)
 	local at = gunWorld * g.Muzzle
-	local dir = gunWorld.LookVector
+	local dir = gunWorld.ZVector -- the barrel runs along +Z of the gun's frame (LookVector is back toward the hand)
 	local F = G.Flash
 	local quiet = (g.Def.Noise or 100) <= 20
 	local size = F.Size * (if g.Long then 1.4 else 1) * (if quiet then 0.45 else 1) * (0.75 + math.random() * 0.5)

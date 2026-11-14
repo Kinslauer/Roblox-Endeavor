@@ -94,6 +94,7 @@ function CF.ToObjectSpace(a, b) return CF.Inverse(a) * b end
 function CF.fromMatrix(p, x, y, z) z = z or x:Cross(y); return mkcf(p, {x.X,y.X,z.X, x.Y,y.Y,z.Y, x.Z,y.Z,z.Z}) end
 function CF.VectorToObjectSpace(a, v) return rotT(a.r, v) end
 function CF.Lerp(a, b, t) return b end
+function CF.ToEulerAnglesYXZ(a) local r = a.r; return math.asin(math.clamp(-r[6], -1, 1)), math.atan2(r[3], r[9]), math.atan2(r[4], r[5]) end
 function CF.VectorToWorldSpace(a, v) return rot(a.r, v) end
 function CF.PointToWorldSpace(a, v) return a.Position + rot(a.r, v) end
 if not CF.PointToObjectSpace then function CF.PointToObjectSpace(a, v) return rotT(a.r, v - a.Position) end end

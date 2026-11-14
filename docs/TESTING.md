@@ -1266,3 +1266,14 @@ flick the mouse.
       their own attacks.)
 - [ ] Tell me if the flick picks a cut when you did not mean it (it needs about 55 pixels of mouse travel in the
       0.14 seconds before the click).
+
+## Endeavor: shots go where the crosshair is (2026-11-14, Endeavor v126)
+Andy: "the whispers shots did NOT go to the crosshair, not even remotely ... it was drawn incorrectly". The aim
+poses held the gun level whatever the camera did, so looking up or down sent the tracer off at an angle from the
+barrel; and the crosshair sat about half of Roblox's top bar below the real centre of the screen.
+- [ ] With the Whisper out, hold RMB and look up at a high lamp: the upper body leans back and the gun points at the crosshair; the tracer leaves along the barrel and ends on the crosshair.
+- [ ] Look down at a guard close in front: the body bends forward and the gun points down at him; the round lands on the crosshair.
+- [ ] Standing still, aim at a small mark on a far wall and fire: the impact dust is on the crosshair's centre dot.
+- [ ] Another player aiming and firing up or down: their body bends to where their shots went.
+- [ ] The muzzle flash and the puff of smoke come out of the front of the barrel, not back toward the hand.
+- [ ] First person while aiming (V or P with RMB): looking up and down, the gun stays in front of the eye.

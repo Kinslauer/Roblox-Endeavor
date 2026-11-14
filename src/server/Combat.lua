@@ -1840,6 +1840,11 @@ local function setAim(char, aim)
 		local flat = Vector3.new(aim.X, 0, aim.Z)
 		if math.abs(aim.Y) < 0.94 and flat.Magnitude > 0.05 and root.CFrame.LookVector:Dot(flat.Unit) > 0.5 then
 			s.aim, s.aimAt = aim, os.clock()
+			-- other clients bend the shooter's upper body to it (client/Handling), so the gun points where the round went
+			local pitch = math.floor(math.deg(math.asin(math.clamp(aim.Y, -1, 1))) + 0.5)
+			if char:GetAttribute("AimPitch") ~= pitch then
+				char:SetAttribute("AimPitch", pitch)
+			end
 			return
 		end
 		s.aim = nil
