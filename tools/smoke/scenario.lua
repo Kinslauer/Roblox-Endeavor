@@ -629,6 +629,27 @@ Inventory.Add(player, "Sledge", 1); Remotes.EquipItem:FireServer("Sledge"); run(
 local lamp
 for _, m in dfolder:GetChildren() do if m:GetAttribute("Prop") == "Streetlight" then lamp = m break end end
 check("found a streetlight", lamp ~= nil)
+do -- shots put out any small light in the world, not only the stealth levels' lamps (Andy, 2026-11-14)
+	local Stealth0 = Stealth
+	local bulb, pole
+	for _, d in lamp:GetDescendants() do
+		if d:IsA("BasePart") and d:FindFirstChildOfClass("PointLight") then bulb = d elseif d:IsA("BasePart") and not pole then pole = d end
+	end
+	check("shoot out: the streetlight has a lit part", bulb ~= nil)
+	if bulb then
+		local light = bulb:FindFirstChildOfClass("PointLight")
+		Combat.Shot:Fire(player.Character, bulb, bulb.Position, { Noise = 7 }); run(0.2)
+		check("shoot out: a round through a street lamp puts it out", light.Enabled == false and bulb:GetAttribute("ShotOut") == true)
+		Stealth0.RestoreFixtures()
+		check("shoot out: the hour lights it again", light.Enabled == true and bulb:GetAttribute("ShotOut") == nil)
+	end
+	local pylon
+	for _, d in workspace_:GetDescendants() do if d:IsA("BasePart") and d.Name == "Pylon" and d:GetAttribute("District") then pylon = d break end end
+	if pylon then
+		Combat.Shot:Fire(player.Character, pylon, pylon.Position, { Noise = 7 }); run(0.2)
+		check("shoot out: a district pylon people steer by stays lit", pylon:FindFirstChildOfClass("PointLight").Enabled ~= false)
+	end
+end
 local lampPos = lamp.PrimaryPart.Position
 local pc = player.Character
 pc.HumanoidRootPart.CFrame = M.CF.lookAt(lampPos + M.V3.new(0, 2, 5), M.V3.new(lampPos.X, lampPos.Y + 2, lampPos.Z))

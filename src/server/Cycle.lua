@@ -59,6 +59,9 @@ function Cycle.Run()
 		require(script.Parent.Keys).Reset()
 	end)
 	pcall(function()
+		require(script.Parent.Stealth).RestoreFixtures() -- every lamp shot out comes back with the city
+	end)
+	pcall(function()
 		require(script.Parent.Thralls).Hour() -- round 7: kept bodies may break out; released ones' debts come due
 	end)
 	local loose = clearLoose()

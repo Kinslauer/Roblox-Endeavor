@@ -75,6 +75,9 @@ Config.Stealth = {
 	PatrolSpeed = 6, SearchSpeed = 9, SuspectSpeed = 4,
 	PostTurn = 0.08, -- how fast a standing guard turns back to its post (alpha per tick)
 	Noise = { Sprint = 24, Walk = 9, Crouch = 0, Whistle = 22, Glass = 18, Melee = 20, Breaker = 10 },
+	-- any small light in the world a round can put out (Stealth.ShootOut): the lit part at most MaxSize studs long,
+	-- or one of the same model within Reach of where the round hit (its housing)
+	ShootOut = { MaxSize = 8, Reach = 2 },
 	StepNoiseAwareness = 0.9, -- awareness per second from hearing your steps (no sight needed)
 	WhistleCooldown = 3,
 	BodyAlarm = true, -- a guard that sees a downed one goes searching and calls the rest

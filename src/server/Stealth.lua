@@ -105,6 +105,105 @@ function Stealth.BreakLight(part, player)
 	return true
 end
 
+-- Any other light in the world can be shot out too (Andy, 2026-11-14: "the shots should break light sources like
+-- splinter cell"): a round that hits a small part holding a light, or the fixture round it (a part of the same model
+-- within Config.Stealth.ShootOut.Reach of the hit), puts it out with glass and a pop. Landmarks people steer by (the
+-- district pylons, the obelisk, building signs: bigger than MaxSize), bodies' own glow and anything Unbreakable stay lit. The
+-- hour puts every one back (Stealth.RestoreFixtures from Cycle.Run).
+local shotOut = {} -- part -> { material, transparency, lights = { light = enabled } }
+local function holdsLight(part)
+	for _, c in part:GetChildren() do
+		if c:IsA("Light") and c.Enabled ~= false then
+			return true
+		end
+	end
+	return false
+end
+local function fixtureFor(inst, position)
+	local SO = S.ShootOut
+	local function ok(part)
+		if not (part:IsA("BasePart") and holdsLight(part)) then
+			return false
+		end
+		if part:GetAttribute("Unbreakable") or shotOut[part] or (part.Transparency or 0) > 0.9 then
+			return false
+		end
+		local size = part.Size
+		if math.max(size.X, size.Y, size.Z) > SO.MaxSize then
+			return false -- the district pylons, the obelisk, the building signs: what people steer by
+		end
+		-- never a body's own glow (a visor, goggles, an implant), on the living, a corpse or a statue
+		local a = part.Parent
+		while a and a ~= workspace do
+			if a:IsA("Model") and (a:FindFirstChildOfClass("Humanoid") or a:FindFirstChildOfClass("AnimationController") or CollectionService:HasTag(a, "Skin") or a:GetAttribute("Skinned")) then
+				return false
+			end
+			a = a.Parent
+		end
+		return true
+	end
+	if inst:IsA("BasePart") and ok(inst) then
+		return inst
+	end
+	-- the housing: a lit part of the same model right beside the hit
+	local holder = inst:FindFirstAncestorOfClass("Model") or inst.Parent
+	if not holder or holder == workspace then
+		return nil
+	end
+	local best, bestD = nil, SO.Reach
+	for _, d in holder:GetDescendants() do
+		if d ~= inst and d:IsA("BasePart") and ok(d) then
+			local rel = d.CFrame:PointToObjectSpace(position)
+			local h = d.Size / 2
+			local out = Vector3.new(math.max(math.abs(rel.X) - h.X, 0), math.max(math.abs(rel.Y) - h.Y, 0), math.max(math.abs(rel.Z) - h.Z, 0)).Magnitude
+			if out < bestD then
+				best, bestD = d, out
+			end
+		end
+	end
+	return best
+end
+function Stealth.ShootOut(inst, position, player)
+	if typeof(inst) ~= "Instance" or typeof(position) ~= "Vector3" then
+		return false
+	end
+	local part = fixtureFor(inst, position)
+	if not part then
+		return false
+	end
+	local keep = { material = part.Material, transparency = part.Transparency, color = part.Color, lights = {} }
+	for _, c in part:GetChildren() do
+		if c:IsA("Light") then
+			keep.lights[c] = c.Enabled ~= false
+			c.Enabled = false
+		end
+	end
+	shotOut[part] = keep
+	if part.Material == Enum.Material.Neon then
+		part.Material, part.Transparency = Enum.Material.Glass, math.max(part.Transparency, 0.35)
+		part.Color = part.Color:Lerp(Color3.fromRGB(40, 40, 44), 0.6)
+	end
+	part:SetAttribute("ShotOut", true)
+	Remotes.World:FireAllClients("LightBreak", part.Position)
+	Stealth.Noise(part.Position, S.Noise.Glass, "Glass", player)
+	Stealth.LightBroken:Fire(part, player)
+	return true
+end
+function Stealth.RestoreFixtures()
+	for part, keep in shotOut do
+		if part.Parent then
+			part.Material, part.Transparency, part.Color = keep.material, keep.transparency, keep.color
+			for light, enabled in keep.lights do
+				if light.Parent then
+					light.Enabled = enabled
+				end
+			end
+			part:SetAttribute("ShotOut", nil)
+		end
+	end
+	table.clear(shotOut)
+end
+
 -- Cuts or restores every light on a breaker's circuit. Returns the new state.
 function Stealth.SetCircuit(level, circuit, powered)
 	for _, part in CollectionService:GetTagged("StealthLight") do
@@ -1851,6 +1950,8 @@ function Stealth.Init()
 		end
 		if part and part ~= workspace and typeof(part) == "Instance" and CollectionService:HasTag(part, "StealthLight") then
 			Stealth.BreakLight(part, player)
+		elseif inst then
+			Stealth.ShootOut(inst, position, player) -- a street lamp, a sign, a desk light: anything small that glows
 		end
 	end)
 	Combat.Resolved.Event:Connect(function(attacker, victim, result)

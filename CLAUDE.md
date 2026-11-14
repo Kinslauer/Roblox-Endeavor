@@ -916,6 +916,15 @@ Client tab screenshot, because Andy cannot read logs another way.
   scenario.lua, "first person:", "flick:" in client.lua. Unseen in game: all of it; the eye and rest-hold numbers
   come from real-server measurements of the body, not from a look.
 ## State (2026-11-13)
+- Endeavor v128 (2026-11-14; v127 the same without the body exclusion): Andy: "the shots should break light sources
+  like splinter cell". Stealth levels' "StealthLight" lamps already broke (Stealth.BreakLight); now
+  `Stealth.ShootOut(inst, position, player)` (from the Combat.Shot handler) puts out any other lit part a round hits
+  or the lit part of the same model within Config.Stealth.ShootOut.Reach of the hit: no bigger than MaxSize (8; so
+  pylons, the obelisk and building signs stay), not Unbreakable, not inside a body (Humanoid, AnimationController,
+  "Skin" tag, Skinned); Neon turns to dark glass, World "LightBreak", Glass noise; attribute ShotOut;
+  `Stealth.RestoreFixtures` from Cycle.Run relights them. Real server: 483 of 512 small lights go out on a direct
+  hit (the rest are bodies' glow and one Unbreakable lamp), all 9 breakable station lamps from the floor. Awaits
+  Andy: docs/TESTING.md "Endeavor: shoot out the lights".
 - Endeavor v126 (2026-11-14): Andy: the Whisper's shots "did NOT go to the crosshair ... it was drawn incorrectly".
   The server's round already follows the camera's aim from the shoulder (scenario check "gun: the round flies along
   the aim from the shoulder") and the tracer starts at the real muzzle (real server). What was wrong: the aim poses

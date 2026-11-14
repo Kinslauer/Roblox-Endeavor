@@ -1277,3 +1277,12 @@ barrel; and the crosshair sat about half of Roblox's top bar below the real cent
 - [ ] Another player aiming and firing up or down: their body bends to where their shots went.
 - [ ] The muzzle flash and the puff of smoke come out of the front of the barrel, not back toward the hand.
 - [ ] First person while aiming (V or P with RMB): looking up and down, the gun stays in front of the eye.
+
+## Endeavor: shoot out the lights (2026-11-14, Endeavor v128)
+Andy: "the shots should break light sources like splinter cell". The station's and the barrens' lamps already went
+out when shot; now every small light in the world does too.
+- [ ] In the station, shoot a ceiling lamp: it pops with glass, the room goes darker, your light gem drops, and a guard nearby comes to look. (The small red emergency lamps stay lit on purpose.)
+- [ ] In the city, shoot a street lamp's lens, a stall lamp, a neon strip or a screen: it goes dark with glass and a pop.
+- [ ] Shoot a district pylon, the obelisk or a building-sized neon sign: it stays lit (people steer by them).
+- [ ] Shoot a mannequin's or an enemy's visor: it stays lit.
+- [ ] After the hour turns (the white-out), every lamp you shot out is lit again.
