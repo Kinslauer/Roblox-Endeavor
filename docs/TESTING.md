@@ -1239,7 +1239,7 @@ Pistol and the Arc Pistol, in third person.
 - [ ] Other players and guards holding pistols look the same.
 - [ ] Look for: a hand that bends too far at the wrist, an off hand that does not meet the gun, the pistol too small.
 
-## Endeavor: animations keep playing on a long run (2026-11-14)
+## Endeavor: animations keep playing on a long run (2026-11-14, Endeavor v124)
 Andy: "the game crashed while i was trying the new areas" (Studio, just out of the shaft; the Output said
 "AnimationTrack limit of 64 tracks exceeded" before the test window closed). Each body now holds at most 36 of the
 game's own animations at once, and the walk and idle are shared instead of loaded twice.

@@ -894,7 +894,7 @@ Client tab screenshot, because Andy cannot read logs another way.
   is lost, players seeing their own stump in first person. Tests: "drag:", "limbs:" in scenario.lua, "guard:",
   "swing:", "arm:" in client.lua.
 ## State (2026-11-13)
-- 2026-11-14: Andy's Studio play closed after the shaft with "AnimationTrack limit of 64 tracks exceeded for
+- Endeavor v124 + Front v49 (2026-11-14): Andy's Studio play closed after the shaft with "AnimationTrack limit of 64 tracks exceeded for
   'Kinslauer'" on every Play (idle and walk included). Roblox refuses to play on an Animator that holds more than 64
   loaded tracks; the player's body had loaded ~60 of the game's animations (shared/Anims cached them forever) plus
   Animate's and Movement's own. Fix: shared/Anims holds at most `Anims.Cap` (36) per Animator and destroys the least
