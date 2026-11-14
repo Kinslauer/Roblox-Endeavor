@@ -20,40 +20,63 @@ local IDS = {
 local ok, Assets = pcall(function()
 	return require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Assets"))
 end)
+local okAnims, Anims = pcall(function()
+	return require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Anims"))
+end)
 -- the Front's soldier body (attribute StockAnimations): Roblox's own idle, walk and run, and no stance animations,
 -- because its arm holds were tuned over those and the server poses its crouch and prone
 local STOCK = char:GetAttribute("StockAnimations") == true
 local OWN = (ok and not STOCK) and Assets.Anims or {}
-for _, name in { "Idle", "Walk", "Jog", "Run" } do
-	if OWN[name] and OWN[name] ~= 0 then
-		IDS[name] = "rbxassetid://" .. tostring(OWN[name])
-	end
-end
--- crouched (the Crouched attribute, C): a low stance and a low walk
--- prone (the Stance attribute; hold C): flat on the floor and a crawl
-for name, own in { CrouchIdle = "Crouch_Idle", CrouchWalk = "Crouch_Walk", ProneIdle = "Prone_Idle", ProneCrawl = "Prone_Crawl" } do
-	if OWN[own] and OWN[own] ~= 0 then
-		IDS[name] = "rbxassetid://" .. tostring(OWN[own])
+-- the game's own cycles (tools/anims) by the name shared/Anims knows them by: crouched (the Crouched attribute, C)
+-- a low stance and walk, prone (the Stance attribute; hold C) flat on the floor and a crawl
+local SHARED = { Idle = "Idle", Walk = "Walk", Jog = "Jog", Run = "Run", CrouchIdle = "Crouch_Idle", CrouchWalk = "Crouch_Walk", ProneIdle = "Prone_Idle", ProneCrawl = "Prone_Crawl" }
+for name, own in SHARED do
+	if not (OWN[own] and OWN[own] ~= 0 and okAnims) then
+		SHARED[name] = nil
 	end
 end
 local PRIORITY = { Idle = Enum.AnimationPriority.Idle, CrouchIdle = Enum.AnimationPriority.Idle, ProneIdle = Enum.AnimationPriority.Idle }
 
-local tracks = {}
-for name, id in IDS do
-	local anim = Instance.new("Animation")
-	anim.AnimationId = id
-	local ok, track = pcall(function()
-		return animator:LoadAnimation(anim)
-	end)
-	if ok and track then
-		track.Priority = PRIORITY[name] or Enum.AnimationPriority.Movement
-		tracks[name] = track
+-- Tracks are fetched when played, never all at once. The game's own come from shared/Anims, so the same Walk or
+-- Idle is one track for this script, the intro and everything else (Roblox stops playing anything on an Animator
+-- past 64 loaded tracks: 2026-11-14, the crash after the shaft); Roblox's stock ones are loaded here on first use.
+local stock = {}
+local function trackFor(name)
+	if name == nil then
+		return nil
 	end
+	local track
+	if SHARED[name] then
+		track = Anims.Track(char, SHARED[name])
+	else
+		if stock[name] == nil then
+			stock[name] = false
+			local id = IDS[name]
+			if id then
+				local anim = Instance.new("Animation")
+				anim.AnimationId = id
+				local okLoad, t = pcall(function()
+					return animator:LoadAnimation(anim)
+				end)
+				if okLoad and t then
+					stock[name] = t
+				end
+			end
+		end
+		track = stock[name] or nil
+	end
+	if track then
+		track.Priority = PRIORITY[name] or Enum.AnimationPriority.Movement
+	end
+	return track
+end
+local function has(name)
+	return SHARED[name] ~= nil or IDS[name] ~= nil
 end
 
 local current = nil
 local function play(name, fade, speed)
-	local track = tracks[name]
+	local track = trackFor(name)
 	if current ~= track then
 		if current then
 			current:Stop(fade or 0.2)
@@ -72,7 +95,7 @@ end
 -- so the feet keep pace with the ground at any speed; and where one gait hands over to the next.
 local PACE = { Walk = 4.7, Jog = 15.1, Run = 25.5, CrouchWalk = 3.0 }
 local JOG_FROM, RUN_FROM = 8, 19
-local OWN_GAIT = tracks.Jog ~= nil and OWN.Jog ~= nil
+local OWN_GAIT = SHARED.Jog ~= nil
 local state = "Idle"
 local lastSpeed = 0
 local backward = false
@@ -82,13 +105,13 @@ local function ground(speed)
 		return
 	end
 	local dir = if backward then -1 else 1 -- moving backward plays the same cycle in reverse
-	if char:GetAttribute("Stance") == "Prone" and tracks.ProneIdle then
+	if char:GetAttribute("Stance") == "Prone" and has("ProneIdle") then
 		if speed < 0.3 then
 			play("ProneIdle", 0.25)
 		else
 			play("ProneCrawl", 0.2, math.clamp(speed / 3, 0.5, 2))
 		end
-	elseif char:GetAttribute("Crouched") and tracks.CrouchIdle then
+	elseif char:GetAttribute("Crouched") and has("CrouchIdle") then
 		if speed < 0.5 then
 			play("CrouchIdle", 0.2)
 		else

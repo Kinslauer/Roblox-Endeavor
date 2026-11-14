@@ -12,8 +12,6 @@ local Assets = require(ReplicatedStorage.Shared.Assets)
 
 local Anims = {}
 
-local cache = setmetatable({}, { __mode = "k" }) -- animator -> { name -> track }
-
 function Anims.Has(name)
 	local id = Assets.Anims and Assets.Anims[name]
 	return id ~= nil and id ~= 0
@@ -36,6 +34,56 @@ local function animatorOf(char)
 	return hum:FindFirstChildOfClass("Animator")
 end
 
+local cache = setmetatable({}, { __mode = "k" }) -- animator -> { name -> track }
+local used = setmetatable({}, { __mode = "k" }) -- animator -> { name -> os.clock() of the last ask }
+
+-- Roblox refuses to play anything on an Animator that holds more than 64 loaded tracks (2026-11-14: a long run
+-- through the station, the city and the shaft loaded over 64 on the player and every animation, idle and walk
+-- included, stopped playing). This cache holds at most CAP of them per Animator: past it, the track asked for
+-- least recently that is not playing is destroyed (and reloaded if it is wanted again). character/Animate and
+-- client/Movement hold about 15 more of their own.
+local CAP = 36
+Anims.Cap = CAP
+
+local function evict(animator, tracks)
+	local count = 0
+	for _, t in tracks do
+		if t then
+			count += 1
+		end
+	end
+	local times = used[animator] or {}
+	while count >= CAP do
+		local oldest, at = nil, math.huge
+		for name, t in tracks do
+			if t and not t.IsPlaying and (times[name] or 0) < at then
+				oldest, at = name, times[name] or 0
+			end
+		end
+		if not oldest then
+			return -- everything held is playing: load anyway rather than cut one off
+		end
+		pcall(function()
+			tracks[oldest]:Destroy()
+		end)
+		tracks[oldest] = nil
+		count -= 1
+	end
+end
+
+-- The number of tracks this module holds on `char`'s Animator (tests).
+function Anims.Loaded(char)
+	local animator = typeof(char) == "Instance" and animatorOf(char)
+	local tracks = animator and cache[animator]
+	local n = 0
+	for _, t in tracks or {} do
+		if t then
+			n += 1
+		end
+	end
+	return n
+end
+
 -- The loaded track for `name` on `char`, or nil (no id, no animator, or the load failed).
 function Anims.Track(char, name)
 	if not (Anims.Has(name) and typeof(char) == "Instance") then
@@ -49,9 +97,12 @@ function Anims.Track(char, name)
 	if not tracks then
 		tracks = {}
 		cache[animator] = tracks
+		used[animator] = {}
 	end
+	used[animator][name] = os.clock()
 	local track = tracks[name]
 	if track == nil then
+		evict(animator, tracks)
 		local anim = Instance.new("Animation")
 		anim.AnimationId = "rbxassetid://" .. tostring(Assets.Anims[name])
 		local ok, t = pcall(function()

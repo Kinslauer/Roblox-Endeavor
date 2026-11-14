@@ -491,5 +491,46 @@ do
 	for _ = 1, 30 do M.step(1 / 30) end
 	check("hands: a body that loses its skin loses the jointed hands", HandsC.State().Bodies[char] == nil and #M.errors == 0)
 end
+do
+	-- anims: a long run plays every animation the game has on one body; the cache stays under Roblox's 64 tracks
+	local Anims = M.mockEnv.__require(RS.Shared.Anims)
+	local AssetsS = M.mockEnv.__require(RS.Shared.Assets)
+	local body = M.newInstance("Model"); body.Name = "Rig"
+	local bh = M.newInstance("Humanoid"); bh.Parent = body
+	local ba = M.newInstance("Animator"); ba.Parent = bh
+	body.Parent = workspace_
+	local names = {}
+	for name in AssetsS.Anims do table.insert(names, name) end
+	table.sort(names)
+	local most = 0
+	for _, name in names do
+		local tr = Anims.Play(body, name)
+		if tr then tr:Stop() end
+		most = math.max(most, Anims.Loaded(body))
+	end
+	check(("anims: %d animations played on one body, at most %d tracks held (cap %d)"):format(#names, most, Anims.Cap), #names > Anims.Cap and most <= Anims.Cap and #M.errors == 0)
+	local idle = Anims.Track(body, "Idle")
+	check("anims: an evicted track is loaded again when it is wanted", idle ~= nil and Anims.Play(body, "Idle") ~= nil)
+	body:Destroy()
+end
+do
+	-- character/Animate: the walk and idle are the same tracks shared/Anims holds, and they play
+	local Anims = M.mockEnv.__require(RS.Shared.Anims)
+	local body = M.newInstance("Model"); body.Name = "Walker"
+	local bh = M.newInstance("Humanoid"); bh.Parent = body
+	local ba = M.newInstance("Animator"); ba.Name = "Animator"; ba.Parent = bh
+	local br = M.newInstance("Part"); br.Name = "HumanoidRootPart"; br.Parent = body
+	for _, name in { "Running", "Climbing", "Swimming", "StateChanged" } do rawset(bh, name, M.sig(bh, name)) end
+	body.Parent = workspace_
+	local scr = M.newInstance("LocalScript"); scr.Name = "Animate"; scr._source = TREE_CHARACTER.Animate.source; scr.Parent = body
+	local okRun, errRun = pcall(function() M.loadSource(scr)() end)
+	for _ = 1, 3 do M.step(1 / 30) end
+	local idle = Anims.Track(body, "Idle")
+	check("animate: the idle plays from the shared track " .. tostring(errRun or ""), okRun and idle ~= nil and idle.IsPlaying)
+	bh.Running:Fire(12)
+	local jog = Anims.Track(body, "Jog")
+	check("animate: running plays the shared jog and stops the idle", jog ~= nil and jog.IsPlaying and not idle.IsPlaying and Anims.Loaded(body) <= 3 and #M.errors == 0)
+	body:Destroy()
+end
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

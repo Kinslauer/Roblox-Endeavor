@@ -1238,3 +1238,12 @@ Pistol and the Arc Pistol, in third person.
 - [ ] The train ride: the draw from the holster ends with the pistol low in front, and the rack looks right.
 - [ ] Other players and guards holding pistols look the same.
 - [ ] Look for: a hand that bends too far at the wrist, an off hand that does not meet the gun, the pistol too small.
+
+## Endeavor: animations keep playing on a long run (2026-11-14)
+Andy: "the game crashed while i was trying the new areas" (Studio, just out of the shaft; the Output said
+"AnimationTrack limit of 64 tracks exceeded" before the test window closed). Each body now holds at most 36 of the
+game's own animations at once, and the walk and idle are shared instead of loaded twice.
+- [ ] Play a long run in one life: the train ride, the station (takedowns, prone, reload, rack), the city, the shaft
+      down and back up. The idle, walk and run keep playing all the way, and no "AnimationTrack limit" line shows in
+      the Output (F9 in the Roblox app).
+- [ ] If the window still closes, send the last lines of the Output (or F9 Client and Server tabs).
