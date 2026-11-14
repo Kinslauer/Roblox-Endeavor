@@ -650,6 +650,12 @@ function GunFeel.LeftGrip(char)
 	return g and g.LeftGrip
 end
 
+-- True while the gun's own motion hides this part (a magazine that is out of the gun): first person asks.
+function GunFeel.Hides(char, part)
+	local g = guns[char]
+	return g ~= nil and g.Hidden[part] == true
+end
+
 function GunFeel.State() -- for tests
 	return { Guns = guns, Casings = casings, Drops = drops }
 end

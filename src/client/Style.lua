@@ -153,6 +153,35 @@ function Style.Intent()
 	return nil
 end
 
+-- A flick of the mouse just before the attack picks the cut (Swings.FlickShape): the way the mouse went over the
+-- last FlickWindow seconds, if it went far enough. nil = no clear flick: the weapon's own chain.
+local flicks = {} -- { t, dx, dy }
+local FLICK_WINDOW, FLICK_MIN = 0.14, 55
+function Style.Moved(delta)
+	local now = os.clock()
+	table.insert(flicks, { now, delta.X, delta.Y })
+	while flicks[1] and now - flicks[1][1] > FLICK_WINDOW do
+		table.remove(flicks, 1)
+	end
+end
+function Style.Flick()
+	local now = os.clock()
+	local x, y = 0, 0
+	for _, f in flicks do
+		if now - f[1] <= FLICK_WINDOW then
+			x += f[2]
+			y += f[3]
+		end
+	end
+	if math.max(math.abs(x), math.abs(y)) < FLICK_MIN then
+		return nil
+	end
+	if math.abs(x) >= math.abs(y) then
+		return if x < 0 then "Left" else "Right"
+	end
+	return if y > 0 then "Down" else "Up"
+end
+
 function Style.Began(input, key)
 	if input.UserInputType == Enum.UserInputType.MouseButton3 then
 		if target then
@@ -314,6 +343,11 @@ end
 
 function Style.Start(gui)
 	countGui = gui
+	game:GetService("UserInputService").InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			Style.Moved(input.Delta)
+		end
+	end)
 	countLabel = Instance.new("TextLabel")
 	countLabel.Name = "ComboCount"
 	countLabel.BackgroundTransparency = 1

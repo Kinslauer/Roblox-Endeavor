@@ -532,5 +532,37 @@ do
 	check("animate: running plays the shared jog and stops the idle", jog ~= nil and jog.IsPlaying and not idle.IsPlaying and Anims.Loaded(body) <= 3 and #M.errors == 0)
 	body:Destroy()
 end
+do
+	-- first person (P): the held weapon is drawn, the eye sits in the head, a melee weapon is held up in view
+	local UIS = game_:GetService("UserInputService")
+	local ConfigC = M.mockEnv.__require(RS.Shared.Config)
+	local ArmIK = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.ArmIK)
+	local StyleC = M.mockEnv.__require(game_:GetService("StarterPlayer").Client.Style)
+	local function wait(seconds) for _ = 1, math.ceil(seconds * 30) do M.step(1/30) end end
+	for _, name in { "Stance", "Crouched", "Blocking", "Takedown", "Cutscene", "Carrying", "NeckHold", "Knocked", "Hidden" } do char:SetAttribute(name, nil) end
+	while char:FindFirstChild("HeldWeapon") do char.HeldWeapon:Destroy() end
+	char:SetAttribute("Weapon", "RebarBlade")
+	local held = M.newInstance("Model"); held.Name = "HeldWeapon"; held:SetAttribute("WeaponId", "RebarBlade")
+	local blade = M.newInstance("Part"); blade.Name = "Blade_Steel"; blade.Parent = held
+	held.Parent = char
+	wait(1.2)
+	blade.LocalTransparencyModifier = 1 -- what Roblox does to everything in the character in first person
+	UIS.InputBegan:Fire({ KeyCode = "KeyCode.P", UserInputType = "UserInputType.Keyboard" }, false)
+	wait(0.6)
+	check("first person: the held weapon is drawn", blade.LocalTransparencyModifier == 0)
+	check("first person: the eye is in the head", math.abs(hum.CameraOffset.Y - ConfigC.Aim.FirstPerson.Eye.Y) < 0.1)
+	check("first person: a melee weapon at rest is held up in view", ArmIK.Active(char, "Right"))
+	UIS.InputBegan:Fire({ KeyCode = "KeyCode.P", UserInputType = "UserInputType.Keyboard" }, false)
+	wait(0.8)
+	check("first person: back in third person the arm is handed back", not ArmIK.Active(char, "Right") and #M.errors == 0)
+	-- a flick of the mouse picks the cut
+	check("flick: no mouse move, no pick", StyleC.Flick() == nil)
+	StyleC.Moved({ X = -90, Y = 10 })
+	check("flick: the mouse thrown left asks for the cut to the left", StyleC.Flick() == "Left")
+	wait(0.4)
+	StyleC.Moved({ X = 5, Y = 120 })
+	check("flick: thrown down asks for the overhead, and an old flick is forgotten", StyleC.Flick() == "Down")
+	held:Destroy()
+end
 print("errors:", #M.errors)
 for _, e in M.errors do print(e) end

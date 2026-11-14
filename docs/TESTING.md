@@ -1247,3 +1247,22 @@ game's own animations at once, and the walk and idle are shared instead of loade
       down and back up. The idle, walk and run keep playing all the way, and no "AnimationTrack limit" line shows in
       the Output (F9 in the Roblox app).
 - [ ] If the window still closes, send the last lines of the Output (or F9 Client and Server tabs).
+
+## Endeavor: first person is drawn, and swings follow the mouse (2026-11-14, Endeavor v125)
+Andy: "there is no first person drawn in conduit, and none of the animations but swinging worked, and even then
+they looked canned and non interactive". The animations were the 64-animation limit (section above, v124). First
+person hid the held weapon with the body; it is drawn now. Swings are tipped with your look and cut the way you
+flick the mouse.
+- [ ] Press P with the pistol out: the pistol, both hands and the forearms are in view, held up. Hold RMB: the view
+      moves behind the top of the pistol. Fire, reload (R) and rack (T): the hands and the gun move in view.
+- [ ] The same with a rifle (Carbine, AK-47 or Garand from the armory): RMB puts the eye behind the sights.
+- [ ] Press P with a melee weapon: it is held up on the right of the view; a swing passes through the view and the
+      weapon comes back up. With bare fists, both fists are up.
+- [ ] Press P again: the view goes back over the shoulder and the body is whole.
+- [ ] Third person, melee: look down at a crouched or downed enemy and swing. The cut goes down at him and lands.
+      Look up and swing: the cut goes high. Move the look during the swing: the blade follows.
+- [ ] Throw the mouse left as you click: the cut goes right to left. Throw it right: left to right. Throw it down:
+      an overhead. Throw it up: a rising cut. With no flick, the weapon's usual chain plays. (Spear and fists keep
+      their own attacks.)
+- [ ] Tell me if the flick picks a cut when you did not mean it (it needs about 55 pixels of mouse travel in the
+      0.14 seconds before the click).

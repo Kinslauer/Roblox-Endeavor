@@ -1569,6 +1569,9 @@ local function setHelmetcam(on)
 				end
 			end
 		end
+		if savedZoom.apply then
+			task.defer(savedZoom.apply) -- back over the shoulder
+		end
 	end
 end
 -- inside a locker (round 4): first person through the slats, back to whatever view you had when you step out
@@ -1585,14 +1588,50 @@ do
 	end
 end
 -- Roblox hides the whole body in first person; only the forearms, hands and what they hold come back, so the view
--- stays clear (the full body used to fill it).
-RunService.RenderStepped:Connect(function()
+-- stays clear (the full body used to fill it). The held weapon is a model inside the character, so Roblox hid it
+-- too (Andy, 2026-11-14: "there is no first person drawn"): its parts are shown again here every frame. The eye
+-- sits in the head (Roblox's own first-person eye is at shoulder height on this body), and while aiming it moves
+-- behind the top of the gun, measured from the gun's parts each frame, so the sights are what you look along.
+local FP = Config.Aim.FirstPerson
+local fpEye
+local function gunSight(char, root)
+	local held = char:FindFirstChild("HeldWeapon")
+	if not held then
+		return nil
+	end
+	local top, sumX, n = -math.huge, 0, 0
+	local inv = root.CFrame:Inverse()
+	for _, m in held:GetDescendants() do
+		if m:IsA("BasePart") and m.LocalTransparencyModifier < 1 then
+			local cf, h = inv * m.CFrame, m.Size / 2
+			local reach = math.abs(cf.UpVector.Y) * h.Y + math.abs(cf.RightVector.Y) * h.X + math.abs(cf.LookVector.Y) * h.Z
+			top = math.max(top, cf.Position.Y + reach)
+			sumX += cf.Position.X
+			n += 1
+		end
+	end
+	if n == 0 then
+		return nil
+	end
+	return Vector3.new(sumX / n, top + FP.SightAbove - FP.CameraBase, FP.SightBack)
+end
+RunService.RenderStepped:Connect(function(dt)
 	if not helmetcam then
+		fpEye = nil
 		return
 	end
 	local char = player.Character
 	if not char then
 		return
+	end
+	local hum, root = char:FindFirstChildOfClass("Humanoid"), char:FindFirstChild("HumanoidRootPart")
+	if hum and root and not char:GetAttribute("Cutscene") then
+		local want = FP.Eye
+		if Handling.Aiming() and Handling.GunOut() then
+			want = gunSight(char, root) or want
+		end
+		fpEye = (fpEye or want):Lerp(want, 1 - math.exp(-dt * FP.EyeRate))
+		hum.CameraOffset = fpEye + Handling.Drop()
 	end
 	for _, p in char:GetChildren() do
 		if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" then
@@ -1601,6 +1640,12 @@ RunService.RenderStepped:Connect(function()
 			local handle = p:FindFirstChild("Handle")
 			if handle then
 				handle.LocalTransparencyModifier = 1
+			end
+		elseif p.Name == "HeldWeapon" then
+			for _, m in p:GetDescendants() do
+				if m:IsA("BasePart") then
+					m.LocalTransparencyModifier = if Handling.GunFeel.Hides(char, m) then 1 else 0 -- (a magazine out of the gun stays out)
+				end
 			end
 		elseif p.Name == "Skin" then
 			-- the one-piece body: its forearm and hand pieces are separate meshes for exactly this
@@ -2256,6 +2301,11 @@ local function swingPose(char, yaw, pitch, twist, lean, bodyAnimated, st, pull)
 	local hand = shoulder + dir * (Swings.HandReach * scale * (pull or 1))
 	local tip = shoulder + dir * math.max(((st and st.range) or 6) * scale, Swings.HandReach * scale + 1)
 	local aim = (tip - hand).Unit
+	if st and st.pitch and math.abs(st.pitch) > 0.05 then
+		-- tipped with the look, about the shoulders: the same frame the server traces in (Swings.Tilt)
+		local tilt = Swings.Tilt(CFrame.identity, st.pitch, scale)
+		hand, aim = tilt * hand, tilt:VectorToWorldSpace(aim)
+	end
 	ArmIK.Hold(char, "Right", hand, aim)
 	local two = st and st.twoHand
 	if two then
@@ -2341,7 +2391,7 @@ local function threatFor(char, root)
 		if oroot then
 			local e = now - st.t0 - st.frozen
 			if e < st.windup + st.active then
-				local mid = Swings.ThreatPoint(oroot.CFrame, st.shape, 0, st.range * st.scale, st.scale, root.Position)
+				local mid = Swings.ThreatPoint(Swings.Tilt(oroot.CFrame, st.pitch, st.scale), st.shape, 0, st.range * st.scale, st.scale, root.Position)
 				local d = (mid - root.Position).Magnitude
 				if d < bestD then
 					best, bestD = root.CFrame:PointToObjectSpace(mid), d
@@ -2416,6 +2466,21 @@ RunService.RenderStepped:Connect(function()
 		if now < st.frozenUntil then
 			e = st.frozenAt -- hitstop: the swing holds where it bit
 		end
+		-- the arc follows the look: your own from the camera, sent to the server while the blade can still land;
+		-- everyone else's from what the server says (attribute SwingPitch)
+		do
+			local want = char:GetAttribute("SwingPitch") or 0
+			if char == player.Character and e < st.windup + st.active then
+				want = Swings.LookPitch(workspace.CurrentCamera.CFrame.LookVector)
+				if math.abs(want - (st.sentPitch or 999)) > 1.5 and now - (st.sentAt or 0) > 0.07 then
+					st.sentPitch, st.sentAt = want, now
+					Remotes.SwingLook:FireServer(want)
+				end
+			elseif char == player.Character then
+				want = st.pitch or want -- the follow-through keeps the line it was cut on
+			end
+			st.pitch = (st.pitch or want) + (want - (st.pitch or want)) * math.min(1, 0.3)
+		end
 		if st.track then
 			-- the body animation's fixed timeline (wind-up 0.4, strike 0.2, recovery 0.4) stretched to this swing
 			local speed = if now < st.frozenUntil then 0
@@ -2454,7 +2519,7 @@ RunService.RenderStepped:Connect(function()
 			local y, p = Swings.Angles(st.shape, u)
 			local out = math.clamp(u / 0.55, 0, 1)
 			swingPose(char, y, p, lerpN(sy * 0.4, ey * 0.4, u), lerpN(-6, 10, u), st.body, st, lerpN(st.chamber, 1, out * out * (3 - 2 * out)))
-			local _, tip = Swings.Blade(root.CFrame, st.shape, u, st.range * st.scale, st.scale)
+			local _, tip = Swings.Blade(Swings.Tilt(root.CFrame, st.pitch, st.scale), st.shape, u, st.range * st.scale, st.scale)
 			if st.lastTip then
 				trailSegment(st.lastTip, tip, st.heavy)
 			end
@@ -2469,6 +2534,20 @@ RunService.RenderStepped:Connect(function()
 			swingPose(char, lerpN(fy, REST_YAW, back), lerpN(fp, REST_PITCH, back), lerpN(ey * 0.4, 0, back), lerpN(10, 0, back), st.body, st, lerpN(1, 0.9, back))
 		else
 			endSwing(char, false)
+		end
+	end
+	-- first person: a melee weapon (or the fists) at rest is held up where the eye can see it; at the side it is
+	-- below the bottom of the view and the screen is empty until a swing passes through
+	local own = helmetcam and player.Character
+	if own and not swinging[own] and not own:GetAttribute("Blocking") and not Handling.GunOut()
+		and not (own:GetAttribute("Takedown") or own:GetAttribute("Cutscene") or own:GetAttribute("Carrying") or own:GetAttribute("NeckHold") or own:GetAttribute("Knocked") or own:GetAttribute("Hidden")) then
+		local R = Config.Aim.FirstPerson.Rest
+		local scale = Swings.ScaleOf(own)
+		if own:FindFirstChild("HeldWeapon") then
+			ArmIK.Hold(own, "Right", (Swings.ShoulderOffset + R.Hand) * scale, R.Blade.Unit, { Pole = Vector3.new(0.6, -0.8, 0.1) })
+		else
+			ArmIK.Hold(own, "Right", Vector3.new(R.Fist.X, R.Fist.Y, R.Fist.Z) * scale, Vector3.new(0, 1, -0.2), { Pole = Vector3.new(0.5, -0.85, 0) })
+			ArmIK.Hold(own, "Left", Vector3.new(-R.Fist.X, R.Fist.Y, R.Fist.Z) * scale, Vector3.new(0, 1, -0.2), { Pole = Vector3.new(-0.5, -0.85, 0) })
 		end
 	end
 end)
@@ -2862,7 +2941,9 @@ applyAim = function()
 	if hum then
 		local drop = Handling.Drop() -- crouched and prone the camera comes down
 		local shoulder = (Handling.AimPreset() or aimPreset()).ShoulderOffset
-		hum.CameraOffset = (if aimOn and not helmetcam then shoulder else Vector3.zero) + drop
+		if not helmetcam then -- (first person: the eye is placed every frame beside the helmetcam code)
+			hum.CameraOffset = (if aimOn then shoulder else Vector3.zero) + drop
+		end
 		hum.AutoRotate = not aimOn and not Handling.InCover()
 	end
 	GameSettings.RotationType = if aimOn then Enum.RotationType.CameraRelative else Enum.RotationType.MovementRelative
@@ -2916,6 +2997,7 @@ RunService:BindToRenderStep("EndeavorAim", 202, function() -- after the camera s
 		UserInputService.MouseBehavior = if aimActive() then Enum.MouseBehavior.LockCenter else Enum.MouseBehavior.Default
 	end
 end)
+savedZoom.apply = applyAim
 toggleAim = function()
 	aimOn = not aimOn
 	applyAim()
@@ -3444,7 +3526,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		return -- stances (C, Space, Shift), and with a gun out: RMB aim, V sights, R reload, Q the wall or the prone roll
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		Remotes.Attack:FireServer(cameraDirection(), Style.Intent()) -- a shot goes where you look; a swing ignores it
+		Remotes.Attack:FireServer(cameraDirection(), Style.Intent() or Style.Flick()) -- a shot goes where you look; a swing is tipped with the look and cut the way the mouse was flicked
 		Handling.Trigger(function() -- an automatic keeps going while the button is down
 			if not menuOpen() then
 				Remotes.Attack:FireServer(cameraDirection())

@@ -1061,7 +1061,7 @@ local function guardThreat(char, root)
 		local oroot = other ~= char and other:FindFirstChild("HumanoidRootPart")
 		if oroot then
 			-- where its arc first reaches this body: the guard holds there through the whole swing, not chasing the blade
-			local mid = Swings.ThreatPoint(oroot.CFrame, w.id, 0, w.reach, w.scale, root.Position)
+			local mid = Swings.ThreatPoint(Swings.Tilt(oroot.CFrame, w.s.swingPitch, w.scale), w.id, 0, w.reach, w.scale, root.Position)
 			local d = (mid - root.Position).Magnitude
 			if d < bestD then
 				best, bestD = root.CFrame:PointToObjectSpace(mid), d
@@ -1242,7 +1242,11 @@ local function traceBlade(char, spec, mods, seen, strike, damage)
 	local id, scale = mods.shape, Swings.ScaleOf(char)
 	local reach = spec.Range * scale
 	local elapsed, last, pauseUntil = 0, os.clock(), 0
-	local prevBase, prevTip = Swings.Blade(root.CFrame, id, 0, reach, scale)
+	-- the arc is tipped with the swinger's look, live (Swings.Tilt; s.swingPitch from the attack and Remote "SwingLook")
+	local function frame()
+		return Swings.Tilt(root.CFrame, s.swingPitch, scale)
+	end
+	local prevBase, prevTip = Swings.Blade(frame(), id, 0, reach, scale)
 	local prevU = 0
 	local cache = {}
 	local ray = RaycastParams.new()
@@ -1264,8 +1268,9 @@ local function traceBlade(char, spec, mods, seen, strike, damage)
 			elapsed += dt
 		end
 		local u = math.min(elapsed / spec.Active, 1)
-		local base, tip = Swings.Blade(root.CFrame, id, u, reach, scale)
-		local uFrom, fromBase, fromTip, rootCF = prevU, prevBase, prevTip, root.CFrame
+		local rootCF = frame()
+		local base, tip = Swings.Blade(rootCF, id, u, reach, scale)
+		local uFrom, fromBase, fromTip = prevU, prevBase, prevTip
 		local function bladeAt(f)
 			if f <= 0 then
 				return fromBase, fromTip
@@ -1373,7 +1378,12 @@ function Combat.Swing(char, spec, mods)
 		-- "operated like a melee weapon" because every client played the swing for it)
 		fx("Swing", char, mods.label, mods.shape, spec.Windup, spec.Active, spec.End, spec.Range)
 	end
+	s.swingPitch = 0
 	if mods.shape then
+		if s.aim and t0 - (s.aimAt or 0) < 0.6 then
+			s.swingPitch = Swings.LookPitch(s.aim)
+		end
+		char:SetAttribute("SwingPitch", math.round(s.swingPitch))
 		-- a guard can see it coming (guardThreat) from the first frame of the windup
 		local scale = Swings.ScaleOf(char)
 		swingers[char] = { id = mods.shape, t0 = t0, windup = spec.Windup, active = spec.Active, reach = spec.Range * scale, scale = scale, token = token, s = s }
@@ -1894,6 +1904,9 @@ function Combat.Attack(player, aim, intent)
 		-- a held beat before the next press: the chain branches into a heavier blow
 		spec, label = variant(spec, KD.Damage, 0, 1, KD.Posture), "Delay"
 	end
+	if melee and shape and label ~= "Lunge" and label ~= "Rising" and label ~= "Roll" then
+		shape = Swings.FlickShape(weapon.Family, intent) or shape -- a flick of the mouse picks the cut
+	end
 	if not Combat.SpendStamina(char, spec.Stamina) or not spendAmmo(player, weapon) then
 		return
 	end
@@ -2062,7 +2075,19 @@ end
 
 function Combat.Init()
 	Net.On("Attack", { rate = 8, burst = 12, args = { "vector?", "string?" } }, function(player, aim, intent)
-		Combat.Attack(player, aim, if intent == "Forward" or intent == "Back" then intent else nil)
+		Combat.Attack(player, aim, if intent == "Forward" or intent == "Back" or Swings.FlickShape("Blade", intent) then intent else nil)
+	end)
+	-- the look's pitch while the player's own swing is winding up or live: the arc follows it
+	Net.On("SwingLook", { rate = 20, burst = 30, args = { "number" } }, function(player, pitch)
+		local char = player.Character
+		local s = char and isAlive(char) and st(char)
+		if s and os.clock() < (s.activeUntil or 0) then
+			s.swingPitch = math.clamp(pitch, -Swings.LookMax, Swings.LookMax)
+			local shown = char:GetAttribute("SwingPitch") or 0
+			if math.abs(shown - s.swingPitch) >= 3 then
+				char:SetAttribute("SwingPitch", math.round(s.swingPitch))
+			end
+		end
 	end)
 	Net.On("Heavy", { rate = 4, burst = 6, args = { "vector?" } }, Combat.Heavy)
 	Net.On("Reload", { rate = 2, burst = 3 }, Combat.Reload)

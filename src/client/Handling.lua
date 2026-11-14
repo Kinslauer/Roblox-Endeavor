@@ -318,7 +318,8 @@ local function wantArms(char)
 	end
 	local _, def = Handling.GunOut()
 	local long = def.Family == "Rifle" -- two hands on it
-	if aiming then
+	-- in first person the gun is always up: the low ready pose is below the bottom of the view
+	if aiming or (opts.FirstPerson and opts.FirstPerson()) then
 		return if long then "Aim_Rifle" else "Aim_Pistol"
 	end
 	return if long then "Rifle_Ready" else "Pistol_Ready"

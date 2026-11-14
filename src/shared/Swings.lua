@@ -96,6 +96,41 @@ function Swings.Blade(rootCF, id, u, reach, scale)
 	return shoulder + dir * hand, shoulder + dir * tip
 end
 
+-- ===== A swing goes where you look, and the way you flick =====
+-- (owner, 2026-11-14: the swings "looked canned and non interactive".) The whole arc is tipped up or down with the
+-- swinger's look, about the shoulders, live through the swing: look down to cut at a crouched or fallen body, up at
+-- one above. The server traces the tipped arc and the clients pose the arms on it, so what you see is what hits.
+Swings.LookShare = 0.8 -- how much of the look's pitch the arc takes
+Swings.LookMax = 42 -- degrees, either way
+
+-- Degrees to tip a swing for a look direction (unit vector, world space).
+function Swings.LookPitch(aim)
+	if typeof(aim) ~= "Vector3" or aim.Magnitude < 0.5 then
+		return 0
+	end
+	return math.clamp(math.deg(math.asin(math.clamp(aim.Unit.Y, -1, 1))) * Swings.LookShare, -Swings.LookMax, Swings.LookMax)
+end
+
+-- The frame a swing is traced in: the body's root, tipped by `pitch` degrees about the shoulder line.
+function Swings.Tilt(rootCF, pitch, scale)
+	if not pitch or math.abs(pitch) < 0.05 then
+		return rootCF
+	end
+	local y = Swings.ShoulderOffset.Y * (scale or 1)
+	return rootCF * CFrame.new(0, y, 0) * CFrame.Angles(math.rad(pitch), 0, 0) * CFrame.new(0, -y, 0)
+end
+
+-- A flick of the mouse as the attack is pressed picks the cut: "Left" = the blade travels to the left (a forehand),
+-- "Right" a backhand, "Down" an overhead, "Up" a rising cut. Families that only thrust or punch keep their own.
+local FLICK = { Left = "SlashR", Right = "SlashL", Down = "Overhead", Up = "Uppercut" }
+local NO_FLICK = { Spear = true, Fists = true }
+function Swings.FlickShape(family, flick)
+	if not FLICK[flick] or NO_FLICK[family] or Swings.Families[family] == false then
+		return nil
+	end
+	return FLICK[flick]
+end
+
 -- ===== The guard (F) =====
 -- Held across the front, braced by the off hand, turned toward the blade coming in. The server blocks with
 -- exactly this shape (Combat: a traced blade is only blocked when it meets the guard before the body) and the

@@ -251,6 +251,16 @@ Config.Aim = {
 	-- camera presets by weapon kind: melee far and high so the whole exchange reads, guns in over the shoulder
 	Melee = { Distance = 15, ShoulderOffset = Vector3.new(0.9, 1.4, 0) },
 	Ranged = { Distance = 9, ShoulderOffset = Vector3.new(1.75, 0.5, 0) },
+	-- first person (P, or V while aiming). Offsets are from Roblox's own eye, CameraBase above the body's root
+	-- (shoulder height on the Conduit body; the head's middle is 2.29 up, measured on a real server).
+	FirstPerson = {
+		CameraBase = 1.5,
+		Eye = Vector3.new(0, 0.82, -0.15), -- in the head, a little forward
+		SightAbove = 0.07, SightBack = 0, -- aiming: this far above the top of the gun
+		EyeRate = 14, -- how fast the eye goes between the two
+		-- a melee weapon at rest is held up in view: the hand from the right shoulder, and the way the weapon runs
+		Rest = { Hand = Vector3.new(-0.2, 0.45, -1.45), Blade = Vector3.new(-0.3, 0.85, -0.42), Fist = Vector3.new(0.45, 1.7, -1.2) },
+	},
 }
 
 -- HUD v2 (client, ported from combat-feel): bottom-centre bars, floating words, reticle, damage vignette, nameplates.

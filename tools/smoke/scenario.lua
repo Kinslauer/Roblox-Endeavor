@@ -1596,6 +1596,15 @@ do
 	check("blade: a shot is announced without an arc", not shaped)
 	run(0.5)
 	g:Destroy()
+	-- a swing goes where you look and the way you flick
+	check("look: looking down tips the arc down, within its limit", SwingsB.LookPitch(M.V3.new(0, -0.6, -0.8)) < -20 and SwingsB.LookPitch(M.V3.new(0, -1, -0.01)) >= -SwingsB.LookMax and SwingsB.LookPitch(M.V3.new(0, 0, -1)) == 0)
+	check("look: a flick picks the cut, but not for a spear or the fists", SwingsB.FlickShape("Blade", "Down") == "Overhead" and SwingsB.FlickShape("Hammer", "Left") == "SlashR"
+		and SwingsB.FlickShape("Blade", "Right") == "SlashL" and SwingsB.FlickShape("Fists", "Left") == nil and SwingsB.FlickShape("Spear", "Up") == nil and SwingsB.FlickShape("Blade", "Forward") == nil)
+	local sw = body("Looker", origin + M.V3.new(40, 0, 0), origin + M.V3.new(40, 0, -5))
+	CombatB.Swing(sw, spec, { noStatScaling = true, label = "Test", shape = "SlashR" })
+	check("look: every traced swing tells the clients its tip", sw:GetAttribute("SwingPitch") == 0)
+	run(0.8)
+	sw:Destroy()
 end
 
 -- ===== the guard (Mordhau-style blocking): a raised guard stops only the blade that meets it on the way in =====

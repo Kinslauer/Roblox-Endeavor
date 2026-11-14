@@ -893,6 +893,28 @@ Client tab screenshot, because Andy cannot read logs another way.
   off. Not done: a wider swing trail, a carry pose for a melee weapon at rest, a player's weapon when the right arm
   is lost, players seeing their own stump in first person. Tests: "drag:", "limbs:" in scenario.lua, "guard:",
   "swing:", "arm:" in client.lua.
+- First person drawn, swings that follow the mouse (owner, 2026-11-14: "there is no first person drawn in conduit,
+  and none of the animations but swinging worked, and even then they looked canned and non interactive"). The
+  animations: Roblox's 64-track limit (the crash thread's v124 fix in shared/Anims). Also found: `Animator:
+  StepAnimations(dt)` works in Open Cloud Luau execution, so a real-server probe CAN pose the real body (clone
+  StarterCharacter into workspace, LoadAnimation, wait for Length > 0, Play(0), StepAnimations, task.wait(0.2), read
+  Motor6D.Transform and part CFrames): all 62 animations load and drive the Motor6Ds; the Animator resets the skin's
+  bones to identity each step (it does not pose them), which is why Skin writes them on Stepped. First person
+  (Main, beside setHelmetcam; Config.Aim.FirstPerson): Roblox hides every part inside the character, and HeldWeapon
+  is a Model in it, so the gun was invisible; the loop now shows HeldWeapon parts (`GunFeel.Hides(char, part)` keeps
+  a pulled magazine hidden), owns Humanoid.CameraOffset while in first person (`Eye` in the head: Roblox's own eye is
+  root + 1.5, shoulder height here; aiming: `gunSight` = above the top of the gun's parts, measured each frame),
+  applyAim leaves CameraOffset alone there (`savedZoom.apply` puts the shoulder view back). Handling.wantArms plays
+  the Aim_* arms whenever in first person (the ready poses are below the view). A melee weapon or the fists at rest
+  are held up by ArmIK (`FirstPerson.Rest`, in the swing render loop). Swings: `Swings.Tilt(rootCF, pitch, scale)`
+  tips the whole traced arc about the shoulder line by `Swings.LookPitch(aim)` (LookShare 0.8, LookMax 42); Combat
+  `s.swingPitch` (from the Attack aim; Remote "SwingLook"(pitch) updates it until the active window ends; character
+  attribute `SwingPitch` for other clients), used by traceBlade and guardThreat; the client tips swingPose, the trail
+  and threatFor the same way (own swing: the camera, live). `Swings.FlickShape(family, flick)`: Attack's intent may
+  be Left/Right/Up/Down (client/Style `Moved`/`Flick`: mouse travel over 0.14 s, 55 px) and replaces the combo
+  step's shape (not for Spear, Fists, lunge, rising, roll). NPC swings are not tipped. Tests: "look:" in
+  scenario.lua, "first person:", "flick:" in client.lua. Unseen in game: all of it; the eye and rest-hold numbers
+  come from real-server measurements of the body, not from a look.
 ## State (2026-11-13)
 - Endeavor v124 + Front v49 (2026-11-14): Andy's Studio play closed after the shaft with "AnimationTrack limit of 64 tracks exceeded for
   'Kinslauer'" on every Play (idle and walk included). Roblox refuses to play on an Animator that holds more than 64
@@ -902,6 +924,8 @@ Client tab screenshot, because Andy cannot read logs another way.
   track, not two) and loads Roblox's stock ones on first use. Rule: never LoadAnimation outside shared/Anims for the
   game's own animations. Whether the 64-track limit also closed the test window is not proven. Tests: "anims:",
   "animate:" in client.lua (gen.py now emits TREE_CHARACTER). Awaits Andy: docs/TESTING.md "animations keep playing".
+- Endeavor v125 (2026-11-14): first person draws the gun, hands and arms; swings follow the look and the mouse
+  flick (block above). Real server: start 9.3s, 0 warnings; a mid-arc slash tip sits 1.5 above the root looking level, 2.1 below it looking down, 4.4 above looking up. Awaits Andy: docs/TESTING.md "Endeavor: first person is drawn, and swings follow the mouse".
 - Endeavor v121 + Front v48 (2026-11-13): Andy's second look at the one-piece body (it animates now): new walk / jog
   / run, backward and sideways steps, swing and guard arms solved by ArmIK with coil and follow-through, the carry
   became a collar drag with search from the grab, limbs break or come off on direct hits and no body bursts (block
